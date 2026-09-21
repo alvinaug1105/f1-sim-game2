@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/data/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DriverRole {
+  RACE_DRIVER
+  RESERVE_DRIVER
+}
+
+model GameDatabase {
+  id            String    @id @default(uuid()) @db.Uuid
+  key           String    @unique
+  name          String
+  version       String
+  schemaVersion Int       @default(1)
+  description   String?
+  isBuiltIn     Boolean   @default(false)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+  teams         Team[]
+  drivers       Driver[]
+  circuits      Circuit[]
+  seasons       Season[]
+}
+
+model Team {
+  id             String            @id @default(uuid()) @db.Uuid
+  gameDatabaseId String            @db.Uuid
+  key            String
+  name           String
+  shortName      String
+  color          String            @db.VarChar(7)
+  secondaryColor String?           @db.VarChar(7)
+  countryCode    String            @db.VarChar(2)
+  foundedYear    Int?
+  seasonEntries  SeasonTeamEntry[]
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(3)
+  gameDatabase   GameDatabase      @relation(fields: [gameDatabaseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([gameDatabaseId, key])
+  @@unique([gameDatabaseId, id])
+}
+
+model Driver {
+  id              String              @id @default(uuid()) @db.Uuid
+  gameDatabaseId  String              @db.Uuid
+  key             String
+  firstName       String
+  lastName        String
+  abbreviation    String
+  dateOfBirth     DateTime            @db.Date
+  nationalityCode String              @db.VarChar(2)
+  preferredNumber Int?
+  seasonEntries   SeasonDriverEntry[]
+  createdAt       DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime            @updatedAt @db.Timestamptz(3)
+  gameDatabase    GameDatabase        @relation(fields: [gameDatabaseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([gameDatabaseId, key])
+  @@unique([gameDatabaseId, id])
+}
+
+model Circuit {
+  id              String          @id @default(uuid()) @db.Uuid
+  gameDatabaseId  String          @db.Uuid
+  key             String
+  name            String
+  countryCode     String          @db.VarChar(2)
+  city            String?
+  lengthMeters    Int
+  defaultLapCount Int
+  events          CalendarEvent[]
+  createdAt       DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @db.Timestamptz(3)
+  gameDatabase    GameDatabase    @relation(fields: [gameDatabaseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([gameDatabaseId, key])
+  @@unique([gameDatabaseId, id])
+}
+
+model Season {
+  id             String            @id @default(uuid()) @db.Uuid
+  gameDatabaseId String            @db.Uuid
+  key            String
+  year           Int
+  name           String
+  teams          SeasonTeamEntry[]
+  events         CalendarEvent[]
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(3)
+  gameDatabase   GameDatabase      @relation(fields: [gameDatabaseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([gameDatabaseId, key])
+  @@unique([gameDatabaseId, id])
+}
+
+model SeasonTeamEntry {
+  id             String              @id @default(uuid()) @db.Uuid
+  gameDatabaseId String              @db.Uuid
+  seasonId       String              @db.Uuid
+  teamId         String              @db.Uuid
+  entryOrder     Int
+  season         Season              @relation(fields: [gameDatabaseId, seasonId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
+  team           Team                @relation(fields: [gameDatabaseId, teamId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
+  drivers        SeasonDriverEntry[]
+
+  @@unique([gameDatabaseId, seasonId, teamId])
+  @@unique([gameDatabaseId, seasonId, entryOrder])
+  @@index([gameDatabaseId, teamId])
+}
+
+model SeasonDriverEntry {
+  id             String          @id @default(uuid()) @db.Uuid
+  gameDatabaseId String          @db.Uuid
+  seasonId       String          @db.Uuid
+  driverId       String          @db.Uuid
+  teamId         String          @db.Uuid
+  carNumber      Int?
+  role           DriverRole
+  teamEntry      SeasonTeamEntry @relation(fields: [gameDatabaseId, seasonId, teamId], references: [gameDatabaseId, seasonId, teamId], onDelete: Restrict, onUpdate: Restrict)
+  driver         Driver          @relation(fields: [gameDatabaseId, driverId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([gameDatabaseId, seasonId, driverId])
+  @@unique([gameDatabaseId, seasonId, carNumber])
+  @@index([gameDatabaseId, driverId])
+  @@index([gameDatabaseId, seasonId, teamId])
+}
+
+model CalendarEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  gameDatabaseId String   @db.Uuid
+  seasonId       String   @db.Uuid
+  circuitId      String   @db.Uuid
+  round          Int
+  name           String
+  startDate      DateTime @db.Date
+  endDate        DateTime @db.Date
+  season         Season   @relation(fields: [gameDatabaseId, seasonId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
+  circuit        Circuit  @relation(fields: [gameDatabaseId, circuitId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([gameDatabaseId, seasonId, round])
+  @@index([gameDatabaseId, circuitId])
+}

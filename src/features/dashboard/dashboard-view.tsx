@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { Panel, EmptyState } from "@/components/ui/panel";
 import { useI18n, LocalizedPageTitle } from "@/i18n/provider";
 import type { getDashboard } from "./get-dashboard";
@@ -10,6 +11,15 @@ export function DashboardView({
   return (
     <>
       <LocalizedPageTitle titleKey="metadata.title" />
+      <div className="notice">
+        <div>
+          <strong>{t("career.noSelected")}</strong>
+          <p>{t("career.selectSaved")}</p>
+        </div>
+        <Link className="text-link" href="/careers">
+          {t("career.browse")}
+        </Link>
+      </div>
       <div className="page-header">
         <div>
           <p className="eyebrow accent">{t("dashboard.section")}</p>

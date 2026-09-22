@@ -42,4 +42,6 @@ npm run db:seed
 
 Use a separate disposable PostgreSQL database for TEST_DATABASE_URL, then run `npm run test:db`. The integration suite creates and removes only its uniquely named test schema.
 
-At export, all 75 database-independent tests, lint, TypeScript, Prisma format/validate/generate and the production build passed. PostgreSQL was unavailable: the migration and seed were **not applied**, and the 24 SQL integration tests were **not executed**. See `docs/phase-2-report.md` for the exact verification record.
+At export, all **109 offline tests** and **40 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, TypeScript, lint and the production build passed. Both checked-in migrations applied successfully on a disposable database using the local Homebrew PostgreSQL 18.6 service; the source suite executed the seed twice without duplication. Browser verification covered creation, listing, Continue, English/Traditional Chinese and refresh persistence. See `docs/phase-3-report.md`.
+
+Career pages require DATABASE_URL and the migrations above. Open `/careers` to create a save. No credentials or verification database are included in the archive.

@@ -9,6 +9,7 @@ describe("architectural import boundaries", () => {
     ["src/components/example.tsx", "@/data/repositories/prisma-game-content"],
     ["src/game/domain/example.ts", "../../data/prisma/client"],
     ["src/game/domain/example.ts", "pg"],
+    ["src/components/career-example.tsx", "@/data/repositories/prisma-career"],
     ["src/simulation/core/example.ts", "../../i18n/catalog"],
   ])(
     "rejects infrastructure/presentation leakage in %s from %s",

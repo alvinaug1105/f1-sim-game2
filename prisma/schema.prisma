@@ -147,3 +147,171 @@ model CalendarEvent {
   @@unique([gameDatabaseId, seasonId, round])
   @@index([gameDatabaseId, circuitId])
 }
+
+// Career provenance IDs are scalar metadata, deliberately NOT foreign keys to source content.
+enum CareerStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum CareerSeasonStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+enum CareerEventStatus {
+  UPCOMING
+  CURRENT
+  COMPLETED
+}
+
+model Career {
+  id                        String          @id @default(uuid()) @db.Uuid
+  name                      String          @db.VarChar(80)
+  sourceGameDatabaseId      String          @db.Uuid
+  sourceGameDatabaseVersion String
+  sourceSeasonId            String          @db.Uuid
+  currentDate               DateTime        @db.Date
+  playerTeamId              String          @db.Uuid
+  currentSeasonId           String          @db.Uuid
+  status                    CareerStatus    @default(ACTIVE)
+  createdAt                 DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt                 DateTime        @updatedAt @db.Timestamptz(3)
+  playerTeam                CareerTeam      @relation("PlayerTeam", fields: [id, playerTeamId], references: [careerId, id], onDelete: NoAction, onUpdate: NoAction)
+  currentSeason             CareerSeason    @relation("CurrentSeason", fields: [id, currentSeasonId], references: [careerId, id], onDelete: NoAction, onUpdate: NoAction)
+  teams                     CareerTeam[]    @relation("WorldTeams")
+  drivers                   CareerDriver[]
+  circuits                  CareerCircuit[]
+  seasons                   CareerSeason[]  @relation("WorldSeasons")
+
+  @@index([updatedAt, id])
+}
+
+model CareerTeam {
+  id             String                  @id @default(uuid()) @db.Uuid
+  careerId       String                  @db.Uuid
+  sourceTeamId   String?                 @db.Uuid
+  key            String
+  name           String
+  shortName      String
+  color          String                  @db.VarChar(7)
+  secondaryColor String?                 @db.VarChar(7)
+  countryCode    String                  @db.VarChar(2)
+  foundedYear    Int?
+  createdAt      DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime                @updatedAt @db.Timestamptz(3)
+  career         Career                  @relation("WorldTeams", fields: [careerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  playerFor      Career[]                @relation("PlayerTeam")
+  entries        CareerSeasonTeamEntry[]
+
+  @@unique([careerId, id])
+  @@unique([careerId, key])
+}
+
+model CareerDriver {
+  id              String                    @id @default(uuid()) @db.Uuid
+  careerId        String                    @db.Uuid
+  sourceDriverId  String?                   @db.Uuid
+  key             String
+  firstName       String
+  lastName        String
+  abbreviation    String
+  dateOfBirth     DateTime                  @db.Date
+  nationalityCode String                    @db.VarChar(2)
+  preferredNumber Int?
+  createdAt       DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime                  @updatedAt @db.Timestamptz(3)
+  career          Career                    @relation(fields: [careerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  entries         CareerSeasonDriverEntry[]
+
+  @@unique([careerId, id])
+  @@unique([careerId, key])
+}
+
+model CareerCircuit {
+  id              String                @id @default(uuid()) @db.Uuid
+  careerId        String                @db.Uuid
+  sourceCircuitId String?               @db.Uuid
+  key             String
+  name            String
+  countryCode     String                @db.VarChar(2)
+  city            String?
+  lengthMeters    Int
+  defaultLapCount Int
+  career          Career                @relation(fields: [careerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  events          CareerCalendarEvent[]
+
+  @@unique([careerId, id])
+  @@unique([careerId, key])
+}
+
+model CareerSeason {
+  id             String                  @id @default(uuid()) @db.Uuid
+  careerId       String                  @db.Uuid
+  sourceSeasonId String?                 @db.Uuid
+  year           Int
+  name           String
+  status         CareerSeasonStatus      @default(UPCOMING)
+  startDate      DateTime?               @db.Date
+  endDate        DateTime?               @db.Date
+  career         Career                  @relation("WorldSeasons", fields: [careerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentFor     Career[]                @relation("CurrentSeason")
+  teams          CareerSeasonTeamEntry[]
+  events         CareerCalendarEvent[]
+
+  @@unique([careerId, id])
+  @@unique([careerId, year])
+}
+
+model CareerSeasonTeamEntry {
+  id             String                    @id @default(uuid()) @db.Uuid
+  careerId       String                    @db.Uuid
+  careerSeasonId String                    @db.Uuid
+  careerTeamId   String                    @db.Uuid
+  entryOrder     Int
+  season         CareerSeason              @relation(fields: [careerId, careerSeasonId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  team           CareerTeam                @relation(fields: [careerId, careerTeamId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  drivers        CareerSeasonDriverEntry[]
+
+  @@unique([careerId, careerSeasonId, id])
+  @@unique([careerId, careerSeasonId, careerTeamId])
+  @@unique([careerId, careerSeasonId, entryOrder])
+  @@index([careerId, careerTeamId])
+}
+
+model CareerSeasonDriverEntry {
+  id                      String                @id @default(uuid()) @db.Uuid
+  careerId                String                @db.Uuid
+  careerSeasonId          String                @db.Uuid
+  careerDriverId          String                @db.Uuid
+  careerSeasonTeamEntryId String                @db.Uuid
+  carNumber               Int?
+  role                    DriverRole
+  teamEntry               CareerSeasonTeamEntry @relation(fields: [careerId, careerSeasonId, careerSeasonTeamEntryId], references: [careerId, careerSeasonId, id], onDelete: Restrict, onUpdate: Restrict)
+  driver                  CareerDriver          @relation(fields: [careerId, careerDriverId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerId, careerSeasonId, careerDriverId])
+  @@unique([careerId, careerSeasonId, carNumber])
+  @@index([careerId, careerDriverId])
+  @@index([careerId, careerSeasonId, careerSeasonTeamEntryId])
+}
+
+model CareerCalendarEvent {
+  id                    String            @id @default(uuid()) @db.Uuid
+  careerId              String            @db.Uuid
+  careerSeasonId        String            @db.Uuid
+  careerCircuitId       String            @db.Uuid
+  sourceCalendarEventId String?           @db.Uuid
+  round                 Int
+  name                  String
+  startDate             DateTime          @db.Date
+  endDate               DateTime          @db.Date
+  status                CareerEventStatus @default(UPCOMING)
+  season                CareerSeason      @relation(fields: [careerId, careerSeasonId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  circuit               CareerCircuit     @relation(fields: [careerId, careerCircuitId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerId, careerSeasonId, round])
+  @@index([careerId, careerCircuitId])
+}

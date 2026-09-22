@@ -4,7 +4,12 @@ import nextTs from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "next-env.d.ts", "src/data/generated/**"]),
+  globalIgnores([
+    ".next/**",
+    "next-env.d.ts",
+    "src/data/generated/**",
+    "001/**",
+  ]),
   {
     files: [
       "src/app/**/*.{ts,tsx}",
@@ -12,7 +17,10 @@ export default defineConfig([
       "src/features/**/*.{ts,tsx}",
       "src/i18n/**/*.{ts,tsx}",
     ],
-    ignores: ["src/features/content/get-content-repository.ts"],
+    ignores: [
+      "src/features/content/get-content-repository.ts",
+      "src/features/career/server.ts",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",

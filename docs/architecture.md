@@ -35,7 +35,7 @@ Career → Season → Race Weekend → Practice → Qualifying → Race → Cham
 
 Add feature folders for career, teams, drivers, cars, calendar and championship only when they contain real functionality. Add `game/rules`, `game/services`, and simulation modules for sessions, tyres, weather and strategy as those systems are designed. Add generic types/utilities only when they have actual shared users.
 
-Core PostgreSQL/Prisma source-content modeling is implemented in Phase 2 below. Authentication, multiplayer, career creation, driver ratings/contracts/development, staff, car development/research, finances/sponsors/facilities/board expectations, all racing and session systems, fuel/ERS/tyres/weather/pits/overtaking/incidents/safety cars/red flags, 2D rendering and database editing remain deliberately unimplemented. No workers, sockets, infrastructure orchestration or complex state machines are introduced.
+Core PostgreSQL/Prisma source-content modeling is implemented in Phase 2 below. Authentication, multiplayer, driver ratings/contracts/development, staff, car development/research, finances/sponsors/facilities/board expectations, all racing and session systems, fuel/ERS/tyres/weather/pits/overtaking/incidents/safety cars/red flags, 2D rendering and database editing remain deliberately unimplemented. No workers, sockets, infrastructure orchestration or complex state machines are introduced.
 
 ## Interface internationalisation
 
@@ -100,7 +100,7 @@ The generated migration `20260921000100_core_game_database` includes a clearly m
 
 Return values use ISO timestamp/date-only strings; Prisma types, Date objects and relation objects do not leak into domain contracts. Unknown entities return null; unknown/foreign seasons produce empty lists. Invalid IDs throw `InvalidContentIdError`. Persistence failures throw `ContentRepositoryError` with operation/cause and never return development fallback data. Error messages are diagnostic developer data, not untranslated UI; the existing translated error boundary remains the user-facing failure treatment.
 
-`src/data/prisma/client.ts` is a server-only lazy singleton cached on globalThis for hot reload. `connection.ts` constructs dedicated clients for CLI/tests, reads PostgreSQL connection configuration, and honors the URL schema parameter in the pg adapter. `src/features/content/get-content-repository.ts` is the single explicit server composition root and returns the domain interface. Components, app routes, i18n and ordinary features cannot import Prisma/pg/generated clients/adapters directly; ESLint tests exercise these boundaries. Domain and simulation retain stronger existing restrictions, including relative data and i18n imports. Generated client files are ignored, not source-maintained.
+`src/data/prisma/client.ts` is a server-only lazy singleton cached on globalThis for hot reload. `connection.ts` constructs dedicated clients for CLI/tests, reads PostgreSQL connection configuration, and honors the URL schema parameter in the pg adapter. `src/features/content/get-content-repository.ts` is the source-content server composition root and returns the domain interface. Components, app routes, i18n and ordinary features cannot import Prisma/pg/generated clients/adapters directly; ESLint tests exercise these boundaries. Domain and simulation retain stronger existing restrictions, including relative data and i18n imports. Generated client files are ignored, not source-maintained.
 
 The dashboard deliberately remains on its original development adapter, without requiring PostgreSQL to preview the shell. It does not silently switch adapters, claim a Career exists or hide database outages. New persistence queries are available for subsequent application features and integration tests; no editor/API was introduced.
 
@@ -116,8 +116,53 @@ The Prisma CLI/client/pg adapter are pinned together at stable 7.10.0. The CLI l
 
 ### Career separation, editing and future work
 
-**A Career must not directly behave as a live mutable view of its source Game Database.** Editing source content must not rewrite an existing Career. Later Career creation will explicitly choose snapshot, clone or version-pinned content semantics. No Career/save models or cloning implementation exist here.
+**A Career must not directly behave as a live mutable view of its source Game Database.** Editing source content must not rewrite an existing Career. Phase 3 implements the explicit clone strategy described below.
 
 A future editor can change team/driver names, nationalities, season rosters, circuits, calendars and team colours through validated persistence without touching simulation code. Optional localized entity display names belong to game content, with language-tag maps and canonical-name fallback; they are not UI catalog entries and remain unimplemented. UI translation catalogs stay separate from source content.
 
 Championship results/scoring can later reference Season, SeasonDriverEntry, SeasonTeamEntry and CalendarEvent, or their Career-specific copies, without making display names identity. Live Career-specific results must not be written into mutable source definitions. Detailed sessions, transfers, contracts, ratings, car models, finances, simulation, scoring, editor/import/export UI, authentication and multiplayer remain deferred.
+
+## Phase 3 — independent persistent Career world
+
+### Source content and snapshot rule
+
+`GameDatabase` remains reusable source content. `Career` is the saved game: no duplicate SaveGame/SaveSlot model exists. Creation copies the selected season, its participating teams and drivers (including reserves), season team/driver entries, calendar events and only the circuits those events use. All display values become owned values; no later automatic synchronization occurs.
+
+**Source GameDatabase changes after Career creation do not mutate existing Career state.** This includes names, colours, nationalities, circuit metadata, schedules, rosters and database version. Source IDs/version are scalar provenance, deliberately without foreign keys to source tables. Deleting source rows therefore cannot cascade into a Career, and historical provenance remains available after deletion. Source deletion itself still obeys the existing source-table RESTRICT constraints.
+
+### Identity and transaction
+
+`createCareer()` validates input and reads source content inside a single Prisma RepeatableRead transaction. The pure snapshot builder allocates fresh UUIDs and maintains explicit maps from source team/driver/circuit/season/entry IDs to Career IDs. Relationships never match on names or use source IDs. Selected source Team ID maps to the required Career.playerTeamId.
+
+All eight tables are written in the same transaction. A failure rolls back every write. Composite foreign keys constrain relationships to the same Career and, for roster links, the same season. Scoped keys, driver assignments, car numbers, entry order and calendar rounds remain unique. The new migration adds PostgreSQL CHECK constraints alongside the Prisma-generated SQL.
+
+Required root playerTeamId/currentSeasonId pointers create insertion cycles. Their composite foreign keys are DEFERRABLE INITIALLY DEFERRED, allowing root-first insertion while PostgreSQL validates both pointers at commit. Future migrations must preserve these deferrals and the custom checks; do not replace migrations with db push.
+
+```text
+GameDatabase + selected source Season
+                | createCareer(): one transaction, fresh IDs
+                v
+Career = persistent save
+  + CareerTeam / CareerDriver / CareerCircuit
+  + CareerSeason
+  + CareerSeasonTeamEntry / CareerSeasonDriverEntry
+  + CareerCalendarEvent
+```
+
+### Domain, persistence and reads
+
+`game/domain/career*.ts` holds serializable domain types, a focused repository port and pure snapshot construction. `features/career/create-career.ts` orchestrates the transaction through that port. `data/repositories/prisma-career.ts` implements persistence and maps database dates to ISO values; `features/career/server.ts` is the explicit server-only composition root. UI receives domain DTOs, never Prisma records.
+
+Creation options query source data. Continue, listing and overview query only Career tables, including the current owned team/season and next incomplete event. Missing records are absent/404; storage failures produce translated errors, never fixture fallbacks or raw stack traces. The active Career is explicit in `/career/[careerId]`; there is no hidden global save selection.
+
+### Dates, status, UI and future extension
+
+Initial date is the earliest weekend start minus 14 UTC days (`PRESEASON_DAYS`). An empty calendar uses January 1 of the selected season year. Dates remain structured PostgreSQL DATE/ISO values. Career starts ACTIVE; its initial season and events start UPCOMING. Status transitions and time advancement are not implemented.
+
+Career.currentSeasonId identifies the current owned season; its year is derived instead of duplicating currentSeasonYear. `/careers`, `/careers/new` and `/career/[careerId]` implement listing, validated creation and read-only overview. `/` stays an explicitly marked no-Career fixture preview. All interface text uses the English/Traditional Chinese catalogs and existing Intl formatters. Only language preference uses localStorage.
+
+Later progression can add CareerSeason rows and update currentSeasonId transactionally. Contracts/transfers can reference CareerDriver and CareerTeam, with deliberate roster-history changes when designed. Car development and results should reference owned identities, never source rows. Source upgrades would require a separately designed explicit migration tool; automatic sync is forbidden. No future season generation, transfers, contracts, finances, racing, scoring, authentication or editor is implemented.
+
+### Verification
+
+109 offline tests preserve all 75 previous tests and add Career snapshot/service/adapter/boundary checks. The real PostgreSQL suites passed 40 tests (24 existing source tests plus 16 Career tests), including late-write rollback, independent worlds, source edits/deletion, remapping, persistence across clients and relational constraints. See the Phase 3 report for the execution environment and browser verification.

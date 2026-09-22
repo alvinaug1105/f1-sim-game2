@@ -25,7 +25,16 @@ function scope(gameDatabaseId: EntityId, seasonId: EntityId) {
   return { gameDatabaseId, seasonId };
 }
 export class PrismaGameContentRepository implements GameContentRepository {
-  constructor(private readonly client: PrismaClient) {}
+  constructor(
+    private readonly client: Pick<
+      PrismaClient,
+      | "gameDatabase"
+      | "season"
+      | "seasonTeamEntry"
+      | "seasonDriverEntry"
+      | "calendarEvent"
+    >,
+  ) {}
   async getGameDatabaseById(id: EntityId) {
     assertContentId(id);
     return query("getGameDatabaseById", async () => {

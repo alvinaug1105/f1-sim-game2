@@ -1,5 +1,6 @@
 "use client";
 import { useI18n, LanguageSelector } from "@/i18n/provider";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { APP_CONFIG } from "@/lib/config";
@@ -12,6 +13,9 @@ const plannedSections = [
 ] as const;
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
+  const pathname = usePathname();
+  const careerPath = pathname.startsWith("/career/") ? pathname : "/";
+  const inCareers = pathname.startsWith("/careers");
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">
@@ -29,8 +33,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           {t("navigation.workspace")}
         </div>
         <nav aria-label={t("navigation.primary")}>
-          <Link href="/" className="nav-item active">
+          <Link
+            href={careerPath}
+            className={`nav-item ${!inCareers ? "active" : ""}`}
+          >
             <span aria-hidden="true">▦</span> {t("navigation.dashboard")}
+          </Link>
+          <Link
+            href="/careers"
+            className={`nav-item ${inCareers ? "active" : ""}`}
+          >
+            {t("navigation.careers")}
           </Link>
           {plannedSections.map((name, i) => (
             <span

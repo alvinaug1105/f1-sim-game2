@@ -312,6 +312,62 @@ model CareerCalendarEvent {
   season                CareerSeason      @relation(fields: [careerId, careerSeasonId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
   circuit               CareerCircuit     @relation(fields: [careerId, careerCircuitId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
+  weekend CareerRaceWeekend?
+
+  @@unique([careerId, careerSeasonId, id])
   @@unique([careerId, careerSeasonId, round])
   @@index([careerId, careerCircuitId])
+}
+
+enum CareerWeekendStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum CareerSessionType {
+  PRACTICE_1
+  PRACTICE_2
+  PRACTICE_3
+  QUALIFYING
+  RACE
+}
+
+enum CareerSessionStatus {
+  LOCKED
+  AVAILABLE
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+model CareerRaceWeekend {
+  id                    String              @id @default(uuid()) @db.Uuid
+  careerId              String              @db.Uuid
+  careerSeasonId        String              @db.Uuid
+  careerCalendarEventId String              @unique @db.Uuid
+  status                CareerWeekendStatus @default(ACTIVE)
+  createdAt             DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime            @updatedAt @db.Timestamptz(3)
+  completedAt           DateTime?           @db.Timestamptz(3)
+  event                 CareerCalendarEvent @relation(fields: [careerId, careerSeasonId, careerCalendarEventId], references: [careerId, careerSeasonId, id], onDelete: Restrict, onUpdate: Restrict)
+  sessions              CareerSession[]
+
+  @@unique([careerId, id])
+  @@unique([careerId, careerSeasonId, careerCalendarEventId])
+}
+
+model CareerSession {
+  id                    String              @id @default(uuid()) @db.Uuid
+  careerId              String              @db.Uuid
+  careerRaceWeekendId   String              @db.Uuid
+  type                  CareerSessionType
+  order                 Int
+  status                CareerSessionStatus
+  startedAtCareerDate   DateTime?           @db.Date
+  completedAtCareerDate DateTime?           @db.Date
+  weekend               CareerRaceWeekend   @relation(fields: [careerId, careerRaceWeekendId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerRaceWeekendId, type])
+  @@unique([careerRaceWeekendId, order])
+  @@index([careerId, careerRaceWeekendId])
 }

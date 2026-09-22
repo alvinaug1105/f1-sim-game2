@@ -14,7 +14,9 @@ const plannedSections = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const pathname = usePathname();
-  const careerPath = pathname.startsWith("/career/") ? pathname : "/";
+  const careerPath = pathname.startsWith("/career/")
+    ? pathname.split("/").slice(0, 3).join("/")
+    : "/";
   const inCareers = pathname.startsWith("/careers");
   return (
     <div className="app-shell">

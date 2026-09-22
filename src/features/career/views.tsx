@@ -1,5 +1,10 @@
 "use client";
 import Link from "next/link";
+import {
+  progressSummary,
+  type CareerProgress,
+} from "../../game/domain/progression";
+import { ProgressPanel } from "./progression-views";
 import { useActionState, useState } from "react";
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
 import type { TranslationKey } from "../../i18n/catalog";
@@ -234,9 +239,21 @@ export function NewCareerView({ options }: { options: CareerCreationOptions }) {
     </>
   );
 }
-export function CareerOverviewView({ overview }: { overview: CareerOverview }) {
+export function CareerOverviewView({
+  overview,
+  progress,
+}: {
+  overview: CareerOverview;
+  progress: CareerProgress;
+}) {
   const { t, format } = useI18n();
-  const { career, playerTeam, season, nextEvent } = overview;
+  const { playerTeam, season } = overview;
+  const career = progress.career;
+  const { active, next } = progressSummary(progress);
+  const nextEvent =
+    !active && next
+      ? { event: next, circuit: { name: next.circuitName } }
+      : null;
   return (
     <>
       <LocalizedPageTitle titleKey="metadata.career" />
@@ -250,6 +267,7 @@ export function CareerOverviewView({ overview }: { overview: CareerOverview }) {
           {t("career.back")}
         </Link>
       </div>
+      <ProgressPanel progress={progress} />
       <div className="dashboard-grid">
         <Panel
           title={t("dashboard.currentTeam")}
@@ -283,28 +301,30 @@ export function CareerOverviewView({ overview }: { overview: CareerOverview }) {
             </dl>
           </div>
         </Panel>
-        <Panel title={t("dashboard.nextEvent")}>
-          {nextEvent ? (
-            <div className="career-content">
-              <p className="eyebrow">
-                {t("career.round", {
-                  round: format.number(nextEvent.event.round),
-                })}
-              </p>
-              <h3>{nextEvent.event.name}</h3>
-              <p>{nextEvent.circuit.name}</p>
-              <p>
-                {format.date(new Date(nextEvent.event.startDate), {
-                  dateStyle: "long",
-                })}
-              </p>
-            </div>
-          ) : (
-            <EmptyState title={t("career.noEvent")}>
-              {t("career.noEventBody")}
-            </EmptyState>
-          )}
-        </Panel>
+        {!active && (
+          <Panel title={t("dashboard.nextEvent")}>
+            {nextEvent ? (
+              <div className="career-content">
+                <p className="eyebrow">
+                  {t("career.round", {
+                    round: format.number(nextEvent.event.round),
+                  })}
+                </p>
+                <h3>{nextEvent.event.name}</h3>
+                <p>{nextEvent.circuit.name}</p>
+                <p>
+                  {format.date(new Date(nextEvent.event.startDate), {
+                    dateStyle: "long",
+                  })}
+                </p>
+              </div>
+            ) : (
+              <EmptyState title={t("career.noEvent")}>
+                {t("career.noEventBody")}
+              </EmptyState>
+            )}
+          </Panel>
+        )}
         <Panel
           title={t("dashboard.championship")}
           label={t("common.notImplemented")}

@@ -166,3 +166,41 @@ Later progression can add CareerSeason rows and update currentSeasonId transacti
 ### Verification
 
 109 offline tests preserve all 75 previous tests and add Career snapshot/service/adapter/boundary checks. The real PostgreSQL suites passed 40 tests (24 existing source tests plus 16 Career tests), including late-write rollback, independent worlds, source edits/deletion, remapping, persistence across clients and relational constraints. See the Phase 3 report for the execution environment and browser verification.
+
+## Phase 4 — Career time and race weekend lifecycle
+
+### Authoritative Career time
+
+Career.currentDate remains the authoritative in-world date, stored as PostgreSQL DATE and serialized as ISO YYYY-MM-DD. Locale only formats it through UTC-based Intl utilities. Neither browser/system time nor circuit timezone selects a game date. Real createdAt/updatedAt/completedAt timestamps are audit data, separate from the timeline.
+
+Entering an event sets currentDate to `max(currentDate, event.startDate)`; final session completion sets it to `max(currentDate, event.endDate)`. For ordinary non-overlapping calendars these are exactly the weekend start/end dates. The maximum prevents backward time for overlapping or out-of-order source calendars. Intermediate sessions do not advance game dates; detailed session dates/times are deferred.
+
+### Event and weekend lifecycle
+
+Existing CareerEventStatus.CURRENT is retained as the in-progress state: UPCOMING → CURRENT → COMPLETED. The next event is selected among current-season UPCOMING events by round, start date and ID. An active unfinished weekend blocks advancement. An explicit expected event ID prevents stale requests from entering a different round.
+
+CareerRaceWeekend is lazily created when entering an event; its states are ACTIVE and COMPLETED. Absence represents not started, avoiding duplicate NOT_STARTED state. There is at most one weekend per event and one active weekend per Career. It references the owned event with a Career/season-scoped foreign key and does not duplicate event/circuit display metadata. currentSession is derived from the ordered persisted sessions rather than a redundant pointer.
+
+Final session completion closes both weekend and event, records the deterministic end date and leaves the player in management progression. The next event does not start automatically. When no UPCOMING or CURRENT events remain, the read model exposes “Season calendar complete”; the Career remains ACTIVE and no future season is generated. Empty calendars use this same terminal calendar state.
+
+### CareerSession and transition rules
+
+`game/domain/progression.ts` owns the standard ordered definition: Practice 1, Practice 2, Practice 3, Qualifying, Race. Entry persists that sequence with first AVAILABLE, all others LOCKED. UI iterates the persisted list and receives permitted intent actions from domain logic; it does not unlock sessions itself.
+
+AVAILABLE → IN_PROGRESS uses Start. IN_PROGRESS → COMPLETED uses the explicitly temporary development completion. Practice additionally permits AVAILABLE → COMPLETED via structural Simulate Practice, or AVAILABLE → SKIPPED. Completed/skipped practice unlocks the next session. Qualifying and Race cannot be skipped or simulated as practice. Prior required sessions must resolve before starting later sessions. Locked, already-completed, foreign and stale requests fail with domain errors. No arbitrary update-status API is exposed to UI.
+
+Session uniqueness covers type and order per weekend. Composite foreign keys enforce Career ownership. PostgreSQL partial unique indexes additionally enforce one CURRENT event per Career, one ACTIVE weekend per Career and one AVAILABLE/IN_PROGRESS session per weekend. CHECK constraints enforce positive order, practice-only skipping and consistent timestamps. Ordering across rows and final-session rules are enforced by the application/domain transaction, not a complex SQL trigger system.
+
+### Transactions and concurrency
+
+The separate focused CareerProgressionRepository extends the existing persistence boundary without changing creation snapshots. `features/career/progression.ts` exposes advance/session intents; `server.ts` composes its Prisma adapter. Each transition uses a ReadCommitted transaction, first updating the Career audit timestamp to acquire its row lock. Subsequent reads therefore see the preceding request's committed state. Invalid requests roll back even that audit write. The lock serializes transitions per Career; unrelated Careers remain independent.
+
+Entry commits Career date, weekend, all sessions and event status together. Final completion commits session, weekend, event and Career date together. The old active session is terminalized before the next is unlocked, respecting the partial unique index. DB uniqueness is a second defense against duplicate writes. No automatic retry converts a rejected stale request into another gameplay action.
+
+### UI, translations and simulation boundary
+
+`/career/[careerId]` shows factual completed-event totals, next event or active weekend/current session. `/career/[careerId]/events/[eventId]` renders owned event details, current Career date, sessions/statuses and allowed actions. Server actions return translated errors and revalidate affected pages. English and Traditional Chinese catalogs cover all new labels; language changes cannot mutate state. The full page-title effect also reapplies after server-action refreshes.
+
+Development controls are visibly labelled and accompanied by a no-performance/no-results notice. They only prove lifecycle transitions; no sporting results or random placeholders are produced. They should be replaced or gated when real gameplay ships.
+
+Future simulation state attaches to CareerSession. Lifecycle starts/closes it; the independent engine calculates performance. Practice can later persist setup/driver/tyre knowledge before completing its session. Qualifying can later persist Q1/Q2/Q3 and a grid. Race can later persist classification and championship updates before completion. None of these engines/results exist now. A future Sprint weekend can add a domain sequence/type discriminator and enum migration; React does not assume a permanent five-session format. No configuration editor is introduced.

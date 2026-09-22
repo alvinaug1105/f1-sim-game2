@@ -22,3 +22,9 @@ export async function loadCareerData<T>(
     };
   }
 }
+
+import { PrismaProgressionRepository } from "../../data/repositories/prisma-progression";
+import type { CareerProgressionRepository } from "../../game/domain/progression";
+export function getProgressionRepository(): CareerProgressionRepository {
+  return new PrismaProgressionRepository(getPrisma());
+}

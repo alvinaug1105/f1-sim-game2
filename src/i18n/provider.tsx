@@ -99,7 +99,8 @@ export function LanguageSelector() {
 export function LocalizedPageTitle({ titleKey }: { titleKey: TranslationKey }) {
   const { t } = useI18n();
   useEffect(() => {
+    // Server-action revalidation may replace Next metadata even when locale/key are unchanged.
     document.title = t(titleKey);
-  }, [t, titleKey]);
+  });
   return null;
 }

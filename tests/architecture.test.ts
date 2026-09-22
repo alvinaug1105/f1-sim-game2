@@ -36,3 +36,37 @@ describe("architectural import boundaries", () => {
     ).toBe(false);
   });
 });
+
+it.each([
+  "react",
+  "next/navigation",
+  "@prisma/client",
+  "pg",
+  "../../i18n/provider",
+])("simulation rejects %s", async (module) => {
+  const [result] = await eslint.lintText(`import '${module}';`, {
+    filePath: "src/simulation/race/example.ts",
+  });
+  expect(
+    result.messages.some((m) => m.ruleId === "no-restricted-imports"),
+  ).toBe(true);
+});
+it.each([
+  "window.localStorage",
+  "localStorage",
+  "sessionStorage",
+  "Date.now()",
+  "Math.random()",
+])("simulation rejects ambient dependency %s", async (expression) => {
+  const [result] = await eslint.lintText(
+    `export const value = ${expression};`,
+    { filePath: "src/simulation/race/example.ts" },
+  );
+  expect(
+    result.messages.some((m) =>
+      ["no-restricted-globals", "no-restricted-properties"].includes(
+        m.ruleId ?? "",
+      ),
+    ),
+  ).toBe(true);
+});

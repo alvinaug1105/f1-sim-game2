@@ -7,7 +7,7 @@ import {
 } from "../../game/domain/progression";
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const date = (s: string) => new Date(`${s}T00:00:00.000Z`);
-async function load(
+export async function loadProgress(
   tx: Prisma.TransactionClient,
   careerId: string,
 ): Promise<CareerProgress | null> {
@@ -74,7 +74,7 @@ export class PrismaProgressionRepository implements CareerProgressionRepository 
   async getProgress(careerId: string) {
     validate(careerId);
     return protect(() =>
-      this.client.$transaction((tx) => load(tx, careerId), {
+      this.client.$transaction((tx) => loadProgress(tx, careerId), {
         isolationLevel: "RepeatableRead",
       }),
     );
@@ -94,71 +94,87 @@ export class PrismaProgressionRepository implements CareerProgressionRepository 
             data: { updatedAt: new Date() },
           });
           if (!locked.count) throw new ProgressionError("NOT_FOUND");
-          const before = await load(tx, careerId);
+          const before = await loadProgress(tx, careerId);
           if (!before) throw new ProgressionError("NOT_FOUND");
           const after = change(before);
-          for (const event of after.events) {
-            const previous = before.events.find((e) => e.id === event.id);
-            if (previous === event) continue;
-            const weekend = event.weekend;
-            if (!weekend) throw new ProgressionError("INVALID_TRANSITION");
-            if (!previous?.weekend) {
-              const { sessions, ...data } = weekend;
-              await tx.careerRaceWeekend.create({ data });
-              await tx.careerSession.createMany({
-                data: sessions.map((s) => ({
-                  ...s,
-                  startedAtCareerDate: null,
-                  completedAtCareerDate: null,
-                })),
-              });
-            } else {
-              // Terminalize the old current session before unlocking the next partial-unique slot.
-              const changed = weekend.sessions.filter(
-                (s) =>
-                  s !==
-                  previous.weekend?.sessions.find((old) => old.id === s.id),
-              );
-              changed.sort(
-                (a, b) =>
-                  Number(a.status === "AVAILABLE") -
-                  Number(b.status === "AVAILABLE"),
-              );
-              for (const s of changed)
-                await tx.careerSession.update({
-                  where: { id: s.id },
-                  data: {
-                    status: s.status,
-                    startedAtCareerDate: s.startedAtCareerDate
-                      ? date(s.startedAtCareerDate)
-                      : null,
-                    completedAtCareerDate: s.completedAtCareerDate
-                      ? date(s.completedAtCareerDate)
-                      : null,
-                  },
-                });
-              await tx.careerRaceWeekend.update({
-                where: { id: weekend.id },
-                data: {
-                  status: weekend.status,
-                  completedAt:
-                    weekend.status === "COMPLETED" ? new Date() : null,
-                },
-              });
-            }
-            await tx.careerCalendarEvent.update({
-              where: { id: event.id },
-              data: { status: event.status },
-            });
-          }
-          await tx.career.update({
-            where: { id: careerId },
-            data: { currentDate: date(after.career.currentDate) },
+          // Legacy scaffolding remains testable, but cannot bypass an attached real Race.
+          const running = await tx.careerRaceSimulation.findMany({
+            where: { careerId, status: "RUNNING" },
+            select: { careerSessionId: true },
           });
+          for (const race of running) {
+            const nextSession = after.events
+              .flatMap((e) => e.weekend?.sessions ?? [])
+              .find((s) => s.id === race.careerSessionId);
+            if (nextSession?.status !== "IN_PROGRESS")
+              throw new ProgressionError("INVALID_TRANSITION");
+          }
+          await persistProgress(tx, before, after);
           return after;
         },
         { isolationLevel: "ReadCommitted", timeout: 15000, maxWait: 5000 },
       ),
     );
   }
+}
+
+export async function persistProgress(
+  tx: Prisma.TransactionClient,
+  before: CareerProgress,
+  after: CareerProgress,
+) {
+  for (const event of after.events) {
+    const previous = before.events.find((e) => e.id === event.id);
+    if (previous === event) continue;
+    const weekend = event.weekend;
+    if (!weekend) throw new ProgressionError("INVALID_TRANSITION");
+    if (!previous?.weekend) {
+      const { sessions, ...data } = weekend;
+      await tx.careerRaceWeekend.create({ data });
+      await tx.careerSession.createMany({
+        data: sessions.map((s) => ({
+          ...s,
+          startedAtCareerDate: null,
+          completedAtCareerDate: null,
+        })),
+      });
+    } else {
+      // Terminalize the old current session before unlocking the next partial-unique slot.
+      const changed = weekend.sessions.filter(
+        (s) => s !== previous.weekend?.sessions.find((old) => old.id === s.id),
+      );
+      changed.sort(
+        (a, b) =>
+          Number(a.status === "AVAILABLE") - Number(b.status === "AVAILABLE"),
+      );
+      for (const s of changed)
+        await tx.careerSession.update({
+          where: { id: s.id },
+          data: {
+            status: s.status,
+            startedAtCareerDate: s.startedAtCareerDate
+              ? date(s.startedAtCareerDate)
+              : null,
+            completedAtCareerDate: s.completedAtCareerDate
+              ? date(s.completedAtCareerDate)
+              : null,
+          },
+        });
+      await tx.careerRaceWeekend.update({
+        where: { id: weekend.id },
+        data: {
+          status: weekend.status,
+          completedAt: weekend.status === "COMPLETED" ? new Date() : null,
+        },
+      });
+    }
+    await tx.careerCalendarEvent.update({
+      where: { id: event.id },
+      data: { status: event.status },
+    });
+  }
+  await tx.career.update({
+    where: { id: after.career.id },
+    data: { currentDate: date(after.career.currentDate) },
+  });
 }

@@ -28,3 +28,9 @@ import type { CareerProgressionRepository } from "../../game/domain/progression"
 export function getProgressionRepository(): CareerProgressionRepository {
   return new PrismaProgressionRepository(getPrisma());
 }
+
+import { PrismaRaceRepository } from "../../data/repositories/prisma-race";
+import type { CareerRaceRepository } from "../../game/domain/race-repository";
+export function getRaceRepository(): CareerRaceRepository {
+  return new PrismaRaceRepository(getPrisma());
+}

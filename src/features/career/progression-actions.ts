@@ -6,7 +6,7 @@ import {
   type SessionIntent,
 } from "../../game/domain/progression";
 import { getProgressionRepository } from "./server";
-import { advanceToNextEvent, runSessionAction } from "./progression";
+import { advanceToNextEvent, runScaffoldingAction } from "./progression";
 export async function progressionAction(
   _previous: { error: ProgressionErrorCode | null },
   form: FormData,
@@ -29,7 +29,7 @@ export async function progressionAction(
       ];
       if (!intents.includes(intent))
         throw new ProgressionError("INVALID_TRANSITION");
-      await runSessionAction(
+      await runScaffoldingAction(
         repository,
         careerId,
         eventId,

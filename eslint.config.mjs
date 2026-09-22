@@ -4,6 +4,21 @@ import nextTs from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["src/simulation/**/*.ts"],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        "window",
+        "document",
+        "localStorage",
+        "sessionStorage",
+        "Date",
+        "performance",
+        "crypto",
+      ],
+    },
+  },
   globalIgnores([
     ".next/**",
     "next-env.d.ts",

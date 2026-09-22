@@ -1,6 +1,6 @@
 # Formula Operations
 
-A browser-based Formula racing team management game, currently in **Phase 4: Career time and race weekend lifecycle**. Independent persistent Careers can be created, continued and advanced through structural race weekends. Race simulation and management systems remain deferred.
+A browser-based Formula racing team management game, currently in **Phase 5: deterministic free-air Race simulation**. Independent persistent Careers can be created, continued and advanced through structural race weekends. The Race engine produces seeded lap times and classifications; broader management, tyres, traffic and strategy remain deferred.
 
 ## Stack and local development
 
@@ -27,7 +27,7 @@ npm start
 
 `src/app` composes a server-rendered dashboard. `components` holds the presentation shell. `features/dashboard` owns the application query and repository port. `game/domain` holds library-independent identity concepts. `simulation/core` contains a pure tick function and injectable seeded random source. `data` supplies centralized development fixtures and a replaceable repository adapter. The UI never calculates simulation outcomes.
 
-Routes: `/` is the standalone fixture preview; `/careers` lists saves, `/careers/new` creates one, `/career/[careerId]` displays its owned world/progression, and `/career/[careerId]/events/[eventId]` displays a persisted weekend. Planned navigation is visibly unavailable, without fake routes. Missing records have explicit empty states, missing routes have a 404, and unexpected feature failures reach an error boundary. Dashboard development fixtures are static and may be prerendered; revisit caching when introducing persistence.
+Routes: `/` is the standalone fixture preview; `/careers` lists saves, `/careers/new` creates one, `/career/[careerId]` displays its owned world/progression, and `/career/[careerId]/events/[eventId]` displays a persisted weekend, and its `/race` page starts/resumes the real simulation. Planned navigation is visibly unavailable, without fake routes. Missing records have explicit empty states, missing routes have a 404, and unexpected feature failures reach an error boundary. Dashboard development fixtures are static and may be prerendered; revisit caching when introducing persistence.
 
 See [architecture](docs/architecture.md) for boundaries, extension rules and deferred work. Tests run outside React and verify tick purity, invalid inputs, deterministic randomness, ID relationships and repository behavior.
 
@@ -58,7 +58,7 @@ npm run db:migrate
 npm run db:seed
 ```
 
-`npm ci` also generates the client; generation/format/validation need no connection. `db:migrate` applies the checked-in `core_game_database`, `career_world` and `race_weekend_progression` migrations with `prisma migrate deploy`. Use `npm run db:migrate:dev -- --name descriptive_change` only when developing a new migration with a disposable development/shadow database. Do not use db push as a substitute: the migration contains PostgreSQL CHECK constraints not expressible in the Prisma schema.
+`npm ci` also generates the client; generation/format/validation need no connection. `db:migrate` applies the checked-in `core_game_database`, `career_world`, `race_weekend_progression` and `core_race_simulation` migrations with `prisma migrate deploy`. Use `npm run db:migrate:dev -- --name descriptive_change` only when developing a new migration with a disposable development/shadow database. Do not use db push as a substitute: the migration contains PostgreSQL CHECK constraints not expressible in the Prisma schema.
 
 The deterministic fictional seed includes two teams, four race drivers, two circuits, one season and two calendar weekends. It uses stable UUIDs/keys and transactional upserts. Re-running restores those development records; it does not erase unrelated content. The seed will fail on conflicting identities rather than invent replacements.
 
@@ -74,8 +74,8 @@ npm run test:db
 
 The integration suite creates a unique schema, applies the actual migrations, runs the seed twice, verifies representative queries and tests database rejection of invalid relationships/duplicates. It drops only its own schema afterward. Without TEST_DATABASE_URL the command fails clearly; no SQL tests are silently skipped. The ordinary `npm test` suite stays database-independent.
 
-See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 4 report](docs/phase-4-report.md) records 134 passing offline tests and 55 passing real PostgreSQL integration tests. Earlier phase reports are historical.
+See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 5 report](docs/phase-5-report.md) records 185 passing offline tests and 73 passing real PostgreSQL integration tests. Earlier phase reports are historical.
 
 ## Try the lifecycle
 
-After migration/seed, create a Career at `/careers/new`. From its dashboard choose Advance to Event, then Open Race Weekend. Practice may be structurally simulated/skipped; Qualifying and Race use labelled development Start/Complete controls. Completion generates no sporting results. Return to Career to advance the next round. The final calendar ends without creating another season or ending the Career.
+After migration/seed, create a Career at `/careers/new`. From its dashboard choose Advance to Event, then Open Race Weekend. Practice may be structurally simulated/skipped; Qualifying uses labelled development Start/Complete controls. Race links to the engine: start, advance 1/5 laps or simulate to finish. Refresh resumes the saved seed and exact state. Final classification is persisted; championship points are not awarded. Return to Career to advance the next round. The final calendar ends without creating another season or ending the Career.

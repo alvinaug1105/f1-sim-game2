@@ -138,15 +138,24 @@ export function WeekendView({
                       <p>{t(`progression.${session.status}`)}</p>
                     </div>
                     <div className="session-actions">
-                      {sessionActions(session).map((intent) => (
-                        <TransitionControl
-                          key={intent}
-                          careerId={progress.career.id}
-                          eventId={event.id}
-                          sessionId={session.id}
-                          intent={intent}
-                        />
-                      ))}
+                      {session.type === "RACE"
+                        ? session.status !== "LOCKED" && (
+                            <Link
+                              className="text-link"
+                              href={`/career/${progress.career.id}/events/${event.id}/race`}
+                            >
+                              {t("race.open")}
+                            </Link>
+                          )
+                        : sessionActions(session).map((intent) => (
+                            <TransitionControl
+                              key={intent}
+                              careerId={progress.career.id}
+                              eventId={event.id}
+                              sessionId={session.id}
+                              intent={intent}
+                            />
+                          ))}
                     </div>
                   </li>
                 ))}

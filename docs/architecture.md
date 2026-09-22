@@ -204,3 +204,53 @@ Entry commits Career date, weekend, all sessions and event status together. Fina
 Development controls are visibly labelled and accompanied by a no-performance/no-results notice. They only prove lifecycle transitions; no sporting results or random placeholders are produced. They should be replaced or gated when real gameplay ships.
 
 Future simulation state attaches to CareerSession. Lifecycle starts/closes it; the independent engine calculates performance. Practice can later persist setup/driver/tyre knowledge before completing its session. Qualifying can later persist Q1/Q2/Q3 and a grid. Race can later persist classification and championship updates before completion. None of these engines/results exist now. A future Sprint weekend can add a domain sequence/type discriminator and enum migration; React does not assume a permanent five-session format. No configuration editor is introduced.
+
+## Phase 5 — deterministic free-air Race simulation
+
+### Pure engine and lap model
+
+`src/simulation/race` exposes createRace, calculateLapTime, advanceRaceLap, advanceRace, simulateRace and raceResult. It accepts serializable IDs and numeric profiles; it cannot import React, Next, Prisma or i18n, access browser storage, read the clock or call Math.random. Application services connect the pure engine to transactional storage; React only sends intents and renders DTOs. One step advances every entrant by one lap, not milliseconds or sectors.
+
+Times are integer milliseconds. Each component is rounded before summation:
+
+```text
+lapMs = baselineMs
+      + round((100 − carPerformance) / 100 × carPerformanceRangeMs)
+      + round((100 − driverPace) / 100 × driverPerformanceRangeMs)
+      + round(fuelMassKg × fuelEffectMsPerKg)
+      + round(triangularNoise × consistencyAmplitudeMs)
+```
+
+Driver pace/consistency and car performance are bounded 0–100. Version-1 defaults use a 3000 ms whole-scale car penalty and 1500 ms driver penalty relative to rating 100. Thus ten car points cost 300 ms/lap and ten driver points cost 150 ms/lap. These are initial tuning assumptions, not validated real-world ratings. Consistency linearly controls a bounded amplitude from 350 ms at 0 to 30 ms at 100. Noise is the sum of two uniform draws minus one: triangular, symmetric and concentrated near zero. The minimum supported baseline is 1000 ms and maximum noise amplitude is 500 ms; calculated laps remain positive.
+
+Fuel is represented at gram precision, exposed as kg in domain state and stored as integer grams. Each lap uses fuel at its start; remaining mass is max(0, initialGrams − completedLaps × burnGrams). Zero fuel does not cause retirement; running-out mechanics do not exist. Base profile defaults use 30 ms/kg. Entrants start at `(gridPosition − 1) × 180 ms`, a simple offset without launches/Turn 1 modelling.
+
+Classification orders completed laps descending, elapsed time ascending, then stable entrant ID using codepoint comparison. Gaps/intervals are milliseconds; cross-lap gaps are null rather than misleading negative times. The synchronous lap model normally keeps all entrants on the same completed-lap count. Faster accumulated free-air time may reorder entrants, but this is not physical overtaking.
+
+### Determinism, snapshots and versioning
+
+The existing version-1 32-bit LCG now exposes getState while preserving RandomSource.next. Each lap draws twice per entrant in immutable grid order, not changing classification order. State includes the original seed, current RNG state, simulationVersion=1 and frozen input snapshot. Seed is generated once at application-level Race start, never on page load or resume. Unknown saved versions cannot advance. Formula/RNG changes must introduce a new version and an explicit compatibility decision; no save migration machinery exists yet.
+
+The engine snapshots the input on creation and returns new entrant/state objects for lap transitions. Simulating continuously or serializing at lap 10, reopening and continuing lap 11 produces identical final state/results. Parameters, circuit baseline/fuel coefficient, driver pace/consistency, car performance, fuel amounts and grid are all saved so external content edits cannot change an ongoing Race.
+
+### Temporary profile and grid source
+
+`features/race/development-profiles.ts` centralizes temporary application inputs, separate from final driver/car systems. The owned current-season RACE_DRIVER roster is ordered by team entry order, car number and entry ID. Reserves are excluded. No qualifying result is fabricated. Driver pace starts at 92 and cycles down by 1.5 over six roster slots; consistency cycles 88/90/92/94. Car performance starts at 92 and drops 2 points per team-order bucket across eight buckets. Names and special IDs never affect performance.
+
+Circuit baseline is lengthMeters / 60 m/s, rounded to milliseconds; the race distance uses the owned circuit defaultLapCount. Burn is 0.3 kg per kilometre rounded to grams, and starting fuel is burn × totalLaps. These are explicitly provisional defaults for testing any supported Career roster. Unsupported empty/oversized rosters or extreme profile inputs produce a translated validation error rather than silently fabricating data. The pure engine supports 1–100 entrants and 1–1000 laps with bounded numeric inputs; 20 entrants over 50–75 laps are covered by tests.
+
+### Relational persistence and atomic lifecycle
+
+CareerRaceSimulation owns metadata, version, seed/RNG state, current/total laps, status and numeric input parameters. CareerRaceEntrant owns one row per driver containing frozen performance/grid/name data and current/result state: laps, elapsed/last/best time, fuel, position, gap and interval. The finished rows are the final classification; there is no redundant result table and no opaque JSON world blob or lap telemetry store.
+
+One simulation is allowed per CareerSession. A constant RACE sessionType CHECK plus a composite `(careerId, sessionId, type)` foreign key prevents even direct SQL from attaching a simulation to a non-Race session. Composite entrant references constrain simulation, team and driver to the same Career. Seed/RNG storage uses BIGINT for the full unsigned 32-bit range, converted to exact numbers in DTOs. CHECK constraints enforce bounds and valid running/finished metadata.
+
+`CareerRaceRepository` reads through RepeatableRead transactions and changes through ReadCommitted transactions with the same per-Career row lock used by progression. Start commits input snapshots and session IN_PROGRESS together. Advance persists one/five/all remaining laps. Each request includes expectedLap, so concurrent duplicates cannot accidentally advance twice. Final result, Race FINISHED, session/weekend/event completion and Career date commit together or roll back together. SQL integration tests inject late failures in both start and finish.
+
+The production browser scaffolding action now excludes RACE; its UI links to the engine page. The original low-level transition helper remains for the existing Phase 4 regression harness and legacy structural saves. Once a real running simulation exists, the progression repository additionally rejects attempts to complete its session through that helper. Race service finalization uses the shared lifecycle function only after the engine has finished. Legacy already-completed development Race sessions display an explanatory no-classification state rather than invented results. Legacy IN_PROGRESS Race sessions without a simulation may start one.
+
+### UI and limitations
+
+`/career/[careerId]/events/[eventId]/race` provides Start Race, Advance 1 Lap, Advance 5 Laps and Simulate to Finish. Its basic development timing table shows classification, elapsed/gap/interval/last/best times and fuel. Results remain readable after completion/refresh. English and Traditional Chinese use centralized labels; Intl-based duration/gap helpers live outside simulation. Language preference never enters engine input or persistence mutations.
+
+**Phase 5 models free-air race pace and accumulated race time, not track-position interaction.** No tyres, traffic/overtaking, pit stops, DRS/ERS, weather, failures, incidents, commands, points, practice/qualifying engine, real-time speed controls or 2D viewer are implemented. All entrants finish. Later engines can extend versioned input/state at the simulation boundary without moving calculations into UI or repositories.

@@ -206,6 +206,8 @@ model CareerTeam {
   playerFor      Career[]                @relation("PlayerTeam")
   entries        CareerSeasonTeamEntry[]
 
+  raceEntrants CareerRaceEntrant[]
+
   @@unique([careerId, id])
   @@unique([careerId, key])
 }
@@ -225,6 +227,8 @@ model CareerDriver {
   updatedAt       DateTime                  @updatedAt @db.Timestamptz(3)
   career          Career                    @relation(fields: [careerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   entries         CareerSeasonDriverEntry[]
+
+  raceEntrants CareerRaceEntrant[]
 
   @@unique([careerId, id])
   @@unique([careerId, key])
@@ -367,7 +371,74 @@ model CareerSession {
   completedAtCareerDate DateTime?           @db.Date
   weekend               CareerRaceWeekend   @relation(fields: [careerId, careerRaceWeekendId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
+  raceSimulation CareerRaceSimulation?
+
+  @@unique([careerId, id, type])
   @@unique([careerRaceWeekendId, type])
   @@unique([careerRaceWeekendId, order])
   @@index([careerId, careerRaceWeekendId])
+}
+
+enum RaceSimulationStatus {
+  RUNNING
+  FINISHED
+}
+
+model CareerRaceSimulation {
+  id                       String               @id @default(uuid()) @db.Uuid
+  careerId                 String               @db.Uuid
+  careerSessionId          String               @unique @db.Uuid
+  sessionType              CareerSessionType    @default(RACE)
+  simulationVersion        Int
+  seed                     BigInt
+  rngState                 BigInt
+  currentLap               Int
+  totalLaps                Int
+  status                   RaceSimulationStatus
+  baseLapTimeMs            Int
+  fuelEffectMsPerKg        Float
+  initialFuelGrams         Int
+  fuelBurnPerLapGrams      Int
+  carPerformanceRangeMs    Int
+  driverPerformanceRangeMs Int
+  minVariationMs           Int
+  maxVariationMs           Int
+  gridOffsetMs             Int
+  createdAt                DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime             @updatedAt @db.Timestamptz(3)
+  session                  CareerSession        @relation(fields: [careerId, careerSessionId, sessionType], references: [careerId, id, type], onDelete: Restrict, onUpdate: Restrict)
+  entrants                 CareerRaceEntrant[]
+
+  @@unique([careerId, id])
+  @@unique([careerId, careerSessionId, sessionType])
+}
+
+model CareerRaceEntrant {
+  id                     String               @id @db.Uuid
+  careerId               String               @db.Uuid
+  careerRaceSimulationId String               @db.Uuid
+  careerDriverId         String               @db.Uuid
+  careerTeamId           String               @db.Uuid
+  driverName             String
+  teamName               String
+  gridPosition           Int
+  driverPace             Float
+  driverConsistency      Float
+  carPerformance         Float
+  completedLaps          Int
+  elapsedTimeMs          Int
+  lastLapTimeMs          Int?
+  bestLapTimeMs          Int?
+  fuelMassGrams          Int
+  position               Int
+  gapToLeaderMs          Int?
+  intervalToAheadMs      Int?
+  simulation             CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  driver                 CareerDriver         @relation(fields: [careerId, careerDriverId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  team                   CareerTeam           @relation(fields: [careerId, careerTeamId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerRaceSimulationId, careerDriverId])
+  @@unique([careerRaceSimulationId, gridPosition])
+  @@index([careerId, careerDriverId])
+  @@index([careerId, careerTeamId])
 }

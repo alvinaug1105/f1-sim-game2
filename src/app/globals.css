@@ -696,3 +696,11 @@ html[lang="zh-TW"] .eyebrow {
 .transition-form button:disabled { opacity: .5; cursor: wait; }
 .development-notice { padding: 1rem; border: 1px solid var(--border); margin-bottom: 1rem; }
 @media(max-width: 850px) { .session-list li { flex-direction: column; } }
+
+.race-controls { margin: 1rem 0; }
+.race-controls fieldset { display: flex; gap: .75rem; flex-wrap: wrap; border: 0; padding: 0; }
+.race-controls button { padding: .65rem 1rem; }
+.race-table-scroll { max-width: 100%; overflow-x: auto; margin: 1.5rem 0; }
+.race-table { width: 100%; border-collapse: collapse; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.race-table th, .race-table td { padding: .8rem; text-align: left; border-bottom: 1px solid #35383d; }
+.race-table caption { text-align: left; font-weight: bold; padding-bottom: 1rem; }

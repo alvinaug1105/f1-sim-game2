@@ -1,3 +1,10 @@
+import {
+  validateTyreConfiguration,
+  validateTyreState,
+  type TyreConfiguration,
+  type TyreState,
+  type TyreCompound,
+} from "../../simulation/race/tyres/model";
 import type { Prisma, PrismaClient } from "../generated/prisma/client";
 import { assertContentId } from "../../game/domain/content-repository";
 import {
@@ -34,7 +41,10 @@ async function read(
   if (!progress || !event || !session) return null;
   const row = await tx.careerRaceSimulation.findUnique({
     where: { careerSessionId: session.id },
-    include: { entrants: { orderBy: { gridPosition: "asc" } } },
+    include: {
+      entrants: { orderBy: { gridPosition: "asc" } },
+      tyreProfiles: true,
+    },
   });
   const circuit = await tx.careerCircuit.findUniqueOrThrow({
     where: { id: event.careerCircuitId },
@@ -54,6 +64,24 @@ async function read(
           { id: "asc" },
         ],
       });
+  let tyres: TyreConfiguration | undefined;
+  if (row?.simulationVersion === 2) {
+    tyres = {
+      tyreWearMultiplierPermille: row.tyreWearMultiplierPermille!,
+      tyreEnergyMultiplierPermille: row.tyreEnergyMultiplierPermille!,
+      profiles: Object.fromEntries(
+        row.tyreProfiles.map((row) => [
+          row.compound,
+          Object.fromEntries(
+            Object.entries(row).filter(
+              ([key]) => key !== "careerId" && key !== "careerRaceSimulationId",
+            ),
+          ),
+        ]),
+      ) as unknown as TyreConfiguration["profiles"],
+    };
+    validateTyreConfiguration(tyres);
+  }
   const state: RaceSimulationState | null = row
     ? {
         simulationVersion: row.simulationVersion,
@@ -61,6 +89,7 @@ async function read(
         lap: row.currentLap,
         status: row.status,
         input: {
+          ...(tyres ? { tyres } : {}),
           seed: Number(row.seed),
           totalLaps: row.totalLaps,
           initialFuelKg: row.initialFuelGrams / 1000,
@@ -83,11 +112,35 @@ async function read(
             gridPosition: e.gridPosition,
             driver: { pace: e.driverPace, consistency: e.driverConsistency },
             car: { performance: e.carPerformance },
+            ...(tyres
+              ? {
+                  startingTyre: readTyre(
+                    e.startingCompound,
+                    e.startingTyreAgeLaps,
+                    e.startingTyreWearPermille,
+                    e.startingTyreTemperatureMilliC,
+                  ),
+                }
+              : {}),
           })),
         },
         entrants: [...row.entrants]
           .sort((a, b) => a.position - b.position)
           .map((e) => ({
+            ...(tyres
+              ? {
+                  stint: {
+                    number: e.stintNumber!,
+                    startedAtLap: e.stintStartedAtLap!,
+                    tyre: readTyre(
+                      e.compound,
+                      e.tyreAgeLaps,
+                      e.tyreWearPermille,
+                      e.tyreTemperatureMilliC,
+                    ),
+                  },
+                }
+              : {}),
             entrantId: e.id,
             completedLaps: e.completedLaps,
             elapsedTimeMs: e.elapsedTimeMs,
@@ -172,8 +225,20 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                   s.input.fuelBurnPerLapKg * 1000,
                 ),
                 ...s.input.parameters,
+                tyreWearMultiplierPermille:
+                  s.input.tyres?.tyreWearMultiplierPermille,
+                tyreEnergyMultiplierPermille:
+                  s.input.tyres?.tyreEnergyMultiplierPermille,
               },
             });
+            if (s.input.tyres)
+              await tx.careerRaceTyreProfile.createMany({
+                data: Object.values(s.input.tyres.profiles).map((profile) => ({
+                  ...profile,
+                  careerId,
+                  careerRaceSimulationId: row.id,
+                })),
+              });
             await tx.careerRaceEntrant.createMany({
               data: s.input.entrants.map((e) => {
                 const state = s.entrants.find(
@@ -194,6 +259,15 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                   driverPace: e.driver.pace,
                   driverConsistency: e.driver.consistency,
                   carPerformance: e.car.performance,
+                  ...(e.startingTyre
+                    ? {
+                        startingCompound: e.startingTyre.compound,
+                        startingTyreAgeLaps: e.startingTyre.ageLaps,
+                        startingTyreWearPermille: e.startingTyre.wearPermille,
+                        startingTyreTemperatureMilliC:
+                          e.startingTyre.temperatureMilliC,
+                      }
+                    : {}),
                   ...entrantState(state),
                 };
               }),
@@ -222,6 +296,16 @@ export class PrismaRaceRepository implements CareerRaceRepository {
 }
 function entrantState(e: RaceSimulationState["entrants"][number]) {
   return {
+    ...(e.stint
+      ? {
+          compound: e.stint.tyre.compound,
+          tyreAgeLaps: e.stint.tyre.ageLaps,
+          tyreWearPermille: e.stint.tyre.wearPermille,
+          tyreTemperatureMilliC: e.stint.tyre.temperatureMilliC,
+          stintNumber: e.stint.number,
+          stintStartedAtLap: e.stint.startedAtLap,
+        }
+      : {}),
     completedLaps: e.completedLaps,
     elapsedTimeMs: e.elapsedTimeMs,
     lastLapTimeMs: e.lastLapTimeMs,
@@ -231,4 +315,22 @@ function entrantState(e: RaceSimulationState["entrants"][number]) {
     gapToLeaderMs: e.gapToLeaderMs,
     intervalToAheadMs: e.intervalToAheadMs,
   };
+}
+
+function readTyre(
+  compound: TyreCompound | null,
+  ageLaps: number | null,
+  wearPermille: number | null,
+  temperatureMilliC: number | null,
+): TyreState {
+  if (
+    compound === null ||
+    ageLaps === null ||
+    wearPermille === null ||
+    temperatureMilliC === null
+  )
+    throw new RaceError("INVALID_INPUT");
+  const tyre = { compound, ageLaps, wearPermille, temperatureMilliC };
+  validateTyreState(tyre);
+  return tyre;
 }

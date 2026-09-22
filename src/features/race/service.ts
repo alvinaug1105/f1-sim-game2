@@ -1,4 +1,12 @@
 import {
+  defaultTyreConfiguration,
+  startingTyre,
+} from "../../simulation/race/tyres/profiles";
+import {
+  isTyreCompound,
+  type TyreCompound,
+} from "../../simulation/race/tyres/model";
+import {
   RaceError,
   type CareerRaceRepository,
 } from "../../game/domain/race-repository";
@@ -6,7 +14,7 @@ import { transitionSession } from "../../game/domain/progression";
 import {
   advanceRace,
   createRace,
-  SIMULATION_VERSION,
+  isSupportedSimulationVersion,
 } from "../../simulation/race/engine";
 import { developmentRaceInput } from "./development-profiles";
 export function startCareerRace(
@@ -14,6 +22,7 @@ export function startCareerRace(
   careerId: string,
   eventId: string,
   seed: number = crypto.getRandomValues(new Uint32Array(1))[0],
+  tyreChoices?: Readonly<Record<string, TyreCompound>>,
 ) {
   return repository.changeRace(careerId, eventId, (data) => {
     if (data.state) throw new RaceError("STALE");
@@ -36,8 +45,27 @@ export function startCareerRace(
       const snapshot = developmentRaceInput(data, seed, () =>
         crypto.randomUUID(),
       );
+      if (tyreChoices) {
+        if (
+          Object.keys(tyreChoices).some(
+            (id) => !data.roster.some((e) => e.driverId === id),
+          ) ||
+          Object.values(tyreChoices).some((c) => !isTyreCompound(c))
+        )
+          throw new RaceError("INVALID_INPUT");
+      }
+      const input = tyreChoices
+        ? {
+            ...snapshot.input,
+            tyres: defaultTyreConfiguration(),
+            entrants: snapshot.input.entrants.map((e) => ({
+              ...e,
+              startingTyre: startingTyre(tyreChoices[e.driverId] ?? "MEDIUM"),
+            })),
+          }
+        : snapshot.input;
       return {
-        state: createRace(snapshot.input),
+        state: createRace(input),
         labels: snapshot.labels,
         progress,
       };
@@ -57,7 +85,7 @@ export function advanceCareerRace(
   return repository.changeRace(careerId, eventId, (data) => {
     if (!data.state || data.state.status !== "RUNNING")
       throw new RaceError("INVALID_ACTION");
-    if (data.state.simulationVersion !== SIMULATION_VERSION)
+    if (!isSupportedSimulationVersion(data.state.simulationVersion))
       throw new RaceError("UNSUPPORTED_VERSION");
     if (data.state.lap !== expectedLap) throw new RaceError("STALE");
     const event = data.progress.events.find((e) => e.id === eventId)!;
@@ -85,4 +113,15 @@ export function advanceCareerRace(
         : data.progress;
     return { state, labels: data.labels, progress };
   });
+}
+
+/** New production races use v2. The original entry point remains a v1 compatibility API. */
+export function startTyreCareerRace(
+  repository: CareerRaceRepository,
+  careerId: string,
+  eventId: string,
+  choices: Readonly<Record<string, TyreCompound>> = {},
+  seed?: number,
+) {
+  return startCareerRace(repository, careerId, eventId, seed, choices);
 }

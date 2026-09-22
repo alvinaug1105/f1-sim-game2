@@ -1,3 +1,12 @@
+import {
+  validateTyreConfiguration,
+  validateTyreState,
+  getTyreProfile,
+  tyreContributions,
+  advanceTyre,
+  type TyreState,
+  type TyreCompoundProfile,
+} from "./tyres/model";
 import { createSeededRandom, type RandomSource } from "../core/random";
 import type {
   RaceSimulationInput,
@@ -9,7 +18,10 @@ import type {
   DriverPerformanceProfile,
   CarPerformanceProfile,
 } from "./types";
-export const SIMULATION_VERSION = 1;
+export const SIMULATION_VERSION = 2;
+export function isSupportedSimulationVersion(version: number) {
+  return version === 1 || version === 2;
+}
 /** Versioned Phase 5 free-air tuning. Penalties are relative to a 100-rated baseline. */
 export const DEFAULT_RACE_PARAMETERS: RaceParameters = Object.freeze({
   carPerformanceRangeMs: 3000,
@@ -46,6 +58,7 @@ function validateProfiles(
   bounded(parameters.gridOffsetMs, 0, 10000, true);
 }
 export function validateRaceInput(input: RaceSimulationInput) {
+  if (input.tyres) validateTyreConfiguration(input.tyres);
   bounded(input.seed, 0, 0xffffffff, true);
   bounded(input.totalLaps, 1, 1000, true);
   bounded(input.initialFuelKg, 0, 1000);
@@ -64,6 +77,14 @@ export function validateRaceInput(input: RaceSimulationInput) {
     drivers = new Set<string>(),
     grids = new Set<number>();
   for (const e of input.entrants) {
+    if (input.tyres) {
+      if (!e.startingTyre)
+        throw new RangeError("Starting tyre is required for version 2");
+      validateTyreState(e.startingTyre);
+      if (e.startingTyre.ageLaps + input.totalLaps > 100000)
+        throw new RangeError("Tyre age exceeds supported race length");
+    } else if (e.startingTyre)
+      throw new RangeError("Tyre state requires tyre configuration");
     if (
       ![e.entrantId, e.driverId, e.teamId].every(
         (id) => typeof id === "string" && id.trim() === id && id.length > 0,
@@ -103,11 +124,15 @@ export function calculateLapTime(
     circuit: RaceCircuitProfile;
     parameters: RaceParameters;
     fuelMassKg: number;
+    tyre?: { state: TyreState; profile: TyreCompoundProfile };
   },
   random: RandomSource,
 ) {
   const { driver, car, circuit, parameters, fuelMassKg } = input;
   validateProfiles(driver, car, circuit, parameters, fuelMassKg);
+  const tyreEffects = input.tyre
+    ? tyreContributions(input.tyre.state, input.tyre.profile)
+    : { tyreCompoundMs: 0, tyreWearMs: 0, tyreTemperatureMs: 0 };
   const baseMs = circuit.baseLapTimeMs;
   const carEffectMs = Math.round(
     ((100 - car.performance) / 100) * parameters.carPerformanceRangeMs,
@@ -124,8 +149,16 @@ export function calculateLapTime(
   return {
     lapTimeMs: Math.max(
       1,
-      baseMs + carEffectMs + driverEffectMs + fuelEffectMs + variationMs,
+      baseMs +
+        carEffectMs +
+        driverEffectMs +
+        fuelEffectMs +
+        variationMs +
+        tyreEffects.tyreCompoundMs +
+        tyreEffects.tyreWearMs +
+        tyreEffects.tyreTemperatureMs,
     ),
+    ...tyreEffects,
     baseMs,
     carEffectMs,
     driverEffectMs,
@@ -162,13 +195,22 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   validateRaceInput(input);
   const snapshot = structuredClone(input);
   return {
-    simulationVersion: SIMULATION_VERSION,
+    simulationVersion: input.tyres ? SIMULATION_VERSION : 1,
     input: snapshot,
     rngState: input.seed,
     lap: 0,
     status: "RUNNING",
     entrants: classify(
       snapshot.entrants.map((e) => ({
+        ...(snapshot.tyres
+          ? {
+              stint: {
+                number: 1,
+                startedAtLap: 0,
+                tyre: structuredClone(e.startingTyre!),
+              },
+            }
+          : {}),
         entrantId: e.entrantId,
         completedLaps: 0,
         elapsedTimeMs: (e.gridPosition - 1) * input.parameters.gridOffsetMs,
@@ -185,8 +227,12 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
 export function advanceRaceLap(
   state: RaceSimulationState,
 ): RaceSimulationState {
-  if (state.simulationVersion !== SIMULATION_VERSION)
+  if (!isSupportedSimulationVersion(state.simulationVersion))
     throw new RangeError("Unsupported simulation version");
+  if (state.simulationVersion === 2 && !state.input.tyres)
+    throw new RangeError("Version 2 requires saved tyre configuration");
+  if (state.simulationVersion === 1 && state.input.tyres)
+    throw new RangeError("Version 1 cannot acquire tyres");
   if (state.status !== "RUNNING" || state.lap >= state.input.totalLaps)
     throw new RangeError("Race has already finished");
   bounded(state.lap, 0, state.input.totalLaps - 1, true);
@@ -200,17 +246,38 @@ export function advanceRaceLap(
       const old = current.get(e.entrantId);
       if (!old || old.completedLaps !== state.lap)
         throw new RangeError("Inconsistent entrant lap state");
+      if (state.simulationVersion === 2 && !old.stint)
+        throw new RangeError("Missing persisted stint state");
       const result = calculateLapTime(
         {
           ...e,
           circuit: state.input.circuit,
           parameters: state.input.parameters,
           fuelMassKg: old.fuelMassKg,
+          ...(state.simulationVersion === 2
+            ? {
+                tyre: {
+                  state: old.stint!.tyre,
+                  profile: getTyreProfile(
+                    state.input.tyres!,
+                    old.stint!.tyre.compound,
+                  ),
+                },
+              }
+            : {}),
         },
         random,
       );
       return {
         ...old,
+        ...(state.simulationVersion === 2
+          ? {
+              stint: {
+                ...old.stint!,
+                tyre: advanceTyre(old.stint!.tyre, state.input.tyres!),
+              },
+            }
+          : {}),
         completedLaps: lap,
         elapsedTimeMs: old.elapsedTimeMs + result.lapTimeMs,
         lastLapTimeMs: result.lapTimeMs,

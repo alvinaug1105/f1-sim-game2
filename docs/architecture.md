@@ -254,3 +254,23 @@ The production browser scaffolding action now excludes RACE; its UI links to the
 `/career/[careerId]/events/[eventId]/race` provides Start Race, Advance 1 Lap, Advance 5 Laps and Simulate to Finish. Its basic development timing table shows classification, elapsed/gap/interval/last/best times and fuel. Results remain readable after completion/refresh. English and Traditional Chinese use centralized labels; Intl-based duration/gap helpers live outside simulation. Language preference never enters engine input or persistence mutations.
 
 **Phase 5 models free-air race pace and accumulated race time, not track-position interaction.** No tyres, traffic/overtaking, pit stops, DRS/ERS, weather, failures, incidents, commands, points, practice/qualifying engine, real-time speed controls or 2D viewer are implemented. All entrants finish. Later engines can extend versioned input/state at the simulation boundary without moving calculations into UI or repositories.
+
+## Phase 6 — tyre-enabled simulation (current)
+
+The Phase-5 descriptions above are historical v1 behavior. New UI starts use version 2 and `src/simulation/race/tyres`; old saves continue as v1 without invented tyres. The original start service remains callable for v1 compatibility. No React, Prisma, Next, locale, browser or wall-clock dependency enters the tyre engine.
+
+### Model and units
+
+Profiles define compound grip, operating windows, temperature targets/response, wear gain and piecewise degradation. Wear is consumed permille (0 fresh, 1000 maximum); age is integer laps; temperature is milliC. Soft has stronger fresh grip and faster wear; Hard has slower fresh grip and longer life. Small early linear loss progresses to quadratic degradation and a steeper quadratic cliff. All values are provisional game tuning.
+
+The frozen tyre config carries numeric circuit stress/energy (development defaults 1000 permille), independent of track names. Temperature begins at 80°C, moves gradually toward a dry compound/energy target and adds a capped penalty outside its operating window. Wear and temperature coupling is deliberately limited. See [Phase-6 report](phase-6-report.md) for exact constants, measurements and tests.
+
+### Ordering, snapshots and resume
+
+Each lap reads current fuel/tyres, calculates pace with the unchanged two consistency draws per entrant, updates timing, burns fuel, advances age/wear/temperature, then classifies. Tyres add no randomness. State updates are immutable. V2 starting tyres and all three profiles are deep snapshots. Persisted actual current tyre values are reloaded, never recomputed from lap count.
+
+The additive fifth migration stores nullable legacy-compatible starting/current tyre columns and owned relational profile snapshots. CHECKs bound wear, temperature, age, stress and profiles; enum values limit compounds to dry tyres. Existing composite ownership and atomic lifecycle transactions remain. A single stint number/start marker allows later replacement without adding stint history now.
+
+### Presentation and limitations
+
+Starting compound selectors disappear after start. Table columns show tyre, age, consumed wear percentage and Intl-formatted temperature, translated in English/Traditional Chinese. Locale never enters the simulation snapshot. No pit stops, wet tyres, traffic, sets, driver tyre-management attribute or pace commands exist. Worn tyres stay on the car for the full race and may reach severe degradation; they do not puncture or reset.

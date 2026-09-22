@@ -1,0 +1,95 @@
+{
+  "state": {
+    "simulationVersion": 1,
+    "input": {
+      "seed": 4294967295,
+      "totalLaps": 25,
+      "initialFuelKg": 50,
+      "fuelBurnPerLapKg": 1.6,
+      "circuit": {
+        "baseLapTimeMs": 90000,
+        "fuelEffectMsPerKg": 30
+      },
+      "parameters": {
+        "carPerformanceRangeMs": 3000,
+        "driverPerformanceRangeMs": 1500,
+        "minVariationMs": 30,
+        "maxVariationMs": 350,
+        "gridOffsetMs": 180
+      },
+      "entrants": [
+        {
+          "entrantId": "e0",
+          "driverId": "d0",
+          "teamId": "team",
+          "gridPosition": 1,
+          "driver": {
+            "pace": 90,
+            "consistency": 85
+          },
+          "car": {
+            "performance": 92
+          }
+        },
+        {
+          "entrantId": "e1",
+          "driverId": "d1",
+          "teamId": "team",
+          "gridPosition": 2,
+          "driver": {
+            "pace": 89,
+            "consistency": 85
+          },
+          "car": {
+            "performance": 92
+          }
+        }
+      ]
+    },
+    "rngState": 2379357699,
+    "lap": 25,
+    "status": "FINISHED",
+    "entrants": [
+      {
+        "entrantId": "e0",
+        "completedLaps": 25,
+        "elapsedTimeMs": 2283141,
+        "lastLapTimeMs": 90736,
+        "bestLapTimeMs": 90736,
+        "fuelMassKg": 10,
+        "position": 1,
+        "gapToLeaderMs": 0,
+        "intervalToAheadMs": 0
+      },
+      {
+        "entrantId": "e1",
+        "completedLaps": 25,
+        "elapsedTimeMs": 2283345,
+        "lastLapTimeMs": 90777,
+        "bestLapTimeMs": 90752,
+        "fuelMassKg": 10,
+        "position": 2,
+        "gapToLeaderMs": 204,
+        "intervalToAheadMs": 204
+      }
+    ]
+  },
+  "result": [
+    {
+      "position": 1,
+      "entrantId": "e0",
+      "driverId": "d0",
+      "teamId": "team",
+      "totalTimeMs": 2283141,
+      "bestLapTimeMs": 90736
+    },
+    {
+      "position": 2,
+      "entrantId": "e1",
+      "driverId": "d1",
+      "teamId": "team",
+      "totalTimeMs": 2283345,
+      "bestLapTimeMs": 90752
+    }
+  ]
+}

@@ -1,11 +1,15 @@
 "use server";
+import {
+  isTyreCompound,
+  type TyreCompound,
+} from "../../simulation/race/tyres/model";
 import { revalidatePath } from "next/cache";
 import {
   RaceError,
   type RaceErrorCode,
 } from "../../game/domain/race-repository";
 import { getRaceRepository } from "../career/server";
-import { startCareerRace, advanceCareerRace } from "./service";
+import { startTyreCareerRace, advanceCareerRace } from "./service";
 export async function raceAction(
   _previous: { error: RaceErrorCode | null },
   form: FormData,
@@ -17,9 +21,15 @@ export async function raceAction(
     intent = text("intent");
   try {
     const repository = getRaceRepository();
-    if (intent === "start")
-      await startCareerRace(repository, careerId, eventId);
-    else if (["lap", "five", "finish"].includes(intent)) {
+    if (intent === "start") {
+      const choices: Record<string, TyreCompound> = {};
+      for (const [key, value] of form.entries())
+        if (key.startsWith("tyre:")) {
+          if (!isTyreCompound(value)) throw new RaceError("INVALID_INPUT");
+          choices[key.slice(5)] = value;
+        }
+      await startTyreCareerRace(repository, careerId, eventId, choices);
+    } else if (["lap", "five", "finish"].includes(intent)) {
       const lap = Number(text("lap"));
       if (!Number.isSafeInteger(lap) || lap < 0)
         throw new RaceError("INVALID_ACTION");

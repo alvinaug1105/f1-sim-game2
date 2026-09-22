@@ -182,7 +182,21 @@
   "race.error.NOT_FOUND": "找不到正賽階段。",
   "race.error.INVALID_ACTION": "目前無法執行此正賽操作。",
   "race.error.STALE": "正賽狀態已變更。請重新整理後再試。",
-  "race.error.INVALID_INPUT": "參賽名單或暫用賽道設定超出模擬支援範圍。",
+  "race.error.INVALID_INPUT": "參賽名單、輪胎選擇或模擬設定超出支援範圍。",
   "race.error.UNSUPPORTED_VERSION": "不支援此存檔的模擬版本。",
-  "race.error.PERSISTENCE_FAILED": "無法儲存正賽進度。請再試一次。"
+  "race.error.PERSISTENCE_FAILED": "無法儲存正賽進度。請再試一次。",
+  "tyre.notice": "輪胎開發模型：單一乾地賽段，不能更換輪胎。磨耗代表已消耗程度：0% 為全新，100% 為最大磨耗。長距離賽事可能出現嚴重衰退。目前沒有進站、交通／超車或天氣系統。",
+  "tyre.legacy": "版本 1 舊存檔：繼續使用原本的自由行駛規則，不會加入輪胎。沒有進站、交通或天氣系統。",
+  "tyre.starting": "起跑輪胎",
+  "tyre.lockedAfterStart": "請在起跑前選擇。此正賽的配方會固定，途中無法更換輪胎。",
+  "tyre.compound": "輪胎配方",
+  "tyre.SOFT": "軟胎",
+  "tyre.MEDIUM": "中性胎",
+  "tyre.HARD": "硬胎",
+  "tyre.age": "胎齡（圈）",
+  "tyre.wear": "輪胎磨耗（已消耗）",
+  "tyre.temperature": "胎溫",
+  "tyre.condition": "輪胎狀況（剩餘）",
+  "tyre.fresh": "全新",
+  "tyre.title": "輪胎開發模型"
 }

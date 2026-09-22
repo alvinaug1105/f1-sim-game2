@@ -704,3 +704,7 @@ html[lang="zh-TW"] .eyebrow {
 .race-table { width: 100%; border-collapse: collapse; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .race-table th, .race-table td { padding: .8rem; text-align: left; border-bottom: 1px solid #35383d; }
 .race-table caption { text-align: left; font-weight: bold; padding-bottom: 1rem; }
+
+.tyre-selection { flex-basis: 100%; display: grid; gap: .75rem; max-width: 40rem; }
+.tyre-selection label { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.tyre-selection select { padding: .5rem; color: inherit; background: #1b1d21; border: 1px solid #53565c; border-radius: 4px; }

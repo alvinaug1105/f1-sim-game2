@@ -1,6 +1,6 @@
 # Formula Operations
 
-A browser-based Formula racing team management game, currently in **Phase 5: deterministic free-air Race simulation**. Independent persistent Careers can be created, continued and advanced through structural race weekends. The Race engine produces seeded lap times and classifications; broader management, tyres, traffic and strategy remain deferred.
+A browser-based Formula racing team management game, currently in **Phase 6: deterministic dry tyres, degradation and temperature**. Independent persistent Careers can be created, continued and advanced through structural race weekends. The Race engine produces seeded lap times and classifications; dry compounds now evolve through a single persistent stint. Broader management, traffic, pit stops and strategy remain deferred.
 
 ## Stack and local development
 
@@ -74,7 +74,7 @@ npm run test:db
 
 The integration suite creates a unique schema, applies the actual migrations, runs the seed twice, verifies representative queries and tests database rejection of invalid relationships/duplicates. It drops only its own schema afterward. Without TEST_DATABASE_URL the command fails clearly; no SQL tests are silently skipped. The ordinary `npm test` suite stays database-independent.
 
-See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 5 report](docs/phase-5-report.md) records 185 passing offline tests and 73 passing real PostgreSQL integration tests. Earlier phase reports are historical.
+See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 6 report](docs/phase-6-report.md) records 224 passing offline tests and 88 passing real PostgreSQL integration tests. Earlier phase reports are historical.
 
 ## Try the lifecycle
 

@@ -1,3 +1,4 @@
+import type { TyreConfiguration, TyreState, StintState } from "./tyres/model";
 export interface DriverPerformanceProfile {
   readonly pace: number;
   readonly consistency: number;
@@ -23,8 +24,10 @@ export interface RaceEntrant {
   readonly gridPosition: number;
   readonly driver: DriverPerformanceProfile;
   readonly car: CarPerformanceProfile;
+  readonly startingTyre?: TyreState;
 }
 export interface RaceSimulationInput {
+  readonly tyres?: TyreConfiguration;
   readonly seed: number;
   readonly totalLaps: number;
   readonly circuit: RaceCircuitProfile;
@@ -34,6 +37,7 @@ export interface RaceSimulationInput {
   readonly entrants: readonly RaceEntrant[];
 }
 export interface RaceEntrantState {
+  readonly stint?: StintState;
   readonly entrantId: string;
   readonly completedLaps: number;
   readonly elapsedTimeMs: number;

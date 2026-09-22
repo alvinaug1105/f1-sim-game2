@@ -182,7 +182,21 @@
   "race.error.NOT_FOUND": "Race session not found.",
   "race.error.INVALID_ACTION": "This Race action is not available.",
   "race.error.STALE": "Race state changed. Refresh before trying again.",
-  "race.error.INVALID_INPUT": "The roster or temporary circuit profile is outside the supported simulation limits.",
+  "race.error.INVALID_INPUT": "The roster, compound choices or simulation profile is outside supported limits.",
   "race.error.UNSUPPORTED_VERSION": "This saved simulation version is not supported.",
-  "race.error.PERSISTENCE_FAILED": "Race progress could not be saved. Please try again."
+  "race.error.PERSISTENCE_FAILED": "Race progress could not be saved. Please try again.",
+  "tyre.notice": "Tyre development model: one dry stint, no tyre changes. Wear means consumed life: 0% fresh, 100% maximum wear. Long races may reach severe degradation. No pits, traffic/overtaking or weather.",
+  "tyre.legacy": "Legacy version-1 race: original free-air rules remain active, without tyres. No pit stops, traffic or weather.",
+  "tyre.starting": "Starting tyres",
+  "tyre.lockedAfterStart": "Choose before starting. Compounds are frozen for this race; no tyre changes are available.",
+  "tyre.compound": "Tyre compound",
+  "tyre.SOFT": "Soft",
+  "tyre.MEDIUM": "Medium",
+  "tyre.HARD": "Hard",
+  "tyre.age": "Tyre age (laps)",
+  "tyre.wear": "Tyre wear (consumed)",
+  "tyre.temperature": "Tyre temperature",
+  "tyre.condition": "Tyre condition (remaining)",
+  "tyre.fresh": "Fresh",
+  "tyre.title": "Tyre Development Model"
 }

@@ -7,6 +7,7 @@ import type {
   CareerRaceData,
   RaceErrorCode,
 } from "../../game/domain/race-repository";
+import { TYRE_COMPOUNDS } from "../../simulation/race/tyres/model";
 import { raceAction } from "./actions";
 export function RaceView({ data }: { data: CareerRaceData }) {
   const { t, format, locale } = useI18n();
@@ -34,7 +35,9 @@ export function RaceView({ data }: { data: CareerRaceData }) {
           {t("race.back")}
         </Link>
       </div>
-      <p className="development-notice">{t("race.notice")}</p>
+      <p className="development-notice">
+        {t(state?.simulationVersion === 1 ? "tyre.legacy" : "tyre.notice")}
+      </p>
       {state ? (
         <>
           <h2>
@@ -60,6 +63,28 @@ export function RaceView({ data }: { data: CareerRaceData }) {
         <input type="hidden" name="eventId" value={eventId} />
         <input type="hidden" name="lap" value={state?.lap ?? 0} />
         <fieldset disabled={pending}>
+          {canStart && (
+            <div className="tyre-selection">
+              <h2>{t("tyre.starting")}</h2>
+              <p>{t("tyre.lockedAfterStart")}</p>
+              {data.roster.map((row) => (
+                <label key={row.driverId} htmlFor={`tyre-${row.driverId}`}>
+                  {row.driverName}
+                  <select
+                    id={`tyre-${row.driverId}`}
+                    name={`tyre:${row.driverId}`}
+                    defaultValue="MEDIUM"
+                  >
+                    {TYRE_COMPOUNDS.map((compound) => (
+                      <option key={compound} value={compound}>
+                        {t(`tyre.${compound}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+          )}
           {canStart && (
             <button name="intent" value="start">
               {t("race.start")}
@@ -113,6 +138,14 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                     {t(`race.${k}`)}
                   </th>
                 ))}
+                {state.simulationVersion === 2 &&
+                  (["compound", "age", "wear", "temperature"] as const).map(
+                    (key) => (
+                      <th key={key} scope="col">
+                        {t(`tyre.${key}`)}
+                      </th>
+                    ),
+                  )}
               </tr>
             </thead>
             <tbody>
@@ -155,6 +188,27 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                         maximumFractionDigits: 3,
                       })}
                     </td>
+                    {e.stint && (
+                      <>
+                        <td>{t(`tyre.${e.stint.tyre.compound}`)}</td>
+                        <td>{format.number(e.stint.tyre.ageLaps)}</td>
+                        <td>
+                          {format.percentage(e.stint.tyre.wearPermille / 1000, {
+                            maximumFractionDigits: 1,
+                          })}
+                        </td>
+                        <td>
+                          {format.number(
+                            e.stint.tyre.temperatureMilliC / 1000,
+                            {
+                              style: "unit",
+                              unit: "celsius",
+                              maximumFractionDigits: 3,
+                            },
+                          )}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 );
               })}

@@ -409,6 +409,10 @@ model CareerRaceSimulation {
   session                  CareerSession        @relation(fields: [careerId, careerSessionId, sessionType], references: [careerId, id, type], onDelete: Restrict, onUpdate: Restrict)
   entrants                 CareerRaceEntrant[]
 
+  tyreWearMultiplierPermille   Int?
+  tyreEnergyMultiplierPermille Int?
+  tyreProfiles                 CareerRaceTyreProfile[]
+
   @@unique([careerId, id])
   @@unique([careerId, careerSessionId, sessionType])
 }
@@ -437,8 +441,48 @@ model CareerRaceEntrant {
   driver                 CareerDriver         @relation(fields: [careerId, careerDriverId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
   team                   CareerTeam           @relation(fields: [careerId, careerTeamId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
+  startingCompound              TyreCompound?
+  startingTyreAgeLaps           Int?
+  startingTyreWearPermille      Int?
+  startingTyreTemperatureMilliC Int?
+  compound                      TyreCompound?
+  tyreAgeLaps                   Int?
+  tyreWearPermille              Int?
+  tyreTemperatureMilliC         Int?
+  stintNumber                   Int?
+  stintStartedAtLap             Int?
+
   @@unique([careerRaceSimulationId, careerDriverId])
   @@unique([careerRaceSimulationId, gridPosition])
   @@index([careerId, careerDriverId])
   @@index([careerId, careerTeamId])
+}
+
+enum TyreCompound {
+  SOFT
+  MEDIUM
+  HARD
+}
+
+model CareerRaceTyreProfile {
+  careerId                  String               @db.Uuid
+  careerRaceSimulationId    String               @db.Uuid
+  compound                  TyreCompound
+  baseGripDeltaMs           Int
+  idealTemperatureMinMilliC Int
+  idealTemperatureMaxMilliC Int
+  coldPenaltyMsPerC         Int
+  hotPenaltyMsPerC          Int
+  maxTemperaturePenaltyMs   Int
+  targetTemperatureMilliC   Int
+  thermalResponsePermille   Int
+  baseWearPerLapPermille    Int
+  degradationStartWear      Int
+  cliffWear                 Int
+  stablePenaltyMs           Int
+  progressivePenaltyMs      Int
+  cliffPenaltyMs            Int
+  simulation                CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([careerRaceSimulationId, compound])
 }

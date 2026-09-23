@@ -34,7 +34,7 @@ export function requestPitStop(
   compound: TyreCompound | null,
 ): RaceSimulationState {
   if (
-    state.simulationVersion !== 4 ||
+    ![4, 5].includes(state.simulationVersion) ||
     !state.input.pits ||
     state.status !== "RUNNING" ||
     state.lap >= state.input.totalLaps - 1

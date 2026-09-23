@@ -42,3 +42,9 @@ export function developmentRaceInput(
     })),
   };
 }
+
+/** v5 creation-only reserve; total initial fuel is then frozen in RaceSimulationInput. */
+export function developmentCommandFuelKg(baselineKg: number) {
+  const reservePermille = 50, minimumReserveGrams = 2000;
+  return (Math.round(baselineKg * 1000) + Math.max(minimumReserveGrams, Math.round(baselineKg * reservePermille))) / 1000;
+}

@@ -1,4 +1,5 @@
 "use server";
+import { PACE_MODES, FUEL_MODES, ERS_MODES, type PaceMode, type FuelMode, type ErsMode } from "../../simulation/race/commands/model";
 import {
   isTyreCompound,
   type TyreCompound,
@@ -10,7 +11,8 @@ import {
 } from "../../game/domain/race-repository";
 import { getRaceRepository } from "../career/server";
 import {
-  startPitCareerRace,
+  startCommandCareerRace,
+  setDriverPaceMode, setDriverFuelMode, setDriverErsMode,
   advanceCareerRace,
   changeCareerPitRequest,
 } from "./service";
@@ -32,7 +34,14 @@ export async function raceAction(
           if (!isTyreCompound(value)) throw new RaceError("INVALID_INPUT");
           choices[key.slice(5)] = value;
         }
-      await startPitCareerRace(repository, careerId, eventId, choices);
+      await startCommandCareerRace(repository, careerId, eventId, choices);
+    } else if (["paceMode", "fuelMode", "ersMode"].includes(intent)) {
+      const args = [repository, careerId, eventId, text("entrantId"), Number(text("lap")), Number(text("revision"))] as const;
+      const mode = text("mode");
+      if (intent === "paceMode" && PACE_MODES.includes(mode as PaceMode)) await setDriverPaceMode(...args, mode as PaceMode);
+      else if (intent === "fuelMode" && FUEL_MODES.includes(mode as FuelMode)) await setDriverFuelMode(...args, mode as FuelMode);
+      else if (intent === "ersMode" && ERS_MODES.includes(mode as ErsMode)) await setDriverErsMode(...args, mode as ErsMode);
+      else throw new RaceError("INVALID_INPUT");
     } else if (intent === "pitRequest" || intent === "pitCancel") {
       const compound = intent === "pitCancel" ? null : text("compound");
       if (compound !== null && !isTyreCompound(compound))

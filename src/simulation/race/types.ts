@@ -1,3 +1,4 @@
+import type { CommandConfiguration, CommandState } from "./commands/model";
 import type {
   PitConfiguration,
   PitState,
@@ -39,6 +40,7 @@ export interface RaceEntrant {
   readonly startingTyre?: TyreState;
 }
 export interface RaceSimulationInput {
+  readonly commands?: CommandConfiguration;
   readonly pits?: PitConfiguration;
   readonly interaction?: InteractionConfiguration;
   readonly tyres?: TyreConfiguration;
@@ -51,6 +53,7 @@ export interface RaceSimulationInput {
   readonly entrants: readonly RaceEntrant[];
 }
 export interface RaceEntrantState {
+  readonly commands?: CommandState;
   readonly pit?: PitState;
   readonly track?: TrackState;
   readonly stint?: StintState;

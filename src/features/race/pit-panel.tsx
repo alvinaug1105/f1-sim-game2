@@ -1,4 +1,5 @@
 "use client";
+import { CommandPanel } from "./command-panel";
 import { useActionState } from "react";
 import { useI18n } from "../../i18n/provider";
 import { TYRE_COMPOUNDS } from "../../simulation/race/tyres/model";
@@ -109,6 +110,7 @@ export function PitPanel({
           )}
         </form>
       )}
+      {e.commands && <CommandPanel data={data} entrant={e} />}
       <details>
         <summary>{t("pit.history")}</summary>
         <h4>{t("pit.stints")}</h4>

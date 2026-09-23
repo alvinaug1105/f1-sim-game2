@@ -44,7 +44,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
               ? "tyre.notice"
               : state?.simulationVersion === 3
                 ? "traffic.notice"
-                : "pit.notice",
+                : state?.simulationVersion === 4 ? "pit.notice" : "command.notice",
         )}
       </p>
       {state ? (
@@ -161,7 +161,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                       {t(`traffic.${key}`)}
                     </th>
                   ))}
-                {state.simulationVersion === 4 && (
+                {state.simulationVersion >= 4 && (
                   <>
                     <th scope="col">{t("pit.stops")}</th>
                     <th scope="col">{t("pit.stint")}</th>
@@ -259,7 +259,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
           </table>
         </div>
       )}
-      {state?.simulationVersion === 4 && (
+      {state && state.simulationVersion >= 4 && (
         <section>
           <h2>{t("pit.strategy")}</h2>
           <p>{t("pit.semantics")}</p>

@@ -332,3 +332,8 @@ The separate temporary AI policy estimates tyre-only continuation versus fresh c
 The application pit-window helper only estimates laps to the current tyre cliff. It is not authoritative state or an optimizer. English/Traditional Chinese panels provide manual requests/change/cancel, estimates and histories, with Intl units and no locale input to simulation. No final UI redesign, compulsory compound regulation, ERS, weather, incidents or double-stack queue simulation is included.
 
 See [Phase-8 report](phase-8-report.md) for exact tuning, rejoin limitations, measured strategy scenarios, test counts and actual browser evidence.
+
+
+## Phase 9 — current command architecture
+
+New starts use simulation v5; v1–v4 keep their prior optional profiles and behaviours. `simulation/race/commands/model.ts` defines integer resource mechanics and versioned tuning, while `policy.ts` selects AI modes without RNG or private bonuses. Player team membership is enforced in intent-based application services; all three command types share an optimistic revision inside the existing Career transaction lock. Snapshot configuration resides in an owned command-profile row; commands and ERS reside on the existing owned entrant. No presentation locale enters simulation. See [Phase 9 report](phase-9-report.md) for exact processing order, exhaustion behaviour, defaults, SQL verification, balance measurements and limitations. Earlier architecture sections describe historical phases.

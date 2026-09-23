@@ -1,3 +1,4 @@
+import { validateCommandConfiguration, validateCommandState, type CommandConfiguration, type CommandState } from "../../simulation/race/commands/model";
 import type {
   PitConfiguration,
   PitState,
@@ -63,6 +64,7 @@ async function read(
       tyreProfiles: true,
       interactionProfile: true,
       pitProfile: true,
+      commandProfile: true,
     },
   });
   const circuit = await tx.careerCircuit.findUniqueOrThrow({
@@ -87,7 +89,7 @@ async function read(
   if (
     row?.simulationVersion === 2 ||
     row?.simulationVersion === 3 ||
-    row?.simulationVersion === 4
+    (row?.simulationVersion === 4 || row?.simulationVersion === 5)
   ) {
     tyres = {
       tyreWearMultiplierPermille: row.tyreWearMultiplierPermille!,
@@ -106,7 +108,7 @@ async function read(
     validateTyreConfiguration(tyres);
   }
   let interaction: InteractionConfiguration | undefined;
-  if (row?.simulationVersion === 3 || row?.simulationVersion === 4) {
+  if (row?.simulationVersion === 3 || (row?.simulationVersion === 4 || row?.simulationVersion === 5)) {
     if (!row.interactionProfile) throw new RaceError("INVALID_INPUT");
     interaction = Object.fromEntries(
       Object.entries(row.interactionProfile).filter(
@@ -116,7 +118,7 @@ async function read(
     validateInteraction(interaction);
   }
   let pits: PitConfiguration | undefined;
-  if (row?.simulationVersion === 4) {
+  if ((row?.simulationVersion === 4 || row?.simulationVersion === 5)) {
     if (!row.pitProfile) throw new RaceError("INVALID_INPUT");
     pits = Object.fromEntries(
       Object.entries(row.pitProfile).filter(
@@ -125,6 +127,9 @@ async function read(
     ) as unknown as PitConfiguration;
     validatePitConfiguration(pits);
   }
+  const commands = row?.simulationVersion === 5 ? row.commandProfile?.profile as unknown as CommandConfiguration : undefined;
+  if (commands) validateCommandConfiguration(commands);
+  if (row?.simulationVersion === 5 && !commands) throw new RaceError("INVALID_INPUT");
   const state: RaceSimulationState | null = row
     ? {
         simulationVersion: row.simulationVersion,
@@ -132,6 +137,7 @@ async function read(
         lap: row.currentLap,
         status: row.status,
         input: {
+          ...(commands ? { commands } : {}),
           ...(tyres ? { tyres } : {}),
           ...(pits ? { pits } : {}),
           ...(interaction ? { interaction } : {}),
@@ -181,6 +187,7 @@ async function read(
         entrants: [...row.entrants]
           .sort((a, b) => a.position - b.position)
           .map((e) => ({
+            ...(commands ? { commands: readCommands(e, commands) } : {}),
             ...(pits ? { pit: readPit(e) } : {}),
             ...(interaction ? { track: readTrack(e) } : {}),
             ...(tyres
@@ -269,6 +276,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                 careerSessionId: before.sessionId,
                 sessionType: "RACE",
                 simulationVersion: s.simulationVersion,
+
                 seed: BigInt(s.input.seed),
                 rngState: BigInt(s.rngState),
                 currentLap: s.lap,
@@ -287,6 +295,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                   s.input.tyres?.tyreEnergyMultiplierPermille,
               },
             });
+            if (s.input.commands) await tx.careerRaceCommandProfile.create({ data: { careerId, careerRaceSimulationId: row.id, profile: JSON.parse(JSON.stringify(s.input.commands)) } });
             if (s.input.pits)
               await tx.careerRacePitProfile.create({
                 data: {
@@ -378,6 +387,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
 }
 function entrantState(e: RaceSimulationState["entrants"][number]) {
   return {
+    ...(e.commands ? { ...e.commands } : {}),
     ...(e.pit
       ? {
           pendingPitCompound: e.pit.pendingCompound,
@@ -566,4 +576,10 @@ async function persistPitHistory(
       update: data,
     });
   }
+}
+
+function readCommands(e: { paceMode: string | null; fuelMode: string | null; ersMode: string | null; ersCharge: number | null; commandRevision: number | null }, c: CommandConfiguration): CommandState {
+  const state = { paceMode: e.paceMode, fuelMode: e.fuelMode, ersMode: e.ersMode, ersCharge: e.ersCharge, commandRevision: e.commandRevision } as CommandState;
+  validateCommandState(state, c);
+  return state;
 }

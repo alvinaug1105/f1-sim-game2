@@ -1,3 +1,5 @@
+import { initialCommands, validateCommandConfiguration, commandLapEffects } from "./commands/model";
+import { chooseAiCommands } from "./commands/policy";
 import {
   initialPitState,
   committedStops,
@@ -32,9 +34,9 @@ import type {
   DriverPerformanceProfile,
   CarPerformanceProfile,
 } from "./types";
-export const SIMULATION_VERSION = 4;
+export const SIMULATION_VERSION = 5;
 export function isSupportedSimulationVersion(version: number) {
-  return version === 1 || version === 2 || version === 3 || version === 4;
+  return version === 1 || version === 2 || version === 3 || version === 4 || version === 5;
 }
 /** Versioned Phase 5 free-air tuning. Penalties are relative to a 100-rated baseline. */
 export const DEFAULT_RACE_PARAMETERS: RaceParameters = Object.freeze({
@@ -72,6 +74,10 @@ function validateProfiles(
   bounded(parameters.gridOffsetMs, 0, 10000, true);
 }
 export function validateRaceInput(input: RaceSimulationInput) {
+  if (input.commands) {
+    validateCommandConfiguration(input.commands);
+    if (!input.pits) throw new RangeError("Commands require pit model");
+  }
   if (input.pits) {
     validatePitConfiguration(input.pits);
     validatePitControllers(input);
@@ -226,7 +232,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   validateRaceInput(input);
   const snapshot = structuredClone(input);
   return {
-    simulationVersion: input.pits
+    simulationVersion: input.commands ? 5 : input.pits
       ? 4
       : input.interaction
         ? 3
@@ -256,6 +262,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
           : {}),
         ...(snapshot.interaction ? { track: initialTrackState() } : {}),
         ...(snapshot.pits ? { pit: initialPitState(e.startingTyre!) } : {}),
+        ...(snapshot.commands ? { commands: initialCommands(snapshot.commands) } : {}),
         entrantId: e.entrantId,
         completedLaps: 0,
         elapsedTimeMs: (e.gridPosition - 1) * input.parameters.gridOffsetMs,
@@ -274,7 +281,7 @@ export function advanceRaceLap(
 ): RaceSimulationState {
   if (state.simulationVersion >= 3 !== Boolean(state.input.interaction))
     throw new RangeError("Interaction version mismatch");
-  if ((state.simulationVersion === 4) !== Boolean(state.input.pits))
+  if ((state.simulationVersion >= 4) !== Boolean(state.input.pits))
     throw new RangeError("Pit version mismatch");
   if (!isSupportedSimulationVersion(state.simulationVersion))
     throw new RangeError("Unsupported simulation version");
@@ -284,6 +291,9 @@ export function advanceRaceLap(
     throw new RangeError("Version 1 cannot acquire tyres");
   if (state.status !== "RUNNING" || state.lap >= state.input.totalLaps)
     throw new RangeError("Race has already finished");
+  if ((state.simulationVersion === 5) !== Boolean(state.input.commands)) throw new RangeError("Command version mismatch");
+  if (state.simulationVersion === 5) state = chooseAiCommands(state);
+  const stops = state.simulationVersion >= 4 ? committedStops(state) : new Map();
   bounded(state.lap, 0, state.input.totalLaps - 1, true);
   const random = createSeededRandom(state.rngState),
     lap = state.lap + 1;
@@ -297,6 +307,8 @@ export function advanceRaceLap(
         throw new RangeError("Inconsistent entrant lap state");
       if (state.simulationVersion >= 2 && !old.stint)
         throw new RangeError("Missing persisted stint state");
+      const effects = state.input.commands ? commandLapEffects(old, state.input.fuelBurnPerLapKg, state.input.commands, stops.has(e.entrantId)) : null;
+      const pace = state.input.commands?.pace[old.commands!.paceMode];
       const result = calculateLapTime(
         {
           ...e,
@@ -317,13 +329,15 @@ export function advanceRaceLap(
         },
         random,
       );
+      if (effects) result.lapTimeMs = Math.max(1, result.lapTimeMs + effects.deltaMs);
       return {
         ...old,
+        ...(effects ? { commands: effects.commands } : {}),
         ...(state.simulationVersion >= 2
           ? {
               stint: {
                 ...old.stint!,
-                tyre: advanceTyre(old.stint!.tyre, state.input.tyres!),
+                tyre: advanceTyre(old.stint!.tyre, pace ? { ...state.input.tyres!, tyreWearMultiplierPermille: Math.round(state.input.tyres!.tyreWearMultiplierPermille * pace.tyreWearMultiplierPermille / 1000), tyreEnergyMultiplierPermille: Math.round(state.input.tyres!.tyreEnergyMultiplierPermille * pace.tyreEnergyMultiplierPermille / 1000) } : state.input.tyres!),
               },
             }
           : {}),
@@ -334,7 +348,7 @@ export function advanceRaceLap(
           old.bestLapTimeMs ?? result.lapTimeMs,
           result.lapTimeMs,
         ),
-        fuelMassKg:
+        fuelMassKg: effects ? effects.fuelMassKg :
           Math.max(
             0,
             Math.round(state.input.initialFuelKg * 1000) -
@@ -343,8 +357,8 @@ export function advanceRaceLap(
       };
     });
   let classified: readonly RaceEntrantState[];
-  if (state.simulationVersion === 4) {
-    const committed = committedStops(state);
+  if (state.simulationVersion >= 4) {
+    const committed = stops;
     const previousOnTrack = [...state.entrants]
       .sort((a, b) => a.position - b.position)
       .filter((e) => !committed.has(e.entrantId))

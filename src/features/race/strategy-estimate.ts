@@ -14,7 +14,7 @@ export function estimatePitWindow(
   const wearPerLap = Math.max(
     1,
     Math.round(
-      (p.baseWearPerLapPermille * c.tyreWearMultiplierPermille) / 1000,
+      (p.baseWearPerLapPermille * Math.round(c.tyreWearMultiplierPermille * (state.input.commands && e.commands ? state.input.commands.pace[e.commands.paceMode].tyreWearMultiplierPermille : 1000) / 1000)) / 1000,
     ),
   );
   return {

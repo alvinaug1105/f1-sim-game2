@@ -414,13 +414,19 @@ model CareerRaceSimulation {
   tyreProfiles                 CareerRaceTyreProfile[]
   interactionProfile           CareerRaceInteractionProfile?
 
-  pitProfile CareerRacePitProfile?
+  commandProfile CareerRaceCommandProfile?
+  pitProfile     CareerRacePitProfile?
 
   @@unique([careerId, id])
   @@unique([careerId, careerSessionId, sessionType])
 }
 
 model CareerRaceEntrant {
+  paceMode               String?
+  fuelMode               String?
+  ersMode                String?
+  ersCharge              Int?
+  commandRevision        Int?
   id                     String               @id @db.Uuid
   careerId               String               @db.Uuid
   careerRaceSimulationId String               @db.Uuid
@@ -585,4 +591,13 @@ model CareerRacePitStop {
 
   @@id([entrantId, number])
   @@unique([entrantId, lap])
+}
+
+model CareerRaceCommandProfile {
+  careerRaceSimulationId String               @id @db.Uuid
+  careerId               String               @db.Uuid
+  profile                Json
+  simulation             CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerId, careerRaceSimulationId])
 }

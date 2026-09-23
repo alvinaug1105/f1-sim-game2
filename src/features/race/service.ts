@@ -1,3 +1,6 @@
+import { defaultPitConfiguration } from "../../simulation/race/pits/profiles";
+import { requestPitStop } from "../../simulation/race/pits/model";
+import type { StrategyController } from "../../simulation/race/pits/types";
 import {
   defaultInteractionConfiguration,
   developmentDriverInteraction,
@@ -28,6 +31,7 @@ export function startCareerRace(
   seed: number = crypto.getRandomValues(new Uint32Array(1))[0],
   tyreChoices?: Readonly<Record<string, TyreCompound>>,
   withTraffic = false,
+  withPits = false,
 ) {
   return repository.changeRace(careerId, eventId, (data) => {
     if (data.state) throw new RaceError("STALE");
@@ -74,9 +78,18 @@ export function startCareerRace(
           withTraffic
             ? {
                 ...input,
+                ...(withPits ? { pits: defaultPitConfiguration() } : {}),
                 interaction: defaultInteractionConfiguration(),
                 entrants: input.entrants.map((e) => ({
                   ...e,
+                  ...(withPits
+                    ? {
+                        strategyController: (e.teamId ===
+                        data.progress.career.playerTeamId
+                          ? "PLAYER"
+                          : "DEVELOPMENT_AI") as StrategyController,
+                      }
+                    : {}),
                   interaction: developmentDriverInteraction(),
                 })),
               }
@@ -131,7 +144,7 @@ export function advanceCareerRace(
   });
 }
 
-/** Version-2 compatibility entry point for tyre-only races. New browser races use v3 below. */
+/** Version-2 compatibility entry point for tyre-only races. New browser races use v4 below. */
 export function startTyreCareerRace(
   repository: CareerRaceRepository,
   careerId: string,
@@ -142,7 +155,7 @@ export function startTyreCareerRace(
   return startCareerRace(repository, careerId, eventId, seed, choices);
 }
 
-/** All new browser races use version 3; older entry points preserve v1/v2 compatibility. */
+/** Version-3 compatibility entry point; no pit state is added to these races. */
 export function startTrafficCareerRace(
   repository: CareerRaceRepository,
   careerId: string,
@@ -151,4 +164,77 @@ export function startTrafficCareerRace(
   seed?: number,
 ) {
   return startCareerRace(repository, careerId, eventId, seed, choices, true);
+}
+
+/** New browser starts snapshot v4 pit mechanics and temporary non-player strategy policy. */
+export function startPitCareerRace(
+  repository: CareerRaceRepository,
+  careerId: string,
+  eventId: string,
+  choices: Readonly<Record<string, TyreCompound>> = {},
+  seed?: number,
+) {
+  return startCareerRace(
+    repository,
+    careerId,
+    eventId,
+    seed,
+    choices,
+    true,
+    true,
+  );
+}
+export function changeCareerPitRequest(
+  repository: CareerRaceRepository,
+  careerId: string,
+  eventId: string,
+  entrantId: string,
+  expectedLap: number,
+  expectedRevision: number,
+  compound: TyreCompound | null,
+) {
+  if (
+    !Number.isSafeInteger(expectedLap) ||
+    !Number.isSafeInteger(expectedRevision) ||
+    expectedLap < 0 ||
+    expectedRevision < 0 ||
+    (compound !== null && !isTyreCompound(compound))
+  )
+    throw new RaceError("INVALID_INPUT");
+  return repository.changeRace(careerId, eventId, (data) => {
+    const state = data.state;
+    if (
+      !state ||
+      state.simulationVersion !== 4 ||
+      state.status !== "RUNNING" ||
+      data.progress.career.status !== "ACTIVE"
+    )
+      throw new RaceError("INVALID_ACTION");
+    const event = data.progress.events.find((e) => e.id === eventId)!;
+    const session = event.weekend!.sessions.find(
+      (s) => s.id === data.sessionId,
+    )!;
+    if (event.status !== "CURRENT" || session.status !== "IN_PROGRESS")
+      throw new RaceError("INVALID_ACTION");
+    const entrant = state.entrants.find((e) => e.entrantId === entrantId);
+    const source = state.input.entrants.find((e) => e.entrantId === entrantId);
+    if (
+      !entrant?.pit ||
+      source?.strategyController !== "PLAYER" ||
+      source.teamId !== data.progress.career.playerTeamId
+    )
+      throw new RaceError("INVALID_ACTION");
+    if (
+      state.lap !== expectedLap ||
+      entrant.pit.commandRevision !== expectedRevision
+    )
+      throw new RaceError("STALE");
+    if (state.lap >= state.input.totalLaps - 1)
+      throw new RaceError("INVALID_ACTION");
+    return {
+      state: requestPitStop(state, entrantId, compound),
+      labels: data.labels,
+      progress: data.progress,
+    };
+  });
 }

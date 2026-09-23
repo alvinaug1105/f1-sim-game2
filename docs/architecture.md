@@ -302,3 +302,33 @@ The sixth migration adds an owned relational configuration snapshot, driver rati
 English/Traditional Chinese development columns show last-lap DRS, overtake count and blocked milliseconds. The indicator reports detection during the completed lap, so a car that passed into the lead can still show that lap's DRS. Locale never enters configuration or state transitions.
 
 No pits, strategy commands, ERS, weather, incidents or blue flags are implemented. See [Phase-7 report](phase-7-report.md) for probability details, numeric measurements, exact test counts and browser evidence.
+
+## Phase 8 — pit strategy (current)
+
+New browser races use `startPitCareerRace` and version 4. Historical sections above describe earlier versions; v1/v2/v3 input and state continue under their original rules. A v3 result fixture captured before this change joins the older regression fixtures.
+
+### Lifecycle and pit-lap semantics
+
+A pending request at checkpoint 15 commits with the next advance, executes after lap 16, and starts the new tyre stint on lap 17. The request can be changed or cancelled before commitment. Service/rejoin completes within the same atomic step; there is no partially saved PITTING status. Commands are rejected if already finished or if the next crossing is the final lap.
+
+`simulation/race/pits` owns immutable request and service mechanics. Configuration snapshots transit loss, stationary base/variation, new-tyre temperature and simulation-critical AI settings. Each completed stop closes the old stint after normal tyre/fuel advancement, adds loss, resets age/wear, fits the chosen compound and opens a new stint. Fuel is not refilled.
+
+### Order and determinism
+
+Committed cars take a separate modeled pit route and are excluded from normal dirty-air/DRS/attack resolution on that lap. Non-pitting cars retain the existing explicit order resolver. Pit crossing times are merged back into that constrained order, with stable original-grid tie-breaking and the minimum following gap. Only pit-route entries can move through this merge; pit-cycle changes do not increment on-track overtakes. Following-lap interactions use the rejoin gaps.
+
+Potential-lap RNG draws still occur in grid order first, then on-track attempt draws, then one service draw per stop in original grid order (including zero-variation stops). Commands and policy/estimate calculations use no randomness. Reload preserves actual current state, frozen tuning, pending request, revisions and global RNG.
+
+### Histories and transactions
+
+The seventh additive migration introduces `CareerRacePitProfile`, `CareerRaceStint` and `CareerRacePitStop`, with composite owned references and numeric constraints. Stint boundaries store actual starting/ending tyre state; active stints end with NULL until service or race completion. A partial unique index permits one open stint per entrant. Stop number/lap uniqueness prevents duplicates. Preserve this partial index and the existing deferred position uniqueness in future migrations.
+
+Pending compound, controller, stop count and command revision live on the entrant. Legacy rows retain NULL fields. The adapter writes current state and all structured history in the same locked Career transaction as lifecycle changes. Expected lap plus expected command revision prevents conflicting Box/change/cancel commits. Application commands are restricted to the player's owned team. No formatted history strings or large telemetry blob is stored.
+
+### Strategy and presentation
+
+The separate temporary AI policy estimates tyre-only continuation versus fresh compounds once snapshotted wear/minimum-stint conditions are met, and requests a stop only when estimated saving exceeds normal nominal pit cost. It uses the same mechanics as player cars and predicts neither weather nor traffic. Undercut/overcut outcomes emerge from tyre pace, warm-up, pit cost and rejoin traffic; no strategy bonuses exist.
+
+The application pit-window helper only estimates laps to the current tyre cliff. It is not authoritative state or an optimizer. English/Traditional Chinese panels provide manual requests/change/cancel, estimates and histories, with Intl units and no locale input to simulation. No final UI redesign, compulsory compound regulation, ERS, weather, incidents or double-stack queue simulation is included.
+
+See [Phase-8 report](phase-8-report.md) for exact tuning, rejoin limitations, measured strategy scenarios, test counts and actual browser evidence.

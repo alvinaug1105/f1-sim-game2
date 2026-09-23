@@ -1,0 +1,230 @@
+{
+  "state": {
+    "simulationVersion": 3,
+    "input": {
+      "seed": 42,
+      "totalLaps": 30,
+      "initialFuelKg": 50,
+      "fuelBurnPerLapKg": 1.6,
+      "circuit": {
+        "baseLapTimeMs": 90000,
+        "fuelEffectMsPerKg": 30
+      },
+      "parameters": {
+        "carPerformanceRangeMs": 3000,
+        "driverPerformanceRangeMs": 1500,
+        "minVariationMs": 0,
+        "maxVariationMs": 0,
+        "gridOffsetMs": 2000
+      },
+      "entrants": [
+        {
+          "entrantId": "e0",
+          "driverId": "d0",
+          "teamId": "team",
+          "gridPosition": 1,
+          "driver": {
+            "pace": 90,
+            "consistency": 90
+          },
+          "car": {
+            "performance": 60
+          },
+          "startingTyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 0,
+            "wearPermille": 0,
+            "temperatureMilliC": 80000
+          },
+          "interaction": {
+            "overtaking": 65,
+            "defending": 65
+          }
+        },
+        {
+          "entrantId": "e1",
+          "driverId": "d1",
+          "teamId": "team",
+          "gridPosition": 2,
+          "driver": {
+            "pace": 90,
+            "consistency": 90
+          },
+          "car": {
+            "performance": 90
+          },
+          "startingTyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 0,
+            "wearPermille": 0,
+            "temperatureMilliC": 80000
+          },
+          "interaction": {
+            "overtaking": 65,
+            "defending": 65
+          }
+        }
+      ],
+      "tyres": {
+        "profiles": {
+          "SOFT": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "SOFT",
+            "baseGripDeltaMs": -350,
+            "idealTemperatureMinMilliC": 90000,
+            "idealTemperatureMaxMilliC": 105000,
+            "targetTemperatureMilliC": 98000,
+            "baseWearPerLapPermille": 32,
+            "degradationStartWear": 400,
+            "cliffWear": 800,
+            "progressivePenaltyMs": 1600
+          },
+          "MEDIUM": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "MEDIUM",
+            "baseGripDeltaMs": 0,
+            "idealTemperatureMinMilliC": 85000,
+            "idealTemperatureMaxMilliC": 105000,
+            "targetTemperatureMilliC": 97000,
+            "baseWearPerLapPermille": 22,
+            "degradationStartWear": 450,
+            "cliffWear": 850,
+            "progressivePenaltyMs": 1200
+          },
+          "HARD": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "HARD",
+            "baseGripDeltaMs": 300,
+            "idealTemperatureMinMilliC": 85000,
+            "idealTemperatureMaxMilliC": 110000,
+            "targetTemperatureMilliC": 100000,
+            "baseWearPerLapPermille": 15,
+            "degradationStartWear": 500,
+            "cliffWear": 900,
+            "progressivePenaltyMs": 900
+          }
+        },
+        "tyreWearMultiplierPermille": 1000,
+        "tyreEnergyMultiplierPermille": 1000
+      },
+      "interaction": {
+        "overtakingDifficulty": 35,
+        "dirtyAirSensitivityPermille": 1000,
+        "drsEffectivenessPermille": 1000,
+        "drsZoneCount": 2,
+        "dirtyAirThresholdMs": 1500,
+        "maxDirtyAirMs": 300,
+        "attackThresholdMs": 300,
+        "minimumGapMs": 80,
+        "minimumPaceAdvantageMs": 100,
+        "opportunityIntervalLaps": 2,
+        "drsActivationLap": 3,
+        "drsThresholdMs": 1000,
+        "drsMsPerZone": 80,
+        "maxDrsBenefitMs": 300
+      }
+    },
+    "rngState": 1011106259,
+    "lap": 30,
+    "status": "FINISHED",
+    "entrants": [
+      {
+        "stint": {
+          "number": 1,
+          "startedAtLap": 0,
+          "tyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 30,
+            "wearPermille": 660,
+            "temperatureMilliC": 96997
+          }
+        },
+        "track": {
+          "progressMicrolaps": 30000000,
+          "drsEligible": false,
+          "overtakesCompleted": 1,
+          "potentialLapTimeMs": 90901,
+          "dirtyAirMs": 0,
+          "drsBenefitMs": 0,
+          "trafficLossMs": 0,
+          "attempted": false,
+          "passed": false
+        },
+        "entrantId": "e1",
+        "completedLaps": 30,
+        "elapsedTimeMs": 2745185,
+        "lastLapTimeMs": 90901,
+        "bestLapTimeMs": 90895,
+        "fuelMassKg": 2,
+        "position": 1,
+        "gapToLeaderMs": 0,
+        "intervalToAheadMs": 0
+      },
+      {
+        "stint": {
+          "number": 1,
+          "startedAtLap": 0,
+          "tyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 30,
+            "wearPermille": 660,
+            "temperatureMilliC": 96997
+          }
+        },
+        "track": {
+          "progressMicrolaps": 29752256,
+          "drsEligible": false,
+          "overtakesCompleted": 0,
+          "potentialLapTimeMs": 91801,
+          "dirtyAirMs": 0,
+          "drsBenefitMs": 0,
+          "trafficLossMs": 0,
+          "attempted": false,
+          "passed": false
+        },
+        "entrantId": "e0",
+        "completedLaps": 30,
+        "elapsedTimeMs": 2767482,
+        "lastLapTimeMs": 91801,
+        "bestLapTimeMs": 91795,
+        "fuelMassKg": 2,
+        "position": 2,
+        "gapToLeaderMs": 22297,
+        "intervalToAheadMs": 22297
+      }
+    ]
+  },
+  "result": [
+    {
+      "position": 1,
+      "entrantId": "e1",
+      "driverId": "d1",
+      "teamId": "team",
+      "totalTimeMs": 2745185,
+      "bestLapTimeMs": 90895
+    },
+    {
+      "position": 2,
+      "entrantId": "e0",
+      "driverId": "d0",
+      "teamId": "team",
+      "totalTimeMs": 2767482,
+      "bestLapTimeMs": 91795
+    }
+  ]
+}

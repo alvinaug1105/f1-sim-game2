@@ -414,6 +414,8 @@ model CareerRaceSimulation {
   tyreProfiles                 CareerRaceTyreProfile[]
   interactionProfile           CareerRaceInteractionProfile?
 
+  pitProfile CareerRacePitProfile?
+
   @@unique([careerId, id])
   @@unique([careerId, careerSessionId, sessionType])
 }
@@ -464,8 +466,15 @@ model CareerRaceEntrant {
   passed                 Boolean?
   driverOvertaking       Int?
   driverDefending        Int?
+  strategyController     RaceStrategyController?
+  pendingPitCompound     TyreCompound?
+  pitCommandRevision     Int?
+  stopCount              Int?
+  stintHistory           CareerRaceStint[]
+  pitStops               CareerRacePitStop[]
 
   @@unique([careerRaceSimulationId, position])
+  @@unique([careerId, careerRaceSimulationId, id])
   @@unique([careerRaceSimulationId, careerDriverId])
   @@unique([careerRaceSimulationId, gridPosition])
   @@index([careerId, careerDriverId])
@@ -521,4 +530,59 @@ model CareerRaceInteractionProfile {
   simulation                  CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([careerId, careerRaceSimulationId])
+}
+
+enum RaceStrategyController {
+  PLAYER
+  DEVELOPMENT_AI
+}
+
+model CareerRacePitProfile {
+  careerRaceSimulationId   String               @id @db.Uuid
+  careerId                 String               @db.Uuid
+  pitLaneLossMs            Int
+  stationaryBaseMs         Int
+  stationaryVariationMs    Int
+  newTyreTemperatureMilliC Int
+  aiWearThresholdPermille  Int
+  aiMinimumStintLaps       Int
+  simulation               CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerId, careerRaceSimulationId])
+}
+
+model CareerRaceStint {
+  careerId                  String            @db.Uuid
+  careerRaceSimulationId    String            @db.Uuid
+  entrantId                 String            @db.Uuid
+  number                    Int
+  startLap                  Int
+  endLap                    Int?
+  compound                  TyreCompound
+  startingAgeLaps           Int
+  startingWearPermille      Int
+  startingTemperatureMilliC Int
+  endingAgeLaps             Int?
+  endingWearPermille        Int?
+  endingTemperatureMilliC   Int?
+  entrant                   CareerRaceEntrant @relation(fields: [careerId, careerRaceSimulationId, entrantId], references: [careerId, careerRaceSimulationId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([entrantId, number])
+}
+
+model CareerRacePitStop {
+  careerId               String            @db.Uuid
+  careerRaceSimulationId String            @db.Uuid
+  entrantId              String            @db.Uuid
+  number                 Int
+  lap                    Int
+  oldCompound            TyreCompound
+  newCompound            TyreCompound
+  pitLaneLossMs          Int
+  stationaryTimeMs       Int
+  totalLossMs            Int
+  entrant                CareerRaceEntrant @relation(fields: [careerId, careerRaceSimulationId, entrantId], references: [careerId, careerRaceSimulationId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([entrantId, number])
+  @@unique([entrantId, lap])
 }

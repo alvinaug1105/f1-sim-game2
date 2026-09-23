@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { PitPanel } from "./pit-panel";
 import { useActionState } from "react";
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
 import { formatRaceTime, formatRaceGap } from "../../i18n/race-time";
@@ -41,7 +42,9 @@ export function RaceView({ data }: { data: CareerRaceData }) {
             ? "tyre.legacy"
             : state?.simulationVersion === 2
               ? "tyre.notice"
-              : "traffic.notice",
+              : state?.simulationVersion === 3
+                ? "traffic.notice"
+                : "pit.notice",
         )}
       </p>
       {state ? (
@@ -72,7 +75,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
           {canStart && (
             <div className="tyre-selection">
               <h2>{t("tyre.starting")}</h2>
-              <p>{t("tyre.lockedAfterStart")}</p>
+              <p>{t("pit.startingNotice")}</p>
               {data.roster.map((row) => (
                 <label key={row.driverId} htmlFor={`tyre-${row.driverId}`}>
                   {row.driverName}
@@ -152,12 +155,18 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                       </th>
                     ),
                   )}
-                {state.simulationVersion === 3 &&
+                {state.simulationVersion >= 3 &&
                   (["drs", "overtakes", "trafficLoss"] as const).map((key) => (
                     <th key={key} scope="col">
                       {t(`traffic.${key}`)}
                     </th>
                   ))}
+                {state.simulationVersion === 4 && (
+                  <>
+                    <th scope="col">{t("pit.stops")}</th>
+                    <th scope="col">{t("pit.stint")}</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -237,12 +246,27 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                         </td>
                       </>
                     )}
+                    {e.pit && (
+                      <>
+                        <td>{format.number(e.pit.stops.length)}</td>
+                        <td>{format.number(e.stint!.number)}</td>
+                      </>
+                    )}
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
+      )}
+      {state?.simulationVersion === 4 && (
+        <section>
+          <h2>{t("pit.strategy")}</h2>
+          <p>{t("pit.semantics")}</p>
+          {state.entrants.map((e) => (
+            <PitPanel key={e.entrantId} data={data} entrant={e} />
+          ))}
+        </section>
       )}
       <Link className="text-link" href={`/career/${progress.career.id}`}>
         {t("progression.back")}

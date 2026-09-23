@@ -1,3 +1,8 @@
+import type {
+  PitConfiguration,
+  PitState,
+} from "../../simulation/race/pits/types";
+import { validatePitConfiguration } from "../../simulation/race/pits/profiles";
 import {
   validateInteraction,
   validateDriverInteraction,
@@ -48,9 +53,16 @@ async function read(
   const row = await tx.careerRaceSimulation.findUnique({
     where: { careerSessionId: session.id },
     include: {
-      entrants: { orderBy: { gridPosition: "asc" } },
+      entrants: {
+        orderBy: { gridPosition: "asc" },
+        include: {
+          stintHistory: { orderBy: { number: "asc" } },
+          pitStops: { orderBy: { number: "asc" } },
+        },
+      },
       tyreProfiles: true,
       interactionProfile: true,
+      pitProfile: true,
     },
   });
   const circuit = await tx.careerCircuit.findUniqueOrThrow({
@@ -72,7 +84,11 @@ async function read(
         ],
       });
   let tyres: TyreConfiguration | undefined;
-  if (row?.simulationVersion === 2 || row?.simulationVersion === 3) {
+  if (
+    row?.simulationVersion === 2 ||
+    row?.simulationVersion === 3 ||
+    row?.simulationVersion === 4
+  ) {
     tyres = {
       tyreWearMultiplierPermille: row.tyreWearMultiplierPermille!,
       tyreEnergyMultiplierPermille: row.tyreEnergyMultiplierPermille!,
@@ -90,7 +106,7 @@ async function read(
     validateTyreConfiguration(tyres);
   }
   let interaction: InteractionConfiguration | undefined;
-  if (row?.simulationVersion === 3) {
+  if (row?.simulationVersion === 3 || row?.simulationVersion === 4) {
     if (!row.interactionProfile) throw new RaceError("INVALID_INPUT");
     interaction = Object.fromEntries(
       Object.entries(row.interactionProfile).filter(
@@ -98,6 +114,16 @@ async function read(
       ),
     ) as unknown as InteractionConfiguration;
     validateInteraction(interaction);
+  }
+  let pits: PitConfiguration | undefined;
+  if (row?.simulationVersion === 4) {
+    if (!row.pitProfile) throw new RaceError("INVALID_INPUT");
+    pits = Object.fromEntries(
+      Object.entries(row.pitProfile).filter(
+        ([key]) => key !== "careerId" && key !== "careerRaceSimulationId",
+      ),
+    ) as unknown as PitConfiguration;
+    validatePitConfiguration(pits);
   }
   const state: RaceSimulationState | null = row
     ? {
@@ -107,6 +133,7 @@ async function read(
         status: row.status,
         input: {
           ...(tyres ? { tyres } : {}),
+          ...(pits ? { pits } : {}),
           ...(interaction ? { interaction } : {}),
           seed: Number(row.seed),
           totalLaps: row.totalLaps,
@@ -124,6 +151,7 @@ async function read(
             gridOffsetMs: row.gridOffsetMs,
           },
           entrants: row.entrants.map((e) => ({
+            ...(pits ? { strategyController: e.strategyController! } : {}),
             ...(interaction
               ? {
                   interaction: readDriverInteraction(
@@ -153,6 +181,7 @@ async function read(
         entrants: [...row.entrants]
           .sort((a, b) => a.position - b.position)
           .map((e) => ({
+            ...(pits ? { pit: readPit(e) } : {}),
             ...(interaction ? { track: readTrack(e) } : {}),
             ...(tyres
               ? {
@@ -258,6 +287,14 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                   s.input.tyres?.tyreEnergyMultiplierPermille,
               },
             });
+            if (s.input.pits)
+              await tx.careerRacePitProfile.create({
+                data: {
+                  ...s.input.pits,
+                  careerId,
+                  careerRaceSimulationId: row.id,
+                },
+              });
             if (s.input.interaction)
               await tx.careerRaceInteractionProfile.create({
                 data: {
@@ -290,6 +327,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                   careerTeamId: e.teamId,
                   driverOvertaking: e.interaction?.overtaking,
                   driverDefending: e.interaction?.defending,
+                  strategyController: e.strategyController,
                   driverName: label.driverName,
                   teamName: label.teamName,
                   gridPosition: e.gridPosition,
@@ -324,6 +362,13 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                 data: entrantState(e),
               });
           }
+          if (s.input.pits) {
+            const row = await tx.careerRaceSimulation.findUniqueOrThrow({
+              where: { careerSessionId: before.sessionId },
+            });
+            for (const e of s.entrants)
+              await persistPitHistory(tx, careerId, row.id, e);
+          }
           await persistProgress(tx, before.progress, after.progress);
         },
         { isolationLevel: "ReadCommitted", timeout: 30000, maxWait: 5000 },
@@ -333,6 +378,13 @@ export class PrismaRaceRepository implements CareerRaceRepository {
 }
 function entrantState(e: RaceSimulationState["entrants"][number]) {
   return {
+    ...(e.pit
+      ? {
+          pendingPitCompound: e.pit.pendingCompound,
+          pitCommandRevision: e.pit.commandRevision,
+          stopCount: e.pit.stops.length,
+        }
+      : {}),
     ...(e.track
       ? {
           trackProgressMicrolaps: BigInt(e.track.progressMicrolaps),
@@ -423,4 +475,95 @@ function readTrack(e: {
   if (Object.values(values).some((v) => v === null))
     throw new RaceError("INVALID_INPUT");
   return values as TrackState;
+}
+
+function readPit(
+  e: Prisma.CareerRaceEntrantGetPayload<{
+    include: { stintHistory: true; pitStops: true };
+  }>,
+): PitState {
+  if (
+    e.pitCommandRevision === null ||
+    e.stopCount === null ||
+    e.strategyController === null ||
+    e.stintHistory.length !== e.stopCount + 1 ||
+    e.pitStops.length !== e.stopCount
+  )
+    throw new RaceError("INVALID_INPUT");
+  return {
+    pendingCompound: e.pendingPitCompound,
+    commandRevision: e.pitCommandRevision,
+    stints: e.stintHistory.map((s) => ({
+      number: s.number,
+      startLap: s.startLap,
+      endLap: s.endLap,
+      startingTyre: readTyre(
+        s.compound,
+        s.startingAgeLaps,
+        s.startingWearPermille,
+        s.startingTemperatureMilliC,
+      ),
+      endingTyre:
+        s.endLap === null
+          ? null
+          : readTyre(
+              s.compound,
+              s.endingAgeLaps,
+              s.endingWearPermille,
+              s.endingTemperatureMilliC,
+            ),
+    })),
+    stops: e.pitStops.map((s) => ({
+      number: s.number,
+      lap: s.lap,
+      oldCompound: s.oldCompound,
+      newCompound: s.newCompound,
+      pitLaneLossMs: s.pitLaneLossMs,
+      stationaryTimeMs: s.stationaryTimeMs,
+      totalLossMs: s.totalLossMs,
+    })),
+  };
+}
+async function persistPitHistory(
+  tx: Prisma.TransactionClient,
+  careerId: string,
+  careerRaceSimulationId: string,
+  e: RaceSimulationState["entrants"][number],
+) {
+  if (!e.pit) throw new RaceError("INVALID_INPUT");
+  for (const s of e.pit.stints) {
+    const data = {
+      careerId,
+      careerRaceSimulationId,
+      entrantId: e.entrantId,
+      number: s.number,
+      startLap: s.startLap,
+      endLap: s.endLap,
+      compound: s.startingTyre.compound,
+      startingAgeLaps: s.startingTyre.ageLaps,
+      startingWearPermille: s.startingTyre.wearPermille,
+      startingTemperatureMilliC: s.startingTyre.temperatureMilliC,
+      endingAgeLaps: s.endingTyre?.ageLaps ?? null,
+      endingWearPermille: s.endingTyre?.wearPermille ?? null,
+      endingTemperatureMilliC: s.endingTyre?.temperatureMilliC ?? null,
+    };
+    await tx.careerRaceStint.upsert({
+      where: { entrantId_number: { entrantId: e.entrantId, number: s.number } },
+      create: data,
+      update: data,
+    });
+  }
+  for (const s of e.pit.stops) {
+    const data = {
+      ...s,
+      careerId,
+      careerRaceSimulationId,
+      entrantId: e.entrantId,
+    };
+    await tx.careerRacePitStop.upsert({
+      where: { entrantId_number: { entrantId: e.entrantId, number: s.number } },
+      create: data,
+      update: data,
+    });
+  }
 }

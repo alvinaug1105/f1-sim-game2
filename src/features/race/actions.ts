@@ -9,7 +9,11 @@ import {
   type RaceErrorCode,
 } from "../../game/domain/race-repository";
 import { getRaceRepository } from "../career/server";
-import { startTrafficCareerRace, advanceCareerRace } from "./service";
+import {
+  startPitCareerRace,
+  advanceCareerRace,
+  changeCareerPitRequest,
+} from "./service";
 export async function raceAction(
   _previous: { error: RaceErrorCode | null },
   form: FormData,
@@ -28,7 +32,20 @@ export async function raceAction(
           if (!isTyreCompound(value)) throw new RaceError("INVALID_INPUT");
           choices[key.slice(5)] = value;
         }
-      await startTrafficCareerRace(repository, careerId, eventId, choices);
+      await startPitCareerRace(repository, careerId, eventId, choices);
+    } else if (intent === "pitRequest" || intent === "pitCancel") {
+      const compound = intent === "pitCancel" ? null : text("compound");
+      if (compound !== null && !isTyreCompound(compound))
+        throw new RaceError("INVALID_INPUT");
+      await changeCareerPitRequest(
+        repository,
+        careerId,
+        eventId,
+        text("entrantId"),
+        Number(text("lap")),
+        Number(text("revision")),
+        compound,
+      );
     } else if (["lap", "five", "finish"].includes(intent)) {
       const lap = Number(text("lap"));
       if (!Number.isSafeInteger(lap) || lap < 0)

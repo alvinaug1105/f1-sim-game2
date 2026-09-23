@@ -1,4 +1,9 @@
 import type {
+  PitConfiguration,
+  PitState,
+  StrategyController,
+} from "./pits/types";
+import type {
   InteractionConfiguration,
   DriverInteractionProfile,
   TrackState,
@@ -23,6 +28,7 @@ export interface RaceParameters {
   readonly gridOffsetMs: number;
 }
 export interface RaceEntrant {
+  readonly strategyController?: StrategyController;
   readonly interaction?: DriverInteractionProfile;
   readonly entrantId: string;
   readonly driverId: string;
@@ -33,6 +39,7 @@ export interface RaceEntrant {
   readonly startingTyre?: TyreState;
 }
 export interface RaceSimulationInput {
+  readonly pits?: PitConfiguration;
   readonly interaction?: InteractionConfiguration;
   readonly tyres?: TyreConfiguration;
   readonly seed: number;
@@ -44,6 +51,7 @@ export interface RaceSimulationInput {
   readonly entrants: readonly RaceEntrant[];
 }
 export interface RaceEntrantState {
+  readonly pit?: PitState;
   readonly track?: TrackState;
   readonly stint?: StintState;
   readonly entrantId: string;

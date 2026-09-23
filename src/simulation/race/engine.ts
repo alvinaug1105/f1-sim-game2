@@ -1,4 +1,11 @@
 import {
+  initialPitState,
+  committedStops,
+  completePitLap,
+  validatePitControllers,
+} from "./pits/model";
+import { validatePitConfiguration } from "./pits/profiles";
+import {
   validateInteraction,
   validateDriverInteraction,
   initialTrackState,
@@ -25,9 +32,9 @@ import type {
   DriverPerformanceProfile,
   CarPerformanceProfile,
 } from "./types";
-export const SIMULATION_VERSION = 3;
+export const SIMULATION_VERSION = 4;
 export function isSupportedSimulationVersion(version: number) {
-  return version === 1 || version === 2 || version === 3;
+  return version === 1 || version === 2 || version === 3 || version === 4;
 }
 /** Versioned Phase 5 free-air tuning. Penalties are relative to a 100-rated baseline. */
 export const DEFAULT_RACE_PARAMETERS: RaceParameters = Object.freeze({
@@ -65,6 +72,13 @@ function validateProfiles(
   bounded(parameters.gridOffsetMs, 0, 10000, true);
 }
 export function validateRaceInput(input: RaceSimulationInput) {
+  if (input.pits) {
+    validatePitConfiguration(input.pits);
+    validatePitControllers(input);
+    if (!input.interaction || !input.tyres)
+      throw new RangeError("Pit model requires tyres and traffic");
+  } else if (input.entrants.some((e) => e.strategyController))
+    throw new RangeError("Unexpected strategy controller");
   if (input.interaction) {
     validateInteraction(input.interaction);
     if (!input.tyres) throw new RangeError("Traffic requires tyres");
@@ -212,7 +226,13 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   validateRaceInput(input);
   const snapshot = structuredClone(input);
   return {
-    simulationVersion: input.interaction ? 3 : input.tyres ? 2 : 1,
+    simulationVersion: input.pits
+      ? 4
+      : input.interaction
+        ? 3
+        : input.tyres
+          ? 2
+          : 1,
     input: snapshot,
     rngState: input.seed,
     lap: 0,
@@ -235,6 +255,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
             }
           : {}),
         ...(snapshot.interaction ? { track: initialTrackState() } : {}),
+        ...(snapshot.pits ? { pit: initialPitState(e.startingTyre!) } : {}),
         entrantId: e.entrantId,
         completedLaps: 0,
         elapsedTimeMs: (e.gridPosition - 1) * input.parameters.gridOffsetMs,
@@ -251,8 +272,10 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
 export function advanceRaceLap(
   state: RaceSimulationState,
 ): RaceSimulationState {
-  if ((state.simulationVersion === 3) !== Boolean(state.input.interaction))
+  if (state.simulationVersion >= 3 !== Boolean(state.input.interaction))
     throw new RangeError("Interaction version mismatch");
+  if ((state.simulationVersion === 4) !== Boolean(state.input.pits))
+    throw new RangeError("Pit version mismatch");
   if (!isSupportedSimulationVersion(state.simulationVersion))
     throw new RangeError("Unsupported simulation version");
   if (state.simulationVersion >= 2 && !state.input.tyres)
@@ -319,11 +342,30 @@ export function advanceRaceLap(
           ) / 1000,
       };
     });
-  const classified =
-    state.simulationVersion === 3
-      ? resolveTraffic(state.entrants, entrants, state.input, lap, random)
-          .entrants
-      : classify(entrants);
+  let classified: readonly RaceEntrantState[];
+  if (state.simulationVersion === 4) {
+    const committed = committedStops(state);
+    const previousOnTrack = [...state.entrants]
+      .sort((a, b) => a.position - b.position)
+      .filter((e) => !committed.has(e.entrantId))
+      .map((e, i) => ({ ...e, position: i + 1 }));
+    const potentialOnTrack = entrants.filter(
+      (e) => !committed.has(e.entrantId),
+    );
+    const onTrack = resolveTraffic(
+      previousOnTrack,
+      potentialOnTrack,
+      state.input,
+      lap,
+      random,
+    ).entrants;
+    classified = completePitLap(state, entrants, onTrack, committed, random);
+  } else
+    classified =
+      state.simulationVersion === 3
+        ? resolveTraffic(state.entrants, entrants, state.input, lap, random)
+            .entrants
+        : classify(entrants);
   return {
     ...state,
     lap,

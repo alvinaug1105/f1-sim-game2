@@ -1,6 +1,6 @@
 # Formula Operations
 
-A browser-based Formula racing team management game, currently in **Phase 7: traffic, dirty air, overtaking and DRS**. Independent persistent Careers can be created, continued and advanced through structural race weekends. The Race engine models seeded lap pace, dry tyres and explicit track interactions. Faster followers must catch and successfully overtake; blocked cars lose actual race time. Pit stops and strategy remain deferred.
+A browser-based Formula racing team management game, currently in **Phase 8: pit stops, multiple stints and race strategy**. Independent persistent Careers can be created, continued and advanced through structural race weekends. The Race engine models seeded lap pace, dry tyres, explicit track interactions and pit stops. Players can request, change or cancel tyre stops; fresh tyres cost race time and track position. Temporary non-player strategy uses the same mechanics.
 
 ## Stack and local development
 
@@ -74,7 +74,7 @@ npm run test:db
 
 The integration suite creates a unique schema, applies the actual migrations, runs the seed twice, verifies representative queries and tests database rejection of invalid relationships/duplicates. It drops only its own schema afterward. Without TEST_DATABASE_URL the command fails clearly; no SQL tests are silently skipped. The ordinary `npm test` suite stays database-independent.
 
-See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 7 report](docs/phase-7-report.md) records 258 passing offline tests and 112 passing real PostgreSQL integration tests. Earlier phase reports are historical.
+See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 8 report](docs/phase-8-report.md) records 293 passing offline tests and 131 passing real PostgreSQL integration tests. Earlier phase reports are historical.
 
 ## Try the lifecycle
 

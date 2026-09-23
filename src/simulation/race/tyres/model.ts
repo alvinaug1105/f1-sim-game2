@@ -1,5 +1,7 @@
 export const TYRE_COMPOUNDS = ["SOFT", "MEDIUM", "HARD"] as const;
-export type TyreCompound = (typeof TYRE_COMPOUNDS)[number];
+export type DryTyreCompound = (typeof TYRE_COMPOUNDS)[number];
+export const WEATHER_TYRE_COMPOUNDS = [...TYRE_COMPOUNDS, "INTERMEDIATE", "WET"] as const;
+export type TyreCompound = (typeof WEATHER_TYRE_COMPOUNDS)[number];
 export interface TyreState {
   readonly compound: TyreCompound;
   readonly ageLaps: number;
@@ -30,7 +32,7 @@ export interface TyreCompoundProfile {
   readonly cliffPenaltyMs: number;
 }
 export interface TyreConfiguration {
-  readonly profiles: Readonly<Record<TyreCompound, TyreCompoundProfile>>;
+  readonly profiles: Readonly<Record<string, TyreCompoundProfile>>;
   readonly tyreWearMultiplierPermille: number;
   readonly tyreEnergyMultiplierPermille: number;
 }
@@ -41,7 +43,7 @@ function integer(value: number, min: number, max: number) {
     throw new RangeError("Invalid tyre numeric input");
 }
 export function isTyreCompound(value: unknown): value is TyreCompound {
-  return TYRE_COMPOUNDS.some((c) => c === value);
+  return WEATHER_TYRE_COMPOUNDS.some((c) => c === value);
 }
 export function validateTyreState(tyre: TyreState) {
   if (!isTyreCompound(tyre.compound))
@@ -53,7 +55,7 @@ export function validateTyreState(tyre: TyreState) {
 export function validateTyreConfiguration(config: TyreConfiguration) {
   integer(config.tyreWearMultiplierPermille, 250, 3000);
   integer(config.tyreEnergyMultiplierPermille, 250, 3000);
-  for (const compound of TYRE_COMPOUNDS) {
+  for (const compound of [...TYRE_COMPOUNDS, ...WEATHER_TYRE_COMPOUNDS.filter(c => !TYRE_COMPOUNDS.includes(c as DryTyreCompound) && config.profiles[c])]) {
     const p = config.profiles[compound];
     if (!p || p.compound !== compound)
       throw new RangeError("Missing or mismatched compound profile");

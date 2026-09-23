@@ -2,7 +2,7 @@
 import { CommandPanel } from "./command-panel";
 import { useActionState } from "react";
 import { useI18n } from "../../i18n/provider";
-import { TYRE_COMPOUNDS } from "../../simulation/race/tyres/model";
+import { TYRE_COMPOUNDS, WEATHER_TYRE_COMPOUNDS } from "../../simulation/race/tyres/model";
 import type { RaceEntrantState } from "../../simulation/race/types";
 import type {
   CareerRaceData,
@@ -86,7 +86,7 @@ export function PitPanel({
                 defaultValue={pit.pendingCompound ?? "HARD"}
                 key={`${pit.commandRevision}-${pit.pendingCompound}`}
               >
-                {TYRE_COMPOUNDS.map((c) => (
+                {(state.simulationVersion === 6 ? WEATHER_TYRE_COMPOUNDS : TYRE_COMPOUNDS).map((c) => (
                   <option key={c} value={c}>
                     {t(`tyre.${c}`)}
                   </option>

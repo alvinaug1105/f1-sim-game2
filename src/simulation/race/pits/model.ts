@@ -1,3 +1,4 @@
+import { weatherPitChoice } from "../weather/policy";
 import type {
   RaceSimulationState,
   RaceSimulationInput,
@@ -34,7 +35,7 @@ export function requestPitStop(
   compound: TyreCompound | null,
 ): RaceSimulationState {
   if (
-    ![4, 5].includes(state.simulationVersion) ||
+    ![4, 5, 6].includes(state.simulationVersion) ||
     !state.input.pits ||
     state.status !== "RUNNING" ||
     state.lap >= state.input.totalLaps - 1
@@ -42,6 +43,7 @@ export function requestPitStop(
     throw new RangeError("Pit request unavailable");
   if (compound !== null && !isTyreCompound(compound))
     throw new RangeError("Invalid pit compound");
+  if (compound && !state.input.tyres?.profiles[compound]) throw new RangeError("Compound unavailable for this race");
   const e = state.entrants.find((e) => e.entrantId === entrantId);
   if (!e?.pit) throw new RangeError("Unknown pit entrant");
   if (e.pit.pendingCompound === compound) return state;
@@ -79,7 +81,7 @@ export function committedStops(
     const compound =
       e.pit.pendingCompound ??
       (source.strategyController === "DEVELOPMENT_AI"
-        ? developmentPitChoice(e, state.input, state.lap)
+        ? state.input.weather ? chooseWeatherPit(state, e) : developmentPitChoice(e, state.input, state.lap)
         : null);
     if (compound) result.set(e.entrantId, compound);
   }
@@ -227,4 +229,11 @@ export function validatePitControllers(input: RaceSimulationInput) {
   for (const e of input.entrants)
     if (!["PLAYER", "DEVELOPMENT_AI"].includes(e.strategyController ?? ""))
       throw new RangeError("Missing strategy controller");
+}
+
+function chooseWeatherPit(state: RaceSimulationState, entrant: RaceEntrantState) {
+ const {weather, ...input}=state.input;
+ const {timeline: _timeline, initial: _initial, ...publicWeather}=weather!;
+ void _timeline; void _initial;
+ return weatherPitChoice(entrant,input,state.weather!,publicWeather,state.lap);
 }

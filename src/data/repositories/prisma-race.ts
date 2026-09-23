@@ -1,3 +1,4 @@
+import { validateWeatherConfiguration, validateWeatherState, type WeatherConfiguration, type WeatherState } from "../../simulation/race/weather/model";
 import { validateCommandConfiguration, validateCommandState, type CommandConfiguration, type CommandState } from "../../simulation/race/commands/model";
 import type {
   PitConfiguration,
@@ -65,6 +66,7 @@ async function read(
       interactionProfile: true,
       pitProfile: true,
       commandProfile: true,
+      weatherProfile: true,
     },
   });
   const circuit = await tx.careerCircuit.findUniqueOrThrow({
@@ -89,7 +91,7 @@ async function read(
   if (
     row?.simulationVersion === 2 ||
     row?.simulationVersion === 3 ||
-    (row?.simulationVersion === 4 || row?.simulationVersion === 5)
+    (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || row?.simulationVersion === 6))
   ) {
     tyres = {
       tyreWearMultiplierPermille: row.tyreWearMultiplierPermille!,
@@ -108,7 +110,7 @@ async function read(
     validateTyreConfiguration(tyres);
   }
   let interaction: InteractionConfiguration | undefined;
-  if (row?.simulationVersion === 3 || (row?.simulationVersion === 4 || row?.simulationVersion === 5)) {
+  if (row?.simulationVersion === 3 || (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || row?.simulationVersion === 6))) {
     if (!row.interactionProfile) throw new RaceError("INVALID_INPUT");
     interaction = Object.fromEntries(
       Object.entries(row.interactionProfile).filter(
@@ -118,7 +120,7 @@ async function read(
     validateInteraction(interaction);
   }
   let pits: PitConfiguration | undefined;
-  if ((row?.simulationVersion === 4 || row?.simulationVersion === 5)) {
+  if ((row?.simulationVersion === 4 || (row?.simulationVersion === 5 || row?.simulationVersion === 6))) {
     if (!row.pitProfile) throw new RaceError("INVALID_INPUT");
     pits = Object.fromEntries(
       Object.entries(row.pitProfile).filter(
@@ -127,16 +129,27 @@ async function read(
     ) as unknown as PitConfiguration;
     validatePitConfiguration(pits);
   }
-  const commands = row?.simulationVersion === 5 ? row.commandProfile?.profile as unknown as CommandConfiguration : undefined;
+  const commands = (row?.simulationVersion === 5 || row?.simulationVersion === 6) ? row.commandProfile?.profile as unknown as CommandConfiguration : undefined;
   if (commands) validateCommandConfiguration(commands);
-  if (row?.simulationVersion === 5 && !commands) throw new RaceError("INVALID_INPUT");
+  if ((row?.simulationVersion === 5 || row?.simulationVersion === 6) && !commands) throw new RaceError("INVALID_INPUT");
+  const weatherConfig = row?.simulationVersion === 6 ? row.weatherProfile?.profile as unknown as WeatherConfiguration : undefined;
+  let weather: WeatherState | undefined;
+  if (row?.simulationVersion === 6) {
+    if (!weatherConfig || !row.weatherProfile) throw new RaceError("INVALID_INPUT");
+    validateWeatherConfiguration(weatherConfig,row.totalLaps);
+    const w=row.weatherProfile;
+    weather={rainfallIntensity:w.rainfallIntensity,airTemperatureMilliC:w.airTemperatureMilliC,trackTemperatureMilliC:w.trackTemperatureMilliC,trackWater:w.trackWater,drsState:w.drsState as WeatherState["drsState"]};
+    validateWeatherState(weather);
+  }
   const state: RaceSimulationState | null = row
     ? {
         simulationVersion: row.simulationVersion,
+        ...(weather ? { weather } : {}),
         rngState: Number(row.rngState),
         lap: row.currentLap,
         status: row.status,
         input: {
+          ...(weatherConfig ? { weather: weatherConfig } : {}),
           ...(commands ? { commands } : {}),
           ...(tyres ? { tyres } : {}),
           ...(pits ? { pits } : {}),
@@ -295,6 +308,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                   s.input.tyres?.tyreEnergyMultiplierPermille,
               },
             });
+            if (s.input.weather && s.weather) await tx.careerRaceWeather.create({data:{careerId,careerRaceSimulationId:row.id,profile:JSON.parse(JSON.stringify(s.input.weather)),...s.weather}});
             if (s.input.commands) await tx.careerRaceCommandProfile.create({ data: { careerId, careerRaceSimulationId: row.id, profile: JSON.parse(JSON.stringify(s.input.commands)) } });
             if (s.input.pits)
               await tx.careerRacePitProfile.create({
@@ -365,6 +379,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                 status: s.status,
               },
             });
+            if (s.weather) { const row = await tx.careerRaceSimulation.findUniqueOrThrow({where:{careerSessionId:before.sessionId}}); await tx.careerRaceWeather.update({where:{careerRaceSimulationId:row.id},data:{...s.weather}}); }
             for (const e of s.entrants)
               await tx.careerRaceEntrant.update({
                 where: { id: e.entrantId },

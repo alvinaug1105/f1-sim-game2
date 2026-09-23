@@ -1,4 +1,5 @@
 "use client";
+import { WeatherPanel } from "./weather-panel";
 import Link from "next/link";
 import { PitPanel } from "./pit-panel";
 import { useActionState } from "react";
@@ -8,7 +9,7 @@ import type {
   CareerRaceData,
   RaceErrorCode,
 } from "../../game/domain/race-repository";
-import { TYRE_COMPOUNDS } from "../../simulation/race/tyres/model";
+import { WEATHER_TYRE_COMPOUNDS } from "../../simulation/race/tyres/model";
 import { raceAction } from "./actions";
 export function RaceView({ data }: { data: CareerRaceData }) {
   const { t, format, locale } = useI18n();
@@ -44,7 +45,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
               ? "tyre.notice"
               : state?.simulationVersion === 3
                 ? "traffic.notice"
-                : state?.simulationVersion === 4 ? "pit.notice" : "command.notice",
+                : state?.simulationVersion === 4 ? "pit.notice" : state?.simulationVersion === 5 ? "command.notice" : "weather.notice",
         )}
       </p>
       {state ? (
@@ -67,6 +68,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
       ) : (
         <p>{t(canStart ? "race.ready" : "race.unavailable")}</p>
       )}
+      {state?.weather && <WeatherPanel state={state} />}
       <form action={action} className="race-controls">
         <input type="hidden" name="careerId" value={progress.career.id} />
         <input type="hidden" name="eventId" value={eventId} />
@@ -84,7 +86,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                     name={`tyre:${row.driverId}`}
                     defaultValue="MEDIUM"
                   >
-                    {TYRE_COMPOUNDS.map((compound) => (
+                    {WEATHER_TYRE_COMPOUNDS.map((compound) => (
                       <option key={compound} value={compound}>
                         {t(`tyre.${compound}`)}
                       </option>

@@ -1,3 +1,5 @@
+import { developmentWeather } from "../../simulation/race/weather/model";
+import { weatherTyreConfiguration } from "../../simulation/race/tyres/profiles";
 import { defaultCommandConfiguration, PACE_MODES, FUEL_MODES, ERS_MODES, type PaceMode, type FuelMode, type ErsMode } from "../../simulation/race/commands/model";
 import { defaultPitConfiguration } from "../../simulation/race/pits/profiles";
 import { requestPitStop } from "../../simulation/race/pits/model";
@@ -34,6 +36,7 @@ export function startCareerRace(
   withTraffic = false,
   withPits = false,
   withCommands = false,
+  withWeather = false,
 ) {
   return repository.changeRace(careerId, eventId, (data) => {
     if (data.state) throw new RaceError("STALE");
@@ -68,7 +71,7 @@ export function startCareerRace(
       const input = tyreChoices
         ? {
             ...snapshot.input,
-            tyres: defaultTyreConfiguration(),
+            tyres: withWeather ? weatherTyreConfiguration() : defaultTyreConfiguration(),
             entrants: snapshot.input.entrants.map((e) => ({
               ...e,
               startingTyre: startingTyre(tyreChoices[e.driverId] ?? "MEDIUM"),
@@ -80,6 +83,7 @@ export function startCareerRace(
           withTraffic
             ? {
                 ...input,
+                ...(withWeather ? { weather: developmentWeather(seed,input.totalLaps) } : {}),
                 ...(withCommands ? { commands: defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
                 ...(withPits ? { pits: defaultPitConfiguration() } : {}),
                 interaction: defaultInteractionConfiguration(),
@@ -208,7 +212,7 @@ export function changeCareerPitRequest(
     const state = data.state;
     if (
       !state ||
-      ![4, 5].includes(state.simulationVersion) ||
+      ![4, 5, 6].includes(state.simulationVersion) ||
       state.status !== "RUNNING" ||
       data.progress.career.status !== "ACTIVE"
     )
@@ -234,6 +238,7 @@ export function changeCareerPitRequest(
       throw new RaceError("STALE");
     if (state.lap >= state.input.totalLaps - 1)
       throw new RaceError("INVALID_ACTION");
+    if (compound && !state.input.tyres?.profiles[compound]) throw new RaceError("INVALID_INPUT");
     return {
       state: requestPitStop(state, entrantId, compound),
       labels: data.labels,
@@ -252,7 +257,7 @@ function setCommand(repository: CareerRaceRepository, careerId: string, eventId:
   return repository.changeRace(careerId, eventId, data => {
     const s = data.state, event = data.progress.events.find(e => e.id === eventId);
     const e = s?.entrants.find(e => e.entrantId === entrantId), source = s?.input.entrants.find(e => e.entrantId === entrantId);
-    if (!s || s.simulationVersion !== 5 || s.status !== "RUNNING" || data.progress.career.status !== "ACTIVE" || event?.status !== "CURRENT" || event.weekend?.sessions.find(x => x.id === data.sessionId)?.status !== "IN_PROGRESS" || !e?.commands || source?.strategyController !== "PLAYER" || source.teamId !== data.progress.career.playerTeamId) throw new RaceError("INVALID_ACTION");
+    if (!s || ![5,6].includes(s.simulationVersion) || s.status !== "RUNNING" || data.progress.career.status !== "ACTIVE" || event?.status !== "CURRENT" || event.weekend?.sessions.find(x => x.id === data.sessionId)?.status !== "IN_PROGRESS" || !e?.commands || source?.strategyController !== "PLAYER" || source.teamId !== data.progress.career.playerTeamId) throw new RaceError("INVALID_ACTION");
     if (s.lap !== lap || e.commands.commandRevision !== revision) throw new RaceError("STALE");
     return { state: { ...s, entrants: s.entrants.map(x => x.entrantId !== entrantId ? x : { ...x, commands: { ...x.commands!, [intent.kind]: intent.mode, commandRevision: revision + 1 } }) }, labels: data.labels, progress: data.progress };
   });
@@ -260,3 +265,7 @@ function setCommand(repository: CareerRaceRepository, careerId: string, eventId:
 export function setDriverPaceMode(r: CareerRaceRepository, c: string, ev: string, e: string, lap: number, revision: number, mode: PaceMode) { return setCommand(r,c,ev,e,lap,revision,{kind:"paceMode",mode}); }
 export function setDriverFuelMode(r: CareerRaceRepository, c: string, ev: string, e: string, lap: number, revision: number, mode: FuelMode) { return setCommand(r,c,ev,e,lap,revision,{kind:"fuelMode",mode}); }
 export function setDriverErsMode(r: CareerRaceRepository, c: string, ev: string, e: string, lap: number, revision: number, mode: ErsMode) { return setCommand(r,c,ev,e,lap,revision,{kind:"ersMode",mode}); }
+
+export function startWeatherCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
+ return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true);
+}

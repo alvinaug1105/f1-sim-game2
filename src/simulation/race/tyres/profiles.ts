@@ -1,5 +1,6 @@
 import type {
   TyreCompound,
+  DryTyreCompound,
   TyreCompoundProfile,
   TyreConfiguration,
   TyreState,
@@ -14,7 +15,7 @@ const common = {
 };
 /** Provisional version-2 game tuning, not factual F1 compound specifications. */
 export const DEFAULT_TYRE_PROFILES: Readonly<
-  Record<TyreCompound, TyreCompoundProfile>
+  Record<DryTyreCompound, TyreCompoundProfile>
 > = Object.freeze({
   SOFT: Object.freeze({
     ...common,
@@ -62,4 +63,12 @@ export function defaultTyreConfiguration(): TyreConfiguration {
 }
 export function startingTyre(compound: TyreCompound = "MEDIUM"): TyreState {
   return { compound, ageLaps: 0, wearPermille: 0, temperatureMilliC: 80000 };
+}
+
+export function weatherTyreConfiguration(): TyreConfiguration {
+ const dry=defaultTyreConfiguration();
+ return {...dry, profiles:{...dry.profiles,
+  INTERMEDIATE:{...dry.profiles.MEDIUM,compound:"INTERMEDIATE",baseGripDeltaMs:0,idealTemperatureMinMilliC:65000,idealTemperatureMaxMilliC:90000,targetTemperatureMilliC:78000,baseWearPerLapPermille:24},
+  WET:{...dry.profiles.MEDIUM,compound:"WET",baseGripDeltaMs:0,idealTemperatureMinMilliC:55000,idealTemperatureMaxMilliC:80000,targetTemperatureMilliC:68000,baseWearPerLapPermille:20},
+ }};
 }

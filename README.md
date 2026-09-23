@@ -1,6 +1,6 @@
 # Formula Operations
 
-A browser-based Formula racing team management game, currently in **Phase 9: driver pace commands, fuel modes and ERS**. Independent persistent Careers support deterministic, resumable races with tyres, traffic, DRS and pit strategy. Players manage their two cars; other teams use a deterministic AI policy with the same physics and resource constraints. New races use simulation v5; v1–v4 saves retain their old behaviour.
+A browser-based Formula racing team management game, currently in **Phase 10: weather, track conditions and wet tyres**. Persistent Careers support deterministic, resumable races with dry/Intermediate/Wet tyres, traffic, DRS, pit strategy, driver commands, fuel and ERS. Rain gradually changes track water; players and AI weigh tyre suitability against pit cost using an approximate forecast. New races use v6; v1–v5 saves retain their historical behaviour.
 
 ## Stack and local development
 
@@ -74,7 +74,7 @@ npm run test:db
 
 The integration suite creates a unique schema, applies the actual migrations, runs the seed twice, verifies representative queries and tests database rejection of invalid relationships/duplicates. It drops only its own schema afterward. Without TEST_DATABASE_URL the command fails clearly; no SQL tests are silently skipped. The ordinary `npm test` suite stays database-independent.
 
-See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 9 report](docs/phase-9-report.md) records 322 passing offline tests and 146 passing real PostgreSQL integration tests. Earlier phase reports are historical.
+See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 10 report](docs/phase-10-report.md) records 357 passing offline tests and 162 passing real PostgreSQL integration tests. Earlier phase reports are historical.
 
 ## Try the lifecycle
 

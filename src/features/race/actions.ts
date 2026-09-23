@@ -11,7 +11,7 @@ import {
 } from "../../game/domain/race-repository";
 import { getRaceRepository } from "../career/server";
 import {
-  startCommandCareerRace,
+  startWeatherCareerRace,
   setDriverPaceMode, setDriverFuelMode, setDriverErsMode,
   advanceCareerRace,
   changeCareerPitRequest,
@@ -34,7 +34,7 @@ export async function raceAction(
           if (!isTyreCompound(value)) throw new RaceError("INVALID_INPUT");
           choices[key.slice(5)] = value;
         }
-      await startCommandCareerRace(repository, careerId, eventId, choices);
+      await startWeatherCareerRace(repository, careerId, eventId, choices);
     } else if (["paceMode", "fuelMode", "ersMode"].includes(intent)) {
       const args = [repository, careerId, eventId, text("entrantId"), Number(text("lap")), Number(text("revision"))] as const;
       const mode = text("mode");

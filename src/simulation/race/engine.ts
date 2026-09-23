@@ -1,3 +1,4 @@
+import { advanceWeather, validateWeatherConfiguration, advanceWeatherTyre, waterPenaltyMs } from "./weather/model";
 import { initialCommands, validateCommandConfiguration, commandLapEffects } from "./commands/model";
 import { chooseAiCommands } from "./commands/policy";
 import {
@@ -34,9 +35,9 @@ import type {
   DriverPerformanceProfile,
   CarPerformanceProfile,
 } from "./types";
-export const SIMULATION_VERSION = 5;
+export const SIMULATION_VERSION = 6;
 export function isSupportedSimulationVersion(version: number) {
-  return version === 1 || version === 2 || version === 3 || version === 4 || version === 5;
+  return version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6;
 }
 /** Versioned Phase 5 free-air tuning. Penalties are relative to a 100-rated baseline. */
 export const DEFAULT_RACE_PARAMETERS: RaceParameters = Object.freeze({
@@ -74,6 +75,11 @@ function validateProfiles(
   bounded(parameters.gridOffsetMs, 0, 10000, true);
 }
 export function validateRaceInput(input: RaceSimulationInput) {
+  if (input.weather) {
+    validateWeatherConfiguration(input.weather,input.totalLaps);
+    if (!input.commands || !input.tyres?.profiles.INTERMEDIATE || !input.tyres?.profiles.WET) throw new RangeError("Weather requires complete v6 profiles");
+  }
+  if (!input.weather && input.entrants.some(e => e.startingTyre && ["INTERMEDIATE","WET"].includes(e.startingTyre.compound))) throw new RangeError("Wet tyres require v6");
   if (input.commands) {
     validateCommandConfiguration(input.commands);
     if (!input.pits) throw new RangeError("Commands require pit model");
@@ -232,7 +238,8 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   validateRaceInput(input);
   const snapshot = structuredClone(input);
   return {
-    simulationVersion: input.commands ? 5 : input.pits
+    ...(snapshot.weather ? { weather: structuredClone(snapshot.weather.initial) } : {}),
+    simulationVersion: input.weather ? 6 : input.commands ? 5 : input.pits
       ? 4
       : input.interaction
         ? 3
@@ -291,9 +298,12 @@ export function advanceRaceLap(
     throw new RangeError("Version 1 cannot acquire tyres");
   if (state.status !== "RUNNING" || state.lap >= state.input.totalLaps)
     throw new RangeError("Race has already finished");
-  if ((state.simulationVersion === 5) !== Boolean(state.input.commands)) throw new RangeError("Command version mismatch");
-  if (state.simulationVersion === 5) state = chooseAiCommands(state);
+  if ((state.simulationVersion >= 5) !== Boolean(state.input.commands)) throw new RangeError("Command version mismatch");
+  if (state.simulationVersion >= 5) state = chooseAiCommands(state);
+  if ((state.simulationVersion === 6) !== Boolean(state.input.weather) || Boolean(state.input.weather) !== Boolean(state.weather)) throw new RangeError("Weather version mismatch");
   const stops = state.simulationVersion >= 4 ? committedStops(state) : new Map();
+  const nextWeather = state.input.weather ? advanceWeather(state.weather!,state.input.weather,state.lap+1) : undefined;
+  const trafficInput = nextWeather?.drsState === "DRS_DISABLED_WET" ? {...state.input, interaction:{...state.input.interaction!,drsZoneCount:0}} : state.input;
   bounded(state.lap, 0, state.input.totalLaps - 1, true);
   const random = createSeededRandom(state.rngState),
     lap = state.lap + 1;
@@ -329,6 +339,8 @@ export function advanceRaceLap(
         },
         random,
       );
+      if (nextWeather) result.lapTimeMs += waterPenaltyMs(old.stint!.tyre.compound,nextWeather.trackWater,state.input.weather!);
+      const tyreConfig = pace ? { ...state.input.tyres!, tyreWearMultiplierPermille: Math.round(state.input.tyres!.tyreWearMultiplierPermille * pace.tyreWearMultiplierPermille / 1000), tyreEnergyMultiplierPermille: Math.round(state.input.tyres!.tyreEnergyMultiplierPermille * pace.tyreEnergyMultiplierPermille / 1000) } : state.input.tyres!;
       if (effects) result.lapTimeMs = Math.max(1, result.lapTimeMs + effects.deltaMs);
       return {
         ...old,
@@ -337,7 +349,7 @@ export function advanceRaceLap(
           ? {
               stint: {
                 ...old.stint!,
-                tyre: advanceTyre(old.stint!.tyre, pace ? { ...state.input.tyres!, tyreWearMultiplierPermille: Math.round(state.input.tyres!.tyreWearMultiplierPermille * pace.tyreWearMultiplierPermille / 1000), tyreEnergyMultiplierPermille: Math.round(state.input.tyres!.tyreEnergyMultiplierPermille * pace.tyreEnergyMultiplierPermille / 1000) } : state.input.tyres!),
+                tyre: nextWeather ? advanceWeatherTyre(old.stint!.tyre,tyreConfig,nextWeather,state.input.weather!) : advanceTyre(old.stint!.tyre,tyreConfig),
               },
             }
           : {}),
@@ -369,7 +381,7 @@ export function advanceRaceLap(
     const onTrack = resolveTraffic(
       previousOnTrack,
       potentialOnTrack,
-      state.input,
+      trafficInput,
       lap,
       random,
     ).entrants;
@@ -382,6 +394,7 @@ export function advanceRaceLap(
         : classify(entrants);
   return {
     ...state,
+    ...(nextWeather ? { weather: nextWeather } : {}),
     lap,
     rngState: random.getState(),
     status: lap === state.input.totalLaps ? "FINISHED" : "RUNNING",

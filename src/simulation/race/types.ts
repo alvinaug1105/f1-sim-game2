@@ -1,3 +1,4 @@
+import type { WeatherConfiguration, WeatherState } from "./weather/model";
 import type { CommandConfiguration, CommandState } from "./commands/model";
 import type {
   PitConfiguration,
@@ -40,6 +41,7 @@ export interface RaceEntrant {
   readonly startingTyre?: TyreState;
 }
 export interface RaceSimulationInput {
+  readonly weather?: WeatherConfiguration;
   readonly commands?: CommandConfiguration;
   readonly pits?: PitConfiguration;
   readonly interaction?: InteractionConfiguration;
@@ -68,6 +70,7 @@ export interface RaceEntrantState {
   readonly intervalToAheadMs: number | null;
 }
 export interface RaceSimulationState {
+  readonly weather?: WeatherState;
   readonly simulationVersion: number;
   readonly input: RaceSimulationInput;
   readonly rngState: number;

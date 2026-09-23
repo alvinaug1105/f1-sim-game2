@@ -1,4 +1,8 @@
 import {
+  defaultInteractionConfiguration,
+  developmentDriverInteraction,
+} from "../../simulation/race/traffic/profiles";
+import {
   defaultTyreConfiguration,
   startingTyre,
 } from "../../simulation/race/tyres/profiles";
@@ -23,6 +27,7 @@ export function startCareerRace(
   eventId: string,
   seed: number = crypto.getRandomValues(new Uint32Array(1))[0],
   tyreChoices?: Readonly<Record<string, TyreCompound>>,
+  withTraffic = false,
 ) {
   return repository.changeRace(careerId, eventId, (data) => {
     if (data.state) throw new RaceError("STALE");
@@ -65,7 +70,18 @@ export function startCareerRace(
           }
         : snapshot.input;
       return {
-        state: createRace(input),
+        state: createRace(
+          withTraffic
+            ? {
+                ...input,
+                interaction: defaultInteractionConfiguration(),
+                entrants: input.entrants.map((e) => ({
+                  ...e,
+                  interaction: developmentDriverInteraction(),
+                })),
+              }
+            : input,
+        ),
         labels: snapshot.labels,
         progress,
       };
@@ -115,7 +131,7 @@ export function advanceCareerRace(
   });
 }
 
-/** New production races use v2. The original entry point remains a v1 compatibility API. */
+/** Version-2 compatibility entry point for tyre-only races. New browser races use v3 below. */
 export function startTyreCareerRace(
   repository: CareerRaceRepository,
   careerId: string,
@@ -124,4 +140,15 @@ export function startTyreCareerRace(
   seed?: number,
 ) {
   return startCareerRace(repository, careerId, eventId, seed, choices);
+}
+
+/** All new browser races use version 3; older entry points preserve v1/v2 compatibility. */
+export function startTrafficCareerRace(
+  repository: CareerRaceRepository,
+  careerId: string,
+  eventId: string,
+  choices: Readonly<Record<string, TyreCompound>> = {},
+  seed?: number,
+) {
+  return startCareerRace(repository, careerId, eventId, seed, choices, true);
 }

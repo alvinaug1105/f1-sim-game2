@@ -412,6 +412,7 @@ model CareerRaceSimulation {
   tyreWearMultiplierPermille   Int?
   tyreEnergyMultiplierPermille Int?
   tyreProfiles                 CareerRaceTyreProfile[]
+  interactionProfile           CareerRaceInteractionProfile?
 
   @@unique([careerId, id])
   @@unique([careerId, careerSessionId, sessionType])
@@ -452,6 +453,19 @@ model CareerRaceEntrant {
   stintNumber                   Int?
   stintStartedAtLap             Int?
 
+  trackProgressMicrolaps BigInt?
+  drsEligible            Boolean?
+  overtakesCompleted     Int?
+  potentialLapTimeMs     Int?
+  dirtyAirMs             Int?
+  drsBenefitMs           Int?
+  trafficLossMs          Int?
+  attempted              Boolean?
+  passed                 Boolean?
+  driverOvertaking       Int?
+  driverDefending        Int?
+
+  @@unique([careerRaceSimulationId, position])
   @@unique([careerRaceSimulationId, careerDriverId])
   @@unique([careerRaceSimulationId, gridPosition])
   @@index([careerId, careerDriverId])
@@ -485,4 +499,26 @@ model CareerRaceTyreProfile {
   simulation                CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
   @@id([careerRaceSimulationId, compound])
+}
+
+model CareerRaceInteractionProfile {
+  careerRaceSimulationId      String               @id @db.Uuid
+  careerId                    String               @db.Uuid
+  overtakingDifficulty        Int
+  dirtyAirSensitivityPermille Int
+  drsEffectivenessPermille    Int
+  drsZoneCount                Int
+  dirtyAirThresholdMs         Int
+  maxDirtyAirMs               Int
+  attackThresholdMs           Int
+  minimumGapMs                Int
+  minimumPaceAdvantageMs      Int
+  opportunityIntervalLaps     Int
+  drsActivationLap            Int
+  drsThresholdMs              Int
+  drsMsPerZone                Int
+  maxDrsBenefitMs             Int
+  simulation                  CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerId, careerRaceSimulationId])
 }

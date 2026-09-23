@@ -1,4 +1,11 @@
 import {
+  validateInteraction,
+  validateDriverInteraction,
+  initialTrackState,
+  orderedClassification,
+  resolveTraffic,
+} from "./traffic/model";
+import {
   validateTyreConfiguration,
   validateTyreState,
   getTyreProfile,
@@ -18,9 +25,9 @@ import type {
   DriverPerformanceProfile,
   CarPerformanceProfile,
 } from "./types";
-export const SIMULATION_VERSION = 2;
+export const SIMULATION_VERSION = 3;
 export function isSupportedSimulationVersion(version: number) {
-  return version === 1 || version === 2;
+  return version === 1 || version === 2 || version === 3;
 }
 /** Versioned Phase 5 free-air tuning. Penalties are relative to a 100-rated baseline. */
 export const DEFAULT_RACE_PARAMETERS: RaceParameters = Object.freeze({
@@ -58,6 +65,10 @@ function validateProfiles(
   bounded(parameters.gridOffsetMs, 0, 10000, true);
 }
 export function validateRaceInput(input: RaceSimulationInput) {
+  if (input.interaction) {
+    validateInteraction(input.interaction);
+    if (!input.tyres) throw new RangeError("Traffic requires tyres");
+  }
   if (input.tyres) validateTyreConfiguration(input.tyres);
   bounded(input.seed, 0, 0xffffffff, true);
   bounded(input.totalLaps, 1, 1000, true);
@@ -77,6 +88,12 @@ export function validateRaceInput(input: RaceSimulationInput) {
     drivers = new Set<string>(),
     grids = new Set<number>();
   for (const e of input.entrants) {
+    if (input.interaction) {
+      if (!e.interaction)
+        throw new RangeError("Missing driver interaction profile");
+      validateDriverInteraction(e.interaction);
+    } else if (e.interaction)
+      throw new RangeError("Unexpected interaction profile");
     if (input.tyres) {
       if (!e.startingTyre)
         throw new RangeError("Starting tyre is required for version 2");
@@ -195,12 +212,18 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   validateRaceInput(input);
   const snapshot = structuredClone(input);
   return {
-    simulationVersion: input.tyres ? SIMULATION_VERSION : 1,
+    simulationVersion: input.interaction ? 3 : input.tyres ? 2 : 1,
     input: snapshot,
     rngState: input.seed,
     lap: 0,
     status: "RUNNING",
-    entrants: classify(
+    entrants: (input.interaction
+      ? (entries: RaceEntrantState[]) =>
+          orderedClassification(
+            entries.sort((a, b) => a.position - b.position),
+            input,
+          )
+      : classify)(
       snapshot.entrants.map((e) => ({
         ...(snapshot.tyres
           ? {
@@ -211,6 +234,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
               },
             }
           : {}),
+        ...(snapshot.interaction ? { track: initialTrackState() } : {}),
         entrantId: e.entrantId,
         completedLaps: 0,
         elapsedTimeMs: (e.gridPosition - 1) * input.parameters.gridOffsetMs,
@@ -227,9 +251,11 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
 export function advanceRaceLap(
   state: RaceSimulationState,
 ): RaceSimulationState {
+  if ((state.simulationVersion === 3) !== Boolean(state.input.interaction))
+    throw new RangeError("Interaction version mismatch");
   if (!isSupportedSimulationVersion(state.simulationVersion))
     throw new RangeError("Unsupported simulation version");
-  if (state.simulationVersion === 2 && !state.input.tyres)
+  if (state.simulationVersion >= 2 && !state.input.tyres)
     throw new RangeError("Version 2 requires saved tyre configuration");
   if (state.simulationVersion === 1 && state.input.tyres)
     throw new RangeError("Version 1 cannot acquire tyres");
@@ -246,7 +272,7 @@ export function advanceRaceLap(
       const old = current.get(e.entrantId);
       if (!old || old.completedLaps !== state.lap)
         throw new RangeError("Inconsistent entrant lap state");
-      if (state.simulationVersion === 2 && !old.stint)
+      if (state.simulationVersion >= 2 && !old.stint)
         throw new RangeError("Missing persisted stint state");
       const result = calculateLapTime(
         {
@@ -254,7 +280,7 @@ export function advanceRaceLap(
           circuit: state.input.circuit,
           parameters: state.input.parameters,
           fuelMassKg: old.fuelMassKg,
-          ...(state.simulationVersion === 2
+          ...(state.simulationVersion >= 2
             ? {
                 tyre: {
                   state: old.stint!.tyre,
@@ -270,7 +296,7 @@ export function advanceRaceLap(
       );
       return {
         ...old,
-        ...(state.simulationVersion === 2
+        ...(state.simulationVersion >= 2
           ? {
               stint: {
                 ...old.stint!,
@@ -293,12 +319,17 @@ export function advanceRaceLap(
           ) / 1000,
       };
     });
+  const classified =
+    state.simulationVersion === 3
+      ? resolveTraffic(state.entrants, entrants, state.input, lap, random)
+          .entrants
+      : classify(entrants);
   return {
     ...state,
     lap,
     rngState: random.getState(),
     status: lap === state.input.totalLaps ? "FINISHED" : "RUNNING",
-    entrants: classify(entrants),
+    entrants: classified,
   };
 }
 export function advanceRace(

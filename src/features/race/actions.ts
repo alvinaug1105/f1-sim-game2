@@ -9,7 +9,7 @@ import {
   type RaceErrorCode,
 } from "../../game/domain/race-repository";
 import { getRaceRepository } from "../career/server";
-import { startTyreCareerRace, advanceCareerRace } from "./service";
+import { startTrafficCareerRace, advanceCareerRace } from "./service";
 export async function raceAction(
   _previous: { error: RaceErrorCode | null },
   form: FormData,
@@ -28,7 +28,7 @@ export async function raceAction(
           if (!isTyreCompound(value)) throw new RaceError("INVALID_INPUT");
           choices[key.slice(5)] = value;
         }
-      await startTyreCareerRace(repository, careerId, eventId, choices);
+      await startTrafficCareerRace(repository, careerId, eventId, choices);
     } else if (["lap", "five", "finish"].includes(intent)) {
       const lap = Number(text("lap"));
       if (!Number.isSafeInteger(lap) || lap < 0)

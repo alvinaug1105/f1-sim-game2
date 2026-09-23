@@ -1,3 +1,8 @@
+import type {
+  InteractionConfiguration,
+  DriverInteractionProfile,
+  TrackState,
+} from "./traffic/model";
 import type { TyreConfiguration, TyreState, StintState } from "./tyres/model";
 export interface DriverPerformanceProfile {
   readonly pace: number;
@@ -18,6 +23,7 @@ export interface RaceParameters {
   readonly gridOffsetMs: number;
 }
 export interface RaceEntrant {
+  readonly interaction?: DriverInteractionProfile;
   readonly entrantId: string;
   readonly driverId: string;
   readonly teamId: string;
@@ -27,6 +33,7 @@ export interface RaceEntrant {
   readonly startingTyre?: TyreState;
 }
 export interface RaceSimulationInput {
+  readonly interaction?: InteractionConfiguration;
   readonly tyres?: TyreConfiguration;
   readonly seed: number;
   readonly totalLaps: number;
@@ -37,6 +44,7 @@ export interface RaceSimulationInput {
   readonly entrants: readonly RaceEntrant[];
 }
 export interface RaceEntrantState {
+  readonly track?: TrackState;
   readonly stint?: StintState;
   readonly entrantId: string;
   readonly completedLaps: number;

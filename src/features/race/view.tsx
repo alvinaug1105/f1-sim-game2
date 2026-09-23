@@ -36,7 +36,13 @@ export function RaceView({ data }: { data: CareerRaceData }) {
         </Link>
       </div>
       <p className="development-notice">
-        {t(state?.simulationVersion === 1 ? "tyre.legacy" : "tyre.notice")}
+        {t(
+          state?.simulationVersion === 1
+            ? "tyre.legacy"
+            : state?.simulationVersion === 2
+              ? "tyre.notice"
+              : "traffic.notice",
+        )}
       </p>
       {state ? (
         <>
@@ -138,7 +144,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                     {t(`race.${k}`)}
                   </th>
                 ))}
-                {state.simulationVersion === 2 &&
+                {state.simulationVersion >= 2 &&
                   (["compound", "age", "wear", "temperature"] as const).map(
                     (key) => (
                       <th key={key} scope="col">
@@ -146,6 +152,12 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                       </th>
                     ),
                   )}
+                {state.simulationVersion === 3 &&
+                  (["drs", "overtakes", "trafficLoss"] as const).map((key) => (
+                    <th key={key} scope="col">
+                      {t(`traffic.${key}`)}
+                    </th>
+                  ))}
               </tr>
             </thead>
             <tbody>
@@ -206,6 +218,22 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                               maximumFractionDigits: 3,
                             },
                           )}
+                        </td>
+                      </>
+                    )}
+                    {e.track && (
+                      <>
+                        <td>
+                          {t(
+                            e.track.drsEligible
+                              ? "traffic.drsActive"
+                              : "traffic.drsInactive",
+                          )}
+                        </td>
+                        <td>{format.number(e.track.overtakesCompleted)}</td>
+                        <td>
+                          {format.number(e.track.trafficLossMs)}{" "}
+                          {t("traffic.milliseconds")}
                         </td>
                       </>
                     )}

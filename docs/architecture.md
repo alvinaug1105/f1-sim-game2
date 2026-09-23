@@ -274,3 +274,31 @@ The additive fifth migration stores nullable legacy-compatible starting/current 
 ### Presentation and limitations
 
 Starting compound selectors disappear after start. Table columns show tyre, age, consumed wear percentage and Intl-formatted temperature, translated in English/Traditional Chinese. Locale never enters the simulation snapshot. No pit stops, wet tyres, traffic, sets, driver tyre-management attribute or pace commands exist. Worn tyres stay on the car for the full race and may reach severe degradation; they do not puncture or reset.
+
+## Phase 7 — explicit track interaction (current)
+
+The preceding phase sections describe historical rules. All new browser races now call `startTrafficCareerRace` and create v3. Existing v1/v2 input/state stays under its original rules, with captured result fixtures preventing silent reinterpretation.
+
+### Track order and crossing checkpoints
+
+`simulation/race/traffic` separates raw potential pace from actual race time. It keeps an explicit ordered array, backed by persisted position. All potential laps are computed in grid order; traffic then constrains next-lap crossing times to that physical order. Only a successful adjacent attempt swaps entries. A blocked follower pays the delay in actual elapsed/last/best times. Final classification follows the constrained final-lap crossings and is immutable after completion.
+
+This is a whole-lap checkpoint abstraction, without sectors or simultaneous geometry. Completed crossings and signed leader-relative `progressMicrolaps` (millionths of a lap, approximated from baseline crossing delay) are separate persisted values. BIGINT accommodates the distance range. The current batch engine advances every entrant's next crossing together; detailed partial-lap finishes and blue-flag encounters are deferred. Per-entrant lap counts and null cross-lap intervals remain available for future extension.
+
+### Dirty air, attacks and DRS
+
+Start-checkpoint same-lap gaps determine dirty air and DRS. Dirty air begins within 1500 ms, scales linearly with proximity and numeric circuit sensitivity, and adds at most 300 ms at default sensitivity. It does not modify tyres. DRS defaults to lap 3, a 1000 ms detection threshold and two numeric zones giving 80 ms each (capped at 300 ms); it also strengthens attacks. Multiple followers may qualify. A leader has no target.
+
+Every second lap, front-to-back disjoint pairs may contest if projected gap is at most 300 ms and effective pace advantage at least 100 ms. Resolution uses pace, temporary overtaking/defending ratings, car difference, circuit difficulty, DRS and a bounded seeded probability. Success explicitly swaps order; failure preserves a minimum 80 ms gap. A car participates in at most one contest per lap. Structured attempt diagnostics are transient; current flags/counters are persisted without an event-history system.
+
+### Determinism and storage
+
+The original two consistency draws per entrant occur first in fixed grid order. Then one extra draw occurs for each eligible contest in front-to-back order, including zero-probability contests. Ineligible pairs consume none. The saved RNG state resumes exactly. Tyre/fuel calculations remain unchanged and independent of presentation.
+
+The sixth migration adds an owned relational configuration snapshot, driver ratings and current track/DRS/diagnostic fields. Positions are unique per simulation with a **DEFERRABLE INITIALLY DEFERRED** constraint, allowing atomic swaps while rejecting duplicate final positions. Preserve the deferred timing when evolving schema. Existing Career locks/transactions protect all state and lifecycle writes. Old rows retain NULL interaction fields. Reads use saved positions, never historical inference from elapsed times.
+
+### UI and limitations
+
+English/Traditional Chinese development columns show last-lap DRS, overtake count and blocked milliseconds. The indicator reports detection during the completed lap, so a car that passed into the lead can still show that lap's DRS. Locale never enters configuration or state transitions.
+
+No pits, strategy commands, ERS, weather, incidents or blue flags are implemented. See [Phase-7 report](phase-7-report.md) for probability details, numeric measurements, exact test counts and browser evidence.

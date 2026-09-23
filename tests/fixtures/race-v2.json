@@ -1,0 +1,184 @@
+{
+  "state": {
+    "simulationVersion": 2,
+    "input": {
+      "seed": 4294967295,
+      "totalLaps": 25,
+      "initialFuelKg": 50,
+      "fuelBurnPerLapKg": 1.6,
+      "circuit": {
+        "baseLapTimeMs": 90000,
+        "fuelEffectMsPerKg": 30
+      },
+      "parameters": {
+        "carPerformanceRangeMs": 3000,
+        "driverPerformanceRangeMs": 1500,
+        "minVariationMs": 30,
+        "maxVariationMs": 350,
+        "gridOffsetMs": 180
+      },
+      "entrants": [
+        {
+          "entrantId": "e0",
+          "driverId": "d0",
+          "teamId": "team",
+          "gridPosition": 1,
+          "driver": {
+            "pace": 90,
+            "consistency": 85
+          },
+          "car": {
+            "performance": 92
+          },
+          "startingTyre": {
+            "compound": "SOFT",
+            "ageLaps": 0,
+            "wearPermille": 0,
+            "temperatureMilliC": 80000
+          }
+        },
+        {
+          "entrantId": "e1",
+          "driverId": "d1",
+          "teamId": "team",
+          "gridPosition": 2,
+          "driver": {
+            "pace": 89,
+            "consistency": 85
+          },
+          "car": {
+            "performance": 92
+          },
+          "startingTyre": {
+            "compound": "HARD",
+            "ageLaps": 0,
+            "wearPermille": 0,
+            "temperatureMilliC": 80000
+          }
+        }
+      ],
+      "tyres": {
+        "profiles": {
+          "SOFT": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "SOFT",
+            "baseGripDeltaMs": -350,
+            "idealTemperatureMinMilliC": 90000,
+            "idealTemperatureMaxMilliC": 105000,
+            "targetTemperatureMilliC": 98000,
+            "baseWearPerLapPermille": 32,
+            "degradationStartWear": 400,
+            "cliffWear": 800,
+            "progressivePenaltyMs": 1600
+          },
+          "MEDIUM": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "MEDIUM",
+            "baseGripDeltaMs": 0,
+            "idealTemperatureMinMilliC": 85000,
+            "idealTemperatureMaxMilliC": 105000,
+            "targetTemperatureMilliC": 97000,
+            "baseWearPerLapPermille": 22,
+            "degradationStartWear": 450,
+            "cliffWear": 850,
+            "progressivePenaltyMs": 1200
+          },
+          "HARD": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "HARD",
+            "baseGripDeltaMs": 300,
+            "idealTemperatureMinMilliC": 85000,
+            "idealTemperatureMaxMilliC": 110000,
+            "targetTemperatureMilliC": 100000,
+            "baseWearPerLapPermille": 15,
+            "degradationStartWear": 500,
+            "cliffWear": 900,
+            "progressivePenaltyMs": 900
+          }
+        },
+        "tyreWearMultiplierPermille": 1000,
+        "tyreEnergyMultiplierPermille": 1000
+      }
+    },
+    "rngState": 2379357699,
+    "lap": 25,
+    "status": "FINISHED",
+    "entrants": [
+      {
+        "stint": {
+          "number": 1,
+          "startedAtLap": 0,
+          "tyre": {
+            "compound": "SOFT",
+            "ageLaps": 25,
+            "wearPermille": 800,
+            "temperatureMilliC": 97987
+          }
+        },
+        "entrantId": "e0",
+        "completedLaps": 25,
+        "elapsedTimeMs": 2282088,
+        "lastLapTimeMs": 91756,
+        "bestLapTimeMs": 90965,
+        "fuelMassKg": 10,
+        "position": 1,
+        "gapToLeaderMs": 0,
+        "intervalToAheadMs": 0
+      },
+      {
+        "stint": {
+          "number": 1,
+          "startedAtLap": 0,
+          "tyre": {
+            "compound": "HARD",
+            "ageLaps": 25,
+            "wearPermille": 375,
+            "temperatureMilliC": 99986
+          }
+        },
+        "entrantId": "e1",
+        "completedLaps": 25,
+        "elapsedTimeMs": 2291845,
+        "lastLapTimeMs": 91149,
+        "bestLapTimeMs": 91121,
+        "fuelMassKg": 10,
+        "position": 2,
+        "gapToLeaderMs": 9757,
+        "intervalToAheadMs": 9757
+      }
+    ]
+  },
+  "result": [
+    {
+      "position": 1,
+      "entrantId": "e0",
+      "driverId": "d0",
+      "teamId": "team",
+      "totalTimeMs": 2282088,
+      "bestLapTimeMs": 90965
+    },
+    {
+      "position": 2,
+      "entrantId": "e1",
+      "driverId": "d1",
+      "teamId": "team",
+      "totalTimeMs": 2291845,
+      "bestLapTimeMs": 91121
+    }
+  ]
+}

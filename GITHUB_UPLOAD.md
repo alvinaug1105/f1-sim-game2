@@ -42,4 +42,4 @@ npm run db:seed
 
 Use a separate disposable PostgreSQL database for TEST_DATABASE_URL, then run `npm run test:db`. The integration suite creates and removes only its uniquely named test schema.
 
-At export, all **224 offline tests** and **88 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, TypeScript, lint and the production build passed. All five checked-in migrations applied on a disposable local PostgreSQL database; previous migrations remain unchanged. Browser checks covered mixed starting compounds, tyre evolution, exact refresh, English/Traditional Chinese switching and persisted final classification. See `docs/phase-6-report.md`.
+At export, all **258 offline tests** and **112 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, TypeScript, lint and the production build passed. All six checked-in migrations applied on a disposable local PostgreSQL database; previous migrations remain unchanged. Browser checks covered version-3 creation, real overtakes, DRS, closing gaps, blocked time, exact refresh/language isolation and persisted final classification. See `docs/phase-7-report.md`.

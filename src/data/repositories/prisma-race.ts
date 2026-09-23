@@ -1,4 +1,10 @@
 import {
+  validateInteraction,
+  validateDriverInteraction,
+  type InteractionConfiguration,
+  type TrackState,
+} from "../../simulation/race/traffic/model";
+import {
   validateTyreConfiguration,
   validateTyreState,
   type TyreConfiguration,
@@ -44,6 +50,7 @@ async function read(
     include: {
       entrants: { orderBy: { gridPosition: "asc" } },
       tyreProfiles: true,
+      interactionProfile: true,
     },
   });
   const circuit = await tx.careerCircuit.findUniqueOrThrow({
@@ -65,7 +72,7 @@ async function read(
         ],
       });
   let tyres: TyreConfiguration | undefined;
-  if (row?.simulationVersion === 2) {
+  if (row?.simulationVersion === 2 || row?.simulationVersion === 3) {
     tyres = {
       tyreWearMultiplierPermille: row.tyreWearMultiplierPermille!,
       tyreEnergyMultiplierPermille: row.tyreEnergyMultiplierPermille!,
@@ -82,6 +89,16 @@ async function read(
     };
     validateTyreConfiguration(tyres);
   }
+  let interaction: InteractionConfiguration | undefined;
+  if (row?.simulationVersion === 3) {
+    if (!row.interactionProfile) throw new RaceError("INVALID_INPUT");
+    interaction = Object.fromEntries(
+      Object.entries(row.interactionProfile).filter(
+        ([key]) => key !== "careerId" && key !== "careerRaceSimulationId",
+      ),
+    ) as unknown as InteractionConfiguration;
+    validateInteraction(interaction);
+  }
   const state: RaceSimulationState | null = row
     ? {
         simulationVersion: row.simulationVersion,
@@ -90,6 +107,7 @@ async function read(
         status: row.status,
         input: {
           ...(tyres ? { tyres } : {}),
+          ...(interaction ? { interaction } : {}),
           seed: Number(row.seed),
           totalLaps: row.totalLaps,
           initialFuelKg: row.initialFuelGrams / 1000,
@@ -106,6 +124,14 @@ async function read(
             gridOffsetMs: row.gridOffsetMs,
           },
           entrants: row.entrants.map((e) => ({
+            ...(interaction
+              ? {
+                  interaction: readDriverInteraction(
+                    e.driverOvertaking,
+                    e.driverDefending,
+                  ),
+                }
+              : {}),
             entrantId: e.id,
             driverId: e.careerDriverId,
             teamId: e.careerTeamId,
@@ -127,6 +153,7 @@ async function read(
         entrants: [...row.entrants]
           .sort((a, b) => a.position - b.position)
           .map((e) => ({
+            ...(interaction ? { track: readTrack(e) } : {}),
             ...(tyres
               ? {
                   stint: {
@@ -231,6 +258,14 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                   s.input.tyres?.tyreEnergyMultiplierPermille,
               },
             });
+            if (s.input.interaction)
+              await tx.careerRaceInteractionProfile.create({
+                data: {
+                  ...s.input.interaction,
+                  careerId,
+                  careerRaceSimulationId: row.id,
+                },
+              });
             if (s.input.tyres)
               await tx.careerRaceTyreProfile.createMany({
                 data: Object.values(s.input.tyres.profiles).map((profile) => ({
@@ -253,6 +288,8 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                   careerRaceSimulationId: row.id,
                   careerDriverId: e.driverId,
                   careerTeamId: e.teamId,
+                  driverOvertaking: e.interaction?.overtaking,
+                  driverDefending: e.interaction?.defending,
                   driverName: label.driverName,
                   teamName: label.teamName,
                   gridPosition: e.gridPosition,
@@ -296,6 +333,19 @@ export class PrismaRaceRepository implements CareerRaceRepository {
 }
 function entrantState(e: RaceSimulationState["entrants"][number]) {
   return {
+    ...(e.track
+      ? {
+          trackProgressMicrolaps: BigInt(e.track.progressMicrolaps),
+          drsEligible: e.track.drsEligible,
+          overtakesCompleted: e.track.overtakesCompleted,
+          potentialLapTimeMs: e.track.potentialLapTimeMs,
+          dirtyAirMs: e.track.dirtyAirMs,
+          drsBenefitMs: e.track.drsBenefitMs,
+          trafficLossMs: e.track.trafficLossMs,
+          attempted: e.track.attempted,
+          passed: e.track.passed,
+        }
+      : {}),
     ...(e.stint
       ? {
           compound: e.stint.tyre.compound,
@@ -333,4 +383,44 @@ function readTyre(
   const tyre = { compound, ageLaps, wearPermille, temperatureMilliC };
   validateTyreState(tyre);
   return tyre;
+}
+
+function readDriverInteraction(
+  overtaking: number | null,
+  defending: number | null,
+) {
+  if (overtaking === null || defending === null)
+    throw new RaceError("INVALID_INPUT");
+  const profile = { overtaking, defending };
+  validateDriverInteraction(profile);
+  return profile;
+}
+function readTrack(e: {
+  trackProgressMicrolaps: bigint | null;
+  drsEligible: boolean | null;
+  overtakesCompleted: number | null;
+  potentialLapTimeMs: number | null;
+  dirtyAirMs: number | null;
+  drsBenefitMs: number | null;
+  trafficLossMs: number | null;
+  attempted: boolean | null;
+  passed: boolean | null;
+}): TrackState {
+  const values = {
+    progressMicrolaps:
+      e.trackProgressMicrolaps === null
+        ? null
+        : Number(e.trackProgressMicrolaps),
+    drsEligible: e.drsEligible,
+    overtakesCompleted: e.overtakesCompleted,
+    potentialLapTimeMs: e.potentialLapTimeMs,
+    dirtyAirMs: e.dirtyAirMs,
+    drsBenefitMs: e.drsBenefitMs,
+    trafficLossMs: e.trafficLossMs,
+    attempted: e.attempted,
+    passed: e.passed,
+  };
+  if (Object.values(values).some((v) => v === null))
+    throw new RaceError("INVALID_INPUT");
+  return values as TrackState;
 }

@@ -35,7 +35,7 @@ export function requestPitStop(
   compound: TyreCompound | null,
 ): RaceSimulationState {
   if (
-    ![4, 5, 6].includes(state.simulationVersion) ||
+    ![4, 5, 6, 7].includes(state.simulationVersion) ||
     !state.input.pits ||
     state.status !== "RUNNING" ||
     state.lap >= state.input.totalLaps - 1
@@ -45,7 +45,7 @@ export function requestPitStop(
     throw new RangeError("Invalid pit compound");
   if (compound && !state.input.tyres?.profiles[compound]) throw new RangeError("Compound unavailable for this race");
   const e = state.entrants.find((e) => e.entrantId === entrantId);
-  if (!e?.pit) throw new RangeError("Unknown pit entrant");
+  if (!e?.pit || e.incident?.status === "RETIRED") throw new RangeError("Unknown pit entrant");
   if (e.pit.pendingCompound === compound) return state;
   return {
     ...state,

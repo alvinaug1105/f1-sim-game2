@@ -342,3 +342,16 @@ New starts use simulation v5; v1–v4 keep their prior optional profiles and beh
 ## Phase 10 — current weather architecture
 
 New starts use v6. `simulation/race/weather/model.ts` owns frozen seeded truth/forecast profiles, persistent rainfall/water/temperatures/DRS and numeric tyre-water curves. Its generation RNG is separate from lap interaction RNG. `weather/policy.ts` receives current observations and the shared public forecast, with no hidden timeline. Weather modifies existing tyre thermal/wear inputs and potential pace before traffic; fuel/ERS and ordinary pit execution remain shared mechanics. An owned weather row persists the frozen profile and bounded current state atomically with the race. Version-aware SQL guards restrict wet compounds to v6 while prior migration/test files remain unchanged. The development UI uses central English/Traditional Chinese resources; no locale enters simulation. See [Phase 10 report](phase-10-report.md) for exact ordering, measurements, real SQL/browser checks and limitations. Earlier sections describe historical phases.
+
+
+## Phase 11 — v7 incidents and Race Control
+
+`simulation/race/incidents` owns the pure v7 lap path, numeric risk profiles, dedicated RNG and state validation. The existing engine dispatches only version 7 to it; v1–v6 retain the original lap path. New starts use `startIncidentCareerRace`; all historical start APIs remain available. Capture old-version fixtures before adding further simulation versions.
+
+Reliability and control are frozen race inputs, separate from editable game content and translated UI. The six-draw original-grid incident schedule consumes draws even for retired/suppressed slots. Retirement is an end-of-lap state transition; resources and participation then freeze. Race clock completion retains the existing scheduled-lap contract even if no cars remain. Events are ordered structured data, translated by the client from centralized catalogs.
+
+VSC/SC suppress overtaking and deployment; SC compresses excess adjacent gaps gradually. Resource/thermal modifiers cap actual effects without rewriting player commands. Effective pit loss compares a fixed pit route with the slowed field's time through the bypassed track section. AI receives that same cost. Restart DRS gating and weather gating both apply.
+
+`CareerRaceIncidents` is a small owned extension: numeric control/RNG columns plus configuration, reliability, entrant-incident and event JSON. It shares the existing transaction and Career lock, with SQL ownership/check constraints and runtime semantic validation. It is not an event-sourced aggregate: current state remains authoritative and events provide history. The additive tenth migration preserves previous migration bytes and extends the wet-compound guard to v7.
+
+See [Phase 11 report](phase-11-report.md) for exact draw semantics, bounds, measurements and verification. No final component allocation, red flags, unlapping, continuous collision geometry, 2D viewer or Practice/Qualifying engine is included.

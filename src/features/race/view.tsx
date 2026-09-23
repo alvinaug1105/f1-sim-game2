@@ -1,4 +1,5 @@
 "use client";
+import { IncidentPanel } from "./incident-panel";
 import { WeatherPanel } from "./weather-panel";
 import Link from "next/link";
 import { PitPanel } from "./pit-panel";
@@ -45,7 +46,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
               ? "tyre.notice"
               : state?.simulationVersion === 3
                 ? "traffic.notice"
-                : state?.simulationVersion === 4 ? "pit.notice" : state?.simulationVersion === 5 ? "command.notice" : "weather.notice",
+                : state?.simulationVersion === 4 ? "pit.notice" : state?.simulationVersion === 5 ? "command.notice" : state?.simulationVersion === 6 ? "weather.notice" : "incident.notice",
         )}
       </p>
       {state ? (
@@ -68,6 +69,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
       ) : (
         <p>{t(canStart ? "race.ready" : "race.unavailable")}</p>
       )}
+      {state?.incidents && <IncidentPanel data={data} />}
       {state?.weather && <WeatherPanel state={state} />}
       <form action={action} className="race-controls">
         <input type="hidden" name="careerId" value={progress.career.id} />
@@ -179,7 +181,7 @@ export function RaceView({ data }: { data: CareerRaceData }) {
                 return (
                   <tr key={e.entrantId}>
                     <td>{format.number(e.position)}</td>
-                    <th scope="row">{label.driverName}</th>
+                    <th scope="row">{label.driverName}{e.incident && <small> · {t(`incident.${e.incident.status}`)} ({format.number(e.completedLaps)})</small>}</th>
                     <td>{label.teamName}</td>
                     <td>{formatRaceTime(e.elapsedTimeMs, locale)}</td>
                     <td>

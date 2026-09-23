@@ -1,3 +1,5 @@
+import { advanceIncidentLap } from "./incidents/engine";
+import { validateIncidentConfiguration, validateReliability, initialIncidentRace, initialEntrantIncident } from "./incidents/model";
 import { advanceWeather, validateWeatherConfiguration, advanceWeatherTyre, waterPenaltyMs } from "./weather/model";
 import { initialCommands, validateCommandConfiguration, commandLapEffects } from "./commands/model";
 import { chooseAiCommands } from "./commands/policy";
@@ -35,9 +37,9 @@ import type {
   DriverPerformanceProfile,
   CarPerformanceProfile,
 } from "./types";
-export const SIMULATION_VERSION = 6;
+export const SIMULATION_VERSION = 7;
 export function isSupportedSimulationVersion(version: number) {
-  return version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6;
+  return version === 7 || version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6;
 }
 /** Versioned Phase 5 free-air tuning. Penalties are relative to a 100-rated baseline. */
 export const DEFAULT_RACE_PARAMETERS: RaceParameters = Object.freeze({
@@ -75,6 +77,7 @@ function validateProfiles(
   bounded(parameters.gridOffsetMs, 0, 10000, true);
 }
 export function validateRaceInput(input: RaceSimulationInput) {
+  if (input.incidents) { validateIncidentConfiguration(input.incidents); if (!input.weather) throw new RangeError("Incidents require weather"); for (const e of input.entrants) { if (!e.reliability) throw new RangeError("Missing reliability"); validateReliability(e.reliability); } }
   if (input.weather) {
     validateWeatherConfiguration(input.weather,input.totalLaps);
     if (!input.commands || !input.tyres?.profiles.INTERMEDIATE || !input.tyres?.profiles.WET) throw new RangeError("Weather requires complete v6 profiles");
@@ -239,7 +242,8 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   const snapshot = structuredClone(input);
   return {
     ...(snapshot.weather ? { weather: structuredClone(snapshot.weather.initial) } : {}),
-    simulationVersion: input.weather ? 6 : input.commands ? 5 : input.pits
+    ...(input.incidents ? { incidents: initialIncidentRace(input.seed) } : {}),
+    simulationVersion: input.incidents ? 7 : input.weather ? 6 : input.commands ? 5 : input.pits
       ? 4
       : input.interaction
         ? 3
@@ -258,6 +262,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
           )
       : classify)(
       snapshot.entrants.map((e) => ({
+        ...(input.incidents ? { incident: initialEntrantIncident() } : {}),
         ...(snapshot.tyres
           ? {
               stint: {
@@ -286,6 +291,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
 export function advanceRaceLap(
   state: RaceSimulationState,
 ): RaceSimulationState {
+  if (state.simulationVersion === 7) return advanceIncidentLap(state);
   if (state.simulationVersion >= 3 !== Boolean(state.input.interaction))
     throw new RangeError("Interaction version mismatch");
   if ((state.simulationVersion >= 4) !== Boolean(state.input.pits))
@@ -419,6 +425,7 @@ export function raceResult(state: RaceSimulationState): readonly RaceResult[] {
       (s) => s.entrantId === e.entrantId,
     )!;
     return {
+      ...(e.incident ? { status: e.incident.status, completedLaps: e.completedLaps } : {}),
       position: e.position,
       entrantId: e.entrantId,
       driverId: source.driverId,

@@ -385,6 +385,7 @@ enum RaceSimulationStatus {
 }
 
 model CareerRaceSimulation {
+  incidentProfile          CareerRaceIncidents?
   weatherProfile           CareerRaceWeather?
   id                       String               @id @default(uuid()) @db.Uuid
   careerId                 String               @db.Uuid
@@ -614,6 +615,23 @@ model CareerRaceWeather {
   trackTemperatureMilliC Int
   trackWater             Int
   drsState               String
+  simulation             CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerId, careerRaceSimulationId])
+}
+
+model CareerRaceIncidents {
+  careerRaceSimulationId String               @id @db.Uuid
+  careerId               String               @db.Uuid
+  profile                Json
+  reliability            Json
+  entrants               Json
+  events                 Json
+  rngState               BigInt
+  mode                   String
+  startedLap             Int?
+  remainingLaps          Int
+  drsDelay               Int
   simulation             CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([careerId, careerRaceSimulationId])

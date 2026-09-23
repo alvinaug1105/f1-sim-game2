@@ -28,7 +28,7 @@ export function PitPanel({
   const source = state.input.entrants.find((x) => x.entrantId === e.entrantId)!;
   const canCommand =
     source.strategyController === "PLAYER" &&
-    state.status === "RUNNING" &&
+    state.status === "RUNNING" && e.incident?.status !== "RETIRED" &&
     state.lap < state.input.totalLaps - 1;
   const estimate = estimatePitWindow(state, e);
   const ms = (value: number) =>
@@ -56,16 +56,16 @@ export function PitPanel({
               compound: t(`tyre.${pit.pendingCompound}`),
               lap: format.number(state.lap + 1),
             })
-          : t(state.status === "FINISHED" ? "pit.finished" : "pit.onTrack")}
+          : t(e.incident?.status === "RETIRED" ? "incident.RETIRED" : state.status === "FINISHED" ? "pit.finished" : "pit.onTrack")}
       </p>
-      {state.status === "RUNNING" && (
+      {state.status === "RUNNING" && e.incident?.status !== "RETIRED" && (
         <p>
           {t("pit.estimate", { laps: format.number(estimate.lapsToCliff) })} ·{" "}
           {t("pit.loss")}: {ms(estimate.minimumLossMs)}–
           {ms(estimate.maximumLossMs)}
         </p>
       )}
-      {source.strategyController === "DEVELOPMENT_AI" && <p>{t("pit.ai")}</p>}
+      {source.strategyController === "DEVELOPMENT_AI" && e.incident?.status !== "RETIRED" && <p>{t("pit.ai")}</p>}
       {canCommand && (
         <form action={action}>
           <input
@@ -86,7 +86,7 @@ export function PitPanel({
                 defaultValue={pit.pendingCompound ?? "HARD"}
                 key={`${pit.commandRevision}-${pit.pendingCompound}`}
               >
-                {(state.simulationVersion === 6 ? WEATHER_TYRE_COMPOUNDS : TYRE_COMPOUNDS).map((c) => (
+                {(state.simulationVersion >= 6 ? WEATHER_TYRE_COMPOUNDS : TYRE_COMPOUNDS).map((c) => (
                   <option key={c} value={c}>
                     {t(`tyre.${c}`)}
                   </option>
@@ -110,7 +110,7 @@ export function PitPanel({
           )}
         </form>
       )}
-      {e.commands && <CommandPanel data={data} entrant={e} />}
+      {e.commands && e.incident?.status !== "RETIRED" && <CommandPanel data={data} entrant={e} />}
       <details>
         <summary>{t("pit.history")}</summary>
         <h4>{t("pit.stints")}</h4>

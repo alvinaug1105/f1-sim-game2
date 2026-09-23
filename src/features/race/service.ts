@@ -1,3 +1,4 @@
+import { defaultIncidentConfiguration, defaultReliability } from "../../simulation/race/incidents/model";
 import { developmentWeather } from "../../simulation/race/weather/model";
 import { weatherTyreConfiguration } from "../../simulation/race/tyres/profiles";
 import { defaultCommandConfiguration, PACE_MODES, FUEL_MODES, ERS_MODES, type PaceMode, type FuelMode, type ErsMode } from "../../simulation/race/commands/model";
@@ -37,6 +38,7 @@ export function startCareerRace(
   withPits = false,
   withCommands = false,
   withWeather = false,
+  withIncidents = false,
 ) {
   return repository.changeRace(careerId, eventId, (data) => {
     if (data.state) throw new RaceError("STALE");
@@ -83,12 +85,14 @@ export function startCareerRace(
           withTraffic
             ? {
                 ...input,
+                ...(withIncidents ? { incidents: defaultIncidentConfiguration() } : {}),
                 ...(withWeather ? { weather: developmentWeather(seed,input.totalLaps) } : {}),
                 ...(withCommands ? { commands: defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
                 ...(withPits ? { pits: defaultPitConfiguration() } : {}),
                 interaction: defaultInteractionConfiguration(),
                 entrants: input.entrants.map((e) => ({
                   ...e,
+                  ...(withIncidents ? { reliability: defaultReliability() } : {}),
                   ...(withPits
                     ? {
                         strategyController: (e.teamId ===
@@ -212,7 +216,7 @@ export function changeCareerPitRequest(
     const state = data.state;
     if (
       !state ||
-      ![4, 5, 6].includes(state.simulationVersion) ||
+      ![4, 5, 6, 7].includes(state.simulationVersion) ||
       state.status !== "RUNNING" ||
       data.progress.career.status !== "ACTIVE"
     )
@@ -226,7 +230,7 @@ export function changeCareerPitRequest(
     const entrant = state.entrants.find((e) => e.entrantId === entrantId);
     const source = state.input.entrants.find((e) => e.entrantId === entrantId);
     if (
-      !entrant?.pit ||
+      !entrant?.pit || entrant.incident?.status === "RETIRED" ||
       source?.strategyController !== "PLAYER" ||
       source.teamId !== data.progress.career.playerTeamId
     )
@@ -257,7 +261,7 @@ function setCommand(repository: CareerRaceRepository, careerId: string, eventId:
   return repository.changeRace(careerId, eventId, data => {
     const s = data.state, event = data.progress.events.find(e => e.id === eventId);
     const e = s?.entrants.find(e => e.entrantId === entrantId), source = s?.input.entrants.find(e => e.entrantId === entrantId);
-    if (!s || ![5,6].includes(s.simulationVersion) || s.status !== "RUNNING" || data.progress.career.status !== "ACTIVE" || event?.status !== "CURRENT" || event.weekend?.sessions.find(x => x.id === data.sessionId)?.status !== "IN_PROGRESS" || !e?.commands || source?.strategyController !== "PLAYER" || source.teamId !== data.progress.career.playerTeamId) throw new RaceError("INVALID_ACTION");
+    if (!s || ![5,6,7].includes(s.simulationVersion) || s.status !== "RUNNING" || data.progress.career.status !== "ACTIVE" || event?.status !== "CURRENT" || event.weekend?.sessions.find(x => x.id === data.sessionId)?.status !== "IN_PROGRESS" || !e?.commands || e.incident?.status === "RETIRED" || source?.strategyController !== "PLAYER" || source.teamId !== data.progress.career.playerTeamId) throw new RaceError("INVALID_ACTION");
     if (s.lap !== lap || e.commands.commandRevision !== revision) throw new RaceError("STALE");
     return { state: { ...s, entrants: s.entrants.map(x => x.entrantId !== entrantId ? x : { ...x, commands: { ...x.commands!, [intent.kind]: intent.mode, commandRevision: revision + 1 } }) }, labels: data.labels, progress: data.progress };
   });
@@ -268,4 +272,8 @@ export function setDriverErsMode(r: CareerRaceRepository, c: string, ev: string,
 
 export function startWeatherCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
  return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true);
+}
+
+export function startIncidentCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
+ return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true);
 }

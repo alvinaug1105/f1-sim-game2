@@ -1,0 +1,740 @@
+{
+  "state": {
+    "weather": {
+      "rainfallIntensity": 0,
+      "airTemperatureMilliC": 24000,
+      "trackTemperatureMilliC": 33996,
+      "trackWater": 0,
+      "drsState": "DRS_ENABLED"
+    },
+    "simulationVersion": 6,
+    "input": {
+      "seed": 42,
+      "totalLaps": 58,
+      "initialFuelKg": 130,
+      "fuelBurnPerLapKg": 1.6,
+      "circuit": {
+        "baseLapTimeMs": 90000,
+        "fuelEffectMsPerKg": 30
+      },
+      "parameters": {
+        "carPerformanceRangeMs": 3000,
+        "driverPerformanceRangeMs": 1500,
+        "minVariationMs": 0,
+        "maxVariationMs": 0,
+        "gridOffsetMs": 1000
+      },
+      "entrants": [
+        {
+          "entrantId": "pit-entrant-0",
+          "driverId": "pit-driver-0",
+          "teamId": "pit-team-0",
+          "gridPosition": 1,
+          "driver": {
+            "pace": 90,
+            "consistency": 90
+          },
+          "car": {
+            "performance": 60
+          },
+          "startingTyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 0,
+            "wearPermille": 0,
+            "temperatureMilliC": 80000
+          },
+          "interaction": {
+            "overtaking": 65,
+            "defending": 65
+          },
+          "strategyController": "PLAYER"
+        },
+        {
+          "entrantId": "pit-entrant-1",
+          "driverId": "pit-driver-1",
+          "teamId": "pit-team-0",
+          "gridPosition": 2,
+          "driver": {
+            "pace": 90,
+            "consistency": 90
+          },
+          "car": {
+            "performance": 60
+          },
+          "startingTyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 0,
+            "wearPermille": 0,
+            "temperatureMilliC": 80000
+          },
+          "interaction": {
+            "overtaking": 65,
+            "defending": 65
+          },
+          "strategyController": "PLAYER"
+        },
+        {
+          "entrantId": "pit-entrant-2",
+          "driverId": "pit-driver-2",
+          "teamId": "pit-team-1",
+          "gridPosition": 3,
+          "driver": {
+            "pace": 90,
+            "consistency": 90
+          },
+          "car": {
+            "performance": 60
+          },
+          "startingTyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 0,
+            "wearPermille": 0,
+            "temperatureMilliC": 80000
+          },
+          "interaction": {
+            "overtaking": 65,
+            "defending": 65
+          },
+          "strategyController": "PLAYER"
+        },
+        {
+          "entrantId": "pit-entrant-3",
+          "driverId": "pit-driver-3",
+          "teamId": "pit-team-1",
+          "gridPosition": 4,
+          "driver": {
+            "pace": 90,
+            "consistency": 90
+          },
+          "car": {
+            "performance": 60
+          },
+          "startingTyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 0,
+            "wearPermille": 0,
+            "temperatureMilliC": 80000
+          },
+          "interaction": {
+            "overtaking": 65,
+            "defending": 65
+          },
+          "strategyController": "PLAYER"
+        }
+      ],
+      "tyres": {
+        "profiles": {
+          "SOFT": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "SOFT",
+            "baseGripDeltaMs": -350,
+            "idealTemperatureMinMilliC": 90000,
+            "idealTemperatureMaxMilliC": 105000,
+            "targetTemperatureMilliC": 98000,
+            "baseWearPerLapPermille": 32,
+            "degradationStartWear": 400,
+            "cliffWear": 800,
+            "progressivePenaltyMs": 1600
+          },
+          "MEDIUM": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "MEDIUM",
+            "baseGripDeltaMs": 0,
+            "idealTemperatureMinMilliC": 85000,
+            "idealTemperatureMaxMilliC": 105000,
+            "targetTemperatureMilliC": 97000,
+            "baseWearPerLapPermille": 22,
+            "degradationStartWear": 450,
+            "cliffWear": 850,
+            "progressivePenaltyMs": 1200
+          },
+          "HARD": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "HARD",
+            "baseGripDeltaMs": 300,
+            "idealTemperatureMinMilliC": 85000,
+            "idealTemperatureMaxMilliC": 110000,
+            "targetTemperatureMilliC": 100000,
+            "baseWearPerLapPermille": 15,
+            "degradationStartWear": 500,
+            "cliffWear": 900,
+            "progressivePenaltyMs": 900
+          },
+          "INTERMEDIATE": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "INTERMEDIATE",
+            "baseGripDeltaMs": 0,
+            "idealTemperatureMinMilliC": 65000,
+            "idealTemperatureMaxMilliC": 90000,
+            "targetTemperatureMilliC": 78000,
+            "baseWearPerLapPermille": 24,
+            "degradationStartWear": 450,
+            "cliffWear": 850,
+            "progressivePenaltyMs": 1200
+          },
+          "WET": {
+            "coldPenaltyMsPerC": 20,
+            "hotPenaltyMsPerC": 30,
+            "maxTemperaturePenaltyMs": 1500,
+            "thermalResponsePermille": 250,
+            "stablePenaltyMs": 100,
+            "cliffPenaltyMs": 6000,
+            "compound": "WET",
+            "baseGripDeltaMs": 0,
+            "idealTemperatureMinMilliC": 55000,
+            "idealTemperatureMaxMilliC": 80000,
+            "targetTemperatureMilliC": 68000,
+            "baseWearPerLapPermille": 20,
+            "degradationStartWear": 450,
+            "cliffWear": 850,
+            "progressivePenaltyMs": 1200
+          }
+        },
+        "tyreWearMultiplierPermille": 1000,
+        "tyreEnergyMultiplierPermille": 1000
+      },
+      "interaction": {
+        "overtakingDifficulty": 35,
+        "dirtyAirSensitivityPermille": 1000,
+        "drsEffectivenessPermille": 1000,
+        "drsZoneCount": 2,
+        "dirtyAirThresholdMs": 1500,
+        "maxDirtyAirMs": 300,
+        "attackThresholdMs": 300,
+        "minimumGapMs": 80,
+        "minimumPaceAdvantageMs": 100,
+        "opportunityIntervalLaps": 2,
+        "drsActivationLap": 3,
+        "drsThresholdMs": 1000,
+        "drsMsPerZone": 80,
+        "maxDrsBenefitMs": 300
+      },
+      "pits": {
+        "pitLaneLossMs": 19500,
+        "stationaryBaseMs": 2500,
+        "stationaryVariationMs": 250,
+        "newTyreTemperatureMilliC": 80000,
+        "aiWearThresholdPermille": 750,
+        "aiMinimumStintLaps": 5
+      },
+      "commands": {
+        "version": 1,
+        "pace": {
+          "CONSERVE": {
+            "lapTimeDeltaMs": 650,
+            "tyreWearMultiplierPermille": 650,
+            "tyreEnergyMultiplierPermille": 650
+          },
+          "LIGHT": {
+            "lapTimeDeltaMs": 300,
+            "tyreWearMultiplierPermille": 820,
+            "tyreEnergyMultiplierPermille": 820
+          },
+          "STANDARD": {
+            "lapTimeDeltaMs": 0,
+            "tyreWearMultiplierPermille": 1000,
+            "tyreEnergyMultiplierPermille": 1000
+          },
+          "PUSH": {
+            "lapTimeDeltaMs": -300,
+            "tyreWearMultiplierPermille": 1250,
+            "tyreEnergyMultiplierPermille": 1250
+          },
+          "ATTACK": {
+            "lapTimeDeltaMs": -550,
+            "tyreWearMultiplierPermille": 1550,
+            "tyreEnergyMultiplierPermille": 1550
+          }
+        },
+        "fuel": {
+          "CONSERVE": {
+            "lapTimeDeltaMs": 450,
+            "burnMultiplierPermille": 850
+          },
+          "BALANCED": {
+            "lapTimeDeltaMs": 0,
+            "burnMultiplierPermille": 1000
+          },
+          "PUSH": {
+            "lapTimeDeltaMs": -250,
+            "burnMultiplierPermille": 1150
+          }
+        },
+        "ers": {
+          "HARVEST": {
+            "lapTimeDeltaMs": 400,
+            "recoveryPermille": 2000,
+            "consumption": 0
+          },
+          "NEUTRAL": {
+            "lapTimeDeltaMs": 0,
+            "recoveryPermille": 1000,
+            "consumption": 60
+          },
+          "DEPLOY": {
+            "lapTimeDeltaMs": -450,
+            "recoveryPermille": 1000,
+            "consumption": 180
+          },
+          "OVERTAKE": {
+            "lapTimeDeltaMs": -850,
+            "recoveryPermille": 1000,
+            "consumption": 300
+          }
+        },
+        "capacity": 1000,
+        "initialCharge": 700,
+        "baseRecovery": 60,
+        "ersHarvestFactorPermille": 1000,
+        "ersDeploymentEffectivenessPermille": 1000,
+        "exhaustionPenaltyMs": 120000,
+        "ai": {
+          "lowCharge": 250,
+          "battleGapMs": 1500,
+          "highWear": 700,
+          "lateLaps": 10,
+          "surplusGrams": 3000
+        }
+      },
+      "weather": {
+        "version": 1,
+        "timeline": [
+          {
+            "startLap": 1,
+            "rainfall": 0,
+            "airTemperatureMilliC": 24000
+          },
+          {
+            "startLap": 9,
+            "rainfall": 455,
+            "airTemperatureMilliC": 19000
+          },
+          {
+            "startLap": 19,
+            "rainfall": 1000,
+            "airTemperatureMilliC": 19000
+          },
+          {
+            "startLap": 28,
+            "rainfall": 200,
+            "airTemperatureMilliC": 19000
+          },
+          {
+            "startLap": 32,
+            "rainfall": 0,
+            "airTemperatureMilliC": 24000
+          }
+        ],
+        "forecast": [
+          {
+            "arrivalMinLap": 1,
+            "arrivalMaxLap": 4,
+            "rainfallMin": 0,
+            "rainfallMax": 150
+          },
+          {
+            "arrivalMinLap": 6,
+            "arrivalMaxLap": 10,
+            "rainfallMin": 305,
+            "rainfallMax": 605
+          },
+          {
+            "arrivalMinLap": 18,
+            "arrivalMaxLap": 22,
+            "rainfallMin": 850,
+            "rainfallMax": 1000
+          },
+          {
+            "arrivalMinLap": 25,
+            "arrivalMaxLap": 29,
+            "rainfallMin": 50,
+            "rainfallMax": 350
+          },
+          {
+            "arrivalMinLap": 29,
+            "arrivalMaxLap": 33,
+            "rainfallMin": 0,
+            "rainfallMax": 150
+          }
+        ],
+        "initial": {
+          "rainfallIntensity": 0,
+          "airTemperatureMilliC": 24000,
+          "trackTemperatureMilliC": 34000,
+          "trackWater": 0,
+          "drsState": "DRS_ENABLED"
+        },
+        "circuit": {
+          "accumulationPermille": 180,
+          "drainagePerLap": 20,
+          "dryingPerLap": 45,
+          "wetGripSensitivityPermille": 1000
+        },
+        "drsDisableWater": 300,
+        "drsEnableWater": 180,
+        "forecastAccuracy": {
+          "lapUncertainty": 2,
+          "intensityUncertainty": 150
+        },
+        "strategy": {
+          "horizonLaps": 10,
+          "minimumStintLaps": 3,
+          "marginMs": 1500
+        },
+        "waterProfiles": {
+          "SOFT": {
+            "centre": 0,
+            "basePenaltyMs": 0,
+            "curveMs": 28000,
+            "dryWearMultiplierPermille": 1000,
+            "wetTargetMilliC": 80000,
+            "dryTargetMilliC": 98000
+          },
+          "MEDIUM": {
+            "centre": 0,
+            "basePenaltyMs": 0,
+            "curveMs": 28000,
+            "dryWearMultiplierPermille": 1000,
+            "wetTargetMilliC": 80000,
+            "dryTargetMilliC": 98000
+          },
+          "HARD": {
+            "centre": 0,
+            "basePenaltyMs": 0,
+            "curveMs": 28000,
+            "dryWearMultiplierPermille": 1000,
+            "wetTargetMilliC": 80000,
+            "dryTargetMilliC": 98000
+          },
+          "INTERMEDIATE": {
+            "centre": 400,
+            "basePenaltyMs": 1000,
+            "curveMs": 10000,
+            "dryWearMultiplierPermille": 2500,
+            "wetTargetMilliC": 76000,
+            "dryTargetMilliC": 115000
+          },
+          "WET": {
+            "centre": 850,
+            "basePenaltyMs": 1600,
+            "curveMs": 18000,
+            "dryWearMultiplierPermille": 4000,
+            "wetTargetMilliC": 66000,
+            "dryTargetMilliC": 125000
+          }
+        }
+      }
+    },
+    "rngState": 3074661818,
+    "lap": 58,
+    "status": "FINISHED",
+    "entrants": [
+      {
+        "stint": {
+          "number": 1,
+          "startedAtLap": 0,
+          "tyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 58,
+            "wearPermille": 1000,
+            "temperatureMilliC": 98905
+          }
+        },
+        "track": {
+          "progressMicrolaps": 58000000,
+          "drsEligible": false,
+          "overtakesCompleted": 0,
+          "potentialLapTimeMs": 99714,
+          "dirtyAirMs": 0,
+          "drsBenefitMs": 0,
+          "trafficLossMs": 0,
+          "attempted": false,
+          "passed": false
+        },
+        "pit": {
+          "pendingCompound": null,
+          "commandRevision": 0,
+          "stops": [],
+          "stints": [
+            {
+              "number": 1,
+              "startLap": 0,
+              "endLap": 58,
+              "startingTyre": {
+                "compound": "MEDIUM",
+                "ageLaps": 0,
+                "wearPermille": 0,
+                "temperatureMilliC": 80000
+              },
+              "endingTyre": {
+                "compound": "MEDIUM",
+                "ageLaps": 58,
+                "wearPermille": 1000,
+                "temperatureMilliC": 98905
+              }
+            }
+          ]
+        },
+        "commands": {
+          "paceMode": "STANDARD",
+          "fuelMode": "BALANCED",
+          "ersMode": "NEUTRAL",
+          "ersCharge": 700,
+          "commandRevision": 0
+        },
+        "entrantId": "pit-entrant-0",
+        "completedLaps": 58,
+        "elapsedTimeMs": 6010673,
+        "lastLapTimeMs": 99714,
+        "bestLapTimeMs": 94941,
+        "fuelMassKg": 37.2,
+        "position": 1,
+        "gapToLeaderMs": 0,
+        "intervalToAheadMs": 0
+      },
+      {
+        "stint": {
+          "number": 1,
+          "startedAtLap": 0,
+          "tyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 58,
+            "wearPermille": 1000,
+            "temperatureMilliC": 98905
+          }
+        },
+        "track": {
+          "progressMicrolaps": 57983356,
+          "drsEligible": false,
+          "overtakesCompleted": 0,
+          "potentialLapTimeMs": 99714,
+          "dirtyAirMs": 0,
+          "drsBenefitMs": 0,
+          "trafficLossMs": 0,
+          "attempted": false,
+          "passed": false
+        },
+        "pit": {
+          "pendingCompound": null,
+          "commandRevision": 0,
+          "stops": [],
+          "stints": [
+            {
+              "number": 1,
+              "startLap": 0,
+              "endLap": 58,
+              "startingTyre": {
+                "compound": "MEDIUM",
+                "ageLaps": 0,
+                "wearPermille": 0,
+                "temperatureMilliC": 80000
+              },
+              "endingTyre": {
+                "compound": "MEDIUM",
+                "ageLaps": 58,
+                "wearPermille": 1000,
+                "temperatureMilliC": 98905
+              }
+            }
+          ]
+        },
+        "commands": {
+          "paceMode": "STANDARD",
+          "fuelMode": "BALANCED",
+          "ersMode": "NEUTRAL",
+          "ersCharge": 700,
+          "commandRevision": 0
+        },
+        "entrantId": "pit-entrant-1",
+        "completedLaps": 58,
+        "elapsedTimeMs": 6012171,
+        "lastLapTimeMs": 99714,
+        "bestLapTimeMs": 94958,
+        "fuelMassKg": 37.2,
+        "position": 2,
+        "gapToLeaderMs": 1498,
+        "intervalToAheadMs": 1498
+      },
+      {
+        "stint": {
+          "number": 1,
+          "startedAtLap": 0,
+          "tyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 58,
+            "wearPermille": 1000,
+            "temperatureMilliC": 98905
+          }
+        },
+        "track": {
+          "progressMicrolaps": 57966711,
+          "drsEligible": false,
+          "overtakesCompleted": 0,
+          "potentialLapTimeMs": 99714,
+          "dirtyAirMs": 0,
+          "drsBenefitMs": 0,
+          "trafficLossMs": 0,
+          "attempted": false,
+          "passed": false
+        },
+        "pit": {
+          "pendingCompound": null,
+          "commandRevision": 0,
+          "stops": [],
+          "stints": [
+            {
+              "number": 1,
+              "startLap": 0,
+              "endLap": 58,
+              "startingTyre": {
+                "compound": "MEDIUM",
+                "ageLaps": 0,
+                "wearPermille": 0,
+                "temperatureMilliC": 80000
+              },
+              "endingTyre": {
+                "compound": "MEDIUM",
+                "ageLaps": 58,
+                "wearPermille": 1000,
+                "temperatureMilliC": 98905
+              }
+            }
+          ]
+        },
+        "commands": {
+          "paceMode": "STANDARD",
+          "fuelMode": "BALANCED",
+          "ersMode": "NEUTRAL",
+          "ersCharge": 700,
+          "commandRevision": 0
+        },
+        "entrantId": "pit-entrant-2",
+        "completedLaps": 58,
+        "elapsedTimeMs": 6013669,
+        "lastLapTimeMs": 99714,
+        "bestLapTimeMs": 94991,
+        "fuelMassKg": 37.2,
+        "position": 3,
+        "gapToLeaderMs": 2996,
+        "intervalToAheadMs": 1498
+      },
+      {
+        "stint": {
+          "number": 1,
+          "startedAtLap": 0,
+          "tyre": {
+            "compound": "MEDIUM",
+            "ageLaps": 58,
+            "wearPermille": 1000,
+            "temperatureMilliC": 98905
+          }
+        },
+        "track": {
+          "progressMicrolaps": 57950067,
+          "drsEligible": false,
+          "overtakesCompleted": 0,
+          "potentialLapTimeMs": 99714,
+          "dirtyAirMs": 0,
+          "drsBenefitMs": 0,
+          "trafficLossMs": 0,
+          "attempted": false,
+          "passed": false
+        },
+        "pit": {
+          "pendingCompound": null,
+          "commandRevision": 0,
+          "stops": [],
+          "stints": [
+            {
+              "number": 1,
+              "startLap": 0,
+              "endLap": 58,
+              "startingTyre": {
+                "compound": "MEDIUM",
+                "ageLaps": 0,
+                "wearPermille": 0,
+                "temperatureMilliC": 80000
+              },
+              "endingTyre": {
+                "compound": "MEDIUM",
+                "ageLaps": 58,
+                "wearPermille": 1000,
+                "temperatureMilliC": 98905
+              }
+            }
+          ]
+        },
+        "commands": {
+          "paceMode": "STANDARD",
+          "fuelMode": "BALANCED",
+          "ersMode": "NEUTRAL",
+          "ersCharge": 700,
+          "commandRevision": 0
+        },
+        "entrantId": "pit-entrant-3",
+        "completedLaps": 58,
+        "elapsedTimeMs": 6015167,
+        "lastLapTimeMs": 99714,
+        "bestLapTimeMs": 94979,
+        "fuelMassKg": 37.2,
+        "position": 4,
+        "gapToLeaderMs": 4494,
+        "intervalToAheadMs": 1498
+      }
+    ]
+  },
+  "result": [
+    {
+      "position": 1,
+      "entrantId": "pit-entrant-0",
+      "driverId": "pit-driver-0",
+      "teamId": "pit-team-0",
+      "totalTimeMs": 6010673,
+      "bestLapTimeMs": 94941
+    },
+    {
+      "position": 2,
+      "entrantId": "pit-entrant-1",
+      "driverId": "pit-driver-1",
+      "teamId": "pit-team-0",
+      "totalTimeMs": 6012171,
+      "bestLapTimeMs": 94958
+    },
+    {
+      "position": 3,
+      "entrantId": "pit-entrant-2",
+      "driverId": "pit-driver-2",
+      "teamId": "pit-team-1",
+      "totalTimeMs": 6013669,
+      "bestLapTimeMs": 94991
+    },
+    {
+      "position": 4,
+      "entrantId": "pit-entrant-3",
+      "driverId": "pit-driver-3",
+      "teamId": "pit-team-1",
+      "totalTimeMs": 6015167,
+      "bestLapTimeMs": 94979
+    }
+  ]
+}

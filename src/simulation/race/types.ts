@@ -1,3 +1,4 @@
+import type { IncidentConfiguration, IncidentRaceState, ReliabilityProfile, EntrantIncidentState } from "./incidents/model";
 import type { WeatherConfiguration, WeatherState } from "./weather/model";
 import type { CommandConfiguration, CommandState } from "./commands/model";
 import type {
@@ -30,6 +31,7 @@ export interface RaceParameters {
   readonly gridOffsetMs: number;
 }
 export interface RaceEntrant {
+  readonly reliability?: ReliabilityProfile;
   readonly strategyController?: StrategyController;
   readonly interaction?: DriverInteractionProfile;
   readonly entrantId: string;
@@ -41,6 +43,7 @@ export interface RaceEntrant {
   readonly startingTyre?: TyreState;
 }
 export interface RaceSimulationInput {
+  readonly incidents?: IncidentConfiguration;
   readonly weather?: WeatherConfiguration;
   readonly commands?: CommandConfiguration;
   readonly pits?: PitConfiguration;
@@ -55,6 +58,7 @@ export interface RaceSimulationInput {
   readonly entrants: readonly RaceEntrant[];
 }
 export interface RaceEntrantState {
+  readonly incident?: EntrantIncidentState;
   readonly commands?: CommandState;
   readonly pit?: PitState;
   readonly track?: TrackState;
@@ -70,6 +74,7 @@ export interface RaceEntrantState {
   readonly intervalToAheadMs: number | null;
 }
 export interface RaceSimulationState {
+  readonly incidents?: IncidentRaceState;
   readonly weather?: WeatherState;
   readonly simulationVersion: number;
   readonly input: RaceSimulationInput;
@@ -79,6 +84,8 @@ export interface RaceSimulationState {
   readonly entrants: readonly RaceEntrantState[];
 }
 export interface RaceResult {
+  readonly status?: EntrantIncidentState["status"];
+  readonly completedLaps?: number;
   readonly position: number;
   readonly entrantId: string;
   readonly driverId: string;

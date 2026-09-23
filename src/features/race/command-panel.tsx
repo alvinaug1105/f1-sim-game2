@@ -14,10 +14,10 @@ export function CommandPanel({data, entrant: e}: {data: CareerRaceData; entrant:
   return <section aria-label={t("command.title")}>
     <p>{t("command.energy")}: {format.percentage(c.ersCharge / s.input.commands!.capacity)} · {t("command.projectedFuel")}: {format.number(projectedFuelGrams(s,e) / 1000, {style:"unit",unit:"kilogram",signDisplay:"always",maximumFractionDigits:3})}</p>
     {!player && <p>{t("command.ai")}</p>}
-    {player && s.status === "RUNNING" && <p>{t("command.timing")}</p>}
+    {player && s.status === "RUNNING" && e.incident?.status !== "RETIRED" && <p>{t("command.timing")}</p>}
     {([ ["paceMode", PACE_MODES], ["fuelMode", FUEL_MODES], ["ersMode", ERS_MODES] ] as const).map(([kind,modes]) => <form action={action} key={kind}>
       <p>{t(`command.${kind}`)}: <strong>{t(`command.${c[kind]}`)}</strong></p>
-      {player && s.status === "RUNNING" && <>
+      {player && s.status === "RUNNING" && e.incident?.status !== "RETIRED" && <>
         <input type="hidden" name="careerId" value={data.progress.career.id}/><input type="hidden" name="eventId" value={data.eventId}/><input type="hidden" name="entrantId" value={e.entrantId}/><input type="hidden" name="lap" value={s.lap}/><input type="hidden" name="revision" value={c.commandRevision}/><input type="hidden" name="intent" value={kind}/>
         <fieldset disabled={pending}><legend>{t(`command.${kind}`)}</legend>{modes.map(mode => <button key={mode} name="mode" value={mode} aria-pressed={c[kind] === mode} disabled={c[kind] === mode}>{t(`command.${mode}`)}</button>)}</fieldset>
       </>}

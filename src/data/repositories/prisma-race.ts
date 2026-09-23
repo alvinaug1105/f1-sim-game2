@@ -1,3 +1,4 @@
+import { validateIncidentConfiguration, validateReliability, validateIncidentState, type IncidentConfiguration, type ReliabilityProfile, type EntrantIncidentState, type IncidentRaceState } from "../../simulation/race/incidents/model";
 import { validateWeatherConfiguration, validateWeatherState, type WeatherConfiguration, type WeatherState } from "../../simulation/race/weather/model";
 import { validateCommandConfiguration, validateCommandState, type CommandConfiguration, type CommandState } from "../../simulation/race/commands/model";
 import type {
@@ -67,6 +68,7 @@ async function read(
       pitProfile: true,
       commandProfile: true,
       weatherProfile: true,
+      incidentProfile: true,
     },
   });
   const circuit = await tx.careerCircuit.findUniqueOrThrow({
@@ -91,7 +93,7 @@ async function read(
   if (
     row?.simulationVersion === 2 ||
     row?.simulationVersion === 3 ||
-    (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || row?.simulationVersion === 6))
+    (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)))
   ) {
     tyres = {
       tyreWearMultiplierPermille: row.tyreWearMultiplierPermille!,
@@ -110,7 +112,7 @@ async function read(
     validateTyreConfiguration(tyres);
   }
   let interaction: InteractionConfiguration | undefined;
-  if (row?.simulationVersion === 3 || (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || row?.simulationVersion === 6))) {
+  if (row?.simulationVersion === 3 || (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)))) {
     if (!row.interactionProfile) throw new RaceError("INVALID_INPUT");
     interaction = Object.fromEntries(
       Object.entries(row.interactionProfile).filter(
@@ -120,7 +122,7 @@ async function read(
     validateInteraction(interaction);
   }
   let pits: PitConfiguration | undefined;
-  if ((row?.simulationVersion === 4 || (row?.simulationVersion === 5 || row?.simulationVersion === 6))) {
+  if ((row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)))) {
     if (!row.pitProfile) throw new RaceError("INVALID_INPUT");
     pits = Object.fromEntries(
       Object.entries(row.pitProfile).filter(
@@ -129,26 +131,34 @@ async function read(
     ) as unknown as PitConfiguration;
     validatePitConfiguration(pits);
   }
-  const commands = (row?.simulationVersion === 5 || row?.simulationVersion === 6) ? row.commandProfile?.profile as unknown as CommandConfiguration : undefined;
+  const commands = (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)) ? row.commandProfile?.profile as unknown as CommandConfiguration : undefined;
   if (commands) validateCommandConfiguration(commands);
-  if ((row?.simulationVersion === 5 || row?.simulationVersion === 6) && !commands) throw new RaceError("INVALID_INPUT");
-  const weatherConfig = row?.simulationVersion === 6 ? row.weatherProfile?.profile as unknown as WeatherConfiguration : undefined;
+  if ((row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)) && !commands) throw new RaceError("INVALID_INPUT");
+  const weatherConfig = (row?.simulationVersion === 6 || row?.simulationVersion === 7) ? row.weatherProfile?.profile as unknown as WeatherConfiguration : undefined;
   let weather: WeatherState | undefined;
-  if (row?.simulationVersion === 6) {
+  if ((row?.simulationVersion === 6 || row?.simulationVersion === 7)) {
     if (!weatherConfig || !row.weatherProfile) throw new RaceError("INVALID_INPUT");
     validateWeatherConfiguration(weatherConfig,row.totalLaps);
     const w=row.weatherProfile;
     weather={rainfallIntensity:w.rainfallIntensity,airTemperatureMilliC:w.airTemperatureMilliC,trackTemperatureMilliC:w.trackTemperatureMilliC,trackWater:w.trackWater,drsState:w.drsState as WeatherState["drsState"]};
     validateWeatherState(weather);
   }
+  const incidentRow = row?.incidentProfile;
+  const incidents = row?.simulationVersion === 7 ? incidentRow?.profile as unknown as IncidentConfiguration : undefined;
+  if (row?.simulationVersion === 7 && !incidents) throw new RaceError("INVALID_INPUT");
+  const reliability = incidentRow?.reliability as unknown as Record<string,ReliabilityProfile> | undefined;
+  const incidentEntrants = incidentRow?.entrants as unknown as Record<string,EntrantIncidentState> | undefined;
+  if (incidents) { if(Object.keys(reliability!).length!==row!.entrants.length||Object.keys(incidentEntrants!).length!==row!.entrants.length)throw new RaceError("INVALID_INPUT"); validateIncidentConfiguration(incidents); for (const e of row!.entrants) validateReliability(reliability![e.id]); }
   const state: RaceSimulationState | null = row
     ? {
         simulationVersion: row.simulationVersion,
+        ...(incidentRow ? { incidents: { rngState:Number(incidentRow.rngState),mode:incidentRow.mode,startedLap:incidentRow.startedLap,remainingLaps:incidentRow.remainingLaps,drsDelay:incidentRow.drsDelay,events:incidentRow.events } as unknown as IncidentRaceState } : {}),
         ...(weather ? { weather } : {}),
         rngState: Number(row.rngState),
         lap: row.currentLap,
         status: row.status,
         input: {
+          ...(incidents ? { incidents } : {}),
           ...(weatherConfig ? { weather: weatherConfig } : {}),
           ...(commands ? { commands } : {}),
           ...(tyres ? { tyres } : {}),
@@ -170,6 +180,7 @@ async function read(
             gridOffsetMs: row.gridOffsetMs,
           },
           entrants: row.entrants.map((e) => ({
+            ...(incidents ? { reliability: reliability![e.id] } : {}),
             ...(pits ? { strategyController: e.strategyController! } : {}),
             ...(interaction
               ? {
@@ -200,6 +211,7 @@ async function read(
         entrants: [...row.entrants]
           .sort((a, b) => a.position - b.position)
           .map((e) => ({
+            ...(incidents ? { incident: incidentEntrants![e.id] } : {}),
             ...(commands ? { commands: readCommands(e, commands) } : {}),
             ...(pits ? { pit: readPit(e) } : {}),
             ...(interaction ? { track: readTrack(e) } : {}),
@@ -229,6 +241,7 @@ async function read(
           })),
       }
     : null;
+  if (state?.simulationVersion === 7) validateIncidentState(state);
   return {
     progress,
     eventId,
@@ -282,6 +295,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
           if (!before) throw new RaceError("NOT_FOUND");
           const after = change(before),
             s = after.state;
+          if (s.simulationVersion === 7) { validateIncidentConfiguration(s.input.incidents!); for(const source of s.input.entrants) validateReliability(source.reliability!); validateIncidentState(s); }
           if (!before.state) {
             const row = await tx.careerRaceSimulation.create({
               data: {
@@ -392,6 +406,11 @@ export class PrismaRaceRepository implements CareerRaceRepository {
             });
             for (const e of s.entrants)
               await persistPitHistory(tx, careerId, row.id, e);
+          }
+          if (s.incidents) {
+            const row=await tx.careerRaceSimulation.findUniqueOrThrow({where:{careerSessionId:before.sessionId}});
+            const data={careerId,careerRaceSimulationId:row.id,profile:JSON.parse(JSON.stringify(s.input.incidents)),reliability:JSON.parse(JSON.stringify(Object.fromEntries(s.input.entrants.map(e=>[e.entrantId,e.reliability])))),entrants:JSON.parse(JSON.stringify(Object.fromEntries(s.entrants.map(e=>[e.entrantId,e.incident])))),events:JSON.parse(JSON.stringify(s.incidents.events)),rngState:BigInt(s.incidents.rngState),mode:s.incidents.mode,startedLap:s.incidents.startedLap,remainingLaps:s.incidents.remainingLaps,drsDelay:s.incidents.drsDelay};
+            await tx.careerRaceIncidents.upsert({where:{careerRaceSimulationId:row.id},create:data,update:data});
           }
           await persistProgress(tx, before.progress, after.progress);
         },

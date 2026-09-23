@@ -1,0 +1,3 @@
+import { it, expect } from "vitest";
+import { incidentMeasurements } from "./helpers/incident-measurements";
+it("many seeded races respect control, pace, wet suitability and reliability risk", () => { const { rates: r } = incidentMeasurements(); expect(r.lowControl.events).toBeGreaterThan(r.baseline.events); expect(r.baseline.events).toBeGreaterThan(r.highControl.events); expect(r.attack.events).toBeGreaterThan(r.baseline.events); expect(r.baseline.events).toBeGreaterThan(r.conserve.events); expect(r.dryTyreWet.events).toBeGreaterThan(r.baseline.events); expect(r.dryTyreWet.events).toBeGreaterThan(r.wetTyreWet.events); expect(r.degraded.events).toBeGreaterThan(r.healthy.events * 2); }, 30000);

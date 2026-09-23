@@ -1,0 +1,132 @@
+{
+  "seeds": 500,
+  "rates": {
+    "highControl": {
+      "events": 29,
+      "carLaps": 29000,
+      "per1000": 1
+    },
+    "baseline": {
+      "events": 37,
+      "carLaps": 29000,
+      "per1000": 1.276
+    },
+    "lowControl": {
+      "events": 81,
+      "carLaps": 29000,
+      "per1000": 2.793
+    },
+    "conserve": {
+      "events": 17,
+      "carLaps": 29000,
+      "per1000": 0.586
+    },
+    "attack": {
+      "events": 83,
+      "carLaps": 29000,
+      "per1000": 2.862
+    },
+    "dryTyreWet": {
+      "events": 138,
+      "carLaps": 29000,
+      "per1000": 4.759
+    },
+    "wetTyreWet": {
+      "events": 49,
+      "carLaps": 29000,
+      "per1000": 1.69
+    },
+    "healthy": {
+      "events": 9,
+      "carLaps": 29000,
+      "per1000": 0.31
+    },
+    "degraded": {
+      "events": 62,
+      "carLaps": 29000,
+      "per1000": 2.138
+    }
+  },
+  "resources": {
+    "GREEN": {
+      "lapMs": 95350,
+      "fuelBurnKg": 1.5999999999999943,
+      "wear": 22,
+      "temperatureMilliC": 84719,
+      "ersCharge": 700,
+      "pitLaneLossMs": 19500
+    },
+    "VSC": {
+      "lapMs": 121500,
+      "fuelBurnKg": 1.1999999999999886,
+      "wear": 13,
+      "temperatureMilliC": 73544,
+      "ersCharge": 760,
+      "pitLaneLossMs": 15300
+    },
+    "SAFETY_CAR": {
+      "lapMs": 148500,
+      "fuelBurnKg": 0.8000000000000114,
+      "wear": 8,
+      "temperatureMilliC": 69819,
+      "ersCharge": 760,
+      "pitLaneLossMs": 11700
+    }
+  },
+  "performanceMs": 4.626083000000108,
+  "performanceEvents": 1,
+  "scSeed": 1,
+  "aiOpportunityWear": 770,
+  "restart": [
+    {
+      "lap": 1,
+      "delay": 2,
+      "drs": [
+        false,
+        false
+      ],
+      "temperature": 69819
+    },
+    {
+      "lap": 2,
+      "delay": 1,
+      "drs": [
+        false,
+        false
+      ],
+      "temperature": 77060
+    },
+    {
+      "lap": 3,
+      "delay": 0,
+      "drs": [
+        false,
+        false
+      ],
+      "temperature": 82473
+    },
+    {
+      "lap": 4,
+      "delay": 0,
+      "drs": [
+        false,
+        true
+      ],
+      "temperature": 86519
+    },
+    {
+      "lap": 5,
+      "delay": 0,
+      "drs": [
+        false,
+        true
+      ],
+      "temperature": 89544
+    }
+  ],
+  "thermal": {
+    "start": 90000,
+    "endSc": 50735,
+    "afterFiveGreen": 87201
+  }
+}

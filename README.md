@@ -1,6 +1,6 @@
 # Formula Operations
 
-A browser-based Formula racing team management game, currently in **Phase 10: weather, track conditions and wet tyres**. Persistent Careers support deterministic, resumable races with dry/Intermediate/Wet tyres, traffic, DRS, pit strategy, driver commands, fuel and ERS. Rain gradually changes track water; players and AI weigh tyre suitability against pit cost using an approximate forecast. New races use v6; v1–v5 saves retain their historical behaviour.
+A browser-based Formula racing team management game, currently in **Phase 11: incidents, reliability, VSC and Safety Car**. Persistent Careers support deterministic, resumable races with weather, dry/Intermediate/Wet tyres, traffic, DRS, pits, fuel, ERS and driver commands. New v7 races add occasional errors, mechanical problems, retirement, neutralisation and a localized event feed. Existing v1–v6 saves retain their historical behaviour.
 
 ## Stack and local development
 
@@ -58,7 +58,7 @@ npm run db:migrate
 npm run db:seed
 ```
 
-`npm ci` also generates the client; generation/format/validation need no connection. `db:migrate` applies the checked-in `core_game_database`, `career_world`, `race_weekend_progression` and `core_race_simulation` migrations with `prisma migrate deploy`. Use `npm run db:migrate:dev -- --name descriptive_change` only when developing a new migration with a disposable development/shadow database. Do not use db push as a substitute: the migration contains PostgreSQL CHECK constraints not expressible in the Prisma schema.
+`npm ci` also generates the client; generation/format/validation need no connection. `db:migrate` applies all ten checked-in migrations through `race_incidents_reliability_control` with `prisma migrate deploy`. Use `npm run db:migrate:dev -- --name descriptive_change` only when developing a new migration with a disposable development/shadow database. Do not use db push as a substitute: the migration contains PostgreSQL CHECK constraints not expressible in the Prisma schema.
 
 The deterministic fictional seed includes two teams, four race drivers, two circuits, one season and two calendar weekends. It uses stable UUIDs/keys and transactional upserts. Re-running restores those development records; it does not erase unrelated content. The seed will fail on conflicting identities rather than invent replacements.
 
@@ -74,7 +74,7 @@ npm run test:db
 
 The integration suite creates a unique schema, applies the actual migrations, runs the seed twice, verifies representative queries and tests database rejection of invalid relationships/duplicates. It drops only its own schema afterward. Without TEST_DATABASE_URL the command fails clearly; no SQL tests are silently skipped. The ordinary `npm test` suite stays database-independent.
 
-See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 10 report](docs/phase-10-report.md) records 357 passing offline tests and 162 passing real PostgreSQL integration tests. Earlier phase reports are historical.
+See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 11 report](docs/phase-11-report.md) records 388 passing offline tests and 178 passing real PostgreSQL integration tests, controlled balance measurements, and browser verification. Earlier phase reports are historical.
 
 ## Try the lifecycle
 

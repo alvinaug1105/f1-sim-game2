@@ -1,3 +1,4 @@
+import { effectivePitLaneLoss } from "../../simulation/race/incidents/model";
 import { advanceWeatherTyre } from "../../simulation/race/weather/model";
 import type {
   RaceSimulationState,
@@ -12,6 +13,7 @@ export function estimatePitWindow(
     c = state.input.tyres!,
     p = c.profiles[tyre.compound],
     pit = state.input.pits!;
+  const laneLoss = state.incidents ? effectivePitLaneLoss(state) : pit.pitLaneLossMs;
   const wearPerLap = state.weather && state.input.weather ? Math.max(1, advanceWeatherTyre({...tyre, wearPermille: 0}, {...c, tyreWearMultiplierPermille: Math.round(c.tyreWearMultiplierPermille * state.input.commands!.pace[e.commands!.paceMode].tyreWearMultiplierPermille / 1000)}, state.weather, state.input.weather).wearPermille) : Math.max(
     1,
     Math.round(
@@ -24,8 +26,8 @@ export function estimatePitWindow(
       Math.ceil((p.cliffWear - tyre.wearPermille) / wearPerLap),
     ),
     minimumLossMs:
-      pit.pitLaneLossMs + pit.stationaryBaseMs - pit.stationaryVariationMs,
+      laneLoss + pit.stationaryBaseMs - pit.stationaryVariationMs,
     maximumLossMs:
-      pit.pitLaneLossMs + pit.stationaryBaseMs + pit.stationaryVariationMs,
+      laneLoss + pit.stationaryBaseMs + pit.stationaryVariationMs,
   };
 }

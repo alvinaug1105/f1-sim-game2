@@ -92,3 +92,28 @@ describe("real PostgreSQL v7 incidents", () => {
         status: string;
     }>; const id = Object.keys(entrants)[0]; await expect(client.careerRaceIncidents.update({ where: { careerRaceSimulationId: row.careerRaceSimulationId }, data: { entrants: { ...entrants, [id]: { ...entrants[id], status: "GHOST" } } } })).rejects.toThrow(); });
 });
+
+import { raceResult } from "../src/simulation/race/engine";
+import legacyNames from "./fixtures/development-content-before-naming.json";
+it("v7 full results ignore renamed driver/team/circuit/event labels", async () => {
+  const data=await start(),id=player(data);
+  await changeCareerPitRequest(races,career.id,eventId,id,0,0,"WET");
+  const before=await edit(forceMechanical);
+  const labels=(await get()).labels;
+  for(const [index,e] of before.input.entrants.entries()) {
+    const driver=legacyNames.drivers[index];
+    await client.careerRaceEntrant.update({where:{id:e.entrantId},data:{driverName:`${driver.firstName} ${driver.lastName}`,teamName:legacyNames.teams[Math.floor(index/2)].name}});
+  }
+  await client.careerCircuit.updateMany({where:{careerId:career.id},data:{name:"Independent renamed circuit"}});
+  await client.careerCalendarEvent.update({where:{id:eventId},data:{name:"Independent renamed event"}});
+  const renamed=await get();
+  expect(renamed.labels).not.toEqual(labels);
+  expect(renamed.state).toEqual(before);
+  const expected=advanceRace(before,1000);
+  expect(expected.incidents!.events.length).toBeGreaterThan(0);
+  expect(expected.entrants.some(e=>e.pit!.stops.length>0)).toBe(true);
+  await advanceCareerRace(races,career.id,eventId,0,"finish");
+  const actual=(await get()).state!;
+  expect(actual).toEqual(expected); // Includes timing, weather, tyres, pits, incidents and both RNG streams.
+  expect(raceResult(actual)).toEqual(raceResult(expected));
+});

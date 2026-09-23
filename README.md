@@ -74,8 +74,15 @@ npm run test:db
 
 The integration suite creates a unique schema, applies the actual migrations, runs the seed twice, verifies representative queries and tests database rejection of invalid relationships/duplicates. It drops only its own schema afterward. Without TEST_DATABASE_URL the command fails clearly; no SQL tests are silently skipped. The ordinary `npm test` suite stays database-independent.
 
-See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 11 report](docs/phase-11-report.md) records 388 passing offline tests and 178 passing real PostgreSQL integration tests, controlled balance measurements, and browser verification. Earlier phase reports are historical.
+See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Naming-pass report](docs/fictional-content-naming-report.md) records the current 390 passing offline tests and 180 passing real PostgreSQL integration tests. The [Phase 11 report](docs/phase-11-report.md) contains incident/control balance measurements; its test totals and older names are historical.
 
 ## Try the lifecycle
 
 After migration/seed, create a Career at `/careers/new`. From its dashboard choose Advance to Event, then Open Race Weekend. Practice may be structurally simulated/skipped; Qualifying uses labelled development Start/Complete controls. Race links to the engine: start, advance 1/5 laps or simulate to finish. Refresh resumes the saved seed and exact state. Final classification is persisted; championship points are not awarded. Return to Career to advance the next round. The final calendar ends without creating another season or ending the Career.
+
+
+## Fictional content policy
+
+The bundled development championship uses fictional motorsport-inspired identities: Westhaven Racing and Kogane Motorsport, four drivers with British, Taiwanese, Japanese and Italian origins, and the Silver Bay/Aoba venues. Names are game data, separate from English/Traditional Chinese UI translations. Behaviour depends on numeric profiles and stable relationships, never names. Future user databases may supply their own content through the existing dataset/repository architecture without changing the simulation engine.
+
+Run `npm run db:seed` to update the source development names. IDs, keys, assignments and numerical data are preserved. Existing Career snapshots keep their old names; only new Careers copy the updated source content. No migration is needed for this naming pass. See the [old → new mapping and verification](docs/fictional-content-naming-report.md).

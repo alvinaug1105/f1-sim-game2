@@ -71,7 +71,7 @@ async function counts() {
 describe("Career world PostgreSQL integration", () => {
   it("applies career migration and creates a complete persisted world", async () => {
     const overview = await repository.getCareerOverview(career.id);
-    expect(overview?.playerTeam.name).toBe("Aurora Racing");
+    expect(overview?.playerTeam.name).toBe("Westhaven Racing");
     expect(career.currentDate).toBe("2026-02-20");
     expect(
       await client.careerTeam.count({ where: { careerId: career.id } }),
@@ -120,7 +120,7 @@ describe("Career world PostgreSQL integration", () => {
     const row = await client.careerTeam.findUniqueOrThrow({
       where: { id: career.playerTeamId },
     });
-    expect(row.name).toBe("Aurora Racing");
+    expect(row.name).toBe("Westhaven Racing");
     expect(row.color).toBe(source.teams[0].color);
   });
   it("isolates source Driver name and nationality", async () => {
@@ -131,7 +131,7 @@ describe("Career world PostgreSQL integration", () => {
     const row = await client.careerDriver.findFirstOrThrow({
       where: { careerId: career.id, sourceDriverId: source.drivers[0].id },
     });
-    expect(row.lastName).toBe("Smith");
+    expect(row.lastName).toBe("Whitcombe");
     expect(row.nationalityCode).toBe("GB");
   });
   it("isolates source Circuit metadata", async () => {
@@ -142,7 +142,7 @@ describe("Career world PostgreSQL integration", () => {
     const row = await client.careerCircuit.findFirstOrThrow({
       where: { careerId: career.id, sourceCircuitId: source.circuits[0].id },
     });
-    expect(row.name).toBe("Silver Coast Circuit");
+    expect(row.name).toBe("Silver Bay Grand Prix Circuit");
     expect(row.lengthMeters).toBe(5200);
   });
   it("isolates source Calendar names and dates", async () => {
@@ -160,7 +160,7 @@ describe("Career world PostgreSQL integration", () => {
         sourceCalendarEventId: source.events[0].id,
       },
     });
-    expect(row.name).toBe("Silver Coast Grand Prix");
+    expect(row.name).toBe("Silver Bay Grand Prix");
     expect(row.startDate.toISOString().slice(0, 10)).toBe("2026-03-06");
   });
   it("freezes source version and roster assignments", async () => {
@@ -192,7 +192,7 @@ describe("Career world PostgreSQL integration", () => {
     });
     expect(
       (await repository.getCareerOverview(second.id))?.playerTeam.name,
-    ).toBe("Aurora Racing");
+    ).toBe("Westhaven Racing");
     expect(second.playerTeamId).not.toBe(career.playerTeamId);
   });
   it("rejects a cross-Career player team pointer at commit", async () => {
@@ -315,4 +315,33 @@ describe("Career world PostgreSQL integration", () => {
       await client.careerDriver.count({ where: { careerId: career.id } }),
     ).toBe(4);
   });
+});
+
+import legacyContent from "./fixtures/development-content-before-naming.json";
+it("reseeding names twice preserves old Career snapshots and updates only new Careers", async () => {
+  for (const e of legacyContent.teams) await client.team.update({where:{id:e.id},data:{name:e.name,shortName:e.shortName}});
+  for (const e of legacyContent.drivers) await client.driver.update({where:{id:e.id},data:{firstName:e.firstName,lastName:e.lastName,abbreviation:e.abbreviation}});
+  for (const e of legacyContent.circuits) await client.circuit.update({where:{id:e.id},data:{name:e.name}});
+  for (const e of legacyContent.events) await client.calendarEvent.update({where:{id:e.id},data:{name:e.name}});
+  const oldCareer=await createCareer(repository,{...input,name:"Historical names"});
+  const snapshot=async()=>Promise.all([
+    client.careerTeam.findMany({where:{careerId:oldCareer.id},orderBy:{id:"asc"}}),
+    client.careerDriver.findMany({where:{careerId:oldCareer.id},orderBy:{id:"asc"}}),
+    client.careerCircuit.findMany({where:{careerId:oldCareer.id},orderBy:{id:"asc"}}),
+    client.careerCalendarEvent.findMany({where:{careerId:oldCareer.id},orderBy:{id:"asc"}}),
+  ]);
+  const before=await snapshot();
+  await seedDevelopmentContent(client); await seedDevelopmentContent(client);
+  expect(await snapshot()).toEqual(before);
+  expect((await repository.getCareerOverview(oldCareer.id))!.playerTeam.name).toBe("Aurora Racing");
+  const fresh=await createCareer(repository,{...input,name:"New fictional names"});
+  expect((await repository.getCareerOverview(fresh.id))!.playerTeam.name).toBe("Westhaven Racing");
+  const drivers=await client.careerDriver.findMany({where:{careerId:fresh.id}});
+  expect(drivers.map(e=>`${e.firstName} ${e.lastName}`).sort()).toEqual(source.drivers.map(e=>`${e.firstName} ${e.lastName}`).sort());
+  expect((await client.careerCircuit.findMany({where:{careerId:fresh.id}})).map(e=>e.name).sort()).toEqual(source.circuits.map(e=>e.name).sort());
+  for(const [rows,expected] of [
+    [await client.team.findMany({where:{gameDatabaseId:source.database.id},select:{id:true,key:true}}),source.teams],
+    [await client.driver.findMany({where:{gameDatabaseId:source.database.id},select:{id:true,key:true}}),source.drivers],
+    [await client.circuit.findMany({where:{gameDatabaseId:source.database.id},select:{id:true,key:true}}),source.circuits],
+  ] as const) expect(rows.sort((a,b)=>a.id.localeCompare(b.id))).toEqual(expected.map(e=>({id:e.id,key:e.key})).sort((a,b)=>a.id.localeCompare(b.id)));
 });

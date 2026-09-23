@@ -178,7 +178,7 @@ describe("Career Prisma adapter contracts (mocked delegates, not SQL execution)"
       circuit: world.circuits[0],
     });
     const overview = await repository.getCareerOverview(career.id);
-    expect(overview?.playerTeam.name).toBe("Aurora Racing");
+    expect(overview?.playerTeam.name).toBe("Westhaven Racing");
     expect(overview?.career.currentDate).toBe("2026-02-20");
     expect(overview?.nextEvent?.event.startDate).toBe("2026-03-06");
     expect(tx.gameDatabase.findUnique).not.toHaveBeenCalled();

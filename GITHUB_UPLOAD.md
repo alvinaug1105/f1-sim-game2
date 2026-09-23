@@ -42,4 +42,6 @@ npm run db:seed
 
 Use a separate disposable PostgreSQL database for TEST_DATABASE_URL, then run `npm run test:db`. The integration suite creates and removes only its uniquely named test schema.
 
-At export, **388 offline tests** and **178 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, typecheck, lint and production build passed. All ten migrations applied to disposable local PostgreSQL databases; the previous nine are unchanged. Browser verification covered v7 creation, incidents, retirement, VSC/SC pit stops, gap compression, resource effects, restart DRS/wet rules, refresh/language isolation, and exact final persistence. See `docs/phase-11-report.md` for measurements and limitations.
+At export, **390 offline tests** and **180 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, typecheck, lint and production build passed. This export includes Phase 11 plus the fictional-content naming pass. All ten migrations and simulation code are unchanged by the naming pass. See `docs/fictional-content-naming-report.md` for mappings, snapshot guarantees and bilingual browser checks; `docs/phase-11-report.md` retains the mechanics report.
+
+Run `npm run db:seed` against your development database to update source names. Existing Career snapshots are not renamed; new Careers use the updated source names. This content pass requires no new migration.

@@ -61,7 +61,7 @@ Both circuits were inspected at **1440×1000, 1024×900 and 768×1024**. Initial
 | Pit | Actual Antonelli Hard stop at Albert Park lap 54; `PIT` label and pit auto-pause confirmed |
 | SC | Controlled persisted SC period at Suzuka, 20 moving cars; authoritative last-car gap fell from 306.113 s at lap 41 to 144.890 s at lap 47 |
 | VSC | Controlled persisted VSC period; slower motion/DRS suspension and saved gap presentation checked |
-| Retirement | Controlled mechanical-retirement fixture; all twenty markers stayed at their previous drawn transforms, including through later laps |
+| Retirement | Controlled mechanical-retirement fixture that retired the whole field, so all twenty markers stayed at their previous drawn transforms, including through later laps. A single retirement freezes only the retired car; running cars continue (covered by the two-car regression test added in Phase 12B) |
 | Normal finish | Final-build Suzuka reached lap 64; advance/commands disabled and all marker transforms remained stable after settlement |
 | Strategic advance | Albert Park stopped at a weather-band event on lap 41 with optional auto-pause off |
 | Reduced motion | Local checkbox and single-lap advancement exercised; preference changes while paused did not move markers. OS preference uses the same code path, but no OS setting was changed for this run. |

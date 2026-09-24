@@ -81,6 +81,13 @@ describe('shared unwrapped visual timeline', () => {
     it('freezes retirement at the last drawn position through later checkpoints', () => {
         const m = new RaceMotion(target(0)); m.configure('playing',1000); m.reconcile(target(1),1); frames(m,0,500); m.reconcile(target(1,true),2); frames(m,510,1500); m.reconcile(target(5,true),3); frames(m,1510,2500); expect(m.progress('a')).toBe(.5); expect(m.pending).toBe(false);
     });
+    it('one retirement freezes only that car; the running car keeps moving', () => {
+        const pair = (a: number, b: number, retiredA = false) => [{ id: 'a', progress: a, retired: retiredA }, { id: 'b', progress: b, retired: false }];
+        const m = new RaceMotion(pair(0, 0)); m.configure('playing', 1000); m.reconcile(pair(1, 1), 1); frames(m, 0, 500);
+        m.reconcile(pair(1, 1, true), 2); frames(m, 510, 1520); expect(m.progress('a')).toBe(.5); expect(m.progress('b')).toBe(1);
+        m.reconcile(pair(5, 2, true), 3); frames(m, 1530, 2540);
+        expect(m.progress('a')).toBe(.5); expect(m.progress('b')).toBe(2); expect(m.pending).toBe(false);
+    });
     it('reduced motion updates to checkpoints only when unpaused', () => {
         const m = new RaceMotion(target(0)); m.reconcile(target(1),1); m.configure('playing',1000,true); m.frame(0); expect(m.progress('a')).toBe(1); expect(m.pending).toBe(false);
     });

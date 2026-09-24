@@ -8,7 +8,7 @@ export function timingRows(data: CareerRaceData) {
     const s = data.state!;
     return s.entrants.map(e => {
         const source = s.input.entrants.find(x => x.entrantId === e.entrantId)!, label = data.labels.find(l => l.entrantId === e.entrantId);
-        return { entrant: e, id: e.entrantId, name: label?.driverName ?? e.entrantId, abbreviation: label?.abbreviation ?? label?.driverName.split(' ').at(-1)?.slice(0, 3).toUpperCase() ?? String(e.position), team: label?.teamName ?? source.teamId, color: /^#[0-9a-f]{6}$/i.test(label?.teamColor ?? '') ? label!.teamColor! : '#a0a6af', player: source.teamId === data.progress.career.playerTeamId, status: e.incident?.status ?? (s.status === 'FINISHED' ? 'FINISHED' : 'RUNNING'), placesGained: source.gridPosition - e.position, progress: entrantProgress(e, s), gap: e.gapToLeaderMs, interval: e.intervalToAheadMs, pitting: e.pit?.stops.at(-1)?.lap === s.lap };
+        return { entrant: e, id: e.entrantId, name: label?.driverName ?? e.entrantId, abbreviation: label?.abbreviation ?? label?.driverName.split(' ').at(-1)?.slice(0, 3).toUpperCase() ?? String(e.position), team: label?.teamName ?? source.teamId, number: label?.carNumber ?? null, color: /^#[0-9a-f]{6}$/i.test(label?.teamColor ?? '') ? label!.teamColor! : '#a0a6af', player: source.teamId === data.progress.career.playerTeamId, status: e.incident?.status ?? (s.status === 'FINISHED' ? 'FINISHED' : 'RUNNING'), placesGained: source.gridPosition - e.position, progress: entrantProgress(e, s), gap: e.gapToLeaderMs, interval: e.intervalToAheadMs, pitting: e.pit?.stops.at(-1)?.lap === s.lap };
     });
 }
 export type StrategicReason = "FINISH" | "CONTROL" | "INCIDENT" | "RETIREMENT" | "PIT" | "WEATHER" | "LIMIT";

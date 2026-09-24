@@ -125,7 +125,8 @@ it('viewer 1x and 8x persist EXACTLY the same full v7 result under the same comm
  const initial=await start(),id=player(initial);
  async function run(speed:1|8){
   let queued:(()=>void)|null=null;const delays:number[]=[];
-  const clock:PlaybackClock={set:(callback,delay)=>{expect(queued).toBeNull();queued=callback;delays.push(delay);return 1 as unknown as ReturnType<typeof setTimeout>;},clear:()=>{queued=null;}};
+  // Virtual presentation clock: time never passes between callbacks, so each scheduled delay is exact.
+  const clock:PlaybackClock={set:(callback,delay)=>{expect(queued).toBeNull();queued=callback;delays.push(delay);return 1 as unknown as ReturnType<typeof setTimeout>;},clear:()=>{queued=null;},now:()=>0};
   const controller=new PlaybackController(initial.state!,initial.progress.career.playerTeamId,async s=>{
    if(s.lap===4){const e=s.entrants.find(e=>e.entrantId===id)!;await applyViewerIntent(races,career.id,eventId,s.lap,{kind:'paceMode',entrantId:id,revision:e.commands!.commandRevision,mode:'PUSH'});}
    if(s.lap===8){const d=await get(),e=d.state!.entrants.find(e=>e.entrantId===id)!;await applyViewerIntent(races,career.id,eventId,s.lap,{kind:'pit',entrantId:id,revision:e.pit!.commandRevision,compound:'HARD'});}
@@ -134,10 +135,12 @@ it('viewer 1x and 8x persist EXACTLY the same full v7 result under the same comm
   controller.setAutoPause(false);controller.setSpeed(speed);controller.play();
   while(controller.getSnapshot().playing){
    const completed=new Promise<void>(resolve=>{const off=controller.subscribe(()=>{if(!controller.getSnapshot().busy){off();resolve();}});});
-   expect(delays.at(-1)).toBe(checkpointDuration(speed,controller.getState().incidents?.mode));
+   // Phase 12C: a fresh Resume has nothing left to animate, so the first advance is scheduled at 0 ms; every later
+   // checkpoint then waits its full interval at the selected speed (no pause, so the whole budget remains).
+   expect(delays.at(-1)).toBe(delays.length===1?0:checkpointDuration(speed,controller.getState().incidents?.mode));
    const tick=queued!;expect(tick).toBeTypeOf('function');queued=null;tick();await completed;
   }
-  expect(delays).toHaveLength(initial.state!.input.totalLaps);expect(delays.every(d=>d>=2400/speed)).toBe(true);
+  expect(delays).toHaveLength(initial.state!.input.totalLaps);expect(delays[0]).toBe(0);expect(delays.slice(1).every(d=>d>=2400/speed)).toBe(true);
   const reopened=await get();expect(reopened.state).toEqual(controller.getState());return reopened.state;
  }
  const slow=await run(1);

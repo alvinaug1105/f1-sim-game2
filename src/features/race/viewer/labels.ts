@@ -58,9 +58,14 @@ export function pathLength(at: (progress: number) => Point, samples = 400) {
     for (let i = 0; i < samples; i++) { const a = at(i / samples), b = at((i + 1) / samples); length += Math.hypot(b.x - a.x, b.y - a.y); }
     return length || 1;
 }
-/** A car's upcoming positions along the drawn path, `LOOKAHEAD_STEP` apart, keeping its current lane offset. */
-export function lookahead(at: (progress: number) => Point, progress: number, lapLength: number, offset: Point = { x: 0, y: 0 }): Point[] {
-    return Array.from({ length: LOOKAHEAD_SAMPLES }, (_, k) => { const q = at(progress + (k + 1) * LOOKAHEAD_STEP / lapLength); return { x: q.x + offset.x, y: q.y + offset.y }; });
+/**
+ * Lookahead horizon multiplier for visual playback speed: faster playback covers more track per frame, so a replacement
+ * slot must stay valid over a longer stretch. Presentation only.
+ */
+export function lookaheadScale(speed: number, seeking = false) { return seeking || speed >= 8 ? 2 : speed >= 4 ? 1.5 : 1; }
+/** A car's upcoming positions along the drawn path, `LOOKAHEAD_STEP × scale` apart, keeping its current lane offset. */
+export function lookahead(at: (progress: number) => Point, progress: number, lapLength: number, offset: Point = { x: 0, y: 0 }, scale = 1): Point[] {
+    return Array.from({ length: LOOKAHEAD_SAMPLES }, (_, k) => { const q = at(progress + (k + 1) * LOOKAHEAD_STEP * scale / lapLength); return { x: q.x + offset.x, y: q.y + offset.y }; });
 }
 export function slotCentre(car: Point, slot: number, size: { w: number; h: number }): Point {
     const [ux, uy] = DIRECTIONS[slot % DIRECTIONS.length], r = RADII[Math.floor(slot / DIRECTIONS.length)];

@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { placeLabels, labelRect, slotCentre, startFinishReserve, pathLength, lookahead, LABEL_SIZE, LABEL_TIER, STICKY_FRAMES, type Rect, type SlotMemory, type LabelRequest, type Point } from '../src/features/race/viewer/labels';
+import { placeLabels, labelRect, slotCentre, startFinishReserve, pathLength, lookahead, lookaheadScale, LABEL_SIZE, LABEL_TIER, STICKY_FRAMES, type Rect, type SlotMemory, type LabelRequest, type Point } from '../src/features/race/viewer/labels';
 import { prepareCircuitPath, circuitProjection } from '../src/game/domain/circuit-geometry';
 import { checkpointDuration } from '../src/features/race/viewer/motion';
 import { translate } from '../src/i18n/catalog';
@@ -166,7 +166,7 @@ describe('sticky label slots (Phase 12B stability repair)', () => {
             const perFrame = (1000 / 60) / checkpointDuration(speed), count = Math.ceil(.5 / perFrame);
             let memory = new Map<string, SlotMemory>();
             const frames = Array.from({ length: count }, (_, f) => {
-                const requests = setup.cars.map(c => { const progress = -.2 + f * perFrame - c.behind / lap; return { id: c.id, tier: c.tier, ...at(progress), ahead: lookahead(at, progress, lap) }; });
+                const requests = setup.cars.map(c => { const progress = -.2 + f * perFrame - c.behind / lap; return { id: c.id, tier: c.tier, ...at(progress), ahead: lookahead(at, progress, lap, undefined, lookaheadScale(speed)) }; });
                 const placed = placeLabels(requests, { bounds: MAP, reserved, markers: requests, previous: memory });
                 memory = new Map([...placed].filter(([, q]) => q).map(([k, q]) => [k, q!.memory]));
                 return { requests, placed };

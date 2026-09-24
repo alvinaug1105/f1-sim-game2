@@ -807,3 +807,11 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .events-panel li.important { background:#212a31;box-shadow:inset 3px 0 0 #e5c56b; }.events-panel li.important strong { color:#fff; }.events-panel li:not(.important) { color:#b8c6d0; }.events-panel li:not(.important) strong { font-weight:600; }
 @media(max-width:1220px) { .weather-strip .forecast-next { margin-left:0; } }
 @media(max-width:600px) { .neighbours { grid-template-columns:1fr 1fr; }.race-ops .player-switch>button:not(.compare-toggle) { flex-basis:120px; }.strategy-grid { grid-template-columns:1fr; } }
+
+/* Phase 12C — playback state and strategic attention */
+.race-ops .play-toggle { min-width:96px;font-weight:800; }
+.playback-phase { font-weight:700; }.playback-phase.phase-running { color:#a9e4b9; }.playback-phase.phase-seeking { color:#b9d7ef; }.playback-phase.phase-paused { color:#f3dc8a; }.playback-phase.phase-finished { color:#d7e1e8; }
+.playback-bar>p.attention-line { margin-top:8px;padding:6px 10px;border-radius:5px;border:1px solid;font-weight:700;color:#f3e3b4;background:#2f2a1c;border-color:#8a7a3a; }
+.playback-bar>p.attention-info { color:#cfe0ec;background:#1f2c36;border-color:#465460;font-weight:600; }.playback-bar>p.attention-command { color:#dafaaf;background:#24321d;border-color:#5f7f45; }.playback-bar>p.attention-finish { color:#e3ebf0;background:#26323b;border-color:#5b6b77; }
+.race-ops .player-switch>button.attention { box-shadow:0 0 0 2px #e5c56b inset; }.attention-mark { color:#e5c56b;font-weight:800; }
+

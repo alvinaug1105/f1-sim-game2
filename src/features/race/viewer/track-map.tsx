@@ -5,7 +5,7 @@ import { prepareCircuitPath, circuitProjection } from '../../../game/domain/circ
 import type { timingRows } from './model';
 import { RaceMotion, checkpointDuration, type MotionMode } from './motion';
 import { useI18n } from '../../../i18n/provider';
-import { placeLabels, startFinishReserve, pathLength, lookahead, LABEL_TIER, LABEL_SIZE, type Rect, type SlotMemory, type Point } from './labels';
+import { placeLabels, startFinishReserve, pathLength, lookahead, lookaheadScale, LABEL_TIER, LABEL_SIZE, type Rect, type SlotMemory, type Point } from './labels';
 type Rows = ReturnType<typeof timingRows>;
 const subscribeMotion = (notify: () => void) => { const media = window.matchMedia('(prefers-reduced-motion: reduce)'); media.addEventListener('change', notify); return () => media.removeEventListener('change', notify); };
 const getMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -32,7 +32,8 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     const reserved = useMemo<Rect[]>(() => startFinishReserve({ x: start.x, y: start.y }, startText), [start.x, start.y, startText]);
     const labelTierMap = useMemo(() => new Map(rows.map(r => [r.id, tiers?.get(r.id) ?? (r.id === selected ? LABEL_TIER.SELECTED : LABEL_TIER.FIELD)])), [rows, tiers, selected]);
     const tierOf = (id: string) => labelTierMap.get(id) ?? LABEL_TIER.FIELD;
-    const placement = useRef({ tiers: labelTierMap, reserved });
+    const scale = lookaheadScale(speed, skipping);
+    const placement = useRef({ tiers: labelTierMap, reserved, scale });
     useEffect(() => {
         const root = svg.current!;
         const cars = [...root.querySelectorAll<SVGGElement>('[data-car]')];
@@ -61,12 +62,12 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
                 el.dataset.lateralOffset = String(offset);
             });
             // Deterministic sticky placement: previous slots persist through passing markers; low-priority labels hide when no slot is valid.
-            const { tiers: current, reserved: blocked } = placement.current;
+            const { tiers: current, reserved: blocked, scale: horizon } = placement.current;
             // Labelled, moving cars carry a short lookahead along the drawn path (keeping their current lane offset).
             const ahead = (el: SVGGElement, i: number): Point[] | undefined => {
                 const car = drawn.get(el.dataset.car!)!, p = samples[i];
                 if ((current.get(el.dataset.car!) ?? LABEL_TIER.FIELD) >= LABEL_TIER.FIELD || el.classList.contains('retired')) return undefined;
-                return lookahead(at, p.progress, lapLength, { x: car.x - p.x, y: car.y - p.y });
+                return lookahead(at, p.progress, lapLength, { x: car.x - p.x, y: car.y - p.y }, horizon);
             };
             const placed = placeLabels(cars.map((el, i) => ({ id: el.dataset.car!, tier: current.get(el.dataset.car!) ?? LABEL_TIER.FIELD, ...drawn.get(el.dataset.car!)!, ahead: ahead(el, i) })), { bounds: MAP_BOUNDS, reserved: blocked, markers: [...drawn.values()], previous: slots });
             // Label elements follow React's priority set, so they are looked up per frame (markers never change).
@@ -100,7 +101,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         wake.current();
     }, [timeline, rows, checkpoint, motion, speed, control, skipping, latencyMs, reduceMotion, systemReduced]);
     // Selection/priority/locale changes re-place labels once, even while paused; they never move cars.
-    useEffect(() => { placement.current = { tiers: labelTierMap, reserved }; wake.current(); }, [labelTierMap, reserved]);
+    useEffect(() => { placement.current = { tiers: labelTierMap, reserved, scale }; wake.current(); }, [labelTierMap, reserved, scale]);
     const d = layout.points.map((p, i) => { const q = project(p); return `${i ? 'L' : 'M'}${q.x},${q.y}`; }).join(' ') + ' Z';
     const byTier = [...rows].sort((a, b) => tierOf(b.id) - tierOf(a.id)); // Highest priority drawn last (on top).
     return <svg ref={svg} className="circuit-map" viewBox="0 0 1000 650" aria-label={t('viewer.map')} role="group" data-layout={layout.id} data-checkpoint={checkpoint} data-motion={motion}>

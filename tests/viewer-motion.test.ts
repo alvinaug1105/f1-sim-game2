@@ -114,7 +114,8 @@ describe('shared unwrapped visual timeline', () => {
 
 it('measures persistence latency for presentation without extra requests or altered results', async () => {
     vi.useFakeTimers(); const s=quietRace(); const advance=vi.fn(async()=>{ await new Promise(resolve=>setTimeout(resolve,180)); return advanceRaceLap(s); });
-    const c=new PlaybackController(s,s.input.entrants[0].teamId,advance); c.play(); await vi.advanceTimersByTimeAsync(2580);
+    // Phase 12C: play advances immediately (nothing left to animate); the next request follows one full interval after the commit (180 + 2400 ms).
+    const c=new PlaybackController(s,s.input.entrants[0].teamId,advance); c.play(); await vi.advanceTimersByTimeAsync(2570);
     expect(c.getSnapshot().latencyMs).toBe(180); expect(advance).toHaveBeenCalledTimes(1); expect(c.getState()).toEqual(advanceRaceLap(s)); c.pause();
 });
 

@@ -7,7 +7,8 @@ import type { timingRows } from './model';
 import { driverSnapshot } from './race-view';
 type Rows = ReturnType<typeof timingRows>;
 /** Persistent two-car switch plus a lightweight side-by-side comparison. Viewer state only; never persisted. */
-export function PlayerSwitch({ state: s, rows, selected, onSelect }: { state: RaceSimulationState; rows: Rows; selected: string; onSelect: (id: string) => void }) {
+/** `attentionId`: player car named by the current strategic stop — highlighted (text + glyph), never auto-selected. */
+export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId = null }: { state: RaceSimulationState; rows: Rows; selected: string; onSelect: (id: string) => void; attentionId?: string | null }) {
     const { t, format, locale } = useI18n(), [open, setOpen] = useState(false), panel = useId();
     // Entry order, not race order, so the two buttons never swap places when positions change.
     const players = s.input.entrants.map(e => rows.find(r => r.id === e.entrantId)!).filter(r => r?.player);
@@ -27,7 +28,8 @@ export function PlayerSwitch({ state: s, rows, selected, onSelect }: { state: Ra
     ];
     return <div className="player-switch-wrap">
         <div className="player-switch" role="group" aria-label={t('viewer.playerCars')}>
-            {snaps.map(({ r, v }) => <button key={r.id} onClick={() => onSelect(r.id)} aria-pressed={r.id === selected} style={{ borderColor: r.color }} title={r.name}>
+            {snaps.map(({ r, v }) => <button key={r.id} onClick={() => onSelect(r.id)} aria-pressed={r.id === selected} style={{ borderColor: r.color }} title={r.name} className={r.id === attentionId ? 'attention' : undefined}>
+                {r.id === attentionId && <span className="attention-mark"><span aria-hidden="true">⚑</span><span className="sr-only">{t('viewer.needsAttention')}</span></span>}
                 <span className="switch-abbr">{r.abbreviation}{r.id === selected && <span aria-hidden="true"> ◂</span>}</span>
                 <strong className="switch-pos">P{format.number(v.position)}</strong>
                 {v.compound && <span className={`tyre-token tyre-${v.compound}`} title={t(`tyre.${v.compound}`)}>{t(`viewer.tyre.${v.compound}`)}</span>}

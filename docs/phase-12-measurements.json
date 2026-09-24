@@ -1,0 +1,9 @@
+{
+  "entrantCount": 20,
+  "renderMs": 23.672208000000012,
+  "htmlBytes": 32315,
+  "simulationMs": 8.717458999999991,
+  "finishedLap": 58,
+  "simulationVersion": 7,
+  "method": "Single local Node SSR render and synchronous full-race simulation; not a browser FPS benchmark."
+}

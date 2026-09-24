@@ -237,7 +237,7 @@ describe("Career snapshot and identity mapping", () => {
       new Error("Do not read source"),
     );
     expect((await repo.getCareerOverview(career.id))?.playerTeam.name).toBe(
-      "Westhaven Racing",
+      "Mercedes",
     );
     expect(await repo.listCareers()).toHaveLength(1);
   });

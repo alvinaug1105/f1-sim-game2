@@ -106,7 +106,7 @@ The dashboard deliberately remains on its original development adapter, without 
 
 ### Development seed and verification
 
-`src/data/seed/content-development.ts` is the centralized fictional PostgreSQL dataset: one database, Aurora Racing and Nova Motorsport, Alex Smith/Mika Lee/Ren Sato/Luca Moretti, Silver Coast Circuit/Mountain Park Raceway, one 2026 season, two team entries, four race-driver entries and two weekends. It is separate from the existing standalone dashboard fixtures, whose regression contract is preserved.
+`src/data/seed/content-development.ts` is the centralized private-use PostgreSQL development dataset: one database, Mercedes and Ferrari, George Russell/Kimi Antonelli/Charles Leclerc/Lewis Hamilton, Albert Park/Suzuka display identities, one 2026 season, two team entries, four race-driver entries and two weekends. It is separate from the existing standalone dashboard fixtures, whose regression contract is preserved.
 
 The seed validates its complete graph and upserts fixed UUIDs in one transaction, in dependency order. Repeat runs restore canonical development values without deleting rows or duplicating IDs. Actual createdAt/updatedAt timestamps track persistence; reproducibility refers to stable IDs/content, not audit clocks. Treat seeded records as disposable examples: edit a copied dataset later. A conflicting database ID/key fails rather than overwriting a different root dataset. Unique-key conflicts or dependent-row conflicts roll back the transaction.
 
@@ -355,3 +355,37 @@ VSC/SC suppress overtaking and deployment; SC compresses excess adjacent gaps gr
 `CareerRaceIncidents` is a small owned extension: numeric control/RNG columns plus configuration, reliability, entrant-incident and event JSON. It shares the existing transaction and Career lock, with SQL ownership/check constraints and runtime semantic validation. It is not an event-sourced aggregate: current state remains authoritative and events provide history. The additive tenth migration preserves previous migration bytes and extends the wet-compound guard to v7.
 
 See [Phase 11 report](phase-11-report.md) for exact draw semantics, bounds, measurements and verification. No final component allocation, red flags, unlapping, continuous collision geometry, 2D viewer or Practice/Qualifying engine is included.
+
+## Phase 12: Race viewer
+
+`features/race/viewer` presents the existing deterministic v7 checkpoint. Its application adapter dispatches typed intents to the existing Race services; those services retain expected-lap checks, command revisions, player ownership and PostgreSQL locking. React never writes Prisma rows or calculates Race outcomes. No simulation migration or v8 was introduced.
+
+The desktop screen combines a timing tower, original SVG circuit and selected-driver controls. Weather and Race Control remain visible above them. Recent structured events are translated when displayed; stints and diagnostic details are expandable. AI and finished/retired driver panels are read-only. Two player shortcuts keep their original input order as classification changes.
+
+### Circuit layout and positions
+
+`data/seed/circuit-layouts.ts` stores normalized closed polylines keyed by stable source-circuit UUID. Both bundled shapes are original fictional schematics, including when their display names are Albert Park and Suzuka. Unknown/imported circuits receive a generic schematic. The declared direction describes the ordered point sequence; progress follows that sequence from the normalized start/finish offset. Display names never select layouts.
+
+`viewer/model.ts` wraps absolute progress and interpolates by polyline arc length. Modern entrants use authoritative `progressMicrolaps`; legacy entrants use completed laps and elapsed-time gaps. The timing tower retains authoritative classification order, including retirements. Grid gains are labelled separately from overtakes. PIT comes from committed stop history.
+
+A single requestAnimationFrame loop updates SVG transforms for all markers and labels between checkpoints. Retired cars snap to their last saved position. Labels are placed away from markers and each other at checkpoint destinations, then drawn above the marker layer. System reduced-motion and the local Reduce motion checkbox snap instead of animating. Strategic skip also snaps to avoid overlapping long animations during rapid checkpoint requests. Animation never writes Race state.
+
+### Playback and viewer state
+
+`PlaybackController` owns one timer and one in-flight mutation. After a committed response, the next request waits 2400 / speed milliseconds for 1×, 2×, 4× or 8×. Speed is never included in simulation inputs. An injectable clock makes cadence tests deterministic without mocking PostgreSQL timers.
+
+Pause clears future requests. A request already committing may finish; it is not rolled back. Commands pause first and are disabled during a mutation. Expected-lap locking remains the server-side safeguard across tabs. Errors pause and ask the user to refresh the authoritative checkpoint.
+
+Auto-pause detects player incidents/retirements/pit completion, control changes, weather/DRS bands and finish. Next strategic event requests one lap at a time, stops on these events even with auto-pause disabled, and is capped at 20 laps. Finish always stops playback. Refresh reconstructs positions from saved state and starts paused.
+
+Selection, gap/interval, speed, auto-pause and motion settings are local viewer state and currently reset on refresh. Only language persists in browser storage. The locale cannot enter Race calculations or command payloads. v1–v6 render available state and hide unsupported command and tyre controls.
+
+### Accessibility and limitations
+
+Timing selectors and SVG markers are keyboard reachable; marker Enter/Space selects the driver. Buttons expose pressed state, selection has a ring/indicator, and race status uses text as well as colour. Tyre tokens include full-name tooltips. The tower scrolls vertically for 20 entrants; responsive controls use three columns on laptops and two on tablets before stacking at narrow widths.
+
+The simulation remains lap-checkpoint based. Movement is bounded visual interpolation, not corner-by-corner physics or an official real-world circuit layout. Cars can overlap in close packs; callouts and authoritative timing resolve their identity/order. No live telemetry or new gameplay authority was added.
+
+## Private-use source identity update
+
+The source fixture uses the requested small real-life identity subset over unchanged development numeric profiles. IDs, old-looking internal keys, database identity, team colours, performance, distance/lap counts and simulation code remain stable. A new source-driver-ID ordering prevents display car-number changes from reassigning index-based provisional Race profiles. Frozen Race inputs remain untouched. Reseeding updates source rows; existing Careers retain their own snapshots. See the private-use naming report for metadata and scope.

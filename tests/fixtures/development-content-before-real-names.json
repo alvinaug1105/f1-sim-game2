@@ -1,0 +1,188 @@
+{
+  "database": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "key": "fictional-formula-development",
+    "name": "Fictional Formula Development",
+    "version": "1.0.0",
+    "schemaVersion": 1,
+    "description": "Small fictional source database for development. No active Career.",
+    "isBuiltIn": true
+  },
+  "teams": [
+    {
+      "id": "00000000-0000-4000-8000-000000000100",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "team-aurora",
+      "name": "Westhaven Racing",
+      "shortName": "WES",
+      "color": "#D7EE69",
+      "secondaryColor": "#202820",
+      "countryCode": "GB",
+      "foundedYear": 2018
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "team-nova",
+      "name": "Kogane Motorsport",
+      "shortName": "KOG",
+      "color": "#65B5EE",
+      "secondaryColor": "#182534",
+      "countryCode": "JP",
+      "foundedYear": 2020
+    }
+  ],
+  "drivers": [
+    {
+      "id": "00000000-0000-4000-8000-000000000200",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "driver-alex-smith",
+      "firstName": "Owen",
+      "lastName": "Whitcombe",
+      "abbreviation": "WHI",
+      "dateOfBirth": "1998-04-12",
+      "nationalityCode": "GB",
+      "preferredNumber": 12
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000201",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "driver-mika-lee",
+      "firstName": "Wei-An",
+      "lastName": "Tsai",
+      "abbreviation": "TSA",
+      "dateOfBirth": "2001-08-23",
+      "nationalityCode": "TW",
+      "preferredNumber": 27
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000202",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "driver-ren-sato",
+      "firstName": "Daichi",
+      "lastName": "Kurose",
+      "abbreviation": "KUR",
+      "dateOfBirth": "1999-01-06",
+      "nationalityCode": "JP",
+      "preferredNumber": 36
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000203",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "driver-luca-moretti",
+      "firstName": "Matteo",
+      "lastName": "Bellandi",
+      "abbreviation": "BEL",
+      "dateOfBirth": "2000-11-15",
+      "nationalityCode": "IT",
+      "preferredNumber": 48
+    }
+  ],
+  "circuits": [
+    {
+      "id": "00000000-0000-4000-8000-000000000300",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "circuit-silver-coast",
+      "name": "Silver Bay Grand Prix Circuit",
+      "countryCode": "AU",
+      "city": "Silver Bay",
+      "lengthMeters": 5200,
+      "defaultLapCount": 58
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000301",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "circuit-mountain-park",
+      "name": "Aoba Highlands Raceway",
+      "countryCode": "JP",
+      "city": "Aoba",
+      "lengthMeters": 4800,
+      "defaultLapCount": 64
+    }
+  ],
+  "seasons": [
+    {
+      "id": "00000000-0000-4000-8000-000000000400",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "key": "season-2026",
+      "year": 2026,
+      "name": "2026 Fictional Formula Championship"
+    }
+  ],
+  "teamEntries": [
+    {
+      "id": "00000000-0000-4000-8000-000000000500",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000400",
+      "teamId": "00000000-0000-4000-8000-000000000100",
+      "entryOrder": 1
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000501",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000400",
+      "teamId": "00000000-0000-4000-8000-000000000101",
+      "entryOrder": 2
+    }
+  ],
+  "driverEntries": [
+    {
+      "id": "00000000-0000-4000-8000-000000000600",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000400",
+      "teamId": "00000000-0000-4000-8000-000000000100",
+      "driverId": "00000000-0000-4000-8000-000000000200",
+      "carNumber": 12,
+      "role": "RACE_DRIVER"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000601",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000400",
+      "teamId": "00000000-0000-4000-8000-000000000100",
+      "driverId": "00000000-0000-4000-8000-000000000201",
+      "carNumber": 27,
+      "role": "RACE_DRIVER"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000602",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000400",
+      "teamId": "00000000-0000-4000-8000-000000000101",
+      "driverId": "00000000-0000-4000-8000-000000000202",
+      "carNumber": 36,
+      "role": "RACE_DRIVER"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000603",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000400",
+      "teamId": "00000000-0000-4000-8000-000000000101",
+      "driverId": "00000000-0000-4000-8000-000000000203",
+      "carNumber": 48,
+      "role": "RACE_DRIVER"
+    }
+  ],
+  "events": [
+    {
+      "id": "00000000-0000-4000-8000-000000000700",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000400",
+      "circuitId": "00000000-0000-4000-8000-000000000300",
+      "round": 1,
+      "name": "Silver Bay Grand Prix",
+      "startDate": "2026-03-06",
+      "endDate": "2026-03-08"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000701",
+      "gameDatabaseId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000400",
+      "circuitId": "00000000-0000-4000-8000-000000000301",
+      "round": 2,
+      "name": "Aoba Highlands Grand Prix",
+      "startDate": "2026-03-20",
+      "endDate": "2026-03-22"
+    }
+  ]
+}

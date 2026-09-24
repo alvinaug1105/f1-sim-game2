@@ -1,7 +1,7 @@
 # Upload this project to GitHub
 
 1. Extract `formula-foundation-source.zip` on your computer.
-2. Create an empty GitHub repository.
+2. Create an empty **private** GitHub repository for this personal-use project.
 3. Upload the **contents of the extracted `formula-foundation` folder** to the repository root. Upload the source files, not just the ZIP archive.
 4. Include hidden configuration files `.gitignore` and `.env.example`. On macOS, Command-Shift-Period shows hidden files in Finder.
 5. Never upload a real `.env` file, database credentials, `node_modules`, or `.next`.
@@ -42,6 +42,6 @@ npm run db:seed
 
 Use a separate disposable PostgreSQL database for TEST_DATABASE_URL, then run `npm run test:db`. The integration suite creates and removes only its uniquely named test schema.
 
-At export, **390 offline tests** and **180 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, typecheck, lint and production build passed. This export includes Phase 11 plus the fictional-content naming pass. All ten migrations and simulation code are unchanged by the naming pass. See `docs/fictional-content-naming-report.md` for mappings, snapshot guarantees and bilingual browser checks; `docs/phase-11-report.md` retains the mechanics report.
+At export, **423 offline tests** and **184 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, typecheck, lint and production build passed. This export includes the private-use real-life identity pass and Phase 12 Race viewer. All ten migrations, the schema and simulation source remain unchanged. See `docs/private-use-naming-report.md` and `docs/phase-12-report.md` for scope, exact checks and screenshots.
 
-Run `npm run db:seed` against your development database to update source names. Existing Career snapshots are not renamed; new Careers use the updated source names. This content pass requires no new migration.
+Run `npm run db:seed` against your development database to update source identities. Existing Career snapshots are not renamed; new Careers use the updated source names. This delivery requires no new migration. Nothing has been uploaded or published for you.

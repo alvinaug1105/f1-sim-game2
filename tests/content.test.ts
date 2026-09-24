@@ -132,7 +132,7 @@ describe("fictional source content graph (no database required)", () => {
         ...data,
         driverEntries: [
           data.driverEntries[0],
-          { ...data.driverEntries[1], carNumber: 12 },
+          { ...data.driverEntries[1], carNumber: data.driverEntries[0].carNumber },
         ],
       }),
     ).toThrow("car number");

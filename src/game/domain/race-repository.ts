@@ -9,6 +9,9 @@ export interface RaceRosterEntry {
   readonly carNumber: number;
 }
 export interface RaceLabel {
+  readonly abbreviation?: string;
+  readonly teamColor?: string;
+  readonly carNumber?: number | null;
   readonly entrantId: string;
   readonly driverName: string;
   readonly teamName: string;
@@ -21,6 +24,7 @@ export interface CareerRaceData {
   readonly labels: readonly RaceLabel[];
   readonly roster: readonly RaceRosterEntry[];
   readonly circuit: {
+    readonly sourceCircuitId?: string | null;
     readonly lengthMeters: number;
     readonly defaultLapCount: number;
   };

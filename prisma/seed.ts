@@ -8,7 +8,7 @@ async function main() {
   const client = createPrismaClient(requireDatabaseUrl());
   try {
     await seedDevelopmentContent(client);
-    console.info("Fictional development content seeded successfully.");
+    console.info("Development content seeded successfully.");
   } finally {
     await client.$disconnect();
   }

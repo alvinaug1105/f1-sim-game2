@@ -59,6 +59,8 @@ async function read(
       entrants: {
         orderBy: { gridPosition: "asc" },
         include: {
+          driver: true,
+          team: true,
           stintHistory: { orderBy: { number: "asc" } },
           pitStops: { orderBy: { number: "asc" } },
         },
@@ -85,7 +87,7 @@ async function read(
         include: { driver: true, teamEntry: { include: { team: true } } },
         orderBy: [
           { teamEntry: { entryOrder: "asc" } },
-          { carNumber: "asc" },
+          { driver: { sourceDriverId: "asc" } },
           { id: "asc" },
         ],
       });
@@ -248,12 +250,16 @@ async function read(
     sessionId: session.id,
     state,
     circuit: {
+      sourceCircuitId: circuit.sourceCircuitId,
       lengthMeters: circuit.lengthMeters,
       defaultLapCount: circuit.defaultLapCount,
     },
     labels:
       row?.entrants.map((e) => ({
         entrantId: e.id,
+        abbreviation: e.driver.abbreviation,
+        teamColor: e.team.color,
+        carNumber: e.driver.preferredNumber,
         driverName: e.driverName,
         teamName: e.teamName,
       })) ?? [],

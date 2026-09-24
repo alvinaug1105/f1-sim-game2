@@ -98,12 +98,26 @@ describe('Next Strategic Event', () => {
         expect(r.laps).toEqual([0, 1, 2, 3]); expect(r.peak()).toBe(1);
         expect(c.getSnapshot()).toMatchObject({ playing: false, reason: 'WEATHER', attention: { kind: 'RAIN_START', lap: 4 } });
     });
-    it('is bounded and produces the same authoritative state as normal 1× playback', async () => {
+    it('stops at exactly SEEK_LIMIT committed checkpoints when nothing strategic happens', async () => {
+        vi.useFakeTimers(); const s = advanceRace(quietRace(), 5);
+        // Inert checkpoints: only the lap counter moves, so no attention input (control, events, weather, DRS, tyres,
+        // fuel, gaps, pit stops) can change and the cap is the only possible stop.
+        const r = recorder(state => ({ ...state, lap: state.lap + 1 }));
+        const seek = new PlaybackController(s, team(s), r.advance);
+        seek.skip(); await vi.runAllTimersAsync();
+        expect(r.advance).toHaveBeenCalledTimes(SEEK_LIMIT); expect(r.peak()).toBe(1);
+        expect(r.laps).toEqual(Array.from({ length: SEEK_LIMIT }, (_, i) => 5 + i));
+        expect(seek.getState().lap).toBe(5 + SEEK_LIMIT);
+        expect(seek.getSnapshot()).toMatchObject({ reason: 'LIMIT', attention: null, lastAttention: null, playing: false, skipping: false, phase: 'paused', busy: false });
+        expect(vi.getTimerCount()).toBe(0);
+        await vi.advanceTimersByTimeAsync(60000); expect(r.advance).toHaveBeenCalledTimes(SEEK_LIMIT);
+    });
+    it('seeking commits the same authoritative state as advancing lap by lap', async () => {
         vi.useFakeTimers(); const s = quietRace();
         const seek = new PlaybackController(s, team(s), async state => advanceRaceLap(state));
         seek.skip(); await vi.runAllTimersAsync();
-        expect(seek.getSnapshot().reason === 'LIMIT' ? seek.getState().lap : SEEK_LIMIT).toBeLessThanOrEqual(SEEK_LIMIT);
         const lap = seek.getState().lap;
+        expect(lap).toBeGreaterThan(0); expect(lap).toBeLessThanOrEqual(SEEK_LIMIT);
         expect(seek.getState()).toEqual(advanceRace(s, lap));
     });
     it('Race finish stops scheduling permanently', async () => {

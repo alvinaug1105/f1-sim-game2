@@ -3,7 +3,12 @@ export const LABEL_TIER = { SELECTED: 0, PLAYER: 1, BATTLE: 2, LEADER: 3, NEARBY
 export type LabelTier = typeof LABEL_TIER[keyof typeof LABEL_TIER];
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface Point { x: number; y: number }
-export interface LabelRequest { id: string; tier: number; x: number; y: number }
+/**
+ * `ahead`: optional presentation-only lookahead, the car's next positions along the drawn path (nearest first, spaced
+ * `LOOKAHEAD_STEP` SVG units apart). Used only to choose a replacement slot that stays clear of START / FINISH and the
+ * map edge while the car keeps travelling; it never delays or overrides a current-frame hard conflict.
+ */
+export interface LabelRequest { id: string; tier: number; x: number; y: number; ahead?: readonly Point[] }
 /** Per-label memory carried between frames. */
 export interface SlotMemory {
     slot: number;
@@ -26,6 +31,13 @@ export const STICKY_FRAMES = 45;
 export const HOLD_FRAMES = 30;
 /** Frames (~1.5 s) during which a just-abandoned slot is penalised as a replacement. */
 export const RETURN_COOLDOWN_FRAMES = 90;
+/**
+ * Lookahead samples and spacing (SVG units): 325 units, enough to cover a whole START / FINISH crossing. Samples are
+ * denser than the small line box, and future checks use a wider margin so a barely-clear slot is not chosen.
+ */
+export const LOOKAHEAD_SAMPLES = 13;
+export const LOOKAHEAD_STEP = 25;
+const FUTURE_PAD = 8;
 /** Clearance beyond this (SVG units) is "comfortable"; more space earns no extra score. */
 const CLEARANCE_CAP = 60;
 /** Label box per tier; FIELD cars are marker-only and never get a box. */
@@ -36,6 +48,20 @@ export const LABEL_SLOTS = RADII.length * DIRECTIONS.length;
 /** Tiers that stay visible even when every slot collides (selected + other player car). */
 const PERSISTENT_TIER = LABEL_TIER.PLAYER;
 const PAD = 3;
+/** START / FINISH keep-out exactly as the map draws it: the text box below the line, and the line itself. */
+export function startFinishReserve(start: Point, text: string): Rect[] {
+    return [{ x: start.x - 40, y: start.y + 22, w: Math.max(60, text.length * 11) + 10, h: 24 }, { x: start.x - 16, y: start.y - 16, w: 32, h: 32 }];
+}
+/** Projected length of one lap of the drawn path (SVG units); `at` maps lap progress to an SVG point. */
+export function pathLength(at: (progress: number) => Point, samples = 400) {
+    let length = 0;
+    for (let i = 0; i < samples; i++) { const a = at(i / samples), b = at((i + 1) / samples); length += Math.hypot(b.x - a.x, b.y - a.y); }
+    return length || 1;
+}
+/** A car's upcoming positions along the drawn path, `LOOKAHEAD_STEP` apart, keeping its current lane offset. */
+export function lookahead(at: (progress: number) => Point, progress: number, lapLength: number, offset: Point = { x: 0, y: 0 }): Point[] {
+    return Array.from({ length: LOOKAHEAD_SAMPLES }, (_, k) => { const q = at(progress + (k + 1) * LOOKAHEAD_STEP / lapLength); return { x: q.x + offset.x, y: q.y + offset.y }; });
+}
 export function slotCentre(car: Point, slot: number, size: { w: number; h: number }): Point {
     const [ux, uy] = DIRECTIONS[slot % DIRECTIONS.length], r = RADII[Math.floor(slot / DIRECTIONS.length)];
     return { x: car.x + ux * (r + size.w / 2), y: car.y + uy * (r * .75 + size.h / 2) };
@@ -58,21 +84,25 @@ function coversMarker(r: Rect, m: Point, radius: number) { return m.x > r.x - ra
  *
  * Replacing a slot: a hard conflict relocates immediately, but to the most stable candidate rather than the first
  * clean one. Candidates are scored by clearance from map edges, reserved regions and placed labels (so small relative
- * motion does not invalidate them next frame), then by fewer covered markers, the inner ring, staying on the same side
- * of the car, and not returning to a slot abandoned within `RETURN_COOLDOWN_FRAMES`. Low-priority labels are hidden when
+ * motion does not invalidate them next frame), by staying clear of reserved regions, the edge and higher-priority
+ * labels at the lookahead positions (so one move covers a whole START / FINISH crossing), then by fewer covered markers, the inner
+ * ring, staying on the same side of the car, and not returning to a slot abandoned within `RETURN_COOLDOWN_FRAMES`. Low-priority labels are hidden when
  * no marker-free valid slot exists; selected/player labels always receive a slot. Markers are never hidden.
  */
 export function placeLabels(requests: readonly LabelRequest[], options: { bounds: Rect; reserved?: readonly Rect[]; markers: readonly Point[]; markerRadius?: number; previous?: ReadonlyMap<string, SlotMemory> }) {
     const { bounds, reserved = [], markers, markerRadius = 10, previous } = options;
     const placed: Rect[] = [], result = new Map<string, PlacedLabel | null>();
+    /** Where each placed label will be at every lookahead sample (its slot around its own car's future positions). */
+    const placedAhead: (readonly Rect[])[] = [];
     const ordered = requests.map((r, i) => ({ r, i })).sort((a, b) => a.r.tier - b.r.tier || a.i - b.i);
     for (const { r } of ordered) {
         if (r.tier >= LABEL_TIER.FIELD || !Number.isFinite(r.x) || !Number.isFinite(r.y)) { result.set(r.id, null); continue; }
         const size = LABEL_SIZE[r.tier], memory = previous?.get(r.id);
         const kept = memory && Number.isInteger(memory.slot) && memory.slot >= 0 && memory.slot < LABEL_SLOTS ? memory : undefined;
+        const leaves = (rect: Rect) => rect.x < bounds.x || rect.y < bounds.y || rect.x + rect.w > bounds.x + bounds.w || rect.y + rect.h > bounds.y + bounds.h;
         const check = (slot: number) => {
             const centre = slotCentre(r, slot, size), rect = labelRect(centre, size);
-            const outside = rect.x < bounds.x || rect.y < bounds.y || rect.x + rect.w > bounds.x + bounds.w || rect.y + rect.h > bounds.y + bounds.h;
+            const outside = leaves(rect);
             const labelHits = placed.reduce((sum, p) => sum + overlapArea(rect, p, PAD), 0);
             const reservedHits = reserved.reduce((sum, p) => sum + overlapArea(rect, p, PAD), 0);
             const markerHits = markers.filter(m => coversMarker(rect, m, markerRadius)).length;
@@ -81,10 +111,25 @@ export function placeLabels(requests: readonly LabelRequest[], options: { bounds
         };
         const hold = kept?.hold ?? 0, cooldown = kept?.cooldown ?? 0, abandoned = cooldown > 0 ? kept?.abandoned ?? null : null;
         const [kx, ky] = kept ? DIRECTIONS[kept.slot % DIRECTIONS.length] : [0, 0];
+        const ahead = r.ahead ?? [];
+        /**
+         * Swept safety ("survival"): how soon this slot, carried along the car's lookahead, would hit a reserved region,
+         * the map edge or a higher-priority label's upcoming position. A slot that survives the whole lookahead costs
+         * nothing; otherwise the earlier the first conflict, the higher the cost, plus a small cost per further conflict.
+         */
+        const future = (slot: number) => {
+            let first = -1, hits = 0;
+            ahead.forEach((car, k) => {
+                const rect = labelRect(slotCentre(car, slot, size), size);
+                const hit = leaves({ x: rect.x - FUTURE_PAD, y: rect.y - FUTURE_PAD, w: rect.w + FUTURE_PAD * 2, h: rect.h + FUTURE_PAD * 2 }) || reserved.some(q => overlapArea(rect, q, FUTURE_PAD)) || placedAhead.some((f, j) => overlapArea(rect, f[k] ?? placed[j], FUTURE_PAD));
+                if (hit) { hits++; if (first < 0) first = k; }
+            });
+            return first < 0 ? 0 : (ahead.length - first) * 60 + (hits - 1) * 15;
+        };
         const score = (slot: number, c: ReturnType<typeof check>) => {
             const [ux, uy] = DIRECTIONS[slot % DIRECTIONS.length];
             const turn = kept ? 1 - (ux * kx + uy * ky) / (Math.hypot(ux, uy) * Math.hypot(kx, ky)) : 0; // 0 same side … 2 opposite
-            return c.clearance * 3 - c.markerHits * 200 - Math.floor(slot / DIRECTIONS.length) * 8 - turn * 12 - (slot === abandoned ? 90 : 0);
+            return c.clearance * 3 - c.markerHits * 200 - future(slot) - Math.floor(slot / DIRECTIONS.length) * 8 - turn * 12 - (slot === abandoned ? 90 : 0);
         };
         /** Best hard-valid replacement (optionally marker-free only); ties keep the lower slot index. */
         const best = (markerFree: boolean, exclude?: number) => {
@@ -130,7 +175,11 @@ export function placeLabels(requests: readonly LabelRequest[], options: { bounds
                 chosen = move(clamped, f.slot, true);
             }
         }
-        if (chosen) placed.push(labelRect(chosen, size));
+        if (chosen) {
+            placed.push(labelRect(chosen, size));
+            // Forced/clamped labels have no reliable slot geometry ahead; they are treated as staying where they are.
+            placedAhead.push(chosen.forced ? [] : ahead.map(car => labelRect(slotCentre(car, chosen!.slot, size), size)));
+        }
         result.set(r.id, chosen);
     }
     return result;

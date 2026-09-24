@@ -5,7 +5,7 @@ import { prepareCircuitPath, circuitProjection } from '../../../game/domain/circ
 import type { timingRows } from './model';
 import { RaceMotion, checkpointDuration, type MotionMode } from './motion';
 import { useI18n } from '../../../i18n/provider';
-import { placeLabels, LABEL_TIER, LABEL_SIZE, type Rect, type SlotMemory } from './labels';
+import { placeLabels, startFinishReserve, pathLength, lookahead, LABEL_TIER, LABEL_SIZE, type Rect, type SlotMemory, type Point } from './labels';
 type Rows = ReturnType<typeof timingRows>;
 const subscribeMotion = (notify: () => void) => { const media = window.matchMedia('(prefers-reduced-motion: reduce)'); media.addEventListener('change', notify); return () => media.removeEventListener('change', notify); };
 const getMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,7 +29,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         const startSample = path.sample(0), start = project(startSample), angle = Math.atan2(startSample.tangentY, startSample.tangentX) * 180 / Math.PI;
     const startText = t('viewer.startFinish');
     // START / FINISH line and text are a reserved region labels may not cover.
-    const reserved = useMemo<Rect[]>(() => [{ x: start.x - 40, y: start.y + 22, w: Math.max(60, startText.length * 11) + 10, h: 24 }, { x: start.x - 16, y: start.y - 16, w: 32, h: 32 }], [start.x, start.y, startText]);
+    const reserved = useMemo<Rect[]>(() => startFinishReserve({ x: start.x, y: start.y }, startText), [start.x, start.y, startText]);
     const labelTierMap = useMemo(() => new Map(rows.map(r => [r.id, tiers?.get(r.id) ?? (r.id === selected ? LABEL_TIER.SELECTED : LABEL_TIER.FIELD)])), [rows, tiers, selected]);
     const tierOf = (id: string) => labelTierMap.get(id) ?? LABEL_TIER.FIELD;
     const placement = useRef({ tiers: labelTierMap, reserved });
@@ -38,6 +38,8 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         const cars = [...root.querySelectorAll<SVGGElement>('[data-car]')];
         const drawn = new Map<string, { x: number; y: number }>();
         const slots = new Map<string, SlotMemory>();
+        // Projected lap length converts the label lookahead (SVG units) into lap progress along the drawn path.
+        const at = (progress: number) => project(path.sample(progress)), lapLength = pathLength(at);
         let frame = 0, disposed = false, previousTime: number | null = null;
         let frames = 0, workTotal = 0, workMax = 0, intervalTotal = 0, intervalMax = 0;
         const draw = (now: number) => {
@@ -60,7 +62,13 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             });
             // Deterministic sticky placement: previous slots persist through passing markers; low-priority labels hide when no slot is valid.
             const { tiers: current, reserved: blocked } = placement.current;
-            const placed = placeLabels(cars.map(el => ({ id: el.dataset.car!, tier: current.get(el.dataset.car!) ?? LABEL_TIER.FIELD, ...drawn.get(el.dataset.car!)! })), { bounds: MAP_BOUNDS, reserved: blocked, markers: [...drawn.values()], previous: slots });
+            // Labelled, moving cars carry a short lookahead along the drawn path (keeping their current lane offset).
+            const ahead = (el: SVGGElement, i: number): Point[] | undefined => {
+                const car = drawn.get(el.dataset.car!)!, p = samples[i];
+                if ((current.get(el.dataset.car!) ?? LABEL_TIER.FIELD) >= LABEL_TIER.FIELD || el.classList.contains('retired')) return undefined;
+                return lookahead(at, p.progress, lapLength, { x: car.x - p.x, y: car.y - p.y });
+            };
+            const placed = placeLabels(cars.map((el, i) => ({ id: el.dataset.car!, tier: current.get(el.dataset.car!) ?? LABEL_TIER.FIELD, ...drawn.get(el.dataset.car!)!, ahead: ahead(el, i) })), { bounds: MAP_BOUNDS, reserved: blocked, markers: [...drawn.values()], previous: slots });
             // Label elements follow React's priority set, so they are looked up per frame (markers never change).
             for (const label of root.querySelectorAll<SVGGElement>('[data-label]')) {
                 const id = label.dataset.label!, at = placed.get(id), car = drawn.get(id);

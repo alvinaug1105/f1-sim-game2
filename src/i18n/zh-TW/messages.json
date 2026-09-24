@@ -328,7 +328,7 @@
   "viewer.positionNote": "名次變化相對於起跑位置，包含進站造成的變化。",
   "viewer.track": "賽道",
   "viewer.schematic": "原創示意圖",
-  "viewer.interpolation": "依檢查點插值顯示 · 非逐彎物理模擬",
+  "viewer.interpolation": "地圖位置依已儲存圈數平滑移動；計時與排名以賽事資料為準。",
   "viewer.playerCars": "己方兩部賽車",
   "viewer.recentEvents": "近期事件",
   "viewer.allEvents": "較早事件",
@@ -357,5 +357,6 @@
   "viewer.tyre.MEDIUM": "M",
   "viewer.tyre.HARD": "H",
   "viewer.tyre.INTERMEDIATE": "I",
-  "viewer.tyre.WET": "W"
+  "viewer.tyre.WET": "W",
+  "viewer.realGeometry": "賽道中心線"
 }

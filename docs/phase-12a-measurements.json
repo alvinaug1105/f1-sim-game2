@@ -1,0 +1,99 @@
+{
+  "environment": "Codex in-app Chromium browser on local macOS; 20-car PostgreSQL careers; development timing samples and production functional verification",
+  "counts": {
+    "offline": 443,
+    "postgresql": 184
+  },
+  "developmentFrameSamples": {
+    "albert1x": {
+      "checkpoint": "9",
+      "frames": "3637",
+      "layout": "albert-park",
+      "maxFrameIntervalMs": "16.599999999998545",
+      "maxFrameWorkMs": "1.5",
+      "meanFrameIntervalMs": "5.544924642464246",
+      "meanFrameWorkMs": "0.3043717349379341",
+      "motion": "playing"
+    },
+    "albert4x": {
+      "checkpoint": "10",
+      "frames": "3697",
+      "layout": "albert-park",
+      "maxFrameIntervalMs": "16.599999999998545",
+      "maxFrameWorkMs": "1.5",
+      "meanFrameIntervalMs": "5.546649891774889",
+      "meanFrameWorkMs": "0.30313767919033235",
+      "motion": "playing"
+    },
+    "albert8xAfterPause": {
+      "checkpoint": "53",
+      "frames": "6401",
+      "layout": "albert-park",
+      "maxFrameIntervalMs": "233.09999999999854",
+      "maxFrameWorkMs": "1.5",
+      "meanFrameIntervalMs": "5.556473125000002",
+      "meanFrameWorkMs": "0.27580065613953286",
+      "motion": "paused"
+    },
+    "suzuka1x": {
+      "checkpoint": "7",
+      "frames": "2958",
+      "layout": "suzuka",
+      "maxFrameIntervalMs": "7",
+      "maxFrameWorkMs": "1.7000000001862645",
+      "meanFrameIntervalMs": "5.537103145079472",
+      "meanFrameWorkMs": "0.29577417173558257",
+      "motion": "playing"
+    },
+    "suzuka4x": {
+      "checkpoint": "32",
+      "frames": "5485",
+      "layout": "suzuka",
+      "maxFrameIntervalMs": "16.200000000004366",
+      "maxFrameWorkMs": "1.7000000001862645",
+      "meanFrameIntervalMs": "5.522362144430126",
+      "meanFrameWorkMs": "0.2697356426604466",
+      "motion": "playing"
+    },
+    "suzuka8x": {
+      "checkpoint": "41",
+      "frames": "1",
+      "layout": "suzuka",
+      "maxFrameIntervalMs": "0",
+      "maxFrameWorkMs": "0.5",
+      "meanFrameIntervalMs": "0",
+      "meanFrameWorkMs": "0.5",
+      "motion": "paused"
+    }
+  },
+  "production": {
+    "maxObservedCentrelineOffsetSvgUnits": 10.000000000000126,
+    "pauseExact": true,
+    "localeSelectionNoReverse": true,
+    "retirementCount": 20,
+    "retirementFrozen": true,
+    "normalFinishStable": true,
+    "normalFinishLap": 64,
+    "markersMovingThroughAlbertViewportChanges": 20,
+    "viewports": [
+      [
+        1440,
+        1000
+      ],
+      [
+        1024,
+        900
+      ],
+      [
+        768,
+        1024
+      ]
+    ]
+  },
+  "limitations": [
+    "RAF callback intervals are browser scheduling observations, not guaranteed display FPS.",
+    "Development samples include transitions between playback speeds; aggregates are not isolated benchmarks.",
+    "No React state update occurs in the shared drawing loop.",
+    "Occasional long scheduling gaps occurred; the largest recorded development interval was about 233 ms."
+  ]
+}

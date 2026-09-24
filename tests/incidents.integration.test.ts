@@ -119,6 +119,7 @@ it("v7 full results ignore renamed driver/team/circuit/event labels", async () =
 });
 
 import {applyViewerIntent} from '../src/features/race/viewer/service';
+import {checkpointDuration} from '../src/features/race/viewer/motion';
 import {PlaybackController,type PlaybackClock} from '../src/features/race/viewer/playback';
 it('viewer 1x and 8x persist EXACTLY the same full v7 result under the same commands',async()=>{
  const initial=await start(),id=player(initial);
@@ -133,9 +134,10 @@ it('viewer 1x and 8x persist EXACTLY the same full v7 result under the same comm
   controller.setAutoPause(false);controller.setSpeed(speed);controller.play();
   while(controller.getSnapshot().playing){
    const completed=new Promise<void>(resolve=>{const off=controller.subscribe(()=>{if(!controller.getSnapshot().busy){off();resolve();}});});
+   expect(delays.at(-1)).toBe(checkpointDuration(speed,controller.getState().incidents?.mode));
    const tick=queued!;expect(tick).toBeTypeOf('function');queued=null;tick();await completed;
   }
-  expect(delays).toHaveLength(initial.state!.input.totalLaps);expect(delays.every(d=>d===2400/speed)).toBe(true);
+  expect(delays).toHaveLength(initial.state!.input.totalLaps);expect(delays.every(d=>d>=2400/speed)).toBe(true);
   const reopened=await get();expect(reopened.state).toEqual(controller.getState());return reopened.state;
  }
  const slow=await run(1);

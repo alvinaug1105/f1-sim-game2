@@ -42,6 +42,6 @@ npm run db:seed
 
 Use a separate disposable PostgreSQL database for TEST_DATABASE_URL, then run `npm run test:db`. The integration suite creates and removes only its uniquely named test schema.
 
-At export, **423 offline tests** and **184 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, typecheck, lint and production build passed. This export includes the private-use real-life identity pass and Phase 12 Race viewer. All ten migrations, the schema and simulation source remain unchanged. See `docs/private-use-naming-report.md` and `docs/phase-12-report.md` for scope, exact checks and screenshots.
+At export, **443 offline tests** and **184 actual PostgreSQL integration tests** passed. Prisma format/validate/generate, typecheck, lint and production build passed. This export includes the private-use real-life identity pass and Phase 12A real-circuit Race viewer. All ten migrations, the schema and simulation source remain unchanged. See `docs/private-use-naming-report.md` and `docs/phase-12a-report.md` for scope, exact checks and screenshots.
 
 Run `npm run db:seed` against your development database to update source identities. Existing Career snapshots are not renamed; new Careers use the updated source names. This delivery requires no new migration. Nothing has been uploaded or published for you.

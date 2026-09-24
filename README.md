@@ -1,6 +1,6 @@
 # Formula Operations
 
-A browser-based Formula racing team management game, currently in **Phase 12: 2D Race viewer and operations UI**. Persistent Careers support deterministic, resumable races with weather, dry/Intermediate/Wet tyres, traffic, DRS, pits, fuel, ERS and driver commands. New v7 races add occasional errors, mechanical problems, retirement, neutralisation and a localized event feed. Existing v1–v6 saves retain their historical behaviour.
+A browser-based Formula racing team management game, currently in **Phase 12A: real circuit geometry and smooth race movement**. Persistent Careers support deterministic, resumable races with weather, dry/Intermediate/Wet tyres, traffic, DRS, pits, fuel, ERS and driver commands. New v7 races add occasional errors, mechanical problems, retirement, neutralisation and a localized event feed. Existing v1–v6 saves retain their historical behaviour.
 
 ## Stack and local development
 
@@ -74,7 +74,7 @@ npm run test:db
 
 The integration suite creates a unique schema, applies the actual migrations, runs the seed twice, verifies representative queries and tests database rejection of invalid relationships/duplicates. It drops only its own schema afterward. Without TEST_DATABASE_URL the command fails clearly; no SQL tests are silently skipped. The ordinary `npm test` suite stays database-independent.
 
-See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 12 report](docs/phase-12-report.md) records the current 423 passing offline tests and 184 passing real PostgreSQL integration tests. The [Phase 11 report](docs/phase-11-report.md) contains incident/control balance measurements; its test totals and older names are historical.
+See [architecture](docs/architecture.md) for dataset isolation, snapshot principles, known roster limitations and optional future localized game content. [Phase 12A report](docs/phase-12a-report.md) records the current 443 passing offline tests and 184 passing real PostgreSQL integration tests. The [Phase 11 report](docs/phase-11-report.md) contains incident/control balance measurements; its test totals and older names are historical.
 
 ## Try the lifecycle
 
@@ -87,10 +87,10 @@ The bundled development championship uses the requested small real-life subset f
 
 Run `npm run db:seed` to update the source identities. Stable IDs and keys, assignments and simulation numbers remain intact; existing Careers keep their snapshots. See the [current identity report](docs/private-use-naming-report.md). The earlier [fictional naming report](docs/fictional-content-naming-report.md) is historical.
 
-## Current delivery: private-use identities and Phase 12
+## Current delivery: private-use identities and Phase 12A
 
 The source seed now uses Mercedes (George Russell / Kimi Antonelli), Ferrari (Charles Leclerc / Lewis Hamilton), Australian Grand Prix / Albert Park and Japanese Grand Prix / Suzuka. These are display identities over the unchanged development profiles and original team colours. Existing Careers retain their previous snapshots; new Careers receive the updated identities after reseeding. Old internal keys and database/season labels intentionally remain stable. No official assets are included.
 
-The Race viewer adds original SVG schematics, timing, player commands, weather/control/events and sequential playback at 1×/2×/4×/8×. Speed never alters the v7 simulation. Viewer selection and playback settings are local; refresh starts paused. English and Traditional Chinese are supported throughout. Maps are approximate checkpoint interpolation and are not real-world circuit layouts.
+The Race viewer uses licensed real Albert Park and Suzuka centrelines, arc-length interpolation and one shared animation loop. Timing, player commands, weather/control/events and sequential 1×/2×/4×/8× playback remain. Pause freezes visual movement; refresh starts paused at the saved checkpoint. English and Traditional Chinese remain supported. Movement presents authoritative lap checkpoints, with no corner physics. Unknown circuits retain a generic fallback. See [geometry provenance](docs/circuit-geometry-provenance.md).
 
-Current verification: **423 offline tests and 184 actual PostgreSQL integration tests**. See [Phase 12 report](docs/phase-12-report.md), [private-use identity report](docs/private-use-naming-report.md), and [screenshots](docs/screens/). Previous phase reports are historical records.
+Current verification: **443 offline tests and 184 actual PostgreSQL integration tests**. See [Phase 12A report](docs/phase-12a-report.md), [private-use identity report](docs/private-use-naming-report.md), and [screenshots](docs/screens/). Previous phase reports are historical records.

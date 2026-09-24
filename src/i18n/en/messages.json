@@ -328,7 +328,7 @@
   "viewer.positionNote": "Position change is relative to the grid, including pit cycles.",
   "viewer.track": "Track",
   "viewer.schematic": "Original schematic",
-  "viewer.interpolation": "Checkpoint interpolation · not corner-by-corner physics",
+  "viewer.interpolation": "Visual positions interpolate saved laps. Timing and classification remain authoritative.",
   "viewer.playerCars": "Your two cars",
   "viewer.recentEvents": "Recent events",
   "viewer.allEvents": "Earlier events",
@@ -357,5 +357,6 @@
   "viewer.tyre.MEDIUM": "M",
   "viewer.tyre.HARD": "H",
   "viewer.tyre.INTERMEDIATE": "I",
-  "viewer.tyre.WET": "W"
+  "viewer.tyre.WET": "W",
+  "viewer.realGeometry": "Circuit centreline"
 }

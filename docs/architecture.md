@@ -364,7 +364,7 @@ The desktop screen combines a timing tower, original SVG circuit and selected-dr
 
 ### Circuit layout and positions
 
-`data/seed/circuit-layouts.ts` stores normalized closed polylines keyed by stable source-circuit UUID. Both bundled shapes are original fictional schematics, including when their display names are Albert Park and Suzuka. Unknown/imported circuits receive a generic schematic. The declared direction describes the ordered point sequence; progress follows that sequence from the normalized start/finish offset. Display names never select layouts.
+`data/seed/circuit-layouts.ts` stores normalized closed polylines keyed by stable source-circuit UUID. Phase 12A replaces the original fictional shapes with licensed real Albert Park and Suzuka centrelines; see `circuit-geometry-provenance.md`. Unknown/imported circuits receive a generic schematic. The declared direction describes the ordered point sequence; progress follows that sequence from the normalized start/finish offset. Display names never select layouts.
 
 `viewer/model.ts` wraps absolute progress and interpolates by polyline arc length. Modern entrants use authoritative `progressMicrolaps`; legacy entrants use completed laps and elapsed-time gaps. The timing tower retains authoritative classification order, including retirements. Grid gains are labelled separately from overtakes. PIT comes from committed stop history.
 
@@ -389,3 +389,16 @@ The simulation remains lap-checkpoint based. Movement is bounded visual interpol
 ## Private-use source identity update
 
 The source fixture uses the requested small real-life identity subset over unchanged development numeric profiles. IDs, old-looking internal keys, database identity, team colours, performance, distance/lap counts and simulation code remain stable. A new source-driver-ID ordering prevents display car-number changes from reassigning index-based provisional Race profiles. Frozen Race inputs remain untouched. Reseeding updates source rows; existing Careers retain their own snapshots. See the private-use naming report for metadata and scope.
+
+
+## Phase 12A: real geometry and visual timeline
+
+Static GeoJSON lives in `data/seed/geometry`, keyed through the same source UUIDs. Pure `game/domain/circuit-geometry.ts` handles local geographic projection, uniform normalization, uniform SVG fitting, cumulative lengths and binary-search sampling. Display names, database circuit lengths and simulation inputs do not choose or scale the geometry.
+
+`features/race/viewer/motion.ts` owns an ephemeral unwrapped timeline. Newer lap checkpoints reconcile from last drawn positions; same-lap command/locale/selection renders cannot restart it. The timeline never writes to a repository. Pause suspends both checkpoint scheduling and visual time; incoming in-flight saves remain targets while paused. Resume continues from the frozen frame. Explicit steps and the final checkpoint can settle once and then sleep. Retired cars preserve their last drawn point, including their presentation offset. Refresh constructs a fresh paused timeline at saved authoritative progress.
+
+One RAF updates the entire SVG field through refs/transforms. Arc-length tables are prepared once per layout. Stable initial React transforms prevent rerenders from overwriting animation positions. Close packs use at most ten SVG units of lateral offset; distinct collision-avoiding labels link to each marker. Classification remains the immediately committed timing order. No position changes are inferred from SVG coordinates.
+
+The presentation interval is 2400 ms divided by selected speed, multiplied by 1.8 for SC or 1.4 for VSC. Both checkpoint scheduling and motion use that presentation tempo. Motion additionally includes measured persistence latency (bounded to 1500 ms) so ordinary network/database time does not cause a stop after every lap. Strategic advance uses the 8× cadence and its existing 20-checkpoint/event guard. Delays, local preferences and measured wall time never enter the frozen simulation input or RNG. A stalled tab's visual delta is capped at 50 ms, then subsequent checkpoints reconcile forward.
+
+See `phase-12a-report.md` for real-browser verification and exact full-state PostgreSQL equivalence. The v7 engine, schema, ten migrations, repositories and stable identity data are unchanged.

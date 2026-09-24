@@ -4,8 +4,30 @@ export type LabelTier = typeof LABEL_TIER[keyof typeof LABEL_TIER];
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface Point { x: number; y: number }
 export interface LabelRequest { id: string; tier: number; x: number; y: number }
-/** Centre of a placed label. `forced` means no collision-free slot existed (only tiers that must stay visible). */
-export interface PlacedLabel { x: number; y: number; slot: number; forced: boolean }
+/** Per-label memory carried between frames. */
+export interface SlotMemory {
+    slot: number;
+    /** Consecutive frames a car marker has obstructed the slot. */
+    blocked: number;
+    /** Remaining fresh-slot hold after a move: marker obstruction is not counted while it lasts. */
+    hold?: number;
+    /** Slot recently abandoned, and frames left during which returning to it is discouraged. */
+    abandoned?: number | null;
+    cooldown?: number;
+}
+/** Centre of a placed label. `forced` means no valid slot existed (only tiers that must stay visible). */
+export interface PlacedLabel { x: number; y: number; slot: number; forced: boolean; blocked: number; memory: SlotMemory }
+/**
+ * Consecutive obstructed frames (~0.75 s at 60 fps) before a marker passing through a label box may move the label.
+ * Frame-counted so placement stays deterministic for a given frame sequence.
+ */
+export const STICKY_FRAMES = 45;
+/** Fresh-slot hold after any move (~0.5 s). Never overrides a hard conflict. */
+export const HOLD_FRAMES = 30;
+/** Frames (~1.5 s) during which a just-abandoned slot is penalised as a replacement. */
+export const RETURN_COOLDOWN_FRAMES = 90;
+/** Clearance beyond this (SVG units) is "comfortable"; more space earns no extra score. */
+const CLEARANCE_CAP = 60;
 /** Label box per tier; FIELD cars are marker-only and never get a box. */
 export const LABEL_SIZE: readonly { w: number; h: number }[] = [{ w: 76, h: 30 }, { w: 62, h: 26 }, { w: 54, h: 22 }, { w: 54, h: 22 }, { w: 50, h: 21 }];
 const DIRECTIONS: readonly (readonly [number, number])[] = [[1, -1], [1, 1], [-1, -1], [-1, 1], [1, 0], [-1, 0], [0, -1], [0, 1]];
@@ -23,37 +45,90 @@ function overlapArea(a: Rect, b: Rect, pad = 0) {
     const w = Math.min(a.x + a.w + pad, b.x + b.w + pad) - Math.max(a.x - pad, b.x - pad), h = Math.min(a.y + a.h + pad, b.y + b.h + pad) - Math.max(a.y - pad, b.y - pad);
     return w > 0 && h > 0 ? w * h : 0;
 }
+/** Gap between two rects along the most separated axis; negative when they overlap. */
+function separation(a: Rect, b: Rect) { return Math.max(a.x - (b.x + b.w), b.x - (a.x + a.w), a.y - (b.y + b.h), b.y - (a.y + a.h)); }
 function coversMarker(r: Rect, m: Point, radius: number) { return m.x > r.x - radius && m.x < r.x + r.w + radius && m.y > r.y - radius && m.y < r.y + r.h + radius; }
 /**
- * Places labels in priority order (lower tier first, then request order). Each label tries its previous slot first
- * (hysteresis against flicker), then fixed slots around its own car. Low-priority labels are hidden when no free slot
- * exists; selected/player labels always receive the least-colliding slot. Markers are never hidden by this function.
+ * Places labels in priority order (lower tier first, then request order), so a label only ever yields to labels of
+ * higher or equal priority.
+ *
+ * Keeping a slot: a label keeps its previous slot while that slot is hard-valid (inside the map, clear of reserved
+ * regions and of already-placed labels). Passing car markers are tolerated; only `STICKY_FRAMES` consecutive obstructed
+ * frames (not counted during a fresh-slot hold) move it, and only to a marker-free slot.
+ *
+ * Replacing a slot: a hard conflict relocates immediately, but to the most stable candidate rather than the first
+ * clean one. Candidates are scored by clearance from map edges, reserved regions and placed labels (so small relative
+ * motion does not invalidate them next frame), then by fewer covered markers, the inner ring, staying on the same side
+ * of the car, and not returning to a slot abandoned within `RETURN_COOLDOWN_FRAMES`. Low-priority labels are hidden when
+ * no marker-free valid slot exists; selected/player labels always receive a slot. Markers are never hidden.
  */
-export function placeLabels(requests: readonly LabelRequest[], options: { bounds: Rect; reserved?: readonly Rect[]; markers: readonly Point[]; markerRadius?: number; previous?: ReadonlyMap<string, number> }) {
+export function placeLabels(requests: readonly LabelRequest[], options: { bounds: Rect; reserved?: readonly Rect[]; markers: readonly Point[]; markerRadius?: number; previous?: ReadonlyMap<string, SlotMemory> }) {
     const { bounds, reserved = [], markers, markerRadius = 10, previous } = options;
     const placed: Rect[] = [], result = new Map<string, PlacedLabel | null>();
     const ordered = requests.map((r, i) => ({ r, i })).sort((a, b) => a.r.tier - b.r.tier || a.i - b.i);
     for (const { r } of ordered) {
         if (r.tier >= LABEL_TIER.FIELD || !Number.isFinite(r.x) || !Number.isFinite(r.y)) { result.set(r.id, null); continue; }
-        const size = LABEL_SIZE[r.tier], first = previous?.get(r.id);
-        const order = first !== undefined && first >= 0 && first < LABEL_SLOTS ? [first, ...Array.from({ length: LABEL_SLOTS }, (_, i) => i).filter(i => i !== first)] : Array.from({ length: LABEL_SLOTS }, (_, i) => i);
-        let chosen: PlacedLabel | null = null, fallback: { centre: Point; slot: number; penalty: number } | null = null;
-        for (const slot of order) {
+        const size = LABEL_SIZE[r.tier], memory = previous?.get(r.id);
+        const kept = memory && Number.isInteger(memory.slot) && memory.slot >= 0 && memory.slot < LABEL_SLOTS ? memory : undefined;
+        const check = (slot: number) => {
             const centre = slotCentre(r, slot, size), rect = labelRect(centre, size);
             const outside = rect.x < bounds.x || rect.y < bounds.y || rect.x + rect.w > bounds.x + bounds.w || rect.y + rect.h > bounds.y + bounds.h;
             const labelHits = placed.reduce((sum, p) => sum + overlapArea(rect, p, PAD), 0);
             const reservedHits = reserved.reduce((sum, p) => sum + overlapArea(rect, p, PAD), 0);
             const markerHits = markers.filter(m => coversMarker(rect, m, markerRadius)).length;
-            if (!outside && !labelHits && !reservedHits && !markerHits) { chosen = { ...centre, slot, forced: false }; break; }
-            if (r.tier <= PERSISTENT_TIER) {
-                // Higher-priority labels are weighted so a forced player label never hides the selected label.
-                const penalty = (outside ? 1e7 : 0) + labelHits * 40 + reservedHits * 20 + markerHits * 400 + slot;
-                if (!fallback || penalty < fallback.penalty) fallback = { centre, slot, penalty };
+            const clearance = Math.min(CLEARANCE_CAP, rect.x - bounds.x, bounds.x + bounds.w - rect.x - rect.w, rect.y - bounds.y, bounds.y + bounds.h - rect.y - rect.h, ...reserved.map(q => separation(rect, q)), ...placed.map(q => separation(rect, q)));
+            return { centre, outside, labelHits, reservedHits, markerHits, clearance, hard: !outside && !labelHits && !reservedHits };
+        };
+        const hold = kept?.hold ?? 0, cooldown = kept?.cooldown ?? 0, abandoned = cooldown > 0 ? kept?.abandoned ?? null : null;
+        const [kx, ky] = kept ? DIRECTIONS[kept.slot % DIRECTIONS.length] : [0, 0];
+        const score = (slot: number, c: ReturnType<typeof check>) => {
+            const [ux, uy] = DIRECTIONS[slot % DIRECTIONS.length];
+            const turn = kept ? 1 - (ux * kx + uy * ky) / (Math.hypot(ux, uy) * Math.hypot(kx, ky)) : 0; // 0 same side … 2 opposite
+            return c.clearance * 3 - c.markerHits * 200 - Math.floor(slot / DIRECTIONS.length) * 8 - turn * 12 - (slot === abandoned ? 90 : 0);
+        };
+        /** Best hard-valid replacement (optionally marker-free only); ties keep the lower slot index. */
+        const best = (markerFree: boolean, exclude?: number) => {
+            let top: { slot: number; c: ReturnType<typeof check>; value: number } | null = null;
+            for (let slot = 0; slot < LABEL_SLOTS; slot++) {
+                if (slot === exclude) continue;
+                const c = check(slot);
+                if (!c.hard || (markerFree && c.markerHits)) continue;
+                const value = score(slot, c);
+                if (!top || value > top.value) top = { slot, c, value };
             }
-        }
-        if (!chosen && fallback) {
-            const c = { x: Math.min(bounds.x + bounds.w - size.w / 2, Math.max(bounds.x + size.w / 2, fallback.centre.x)), y: Math.min(bounds.y + bounds.h - size.h / 2, Math.max(bounds.y + size.h / 2, fallback.centre.y)) };
-            chosen = { ...c, slot: fallback.slot, forced: true };
+            return top;
+        };
+        const stay = (centre: Point, blocked: number, forced = false): PlacedLabel => ({ ...centre, slot: kept!.slot, forced, blocked, memory: { slot: kept!.slot, blocked, hold: Math.max(0, hold - 1), abandoned, cooldown: Math.max(0, cooldown - 1) } });
+        const move = (centre: Point, slot: number, forced = false): PlacedLabel => kept && slot === kept.slot
+            ? stay(centre, 0, forced)
+            : { ...centre, slot, forced, blocked: 0, memory: { slot, blocked: 0, hold: kept ? HOLD_FRAMES : 0, abandoned: kept ? kept.slot : null, cooldown: kept ? RETURN_COOLDOWN_FRAMES : 0 } };
+        let chosen: PlacedLabel | null = null;
+        const current = kept ? check(kept.slot) : null;
+        if (current?.hard) {
+            // Hard-valid: keep it. Markers only count once the fresh-slot hold has expired.
+            const blocked = current.markerHits && hold === 0 ? kept!.blocked + 1 : 0;
+            if (blocked < STICKY_FRAMES) chosen = stay(current.centre, blocked);
+            else {
+                const alternative = best(true, kept!.slot);
+                // Persistently obstructed but no marker-free alternative: stay rather than jump to an equally obstructed slot.
+                chosen = alternative ? move(alternative.c.centre, alternative.slot) : stay(current.centre, blocked);
+            }
+        } else {
+            // New label or a genuine conflict: relocate now, to the most stable valid slot.
+            const replacement = best(r.tier > PERSISTENT_TIER);
+            if (replacement) chosen = move(replacement.c.centre, replacement.slot);
+            else if (r.tier <= PERSISTENT_TIER) {
+                // No valid slot at all: least-colliding slot, weighted so a forced player label never hides the selected
+                // label, and favouring the previous slot so forced labels do not hop between equally bad slots.
+                let fallback: { centre: Point; slot: number; penalty: number } | null = null;
+                for (let slot = 0; slot < LABEL_SLOTS; slot++) {
+                    const c = check(slot);
+                    const penalty = (c.outside ? 1e7 : 0) + c.labelHits * 40 + c.reservedHits * 20 + c.markerHits * 400 + (slot === kept?.slot ? 0 : 200) + slot;
+                    if (!fallback || penalty < fallback.penalty) fallback = { centre: c.centre, slot, penalty };
+                }
+                const f = fallback!, clamped = { x: Math.min(bounds.x + bounds.w - size.w / 2, Math.max(bounds.x + size.w / 2, f.centre.x)), y: Math.min(bounds.y + bounds.h - size.h / 2, Math.max(bounds.y + size.h / 2, f.centre.y)) };
+                chosen = move(clamped, f.slot, true);
+            }
         }
         if (chosen) placed.push(labelRect(chosen, size));
         result.set(r.id, chosen);

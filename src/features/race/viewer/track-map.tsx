@@ -5,7 +5,7 @@ import { prepareCircuitPath, circuitProjection } from '../../../game/domain/circ
 import type { timingRows } from './model';
 import { RaceMotion, checkpointDuration, type MotionMode } from './motion';
 import { useI18n } from '../../../i18n/provider';
-import { placeLabels, LABEL_TIER, LABEL_SIZE, type Rect } from './labels';
+import { placeLabels, LABEL_TIER, LABEL_SIZE, type Rect, type SlotMemory } from './labels';
 type Rows = ReturnType<typeof timingRows>;
 const subscribeMotion = (notify: () => void) => { const media = window.matchMedia('(prefers-reduced-motion: reduce)'); media.addEventListener('change', notify); return () => media.removeEventListener('change', notify); };
 const getMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -37,7 +37,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         const root = svg.current!;
         const cars = [...root.querySelectorAll<SVGGElement>('[data-car]')];
         const drawn = new Map<string, { x: number; y: number }>();
-        const slots = new Map<string, number>();
+        const slots = new Map<string, SlotMemory>();
         let frame = 0, disposed = false, previousTime: number | null = null;
         let frames = 0, workTotal = 0, workMax = 0, intervalTotal = 0, intervalMax = 0;
         const draw = (now: number) => {
@@ -58,14 +58,14 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
                 el.dataset.visualProgress = String(p.progress);
                 el.dataset.lateralOffset = String(offset);
             });
-            // Deterministic priority placement: previous slots first, low-priority labels hidden when no slot is free.
+            // Deterministic sticky placement: previous slots persist through passing markers; low-priority labels hide when no slot is valid.
             const { tiers: current, reserved: blocked } = placement.current;
             const placed = placeLabels(cars.map(el => ({ id: el.dataset.car!, tier: current.get(el.dataset.car!) ?? LABEL_TIER.FIELD, ...drawn.get(el.dataset.car!)! })), { bounds: MAP_BOUNDS, reserved: blocked, markers: [...drawn.values()], previous: slots });
             // Label elements follow React's priority set, so they are looked up per frame (markers never change).
             for (const label of root.querySelectorAll<SVGGElement>('[data-label]')) {
                 const id = label.dataset.label!, at = placed.get(id), car = drawn.get(id);
                 if (!at || !car) { slots.delete(id); label.setAttribute('visibility', 'hidden'); label.dataset.placed = '0'; continue; }
-                slots.set(id, at.slot);
+                slots.set(id, at.memory);
                 label.setAttribute('visibility', 'visible'); label.dataset.placed = '1';
                 label.setAttribute('transform', `translate(${at.x} ${at.y})`);
                 label.querySelector('path')?.setAttribute('d', `M ${car.x - at.x} ${car.y - at.y} L 0 0`);

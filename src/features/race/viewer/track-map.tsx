@@ -65,7 +65,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             for (const label of root.querySelectorAll<SVGGElement>('[data-label]')) {
                 const id = label.dataset.label!, at = placed.get(id), car = drawn.get(id);
                 if (!at || !car) { slots.delete(id); label.setAttribute('visibility', 'hidden'); label.dataset.placed = '0'; continue; }
-                slots.set(id, { slot: at.slot, blocked: at.blocked });
+                slots.set(id, at.memory);
                 label.setAttribute('visibility', 'visible'); label.dataset.placed = '1';
                 label.setAttribute('transform', `translate(${at.x} ${at.y})`);
                 label.querySelector('path')?.setAttribute('d', `M ${car.x - at.x} ${car.y - at.y} L 0 0`);

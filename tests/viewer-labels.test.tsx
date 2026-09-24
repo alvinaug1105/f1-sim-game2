@@ -61,7 +61,7 @@ describe('sticky label slots (Phase 12B stability repair)', () => {
         let memory = new Map(start ?? []);
         return frames.map(f => {
             const placed = placeLabels(f.requests, { bounds, markers: f.markers, reserved: f.reserved, previous: memory });
-            memory = new Map([...placed].filter(([, p]) => p).map(([id, p]) => [id, { slot: p!.slot, blocked: p!.blocked }]));
+            memory = new Map([...placed].filter(([, p]) => p).map(([id, p]) => [id, p!.memory]));
             return placed;
         });
     }
@@ -115,6 +115,36 @@ describe('sticky label slots (Phase 12B stability repair)', () => {
         }
         // Stability never permits selected/player labels to overlap each other.
         for (const r of results) expect(overlaps(labelRect(r.get('s')!, LABEL_SIZE[0]), labelRect(r.get('p')!, LABEL_SIZE[1]))).toBe(false);
+    });
+    it('D: two close player cars crossing START / FINISH keep stable, visible, non-overlapping labels', () => {
+        // Reserved regions exactly as the map derives them for a START / FINISH line at (500, 300).
+        const reserved: Rect[] = [{ x: 460, y: 322, w: 164, h: 24 }, { x: 484, y: 284, w: 32, h: 32 }];
+        // Selected car crosses the line; the other player car runs 60–100 units ahead with changing relative motion and
+        // frame-to-frame lane jitter, so its label genuinely conflicts with the selected label. Four AI markers pass.
+        // Pre-repair relocation changed the player label 19 times here, with 3 quick returns (A→B→A / B→C→B).
+        const frames = Array.from({ length: 300 }, (_, f) => {
+            const sx = 250 + f * 2, ahead = 80 + 20 * Math.sin(f / 5);
+            const s = { id: 's', x: sx, y: 300 + ((f % 3) - 1) * 5 };
+            const p = { id: 'p', x: sx + ahead, y: 300 + 20 * Math.sin(f / 4) + (f % 2 ? 10 : -10) - ((f % 3) - 1) * 5 };
+            const ai = Array.from({ length: 4 }, (_, i) => ({ id: `a${i}`, x: 150 + i * 45 + f * 2.6, y: 300 + (i % 2 ? 12 : -12) }));
+            return { requests: [{ ...s, tier: LABEL_TIER.SELECTED }, { ...p, tier: LABEL_TIER.PLAYER }, ...ai.map(a => ({ ...a, tier: LABEL_TIER.FIELD }))], markers: [s, p, ...ai], reserved };
+        });
+        expect(frames[0].requests[0].x).toBeLessThan(484); expect(frames.at(-1)!.requests[0].x).toBeGreaterThan(516);
+        const results = run(frames);
+        for (const r of results) {
+            const sel = r.get('s'), ply = r.get('p');
+            expect(sel).toBeTruthy(); expect(ply).toBeTruthy();
+            const a = labelRect(sel!, LABEL_SIZE[LABEL_TIER.SELECTED]), b = labelRect(ply!, LABEL_SIZE[LABEL_TIER.PLAYER]);
+            expect(overlaps(a, b)).toBe(false);
+            for (const q of reserved) { expect(overlaps(a, q)).toBe(false); expect(overlaps(b, q)).toBe(false); }
+        }
+        for (const id of ['s', 'p']) {
+            const slots = results.map(r => r.get(id)!.slot);
+            // No return to a just-left slot within 10 frames (covers A→B→A and B→C→B).
+            for (let i = 1; i < slots.length; i++) if (slots[i] !== slots[i - 1]) expect(slots.slice(i + 1, i + 11)).not.toContain(slots[i - 1]);
+            // 300 frames ≈ 5 s: only a handful of deliberate moves.
+            expect(slots.filter((slot, i) => i > 0 && slot !== slots[i - 1]).length).toBeLessThanOrEqual(4);
+        }
     });
 });
 describe('derived race views', () => {

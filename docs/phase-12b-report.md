@@ -26,10 +26,11 @@ A "battle" is a presentation threshold (`BATTLE_GAP_MS` = 1000 ms) applied to th
 
 `placeLabels` works as follows:
 1. Labels are placed in tier order.
-2. For each label, the slot it used last frame is tried first, so labels don't flicker.
-3. It then tries 24 fixed slots around the car: 8 directions at 3 radii.
-4. A slot is rejected if it leaves the map, overlaps another placed label, covers any car marker, or overlaps a reserved region (the START / FINISH text and line).
-5. If no slot is free, a label below the player tiers is hidden. The selected and player labels take the least-colliding slot, weighted so the player label avoids the selected one.
+2. **Sticky slots (stability repair).** A label keeps last frame's slot while that slot stays inside the map, clear of reserved regions (the START / FINISH text and line) and clear of every higher- or equal-priority label placed before it. A car marker passing through the box does not move the label. The label moves only after `STICKY_FRAMES` (45, about 0.75 s at 60 fps) consecutive obstructed frames, and only to a fully clear slot. A newly moved label starts a fresh count, so A→B→A flipping between frames cannot happen.
+3. Otherwise it tries 24 fixed slots around the car (8 directions at 3 radii). A slot must be inside the map, clear of reserved regions, clear of placed labels and clear of car markers.
+4. If no slot qualifies, a label below the player tiers is hidden. The selected and player labels take the least-colliding slot, weighted so the player label avoids the selected one and so the previous slot is favoured.
+
+Root cause of the QA flicker: the first version kept a previous slot only when it was completely free, including of markers. The lane offsets that separate close cars make markers jump sideways from frame to frame, so the selected and player labels hopped between slots up to 20 times per second.
 
 The selected label is inverted (light background) and drawn on top. The other player label has a white border and an inner accent bar, and its marker has a white centre dot. None of these cues relies on colour alone.
 

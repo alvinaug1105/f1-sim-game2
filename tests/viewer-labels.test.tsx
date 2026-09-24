@@ -1,7 +1,10 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { placeLabels, labelRect, slotCentre, LABEL_SIZE, LABEL_TIER, STICKY_FRAMES, type Rect, type SlotMemory, type LabelRequest, type Point } from '../src/features/race/viewer/labels';
+import { placeLabels, labelRect, slotCentre, startFinishReserve, pathLength, lookahead, LABEL_SIZE, LABEL_TIER, STICKY_FRAMES, type Rect, type SlotMemory, type LabelRequest, type Point } from '../src/features/race/viewer/labels';
+import { prepareCircuitPath, circuitProjection } from '../src/game/domain/circuit-geometry';
+import { checkpointDuration } from '../src/features/race/viewer/motion';
+import { translate } from '../src/i18n/catalog';
 import { battleContext, labelTiers, raceFeed, tyreCondition, drsState, driverSnapshot, BATTLE_GAP_MS } from '../src/features/race/viewer/race-view';
 import { timingRows } from '../src/features/race/viewer/model';
 import { TrackMap } from '../src/features/race/viewer/track-map';
@@ -145,6 +148,53 @@ describe('sticky label slots (Phase 12B stability repair)', () => {
             // 300 frames ≈ 5 s: only a handful of deliberate moves.
             expect(slots.filter((slot, i) => i > 0 && slot !== slots[i - 1]).length).toBeLessThanOrEqual(4);
         }
+    });
+    describe('E: real diagonal START / FINISH crossings on the actual circuit geometry', () => {
+        // Same geometry path as the map: real layout, projection, START / FINISH keep-out and lookahead helpers, with
+        // per-frame travel from the real checkpoint duration at each playback speed (60 fps). Leading car runs from
+        // 0.2 lap before the line to 0.3 lap after it. Pre-repair (current-frame-only scoring) the same runs needed up
+        // to 4 moves per crossing on Albert Park (e.g. 0>1>19>18>5, holds of 2–6 frames) and up to 7 on Suzuka.
+        const MAP: Rect = { x: 4, y: 4, w: 992, h: 642 };
+        const touches = (a: Rect, b: Rect, pad = 3) => a.x - pad < b.x + b.w + pad && b.x - pad < a.x + a.w + pad && a.y - pad < b.y + b.h + pad && b.y - pad < a.y + a.h + pad;
+        const inside = (r: Rect) => r.x >= MAP.x && r.y >= MAP.y && r.x + r.w <= MAP.x + MAP.w && r.y + r.h <= MAP.y + MAP.h;
+        const circuits = [['albert-park', '00000000-0000-4000-8000-000000000300'], ['suzuka', '00000000-0000-4000-8000-000000000301']] as const;
+        const setups = [{ name: 'selected alone', cars: [{ id: 's', tier: LABEL_TIER.SELECTED, behind: 0 }] }, { name: 'other player alone', cars: [{ id: 'p', tier: LABEL_TIER.PLAYER, behind: 0 }] },
+            { name: 'pair 70 apart', cars: [{ id: 's', tier: LABEL_TIER.SELECTED, behind: 0 }, { id: 'p', tier: LABEL_TIER.PLAYER, behind: 70 }] }, { name: 'pair 100 apart', cars: [{ id: 's', tier: LABEL_TIER.SELECTED, behind: 0 }, { id: 'p', tier: LABEL_TIER.PLAYER, behind: 100 }] }];
+        it.each(circuits.flatMap(([circuit, id]) => [1, 2, 4, 8].flatMap(speed => setups.map(setup => ({ circuit, id, speed, setup })))))('$circuit $speed× · $setup.name', ({ circuit, id, speed, setup }) => {
+            const layout = layoutForCircuit(id), path = prepareCircuitPath(layout), project = circuitProjection(layout.points);
+            const at = (progress: number) => project(path.sample(progress)), lap = pathLength(at), reserved = startFinishReserve(at(0), translate('en', 'viewer.startFinish'));
+            const perFrame = (1000 / 60) / checkpointDuration(speed), count = Math.ceil(.5 / perFrame);
+            let memory = new Map<string, SlotMemory>();
+            const frames = Array.from({ length: count }, (_, f) => {
+                const requests = setup.cars.map(c => { const progress = -.2 + f * perFrame - c.behind / lap; return { id: c.id, tier: c.tier, ...at(progress), ahead: lookahead(at, progress, lap) }; });
+                const placed = placeLabels(requests, { bounds: MAP, reserved, markers: requests, previous: memory });
+                memory = new Map([...placed].filter(([, q]) => q).map(([k, q]) => [k, q!.memory]));
+                return { requests, placed };
+            });
+            // The run genuinely crosses the line (both endpoints of the lead car are well away from it).
+            expect(Math.hypot(frames[0].requests[0].x - at(0).x, frames[0].requests[0].y - at(0).y)).toBeGreaterThan(150);
+            for (const { requests, placed } of frames) {
+                const rects = requests.map(r => { const at = placed.get(r.id); expect(at, `${r.id} visible`).toBeTruthy(); return labelRect(at!, LABEL_SIZE[r.tier]); });
+                for (const r of rects) { expect(inside(r)).toBe(true); for (const q of reserved) expect(touches(r, q, 0)).toBe(false); }
+                if (rects.length === 2) expect(touches(rects[0], rects[1], 0)).toBe(false);
+            }
+            for (const car of setup.cars) {
+                const slots = frames.map(f => f.placed.get(car.id)!.slot), moves = slots.flatMap((slot, i) => i > 0 && slot !== slots[i - 1] ? [i] : []);
+                expect(moves.length, `${car.id} moves ${slots.filter((x, i) => !i || x !== slots[i - 1]).join('>')}`).toBeLessThanOrEqual(2);
+                for (const i of moves) {
+                    // No quick return (A→B→A, B→C→B) within 10 frames.
+                    expect(slots.slice(i + 1, i + 11)).not.toContain(slots[i - 1]);
+                    // Every move is forced: the abandoned slot is out of bounds, on START / FINISH or under a higher-priority label now.
+                    const { requests, placed } = frames[i], me = requests.find(r => r.id === car.id)!;
+                    const old = labelRect(slotCentre(me, slots[i - 1], LABEL_SIZE[car.tier]), LABEL_SIZE[car.tier]);
+                    const higher = requests.filter(r => r.tier < car.tier).map(r => labelRect(placed.get(r.id)!, LABEL_SIZE[r.tier]));
+                    expect(!inside(old) || reserved.some(q => touches(old, q)) || higher.some(q => touches(old, q))).toBe(true);
+                }
+                // Once moved, an intermediate slot is held for a meaningful period. On Suzuka a second move can follow
+                // sooner only because Turn 1 brings the pair together near the map edge — a forced label conflict (above).
+                if (circuit === 'albert-park') for (let m = 1; m < moves.length; m++) expect(moves[m] - moves[m - 1]).toBeGreaterThanOrEqual(15);
+            }
+        });
     });
 });
 describe('derived race views', () => {

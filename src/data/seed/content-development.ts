@@ -79,6 +79,20 @@ const CIRCUITS: readonly CircuitRow[] = [
   [306, "circuit-spa-francorchamps", "Circuit de Spa-Francorchamps", "BE", "Stavelot", 7004, 44],
   [307, "circuit-marina-bay", "Marina Bay Street Circuit", "SG", "Singapore", 4940, 62],
 ];
+/**
+ * Race interaction identity per circuit (game-balance directions, not official ratings): [overtaking difficulty 0–100,
+ * dirty-air sensitivity ‰, DRS effectiveness ‰]. Neutral legacy default is [35, 1000, 1000].
+ */
+const CIRCUIT_RACE_PROFILE: Readonly<Record<number, readonly [overtakingDifficulty: number, dirtyAirSensitivityPermille: number, drsEffectivenessPermille: number]>> = {
+  300: [40, 1100, 950], // Albert Park: moderate
+  301: [50, 1150, 850], // Suzuka: moderate / difficult
+  302: [25, 950, 1150], // Shanghai: meaningful passing
+  303: [18, 900, 1300], // Bahrain: strong passing
+  304: [85, 1500, 350], // Monaco: very difficult, dirty air matters most
+  305: [26, 950, 1150], // Silverstone: meaningful passing
+  306: [15, 900, 1350], // Spa-Francorchamps: strong passing
+  307: [62, 1300, 650], // Marina Bay: relatively difficult
+};
 type EventRow = readonly [n: number, circuit: number, round: number, name: string, startDate: string, endDate: string];
 const EVENTS: readonly EventRow[] = [
   [700, 300, 1, "Australian Grand Prix", "2026-03-06", "2026-03-08"],
@@ -110,6 +124,7 @@ export const developmentContent = {
   })),
   circuits: CIRCUITS.map(([n, key, name, countryCode, city, lengthMeters, defaultLapCount]) => ({
     id: id(n), gameDatabaseId, key, name, countryCode, city, lengthMeters, defaultLapCount,
+    overtakingDifficulty: CIRCUIT_RACE_PROFILE[n][0], dirtyAirSensitivityPermille: CIRCUIT_RACE_PROFILE[n][1], drsEffectivenessPermille: CIRCUIT_RACE_PROFILE[n][2],
   })),
   seasons: [
     {

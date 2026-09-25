@@ -234,6 +234,7 @@
   "pit.stintRecord": "賽段 {number}：{compound}，第 {start}–{end} 圈",
   "pit.stopRecord": "第 {lap} 圈結束後：{old} → {next}",
   "pit.open": "進行中",
+  "pit.notRaced": "未使用（已退賽）",
   "pit.none": "尚無進站紀錄。",
   "pit.startWear": "起始磨耗",
   "pit.endWear": "結束磨耗",

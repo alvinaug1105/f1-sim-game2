@@ -234,6 +234,7 @@
   "pit.stintRecord": "Stint {number}: {compound}, laps {start}–{end}",
   "pit.stopRecord": "After lap {lap}: {old} → {next}",
   "pit.open": "in progress",
+  "pit.notRaced": "not raced (retired)",
   "pit.none": "No pit stops recorded.",
   "pit.startWear": "Starting wear",
   "pit.endWear": "Ending wear",

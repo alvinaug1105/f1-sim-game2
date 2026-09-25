@@ -180,6 +180,9 @@ export function buildCareerWorld(
       city: circuit.city,
       lengthMeters: circuit.lengthMeters,
       defaultLapCount: circuit.defaultLapCount,
+      overtakingDifficulty: circuit.overtakingDifficulty ?? null,
+      dirtyAirSensitivityPermille: circuit.dirtyAirSensitivityPermille ?? null,
+      drsEffectivenessPermille: circuit.drsEffectivenessPermille ?? null,
     })),
     season: {
       id: careerSeasonId,

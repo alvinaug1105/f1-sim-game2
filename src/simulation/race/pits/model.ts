@@ -12,6 +12,7 @@ import {
 } from "../tyres/model";
 import type { PitState } from "./types";
 import { developmentPitChoice } from "./strategy-policy";
+import { assessAiStop, publicWeather, strategyPreference } from "./ai-strategy";
 import { orderedClassification } from "../traffic/model";
 export function initialPitState(tyre: TyreState): PitState {
   return {
@@ -81,7 +82,7 @@ export function committedStops(
     const compound =
       e.pit.pendingCompound ??
       (source.strategyController === "DEVELOPMENT_AI"
-        ? state.input.weather ? chooseWeatherPit(state, e) : developmentPitChoice(e, state.input, state.lap)
+        ? state.input.weather ? state.input.pits!.strategy ? chooseStrategicPit(state, e) : chooseWeatherPit(state, e) : developmentPitChoice(e, state.input, state.lap)
         : null);
     if (compound) result.set(e.entrantId, compound);
   }
@@ -236,4 +237,15 @@ function chooseWeatherPit(state: RaceSimulationState, entrant: RaceEntrantState)
  const {timeline: _timeline, initial: _initial, ...publicWeather}=weather!;
  void _timeline; void _initial;
  return weatherPitChoice(entrant,input,state.weather!,publicWeather,state.lap);
+}
+
+/** Green-flag pit-lane loss. Under SC/VSC the v7 engine hands the policy the reduced loss; this undoes that reduction. */
+export function greenPitLaneLoss(state: RaceSimulationState) {
+ const control = state.incidents, c = state.input.incidents;
+ if (!control || !c || control.mode === "GREEN") return state.input.pits!.pitLaneLossMs;
+ return state.input.pits!.pitLaneLossMs + Math.round(c.pitTrackSectionMs * (c[control.mode].lapMultiplierPermille - 1000) / 1000);
+}
+function chooseStrategicPit(state: RaceSimulationState, entrant: RaceEntrantState) {
+ return assessAiStop({ state, entrant, weather: state.weather!, publicWeather: publicWeather(state.input.weather!), mode: state.incidents?.mode ?? "GREEN", greenPitLaneLossMs: greenPitLaneLoss(state) },
+  state.input.pits!.strategy!, strategyPreference(state.input.seed, state.input.entrants.find(e => e.entrantId === entrant.entrantId)!.gridPosition)).compound;
 }

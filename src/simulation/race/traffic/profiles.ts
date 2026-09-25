@@ -24,3 +24,20 @@ export function defaultInteractionConfiguration(): InteractionConfiguration {
 export function developmentDriverInteraction(): DriverInteractionProfile {
   return { overtaking: 65, defending: 65 };
 }
+
+/**
+ * Small data-driven Race interaction identity of a circuit, snapshotted into the Career circuit and then into each
+ * Race's interaction profile. It scales pass likelihood, dirty-air cost and DRS usefulness; it never scripts results.
+ */
+export interface CircuitRaceProfile {
+  readonly overtakingDifficulty: number;
+  readonly dirtyAirSensitivityPermille: number;
+  readonly drsEffectivenessPermille: number;
+}
+/** New Race interaction profile for a circuit; no profile (legacy Careers/content) keeps the neutral defaults. */
+export function circuitInteractionConfiguration(profile: CircuitRaceProfile | null | undefined): InteractionConfiguration {
+  const base = defaultInteractionConfiguration();
+  return profile
+    ? { ...base, overtakingDifficulty: profile.overtakingDifficulty, dirtyAirSensitivityPermille: profile.dirtyAirSensitivityPermille, drsEffectivenessPermille: profile.drsEffectivenessPermille }
+    : base;
+}

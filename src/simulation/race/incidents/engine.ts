@@ -7,6 +7,8 @@ import { committedStops, completePitLap } from "../pits/model";
 import { orderedClassification, resolveTraffic } from "../traffic/model";
 import { getTyreProfile } from "../tyres/model";
 import { advanceWeather, advanceWeatherTyre, waterPenaltyMs } from "../weather/model";
+import type { RaceStint } from "../pits/types";
+import type { TyreState } from "../tyres/model";
 import { validateIncidentState, driverRiskPpm, mechanicalRiskPpm, effectivePitLaneLoss, type RaceEvent, type IncidentKind, type RaceControlMode } from "./model";
 /** v7 only. Incident draws never enter the consistency/traffic/service stream. */
 export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationState {
@@ -52,7 +54,7 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
     const emit = (event: Omit<RaceEvent, "sequence" | "lap">) => events.push({ ...event, sequence: events.length + 1, lap });
     let trigger: RaceControlMode = "GREEN", duration = 0;
     const retire = (id: string, kind: IncidentKind) => { const i = entries.findIndex(e => e.entrantId === id); if (i < 0 || entries[i].incident!.status === "RETIRED")
-        return; const e = entries[i]; emit({ type: "RETIREMENT", entrantIds: [id], kind, severity: "MAJOR", timeLossMs: 0 }); entries[i] = { ...e, incident: { ...e.incident!, status: "RETIRED", retiredLap: lap, retirementOrder: events.length }, pit: { ...e.pit!, pendingCompound: null, stints: e.pit!.stints.map(s => s.endLap === null ? { ...s, endLap: lap, endingTyre: e.stint!.tyre } : s) }, track: { ...e.track!, drsEligible: false, drsBenefitMs: 0, attempted: false, passed: false } }; };
+        return; const e = entries[i]; emit({ type: "RETIREMENT", entrantIds: [id], kind, severity: "MAJOR", timeLossMs: 0 }); entries[i] = { ...e, incident: { ...e.incident!, status: "RETIRED", retiredLap: lap, retirementOrder: events.length }, pit: { ...e.pit!, pendingCompound: null, stints: closeRetiredStints(e.pit!.stints, lap, e.stint!.tyre) }, track: { ...e.track!, drsEligible: false, drsBenefitMs: 0, attempted: false, passed: false } }; };
     // Exactly six draws per ORIGINAL grid slot per world lap, including retired/suppressed slots.
     for (const source of [...saved.input.entrants].sort((a, b) => a.gridPosition - b.gridPosition)) {
         const [error, kindRoll, severityRoll, mechanical, outcome, durationRoll] = Array.from({ length: 6 }, () => incidentRandom.next());
@@ -114,4 +116,14 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
     const retired = [...entries.filter(e => e.incident!.status === "RETIRED"), ...saved.entrants.filter(e => e.incident!.status === "RETIRED")].sort((a, b) => b.completedLaps - a.completedLaps || a.incident!.retirementOrder! - b.incident!.retirementOrder!);
     const classified = [...orderedClassification(running, saved.input), ...retired.map(e => ({ ...e, gapToLeaderMs: null, intervalToAheadMs: null }))].map((e, i) => ({ ...e, position: i + 1, ...(nextControl.mode !== "GREEN" || nextControl.drsDelay > 0 ? { track: { ...e.track!, drsEligible: false } } : {}) }));
     return { ...saved, lap, status: finished ? "FINISHED" : "RUNNING", weather, rngState: random.getState(), incidents: nextControl, entrants: classified };
+}
+
+/**
+ * A retirement closes the open stint at the retirement lap. A stint only becomes a completed record once at least
+ * one racing lap belongs to it: tyres fitted by a stop after this same lap (pit service + same-lap retirement) were
+ * never raced, so that final stint stays terminal and unclosed instead of becoming a zero-length completed stint
+ * (every completed stint keeps endLap > startLap). The stop itself is kept — its time was spent.
+ */
+export function closeRetiredStints(stints: readonly RaceStint[], lap: number, tyre: TyreState): RaceStint[] {
+    return stints.map(s => s.endLap === null && s.startLap < lap ? { ...s, endLap: lap, endingTyre: tyre } : s);
 }

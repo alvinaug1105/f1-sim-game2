@@ -36,6 +36,10 @@ export interface Circuit extends ScopedContent, AuditedContent {
   readonly city: string | null;
   readonly lengthMeters: number;
   readonly defaultLapCount: number;
+  /** Race interaction game-balance data (all three or none). Absent on legacy content: neutral Race defaults. */
+  readonly overtakingDifficulty?: number | null;
+  readonly dirtyAirSensitivityPermille?: number | null;
+  readonly drsEffectivenessPermille?: number | null;
 }
 export interface Season extends ScopedContent, AuditedContent {
   readonly year: number;

@@ -6,9 +6,11 @@ import { defaultPitConfiguration } from "../../simulation/race/pits/profiles";
 import { requestPitStop } from "../../simulation/race/pits/model";
 import type { StrategyController } from "../../simulation/race/pits/types";
 import {
+  circuitInteractionConfiguration,
   defaultInteractionConfiguration,
   developmentDriverInteraction,
 } from "../../simulation/race/traffic/profiles";
+import { aiDryStartingCompound, defaultAiStrategyConfiguration, strategyPreference } from "../../simulation/race/pits/ai-strategy";
 import {
   defaultTyreConfiguration,
   startingTyre,
@@ -83,17 +85,20 @@ export function startCareerRace(
           : developmentWeather(seed, snapshot.input.totalLaps)
         : undefined;
       // AI teams pick starting tyres from current public grid conditions, never from player input or future weather.
-      const startingCompound = (driverId: string, teamId: string) =>
-        withIncidents && weather && teamId !== data.progress.career.playerTeamId
-          ? aiStartingCompound(weather.initial)
-          : tyreChoices?.[driverId] ?? "MEDIUM";
+      // Career Races (v7) also give each AI car its own stable strategic character: on a dry grid a strong soft
+      // preference starts on the soft (never the hard). Wet or damp grids keep the current-conditions choice.
+      const startingCompound = (driverId: string, teamId: string, gridPosition: number) => {
+        if (!(withIncidents && weather && teamId !== data.progress.career.playerTeamId)) return tyreChoices?.[driverId] ?? "MEDIUM";
+        const compound = aiStartingCompound(weather.initial);
+        return compound === "MEDIUM" ? aiDryStartingCompound(strategyPreference(seed, gridPosition)) : compound;
+      };
       const input = tyreChoices
         ? {
             ...snapshot.input,
             tyres: withWeather ? weatherTyreConfiguration() : defaultTyreConfiguration(),
             entrants: snapshot.input.entrants.map((e) => ({
               ...e,
-              startingTyre: startingTyre(startingCompound(e.driverId, e.teamId)),
+              startingTyre: startingTyre(startingCompound(e.driverId, e.teamId, e.gridPosition)),
             })),
           }
         : snapshot.input;
@@ -105,8 +110,10 @@ export function startCareerRace(
                 ...(withIncidents ? { incidents: defaultIncidentConfiguration() } : {}),
                 ...(weather ? { weather } : {}),
                 ...(withCommands ? { commands: defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
-                ...(withPits ? { pits: defaultPitConfiguration() } : {}),
-                interaction: defaultInteractionConfiguration(),
+                // Career Races (v7) freeze the AI pit strategy and the Career circuit's Race interaction identity
+                // (neutral defaults when the Career predates it). Older Race versions keep their historical inputs.
+                ...(withPits ? { pits: withIncidents ? { ...defaultPitConfiguration(), strategy: defaultAiStrategyConfiguration() } : defaultPitConfiguration() } : {}),
+                interaction: withIncidents ? circuitInteractionConfiguration(data.circuit.raceProfile) : defaultInteractionConfiguration(),
                 entrants: input.entrants.map((e) => ({
                   ...e,
                   ...(withIncidents ? { reliability: defaultReliability() } : {}),

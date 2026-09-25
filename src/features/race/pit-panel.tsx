@@ -122,7 +122,9 @@ export function PitPanel({
                 compound: t(`tyre.${s.startingTyre.compound}`),
                 start: format.number(s.startLap + 1),
                 end:
-                  s.endLap === null ? t("pit.open") : format.number(s.endLap),
+                  s.endLap === null
+                    ? t(e.incident?.status === "RETIRED" ? "pit.notRaced" : "pit.open")
+                    : format.number(s.endLap),
               })}{" "}
               · {t("pit.startWear")}:{" "}
               {format.percentage(s.startingTyre.wearPermille / 1000, {

@@ -137,9 +137,10 @@ async function read(
   let pits: PitConfiguration | undefined;
   if ((row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)))) {
     if (!row.pitProfile) throw new RaceError("INVALID_INPUT");
+    // A NULL strategy (Race started before the Race Dynamics pass) is omitted: the legacy AI policy applies.
     pits = Object.fromEntries(
       Object.entries(row.pitProfile).filter(
-        ([key]) => key !== "careerId" && key !== "careerRaceSimulationId",
+        ([key, value]) => key !== "careerId" && key !== "careerRaceSimulationId" && !(key === "strategy" && value === null),
       ),
     ) as unknown as PitConfiguration;
     validatePitConfiguration(pits);
@@ -264,6 +265,10 @@ async function read(
       sourceCircuitId: circuit.sourceCircuitId,
       lengthMeters: circuit.lengthMeters,
       defaultLapCount: circuit.defaultLapCount,
+      raceProfile:
+        circuit.overtakingDifficulty !== null && circuit.dirtyAirSensitivityPermille !== null && circuit.drsEffectivenessPermille !== null
+          ? { overtakingDifficulty: circuit.overtakingDifficulty, dirtyAirSensitivityPermille: circuit.dirtyAirSensitivityPermille, drsEffectivenessPermille: circuit.drsEffectivenessPermille }
+          : null,
     },
     labels:
       row?.entrants.map((e) => ({
@@ -347,6 +352,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
               await tx.careerRacePitProfile.create({
                 data: {
                   ...s.input.pits,
+                  ...(s.input.pits.strategy ? { strategy: JSON.parse(JSON.stringify(s.input.pits.strategy)) } : {}),
                   careerId,
                   careerRaceSimulationId: row.id,
                 },

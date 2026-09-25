@@ -142,6 +142,13 @@ export function validateContentDataset(data: ContentDataset): void {
     requireValid(Boolean(row.name.trim()), "Circuit name is required.");
     positive(row.lengthMeters, "Circuit length");
     positive(row.defaultLapCount, "Lap count");
+    const profile = [row.overtakingDifficulty, row.dirtyAirSensitivityPermille, row.drsEffectivenessPermille];
+    requireValid(profile.every(v => v == null) || profile.every(v => v != null), "Circuit race profile must be complete or absent.");
+    if (row.overtakingDifficulty != null) {
+      requireValid(Number.isInteger(row.overtakingDifficulty) && row.overtakingDifficulty >= 0 && row.overtakingDifficulty <= 100, "Overtaking difficulty must be 0–100.");
+      for (const v of [row.dirtyAirSensitivityPermille!, row.drsEffectivenessPermille!])
+        requireValid(Number.isInteger(v) && v >= 0 && v <= 2000, "Circuit race profile permille must be 0–2000.");
+    }
   }
   for (const row of seasons) {
     positive(row.year, "Season year");

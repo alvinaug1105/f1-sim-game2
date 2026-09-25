@@ -1,5 +1,6 @@
 import type { CareerProgress } from "./progression";
 import type { RaceSimulationState } from "../../simulation/race/types";
+import type { CircuitRaceProfile } from "../../simulation/race/traffic/profiles";
 /** Career-snapshotted game-balance values; null for Careers created before Content Expansion Pass A. */
 export interface RosterBalance {
   readonly pace: number;
@@ -52,6 +53,8 @@ export interface CareerRaceData {
     readonly sourceCircuitId?: string | null;
     readonly lengthMeters: number;
     readonly defaultLapCount: number;
+    /** Snapshotted Career circuit Race interaction identity; null for Careers created before it existed (neutral). */
+    readonly raceProfile?: CircuitRaceProfile | null;
   };
 }
 export interface RaceChange {

@@ -202,6 +202,29 @@ export function validateContentDataset(data: ContentDataset): void {
       "Driver balance must be complete or absent.",
     );
   }
+  // Season grid integrity (any season, no names): every participating team fields exactly two primary race
+  // drivers, and race-driver abbreviations are unique within the season (they identify cars in timing and on
+  // the map). Exact grid sizes (e.g. 11 teams / 22 drivers for the 2026 development dataset) are owned by the
+  // shipped-content tests, not this season-agnostic validator.
+  const abbreviation = new Map(drivers.map((row) => [row.id, row.abbreviation]));
+  for (const team of teamEntries) {
+    const race = driverEntries.filter(
+      (row) =>
+        row.role === "RACE_DRIVER" &&
+        row.seasonId === team.seasonId &&
+        row.teamId === team.teamId,
+    );
+    requireValid(
+      race.length === 2,
+      "Each participating team needs exactly two race drivers.",
+    );
+  }
+  unique(
+    driverEntries
+      .filter((row) => row.role === "RACE_DRIVER")
+      .map((row) => `${row.seasonId}/${abbreviation.get(row.driverId)}`),
+    "race driver abbreviation",
+  );
   unique(
     events.map((row) => `${row.seasonId}/${row.round}`),
     "event round",

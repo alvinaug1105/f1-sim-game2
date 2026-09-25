@@ -161,6 +161,13 @@ describe("fictional source content graph (no database required)", () => {
             seasonId: id,
             teamId: data.teams[1].id,
           },
+          // A season team always fields two race drivers.
+          {
+            ...data.driverEntries[1],
+            id: "00000000-0000-4000-8000-000000000996",
+            seasonId: id,
+            teamId: data.teams[1].id,
+          },
         ],
       }),
     ).not.toThrow();

@@ -62,6 +62,24 @@ describe("Content Expansion Pass A — source grid", () => {
     const triple = source.driverEntries.map(e => `${e.pace}/${e.consistency}/${source.teamEntries.find(t => t.teamId === e.teamId)!.carPerformance}`);
     expect(new Set(triple).size).toBe(22); // no two cars share an identical profile
   });
+  it("rejects a duplicate race-driver abbreviation and teams without exactly two race drivers", () => {
+    const check = (patch: (d: ContentDataset) => ContentDataset) => () => validateContentDataset(patch(structuredClone(source) as ContentDataset));
+    const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    // Duplicate abbreviation (everything else valid).
+    expect(check(d => ({ ...d, drivers: d.drivers.map((x, i) => i === 1 ? { ...x, abbreviation: d.drivers[0].abbreviation } : x) })))
+      .toThrow("Duplicate race driver abbreviation.");
+    // Three race drivers on one team: an extra, otherwise valid driver joins the first team.
+    expect(check(d => ({
+      ...d,
+      drivers: [...d.drivers, { ...d.drivers[0], id: id(290), key: "driver-extra", abbreviation: "XTR", preferredNumber: 99 }],
+      driverEntries: [...d.driverEntries, { ...d.driverEntries[0], id: id(690), driverId: id(290), carNumber: 99 }],
+    }))).toThrow("Each participating team needs exactly two race drivers.");
+    // One race driver on one team: the other becomes a reserve.
+    expect(check(d => ({ ...d, driverEntries: d.driverEntries.map((e, i) => i === 5 ? { ...e, role: "RESERVE_DRIVER" as const } : e) })))
+      .toThrow("Each participating team needs exactly two race drivers.");
+    // The shipped dataset itself passes every rule.
+    expect(check(d => d)).not.toThrow();
+  });
   it("rejects out-of-range or half-specified balance data", () => {
     const bad = (patch: (d: ContentDataset) => ContentDataset) => expect(() => validateContentDataset(patch(structuredClone(source) as ContentDataset))).toThrow(ContentValidationError);
     bad(d => ({ ...d, teamEntries: d.teamEntries.map((e, i) => i ? e : { ...e, carPerformance: 101 }) }));

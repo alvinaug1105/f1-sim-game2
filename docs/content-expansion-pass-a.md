@@ -42,3 +42,10 @@ Starting main: `3175e17`. Race simulation stays at v7 and its equations are unch
 - **Map:** all 22 markers are drawn (Practice hides cars in the garage). Labels follow the accepted priority rules, so ordinary AI cars show only a marker.
 - **Timing tables:** these scroll inside their panel, with a sticky header and P1–P22.
 - **Career creation:** a radio-card team picker (name, colour accent, both drivers) replaces the dropdown.
+
+## Validation ownership (QA repair)
+- **`validateContentDataset`** covers any season and never uses names. It enforces:
+  - exactly two primary race drivers for every participating team;
+  - unique race-driver abbreviations within a season;
+  - the existing rules for IDs, references, car numbers and balance ranges.
+- **The shipped-content tests** own the exact 2026 development counts (11 teams, 22 race drivers, two per team): `tests/grid.test.tsx`, `tests/content.test.ts` and `tests/content-naming.test.ts`. That lets the validator serve other seasons unchanged.

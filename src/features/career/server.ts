@@ -34,3 +34,9 @@ import type { CareerRaceRepository } from "../../game/domain/race-repository";
 export function getRaceRepository(): CareerRaceRepository {
   return new PrismaRaceRepository(getPrisma());
 }
+
+import { PrismaPracticeRepository } from "../../data/repositories/prisma-practice";
+import type { CareerPracticeRepository } from "../../game/domain/practice-repository";
+export function getPracticeRepository(): CareerPracticeRepository {
+  return new PrismaPracticeRepository(getPrisma());
+}

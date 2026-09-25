@@ -11,6 +11,11 @@ import {
   type SessionIntent,
 } from "../../game/domain/progression";
 import { progressionAction } from "./progression-actions";
+import { isPractice } from "../../game/domain/progression";
+import {
+  PracticeSessionControls,
+  SimulateAllPractice,
+} from "../practice/weekend-controls";
 function TransitionControl({
   careerId,
   eventId,
@@ -138,28 +143,55 @@ export function WeekendView({
                       <p>{t(`progression.${session.status}`)}</p>
                     </div>
                     <div className="session-actions">
-                      {session.type === "RACE"
-                        ? session.status !== "LOCKED" && (
-                            <Link
-                              className="text-link"
-                              href={`/career/${progress.career.id}/events/${event.id}/race`}
-                            >
-                              {t("race.open")}
-                            </Link>
-                          )
-                        : sessionActions(session).map((intent) => (
-                            <TransitionControl
-                              key={intent}
-                              careerId={progress.career.id}
-                              eventId={event.id}
-                              sessionId={session.id}
-                              intent={intent}
-                            />
-                          ))}
+                      {session.type === "RACE" ? (
+                        session.status !== "LOCKED" && (
+                          <Link
+                            className="text-link"
+                            href={`/career/${progress.career.id}/events/${event.id}/race`}
+                          >
+                            {t("race.open")}
+                          </Link>
+                        )
+                      ) : isPractice(session.type) ? (
+                        // Practice is never bypassed: not managing it yourself means simulating it.
+                        <PracticeSessionControls
+                          careerId={progress.career.id}
+                          eventId={event.id}
+                          session={session}
+                        />
+                      ) : (
+                        sessionActions(session).map((intent) => (
+                          <TransitionControl
+                            key={intent}
+                            careerId={progress.career.id}
+                            eventId={event.id}
+                            sessionId={session.id}
+                            intent={intent}
+                          />
+                        ))
+                      )}
                     </div>
                   </li>
                 ))}
               </ol>
+              {event.weekend.status === "ACTIVE" &&
+                event.weekend.sessions.some(
+                  (s) => isPractice(s.type) && s.status === "AVAILABLE",
+                ) && <p className="ops-muted">{t("practice.simulateHint")}</p>}
+              {event.weekend.status === "ACTIVE" &&
+                event.weekend.sessions.some(
+                  (s) =>
+                    isPractice(s.type) &&
+                    (s.status === "AVAILABLE" || s.status === "IN_PROGRESS"),
+                ) && (
+                  <SimulateAllPractice
+                    careerId={progress.career.id}
+                    eventId={event.id}
+                  />
+                )}
+              {event.weekend.sessions.some(
+                (s) => s.type === "QUALIFYING" && s.status === "AVAILABLE",
+              ) && <p role="status">{t("practice.qualifyingReady")}</p>}
               {event.weekend.status === "COMPLETED" && (
                 <p role="status">{t("progression.done")}</p>
               )}

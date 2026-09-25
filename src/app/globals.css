@@ -880,3 +880,54 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .race-ops .ops-header h1 .ops-muted { font-size:13px; font-weight:500; }
 @media(max-width:820px) { .race-bar-top { flex-wrap:wrap; } }
 
+/* Phase 13 — Practice operations (Race visual language; every state carries text/glyph, never colour alone). */
+.practice-header { display:flex; justify-content:space-between; align-items:flex-end; gap:14px; flex-wrap:wrap; }
+.session-tabs ol { display:flex; gap:4px; list-style:none; margin:0; padding:0; flex-wrap:wrap; }
+.session-tab > a, .session-tab > span { display:inline-block; padding:6px 10px; border:1px solid var(--ops-border); border-radius:5px; color:#bac6cf; text-decoration:none; font-size:11px; }
+.session-tab.current > span { background:#d9e7f0; color:#10202b; font-weight:800; border-color:#d9e7f0; }
+.session-tab.status-LOCKED > span, .session-tab.status-SKIPPED > span { opacity:.55; }
+.practice-ops .practice-driver .driver-body { display:flex; flex-direction:column; gap:14px; padding:14px; }
+.practice-ops .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.practice-ops .stat { display:flex; flex-direction:column; gap:2px; }
+.practice-ops .stat span { color:#93a7b6; font-size:10px; text-transform:uppercase; letter-spacing:.5px; }
+.location-chip { display:inline-block; border:1px solid #465460; border-radius:4px; padding:2px 6px; font-size:10px; font-weight:700; white-space:nowrap; }
+.location-chip.location-FLYING { border-color:#91ae6b; color:#dafaaf; }
+.location-chip.location-OUT_LAP, .location-chip.location-IN_LAP { border-color:#8fb4cf; color:#cfe6f5; }
+.location-chip.location-GARAGE { color:#93a7b6; }
+.practice-timing td small { display:block; color:#93a7b6; }
+.practice-timing td .tyre-token { display:inline-flex; width:20px; height:20px; font-size:10px; margin-left:4px; }
+.garage-row { opacity:.8; }
+.run-planner, .setup-editor, .knowledge, .run-status, .run-history { display:flex; flex-direction:column; gap:6px; border-top:1px solid var(--ops-border); padding-top:10px; }
+.run-planner label, .setup-row label { display:flex; flex-direction:column; gap:3px; color:#bac6cf; }
+.run-planner select, .run-planner input { background:#10181e; color:#f4f7f9; border:1px solid #465460; border-radius:4px; padding:6px; }
+.practice-ops .send-out { background:#384a2b; color:#dafaaf; border:1px solid #91ae6b; font-weight:800; }
+.field-error { color:#ffd099; }
+.fit-note { margin:0; font-size:11px; }.fit-note.fit-UNSUITED { color:#ffd099; }.fit-note.fit-SUITED { color:#a9e4b9; }
+.setup-row { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; }
+.setup-row label small { color:#93a7b6; font-size:10px; }
+.setup-row input[type=range] { grid-column:1; width:100%; accent-color:#bddd74; }
+.setup-row output { grid-column:2; grid-row:2; font-weight:800; min-width:2.5em; text-align:right; }
+.feedback-chip { grid-column:1 / -1; justify-self:start; font-size:10px; font-weight:700; border:1px solid #465460; border-radius:4px; padding:2px 6px; }
+.feedback-chip.feedback-0 { border-color:#91ae6b; color:#dafaaf; }
+.feedback-chip.feedback-2, .feedback-chip.feedback--2 { border-color:#e8a15e; color:#ffd099; }
+.feedback-chip.stale { opacity:.6; border-style:dashed; }
+.setup-actions { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.practice-meter > div { display:flex; justify-content:space-between; }
+.practice-meter meter { width:100%; height:8px; }
+.practice-meter small { color:#93a7b6; font-size:10px; }
+.run-history ol { margin:0; padding-left:18px; }
+.confirm-inline { display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.confirm-inline > span { color:#ffd099; }
+.practice-summary { margin-bottom:14px; }
+.practice-summary .summary-body, .practice-start .summary-body { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding:14px; }
+.practice-summary li strong { border-left:4px solid; padding-left:5px; }
+.practice-summary li small { display:block; color:#93a7b6; }
+.map-car.in-garage { pointer-events:none; }
+.map-notice label { margin-left:8px; }
+@media (max-width: 720px) { .practice-header { align-items:flex-start; } .setup-row { grid-template-columns:1fr; } .setup-row output { grid-column:1; grid-row:auto; text-align:left; } }
+/* Practice timing at laptop widths: compact cells/status chip and a slightly wider timing column so Status is never clipped. */
+.practice-timing th, .practice-timing td { padding:6px 4px; }
+.practice-timing td:first-child { font-size:13px; }
+.practice-timing .location-chip { padding:2px 4px; letter-spacing:0; }
+@media (min-width:1221px) and (max-width:1599px) { .practice-ops .ops-grid { grid-template-columns:280px minmax(270px,1fr) 300px; } }
+@media (min-width:821px) and (max-width:1220px) { .practice-ops .ops-grid { grid-template-columns:280px minmax(0,1fr); } }

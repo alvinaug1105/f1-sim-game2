@@ -1,6 +1,17 @@
 import type { CareerRaceData } from "../../game/domain/race-repository";
 import { DEFAULT_RACE_PARAMETERS } from "../../simulation/race/engine";
 import type { RaceSimulationInput } from "../../simulation/race/types";
+/** Temporary development performance, based on roster order and team entry order, never names or special IDs. Shared by Race and Practice. */
+export function developmentPerformance(index: number, teamOrder: number) {
+  return {
+    driver: { pace: 92 - (index % 6) * 1.5, consistency: 88 + (index % 4) * 2 },
+    car: { performance: 92 - ((teamOrder - 1) % 8) * 2 },
+  };
+}
+/** Development base lap time from circuit length (Race and Practice share it). */
+export function developmentBaseLapTimeMs(lengthMeters: number) {
+  return Math.round((lengthMeters / 60) * 1000);
+}
 /** Temporary version-1 profiles, based on roster order, never names or special IDs. */
 export function developmentRaceInput(
   data: CareerRaceData,
@@ -18,7 +29,7 @@ export function developmentRaceInput(
     fuelBurnPerLapKg,
     parameters: { ...DEFAULT_RACE_PARAMETERS },
     circuit: {
-      baseLapTimeMs: Math.round((data.circuit.lengthMeters / 60) * 1000),
+      baseLapTimeMs: developmentBaseLapTimeMs(data.circuit.lengthMeters),
       fuelEffectMsPerKg: 30,
     },
     entrants: data.roster.map((row, index) => ({
@@ -26,11 +37,7 @@ export function developmentRaceInput(
       driverId: row.driverId,
       teamId: row.teamId,
       gridPosition: index + 1,
-      driver: {
-        pace: 92 - (index % 6) * 1.5,
-        consistency: 88 + (index % 4) * 2,
-      },
-      car: { performance: 92 - ((row.teamOrder - 1) % 8) * 2 },
+      ...developmentPerformance(index, row.teamOrder),
     })),
   };
   return {

@@ -1,4 +1,4 @@
-import { ProgressionError } from "../../game/domain/progression";
+import { ProgressionError, isPractice } from "../../game/domain/progression";
 import {
   enterNextEvent,
   transitionSession,
@@ -26,7 +26,16 @@ export function runSessionAction(
   );
 }
 
-/** Browser-facing scaffolding excludes Race; its production path is the real engine. */
+/** Session intents the browser progression form may send. Practice is managed or simulated, never skipped. */
+export const BROWSER_SESSION_INTENTS: readonly SessionIntent[] = [
+  "start",
+  "completeDevelopment",
+];
+/**
+ * Browser-facing scaffolding excludes Race and Practice; their production paths are the real engines. Practice cannot
+ * be skipped or fake-completed here: a player who does not manage a session simulates it (Practice service).
+ * The domain `skipPractice` intent remains for internal tooling/tests via `runSessionAction` only.
+ */
 export function runScaffoldingAction(
   repository: CareerProgressionRepository,
   careerId: string,
@@ -38,7 +47,7 @@ export function runScaffoldingAction(
     const session = state.events
       .find((e) => e.id === eventId)
       ?.weekend?.sessions.find((s) => s.id === sessionId);
-    if (session?.type === "RACE")
+    if (session?.type === "RACE" || (session && isPractice(session.type)))
       throw new ProgressionError("INVALID_TRANSITION");
     return transitionSession(state, eventId, sessionId, intent);
   });

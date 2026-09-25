@@ -6,10 +6,18 @@ import type { timingRows } from './model';
 import { RaceMotion, checkpointDuration, type MotionMode } from './motion';
 import { useI18n } from '../../../i18n/provider';
 import { placeLabels, startFinishReserve, pathLength, lookahead, lookaheadScale, LABEL_TIER, LABEL_SIZE, type Rect, type SlotMemory, type Point } from './labels';
-type Rows = ReturnType<typeof timingRows>;
+/**
+ * What the map needs from a row (Race timing rows satisfy it structurally; Practice builds its own). `hidden` cars are
+ * in the garage: kept in the motion model so they re-emerge smoothly, but not drawn, focusable or labelled.
+ */
+export interface MapRow {
+    id: string; progress: number; status: ReturnType<typeof timingRows>[number]['status']; name: string; team: string; player: boolean;
+    color: string; abbreviation: string; pitting: boolean; entrant: { position: number }; hidden?: boolean;
+}
+type Rows = readonly MapRow[];
 const subscribeMotion = (notify: () => void) => { const media = window.matchMedia('(prefers-reduced-motion: reduce)'); media.addEventListener('change', notify); return () => media.removeEventListener('change', notify); };
 const getMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const targets = (rows: Rows) => rows.map(r => ({ id: r.id, progress: r.progress, retired: r.status === 'RETIRED' }));
+const targets = (rows: readonly MapRow[]) => rows.map(r => ({ id: r.id, progress: r.progress, retired: r.status === 'RETIRED' }));
 /** One loop for the entire field. React handles checkpoints/selection, never individual frames. */
 const MAP_BOUNDS: Rect = { x: 4, y: 4, w: 992, h: 642 };
 /** Labels are separate from markers: every car keeps a marker, only prioritised cars get a label (see labels.ts). */
@@ -36,7 +44,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     const placement = useRef({ tiers: labelTierMap, reserved, scale });
     useEffect(() => {
         const root = svg.current!;
-        const cars = [...root.querySelectorAll<SVGGElement>('[data-car]')];
+        const all = [...root.querySelectorAll<SVGGElement>('[data-car]')];
         const drawn = new Map<string, { x: number; y: number }>();
         const slots = new Map<string, SlotMemory>();
         // Projected lap length converts the label lookahead (SVG units) into lap progress along the drawn path.
@@ -48,6 +56,8 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             if (disposed) return;
             const started = performance.now();
             timeline.frame(now);
+            // Hidden (garage) cars take no part in lanes or label placement; the set is read per frame from React's attributes.
+            const cars = all.filter(el => el.dataset.hidden !== '1');
             const samples = cars.map(el => { const progress = timeline.progress(el.dataset.car!); const sample = path.sample(progress); return { progress, sample, ...project(sample) }; });
             cars.forEach((el, i) => {
                 const p = samples[i];
@@ -110,7 +120,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         <path d={d} fill="none" stroke="#070b0e" strokeWidth="30" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#53606c" strokeWidth="18" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#a6b4bf" strokeWidth="1.5" strokeDasharray="5 13" opacity=".4"/>
-        {rows.map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id), chosen = r.id === selected; return <g key={r.id} data-car={r.id} data-tier={tier} transform={`translate(${p.x} ${p.y})`} role="button" tabIndex={0} aria-label={`${r.name} · ${t('race.position')} ${r.entrant.position} · ${t(`incident.${r.status}`)}${r.player ? ` · ${t('viewer.player')}` : ''}`} aria-pressed={chosen} onClick={() => onSelect(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }} className={`map-car ${r.status === 'RETIRED' ? 'retired' : ''} ${r.player ? 'player' : ''} ${chosen ? 'selected' : ''}`}>
+        {rows.map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id), chosen = r.id === selected; return <g key={r.id} data-car={r.id} data-tier={tier} data-hidden={r.hidden ? '1' : '0'} visibility={r.hidden ? 'hidden' : undefined} aria-hidden={r.hidden || undefined} transform={`translate(${p.x} ${p.y})`} role="button" tabIndex={r.hidden ? -1 : 0} aria-label={`${r.name} · ${t('race.position')} ${r.entrant.position} · ${t(`incident.${r.status}`)}${r.player ? ` · ${t('viewer.player')}` : ''}`} aria-pressed={chosen} onClick={() => onSelect(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }} className={`map-car ${r.hidden ? 'in-garage' : ''} ${r.status === 'RETIRED' ? 'retired' : ''} ${r.player ? 'player' : ''} ${chosen ? 'selected' : ''}`}>
             <title>{`${r.name} · ${r.team} · ${t('race.position')} ${r.entrant.position}`}</title>
             <circle r="15" fill="transparent"/>
             {chosen && <circle r="19" fill="none" stroke="white" strokeDasharray="4 4" strokeWidth="2.5"/>}
@@ -119,7 +129,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             {r.status === 'RETIRED' && <path d="M -6 -6 L 6 6 M -6 6 L 6 -6" stroke="#111" strokeWidth="3"/>}
         </g>; })}
         <g className="start-finish" transform={`translate(${start.x} ${start.y})`} pointerEvents="none"><path transform={`rotate(${angle})`} d="M 0 -14 L 0 14" stroke="white" strokeWidth="6"/><text x="-35" y="40" fill="#dfe8ee" fontSize="18" fontWeight="600" stroke="#0b1116" strokeWidth="4" paintOrder="stroke">{startText}</text></g>
-        {byTier.filter(r => tierOf(r.id) < LABEL_TIER.FIELD).map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id); return <g key={r.id} data-label={r.id} data-tier={tier} className={`map-label tier-${tier}`} aria-hidden="true" pointerEvents="none" visibility="hidden" transform={`translate(${p.x} ${p.y})`} opacity={r.status === 'RETIRED' ? .5 : tier >= LABEL_TIER.LEADER ? .9 : 1}>
+        {byTier.filter(r => tierOf(r.id) < LABEL_TIER.FIELD && !r.hidden).map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id); return <g key={r.id} data-label={r.id} data-tier={tier} className={`map-label tier-${tier}`} aria-hidden="true" pointerEvents="none" visibility="hidden" transform={`translate(${p.x} ${p.y})`} opacity={r.status === 'RETIRED' ? .5 : tier >= LABEL_TIER.LEADER ? .9 : 1}>
             <LiveTag row={r} tier={tier} pit={t('viewer.pit')}/>
         </g>; })}
     </svg>;

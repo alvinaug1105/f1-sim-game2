@@ -6,7 +6,11 @@ import {
   type SessionIntent,
 } from "../../game/domain/progression";
 import { getProgressionRepository } from "./server";
-import { advanceToNextEvent, runScaffoldingAction } from "./progression";
+import {
+  advanceToNextEvent,
+  BROWSER_SESSION_INTENTS,
+  runScaffoldingAction,
+} from "./progression";
 export async function progressionAction(
   _previous: { error: ProgressionErrorCode | null },
   form: FormData,
@@ -21,13 +25,8 @@ export async function progressionAction(
     if (intent === "advance")
       await advanceToNextEvent(repository, careerId, eventId);
     else {
-      const intents: readonly string[] = [
-        "start",
-        "simulatePractice",
-        "skipPractice",
-        "completeDevelopment",
-      ];
-      if (!intents.includes(intent))
+      // Practice runs only through the Practice service (manage or simulate); the browser can never skip it.
+      if (!(BROWSER_SESSION_INTENTS as readonly string[]).includes(intent))
         throw new ProgressionError("INVALID_TRANSITION");
       await runScaffoldingAction(
         repository,

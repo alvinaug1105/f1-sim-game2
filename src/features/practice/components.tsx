@@ -62,7 +62,7 @@ function RunPlanner({ view, e, busy, send }: { view: PracticeView; e: PracticeEn
     const valid = Number.isSafeInteger(laps) && laps >= 1 && laps <= max;
     const fit = view.weather ? FIT[compoundFit(compound, view.weather)] : 'SUITED';
     const plan: RunPlan = { compound, targetLaps: laps, pace };
-    return <div className="run-planner"><h3>{t('practice.plan')}</h3>
+    return <div className="run-planner" data-testid="run-planner"><h3>{t('practice.plan')}</h3>
         {chequered ? <p className="ops-muted">{t('practice.chequered')}</p> : max < 1 ? <p className="ops-muted" role="status">{t('practice.noTime')}</p> : <>
             <label>{t('tyre.compound')}<select value={compound} onChange={ev => setCompound(ev.target.value as TyreCompound)} disabled={busy}>
                 {PRACTICE_COMPOUNDS.map(c => <option key={c} value={c}>{t(`tyre.${c}`)} · {t(`practice.fit.${view.weather ? FIT[compoundFit(c, view.weather)] : 'SUITED'}`)}</option>)}</select></label>
@@ -81,7 +81,7 @@ function SetupEditor({ e, busy, editable, send }: { e: PracticeEntrantView; busy
     const { t, format } = useI18n(), p = e.own!.preparation;
     const [draft, setDraft] = useState<Setup>(p.setup);
     const changed = SETUP_DIMENSIONS.some(d => draft[d] !== p.setup[d]);
-    return <div className="setup-editor"><h3>{t('practice.setup')}</h3>
+    return <div className="setup-editor" data-testid="setup-editor"><h3>{t('practice.setup')}</h3>
         <p className="ops-muted">{t(editable ? 'practice.setupNote' : 'practice.setupLocked')}</p>
         {!p.feedback ? <p className="ops-muted">{t('practice.noFeedback')}</p> : !p.feedbackCurrent && <p className="ops-muted" role="status">{t('practice.feedbackStale')}</p>}
         {SETUP_DIMENSIONS.map(d => {
@@ -118,7 +118,9 @@ export function PracticeDriverPanel({ view, e, busy, send }: { view: PracticeVie
                     <p>{t(`tyre.${own.run.plan.compound}`)} · {t(`practice.pace.${own.run.plan.pace}`)} · {t('practice.runProgress', { done: format.number(own.run.timedLaps), target: format.number(own.run.plan.targetLaps) })} · {t('race.best')} {lap(own.run.bestLapMs)}</p>
                     {commandable && <button disabled={busy || own.run.callIn || e.location === 'IN_LAP'} onClick={() => act({ kind: 'callIn' })}>{t(own.run.callIn || e.location === 'IN_LAP' ? 'practice.comingIn' : 'practice.callIn')}</button>}
                 </div>}
-                {e.location === 'GARAGE' && commandable && <RunPlanner key={`${own.commandRevision}`} view={view} e={e} busy={busy} send={act}/>}
+                {/* Sibling keys are namespaced per component: a bare revision number collided (both revisions start at 0), which made
+                    React reconcile the wrong sibling and leave orphaned planners behind. A new revision resets the form's draft. */}
+                {e.location === 'GARAGE' && commandable && <RunPlanner key={`run-plan:${e.entrantId}:${own.commandRevision}`} view={view} e={e} busy={busy} send={act}/>}
                 <div className="knowledge"><h3>{t('practice.knowledge')}</h3>
                     <Meter label={t('practice.confidence')} value={own.preparation.confidence} hint={t('practice.confidenceHint')}/>
                     <Meter label={t('practice.acclimatisation')} value={own.preparation.acclimatisation}/>
@@ -126,7 +128,7 @@ export function PracticeDriverPanel({ view, e, busy, send }: { view: PracticeVie
                     <h3>{t('practice.tyreKnowledge')}</h3>
                     {PRACTICE_COMPOUNDS.map(c => <Meter key={c} label={t(`tyre.${c}`)} value={own.preparation.tyreKnowledge[c]}/>)}
                 </div>
-                <SetupEditor key={own.preparation.setupRevision} e={e} busy={busy} editable={commandable && e.location === 'GARAGE'} send={act}/>
+                <SetupEditor key={`setup-editor:${e.entrantId}:${own.preparation.setupRevision}`} e={e} busy={busy} editable={commandable && e.location === 'GARAGE'} send={act}/>
                 {own.runs.length > 0 && <div className="run-history"><h3>{t('practice.runs')}</h3><ol>{own.runs.map(r => <li key={r.number}>{t('practice.runLine', { number: format.number(r.number), laps: format.number(r.timedLaps) })} · {t(`tyre.${r.plan.compound}`)} · {t(`practice.pace.${r.plan.pace}`)} · {lap(r.bestLapMs)}</li>)}</ol></div>}
             </>}
         </div>

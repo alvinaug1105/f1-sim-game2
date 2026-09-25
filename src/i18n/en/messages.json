@@ -487,7 +487,7 @@
   "practice.unavailable": "This session is not available yet.",
   "practice.skipped": "This session was skipped.",
   "practice.start": "Start session",
-  "practice.simulateSession": "Simulate session",
+  "practice.simulateSession": "Simulate session (auto-manage)",
   "practice.simulateSessionConfirm": "Your cars will be run by the team's standard programme for the whole session. Continue?",
   "practice.simulateRemainder": "Simulate remainder",
   "practice.simulateRemainderConfirm": "Your cars will be run by the team's standard programme until the chequered flag. Continue?",
@@ -605,5 +605,6 @@
   "practice.error.NOT_ON_TRACK": "The car is not on track.",
   "practice.error.PLAN_INVALID": "The run plan is not valid.",
   "practice.error.PLAN_TOO_LONG": "The run does not fit in the remaining time.",
-  "practice.error.SETUP_INVALID": "The setup is not valid."
+  "practice.error.SETUP_INVALID": "The setup is not valid.",
+  "practice.simulateHint": "Not managing a session yourself? Choose Simulate session: the team's standard programme runs your cars with the same mechanics, and your drivers still learn from it."
 }

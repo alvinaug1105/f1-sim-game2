@@ -153,21 +153,12 @@ export function WeekendView({
                           </Link>
                         )
                       ) : isPractice(session.type) ? (
-                        <>
-                          <PracticeSessionControls
-                            careerId={progress.career.id}
-                            eventId={event.id}
-                            session={session}
-                          />
-                          {session.status === "AVAILABLE" && (
-                            <TransitionControl
-                              careerId={progress.career.id}
-                              eventId={event.id}
-                              sessionId={session.id}
-                              intent="skipPractice"
-                            />
-                          )}
-                        </>
+                        // Practice is never bypassed: not managing it yourself means simulating it.
+                        <PracticeSessionControls
+                          careerId={progress.career.id}
+                          eventId={event.id}
+                          session={session}
+                        />
                       ) : (
                         sessionActions(session).map((intent) => (
                           <TransitionControl
@@ -183,6 +174,10 @@ export function WeekendView({
                   </li>
                 ))}
               </ol>
+              {event.weekend.status === "ACTIVE" &&
+                event.weekend.sessions.some(
+                  (s) => isPractice(s.type) && s.status === "AVAILABLE",
+                ) && <p className="ops-muted">{t("practice.simulateHint")}</p>}
               {event.weekend.status === "ACTIVE" &&
                 event.weekend.sessions.some(
                   (s) =>

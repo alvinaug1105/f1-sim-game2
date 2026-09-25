@@ -487,7 +487,7 @@
   "practice.unavailable": "本節練習賽尚未開放。",
   "practice.skipped": "本節練習賽已略過。",
   "practice.start": "開始練習賽",
-  "practice.simulateSession": "模擬整節",
+  "practice.simulateSession": "模擬整節（自動管理）",
   "practice.simulateSessionConfirm": "整節練習賽將由車隊標準計畫操作你的賽車。要繼續嗎？",
   "practice.simulateRemainder": "模擬剩餘時間",
   "practice.simulateRemainderConfirm": "直到方格旗前都將由車隊標準計畫操作你的賽車。要繼續嗎？",
@@ -605,5 +605,6 @@
   "practice.error.NOT_ON_TRACK": "賽車不在賽道上。",
   "practice.error.PLAN_INVALID": "跑段計畫無效。",
   "practice.error.PLAN_TOO_LONG": "剩餘時間不足以完成此跑段。",
-  "practice.error.SETUP_INVALID": "設定無效。"
+  "practice.error.SETUP_INVALID": "設定無效。",
+  "practice.simulateHint": "不想親自管理練習賽？請選擇「模擬整節」：車隊標準計畫會以相同機制操作你的賽車，車手仍能從中學習。"
 }

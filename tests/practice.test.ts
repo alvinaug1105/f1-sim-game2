@@ -16,7 +16,7 @@ import {
 import { practiceView } from "../src/features/practice/view-model";
 import { assessPracticeCheckpoint, initialPracticeAttention, practiceAdapter } from "../src/features/practice/playback";
 import { PlaybackController } from "../src/features/race/viewer/playback";
-import { runScaffoldingAction } from "../src/features/career/progression";
+import { BROWSER_SESSION_INTENTS, runScaffoldingAction } from "../src/features/career/progression";
 import { practiceWorld, sessionOf } from "./helpers/practice";
 afterEach(() => vi.useRealTimers());
 const IDEAL: Setup = { AERO: 62, MECHANICAL: 41, RIDE: 55, BRAKE: 47, TYRE: 36 };
@@ -223,13 +223,19 @@ describe("practice service and weekend lifecycle", () => {
         expect(w.repo.writes).toBe(writes);
         expect((await w.repo.getPractice(w.careerId, w.eventId, p1.id))!.state).toEqual(data.state);
     });
-    it("browser scaffolding can only skip Practice, never fake-run it", async () => {
+    it("no player path can bypass Practice: browser scaffolding rejects every Practice intent, including skip", async () => {
         const w = await practiceWorld();
         const progression = { getProgress: async () => w.repo.progress, transition: async (_: string, change: (p: typeof w.repo.progress) => typeof w.repo.progress) => change(w.repo.progress) };
-        await expect(runScaffoldingAction(progression as never, w.careerId, w.eventId, w.sessions[0].id, "simulatePractice")).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
-        await expect(runScaffoldingAction(progression as never, w.careerId, w.eventId, w.sessions[0].id, "start")).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
-        const skipped = await runScaffoldingAction(progression as never, w.careerId, w.eventId, w.sessions[0].id, "skipPractice");
-        expect(skipped.events.find(e => e.id === w.eventId)!.weekend!.sessions[0].status).toBe("SKIPPED");
+        for (const intent of ["simulatePractice", "start", "skipPractice", "completeDevelopment"] as const)
+            await expect(runScaffoldingAction(progression as never, w.careerId, w.eventId, w.sessions[0].id, intent)).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+        expect(BROWSER_SESSION_INTENTS).not.toContain("skipPractice");
+        expect(BROWSER_SESSION_INTENTS).not.toContain("simulatePractice");
+        expect(sessionOf(w.repo, w.eventId, w.sessions[0].id).status).toBe("AVAILABLE");
+        // The player's "don't manage it" path is Simulate Session: real running, real preparation, COMPLETED (not SKIPPED).
+        const data = await simulatePracticeSession(w.repo, w.careerId, w.eventId, w.sessions[0].id);
+        expect(sessionOf(w.repo, w.eventId, w.sessions[0].id).status).toBe("COMPLETED");
+        for (const e of data.state!.entrants) expect(e.timedLaps).toBeGreaterThan(0);
+        expect(data.preparations.every(p => p.preparation.representativeLaps > 0)).toBe(true);
     });
 });
 describe("practice information boundary", () => {

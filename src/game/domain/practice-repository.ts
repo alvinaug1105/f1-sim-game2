@@ -1,6 +1,7 @@
 import type { CareerProgress } from "./progression";
 import type { PracticeSessionType, PracticeState, Preparation, Setup } from "../../simulation/practice/model";
 import type { PracticeRuleCode } from "../../simulation/practice/engine";
+import type { RosterBalance } from "./race-repository";
 export interface PracticeRosterEntry {
     readonly driverId: string;
     readonly teamId: string;
@@ -10,6 +11,7 @@ export interface PracticeRosterEntry {
     readonly abbreviation: string;
     readonly teamColor: string;
     readonly carNumber: number | null;
+    readonly balance?: RosterBalance | null;
 }
 /** Weekend learning for one driver, with the hidden setup target. Server-side only. */
 export interface WeekendPreparationRecord { readonly driverId: string; readonly ideal: Setup; readonly preparation: Preparation }

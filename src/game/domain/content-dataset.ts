@@ -39,6 +39,14 @@ function positive(value: number, label: string) {
     `${label} must be a positive integer.`,
   );
 }
+/** Optional game-balance value: an integer 0–100 when present. */
+function balance(value: number | null | undefined, label: string) {
+  if (value == null) return;
+  requireValid(
+    Number.isInteger(value) && value >= 0 && value <= 100,
+    `${label} must be an integer from 0 to 100.`,
+  );
+}
 function date(value: string) {
   requireValid(
     /^\d{4}-\d{2}-\d{2}$/.test(value) &&
@@ -157,6 +165,7 @@ export function validateContentDataset(data: ContentDataset): void {
       "Team entry references a missing or foreign season/team.",
     );
     positive(row.entryOrder, "Entry order");
+    balance(row.carPerformance, "Car performance");
   }
   const participatingTeams = new Set(
     teamEntries.map((row) => `${row.seasonId}/${row.teamId}`),
@@ -186,7 +195,36 @@ export function validateContentDataset(data: ContentDataset): void {
       "Race driver requires a car number.",
     );
     if (row.carNumber !== null) positive(row.carNumber, "Car number");
+    balance(row.pace, "Driver pace");
+    balance(row.consistency, "Driver consistency");
+    requireValid(
+      (row.pace == null) === (row.consistency == null),
+      "Driver balance must be complete or absent.",
+    );
   }
+  // Season grid integrity (any season, no names): every participating team fields exactly two primary race
+  // drivers, and race-driver abbreviations are unique within the season (they identify cars in timing and on
+  // the map). Exact grid sizes (e.g. 11 teams / 22 drivers for the 2026 development dataset) are owned by the
+  // shipped-content tests, not this season-agnostic validator.
+  const abbreviation = new Map(drivers.map((row) => [row.id, row.abbreviation]));
+  for (const team of teamEntries) {
+    const race = driverEntries.filter(
+      (row) =>
+        row.role === "RACE_DRIVER" &&
+        row.seasonId === team.seasonId &&
+        row.teamId === team.teamId,
+    );
+    requireValid(
+      race.length === 2,
+      "Each participating team needs exactly two race drivers.",
+    );
+  }
+  unique(
+    driverEntries
+      .filter((row) => row.role === "RACE_DRIVER")
+      .map((row) => `${row.seasonId}/${abbreviation.get(row.driverId)}`),
+    "race driver abbreviation",
+  );
   unique(
     events.map((row) => `${row.seasonId}/${row.round}`),
     "event round",

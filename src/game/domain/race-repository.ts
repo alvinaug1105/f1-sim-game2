@@ -1,5 +1,11 @@
 import type { CareerProgress } from "./progression";
 import type { RaceSimulationState } from "../../simulation/race/types";
+/** Career-snapshotted game-balance values; null for Careers created before Content Expansion Pass A. */
+export interface RosterBalance {
+  readonly pace: number;
+  readonly consistency: number;
+  readonly carPerformance: number;
+}
 export interface RaceRosterEntry {
   readonly driverId: string;
   readonly teamId: string;
@@ -7,6 +13,19 @@ export interface RaceRosterEntry {
   readonly teamName: string;
   readonly teamOrder: number;
   readonly carNumber: number;
+  readonly balance?: RosterBalance | null;
+}
+/** Complete snapshotted balance for a season driver entry, or null (legacy Career / incomplete data). */
+export function rosterBalance(entry: {
+  readonly pace?: number | null;
+  readonly consistency?: number | null;
+  readonly teamEntry: { readonly carPerformance?: number | null };
+}): RosterBalance | null {
+  const { pace, consistency } = entry,
+    carPerformance = entry.teamEntry.carPerformance;
+  return pace != null && consistency != null && carPerformance != null
+    ? { pace, consistency, carPerformance }
+    : null;
 }
 export interface RaceLabel {
   readonly abbreviation?: string;

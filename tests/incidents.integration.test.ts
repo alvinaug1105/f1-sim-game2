@@ -94,20 +94,23 @@ describe("real PostgreSQL v7 incidents", () => {
 });
 
 import { raceResult } from "../src/simulation/race/engine";
-import legacyNames from "./fixtures/development-content-before-naming.json";
 it("v7 full results ignore renamed driver/team/circuit/event labels", async () => {
   const data=await start(),id=player(data);
   await changeCareerPitRequest(races,career.id,eventId,id,0,0,"WET");
   const before=await edit(forceMechanical);
   const labels=(await get()).labels;
-  for(const [index,e] of before.input.entrants.entries()) {
-    const driver=legacyNames.drivers[index];
-    await client.careerRaceEntrant.update({where:{id:e.entrantId},data:{driverName:`${driver.firstName} ${driver.lastName}`,teamName:legacyNames.teams[Math.floor(index/2)].name}});
-  }
+  // Deterministic, grid-size-agnostic display labels for EVERY entrant (never real names). Only labels change;
+  // stable IDs and all simulation inputs stay as they are.
+  const entrants=before.input.entrants;
+  for(const [index,e] of entrants.entries())
+    await client.careerRaceEntrant.update({where:{id:e.entrantId},data:{driverName:`Renamed Driver ${index+1}`,teamName:`Renamed Team ${Math.floor(index/2)+1}`}});
   await client.careerCircuit.updateMany({where:{careerId:career.id},data:{name:"Independent renamed circuit"}});
   await client.careerCalendarEvent.update({where:{id:eventId},data:{name:"Independent renamed event"}});
   const renamed=await get();
   expect(renamed.labels).not.toEqual(labels);
+  expect(renamed.labels).toHaveLength(entrants.length);
+  expect(new Set(renamed.labels.map(l=>l.driverName)).size).toBe(entrants.length);
+  for(const l of renamed.labels) expect(l.driverName).toMatch(/^Renamed Driver \d+$/);
   expect(renamed.state).toEqual(before);
   const expected=advanceRace(before,1000);
   expect(expected.incidents!.events.length).toBeGreaterThan(0);

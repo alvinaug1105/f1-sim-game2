@@ -125,7 +125,7 @@ async function request(compound: "SOFT" | "MEDIUM" | "HARD" | null) {
   return (await races.getRace(career.id, eventId))!;
 }
 describe("real PostgreSQL v4 pit strategy", () => {
-  it("creates owned v4 profile and four open initial stints", async () => {
+  it("creates owned v4 profile and one open initial stint per car", async () => {
     const d = await start();
     expect(d.state!.simulationVersion).toBe(4);
     expect(
@@ -137,12 +137,13 @@ describe("real PostgreSQL v4 pit strategy", () => {
       await client.careerRaceStint.count({
         where: { careerId: career.id, endLap: null },
       }),
-    ).toBe(4);
+    ).toBe(d.state!.input.entrants.length);
+    // Every non-player car (20 of the 22-car grid) runs the development AI strategy.
     expect(
       d.state!.input.entrants.filter(
         (e) => e.strategyController === "DEVELOPMENT_AI",
       ),
-    ).toHaveLength(2);
+    ).toHaveLength(20);
   });
   it("persists pending request through a fresh repository client", async () => {
     await start();

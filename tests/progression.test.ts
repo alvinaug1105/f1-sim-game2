@@ -166,14 +166,15 @@ describe("Career progression domain", () => {
     expect(state.events[1].weekend).toBeNull();
   });
   it("last event exposes calendar complete without completing Career", () => {
-    enter();
-    complete();
-    enter();
-    complete();
+    // Calendar length is content data (the Pass A development calendar has 8 rounds).
+    for (let i = 0; i < state.events.length; i++) {
+      enter();
+      complete();
+    }
     expect(progressSummary(state)).toMatchObject({
       calendarComplete: true,
-      completed: 2,
-      total: 2,
+      completed: state.events.length,
+      total: state.events.length,
     });
     expect(state.career.status).toBe("ACTIVE");
     expect(() => enterNextEvent(state, "anything", newId)).toThrow(

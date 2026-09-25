@@ -175,7 +175,28 @@ export class PrismaCareerRepository implements CareerRepository {
               year: true,
               teams: {
                 select: {
-                  team: { select: { id: true, name: true, shortName: true } },
+                  team: {
+                    select: {
+                      id: true,
+                      name: true,
+                      shortName: true,
+                      color: true,
+                    },
+                  },
+                  drivers: {
+                    where: { role: "RACE_DRIVER" },
+                    select: {
+                      carNumber: true,
+                      driver: {
+                        select: {
+                          firstName: true,
+                          lastName: true,
+                          abbreviation: true,
+                        },
+                      },
+                    },
+                    orderBy: [{ carNumber: "asc" }, { id: "asc" }],
+                  },
                 },
                 orderBy: { entryOrder: "asc" },
               },
@@ -190,7 +211,14 @@ export class PrismaCareerRepository implements CareerRepository {
           ...row,
           seasons: row.seasons.map((season) => ({
             ...season,
-            teams: season.teams.map((entry) => entry.team),
+            teams: season.teams.map((entry) => ({
+              ...entry.team,
+              drivers: entry.drivers.map(({ carNumber, driver }) => ({
+                name: `${driver.firstName} ${driver.lastName}`,
+                abbreviation: driver.abbreviation,
+                carNumber,
+              })),
+            })),
           })),
         })),
       };

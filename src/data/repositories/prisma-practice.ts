@@ -7,6 +7,7 @@ import { SETUP_DIMENSIONS, type FeedbackLevel, type PracticeSessionType, type Pr
 import { validateTyreConfiguration, validateTyreState, type TyreCompound, type TyreConfiguration } from "../../simulation/race/tyres/model";
 import { validateWeatherState, type WeatherConfiguration } from "../../simulation/race/weather/model";
 import { loadProgress, persistProgress } from "./prisma-progression";
+import { rosterBalance } from "../../game/domain/race-repository";
 const COLUMN: Readonly<Record<SetupDimension, string>> = { AERO: "Aero", MECHANICAL: "Mechanical", RIDE: "Ride", BRAKE: "Brake", TYRE: "Tyre" };
 const KNOWLEDGE: Readonly<Record<TyreCompound, string>> = { SOFT: "knowledgeSoft", MEDIUM: "knowledgeMedium", HARD: "knowledgeHard", INTERMEDIATE: "knowledgeIntermediate", WET: "knowledgeWet" };
 type PrepRow = Prisma.CareerWeekendPreparationGetPayload<object>;
@@ -81,7 +82,7 @@ async function read(tx: Prisma.TransactionClient, careerId: string, eventId: str
     }
     return {
         progress, eventId, weekendId: event.weekend.id, sessionId, sessionType: session.type as PracticeSessionType, state,
-        roster: roster.map(e => ({ driverId: e.careerDriverId, teamId: e.teamEntry.careerTeamId, driverName: `${e.driver.firstName} ${e.driver.lastName}`, teamName: e.teamEntry.team.name, teamOrder: e.teamEntry.entryOrder, abbreviation: e.driver.abbreviation, teamColor: e.teamEntry.team.color, carNumber: e.carNumber ?? e.driver.preferredNumber })),
+        roster: roster.map(e => ({ driverId: e.careerDriverId, teamId: e.teamEntry.careerTeamId, driverName: `${e.driver.firstName} ${e.driver.lastName}`, teamName: e.teamEntry.team.name, teamOrder: e.teamEntry.entryOrder, abbreviation: e.driver.abbreviation, teamColor: e.teamEntry.team.color, carNumber: e.carNumber ?? e.driver.preferredNumber, balance: rosterBalance(e) })),
         entrantDrivers: Object.fromEntries((row?.entrants ?? []).map(e => [e.id, e.careerDriverId])),
         circuit: { sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters },
         preparations,

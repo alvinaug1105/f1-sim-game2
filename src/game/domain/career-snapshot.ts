@@ -197,6 +197,7 @@ export function buildCareerWorld(
       careerSeasonId,
       careerTeamId: mapped(teamMap, entry.teamId),
       entryOrder: entry.entryOrder,
+      carPerformance: entry.carPerformance ?? null,
     })),
     driverEntries: drivers.map(({ entry }) => ({
       id: allocate(),
@@ -206,6 +207,8 @@ export function buildCareerWorld(
       careerSeasonTeamEntryId: mapped(entryMap, entry.teamId),
       carNumber: entry.carNumber,
       role: entry.role,
+      pace: entry.pace ?? null,
+      consistency: entry.consistency ?? null,
     })),
     events: events.map(({ event }) => ({
       id: allocate(),

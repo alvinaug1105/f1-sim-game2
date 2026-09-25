@@ -50,6 +50,8 @@ export interface CareerSeasonTeamEntry {
   readonly careerSeasonId: EntityId;
   readonly careerTeamId: EntityId;
   readonly entryOrder: number;
+  /** Snapshotted game-balance value; null for Careers created before Content Expansion Pass A. */
+  readonly carPerformance?: number | null;
 }
 export interface CareerSeasonDriverEntry {
   readonly id: EntityId;
@@ -59,6 +61,9 @@ export interface CareerSeasonDriverEntry {
   readonly careerSeasonTeamEntryId: EntityId;
   readonly carNumber: number | null;
   readonly role: DriverRole;
+  /** Snapshotted game-balance values; null for Careers created before Content Expansion Pass A. */
+  readonly pace?: number | null;
+  readonly consistency?: number | null;
 }
 export interface CareerCalendarEvent {
   readonly id: EntityId;
@@ -129,6 +134,13 @@ export interface CareerCreationOptions {
         readonly id: EntityId;
         readonly name: string;
         readonly shortName: string;
+        /** Display identity for the team picker (entity data, never logic). */
+        readonly color?: string;
+        readonly drivers?: readonly {
+          readonly name: string;
+          readonly abbreviation: string;
+          readonly carNumber: number | null;
+        }[];
       }[];
     }[];
   }[];

@@ -607,5 +607,6 @@
   "practice.error.PLAN_TOO_LONG": "剩餘時間不足以完成此跑段。",
   "practice.error.SETUP_INVALID": "設定無效。",
   "practice.simulateHint": "不想親自管理練習賽？請選擇「模擬整節」：車隊標準計畫會以相同機制操作你的賽車，車手仍能從中學習。",
-  "practice.posShort": "名次"
+  "practice.posShort": "名次",
+  "career.teamPickerHint": "你將管理此車隊的兩位正賽車手，其餘 {count} 支車隊由 AI 操作。"
 }

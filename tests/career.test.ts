@@ -15,10 +15,10 @@ describe("Career creation and validation", () => {
     const world = repo.worlds.get(career.id)!;
     expect(career.name).toBe(input.name);
     expect(career.status).toBe("ACTIVE");
-    expect(world.teams).toHaveLength(2);
-    expect(world.drivers).toHaveLength(4);
-    expect(world.circuits).toHaveLength(2);
-    expect(world.events).toHaveLength(2);
+    expect(world.teams).toHaveLength(11);
+    expect(world.drivers).toHaveLength(22);
+    expect(world.circuits).toHaveLength(8);
+    expect(world.events).toHaveLength(8);
     expect(career.sourceGameDatabaseVersion).toBe(data.database.version);
   });
   it.each(["", "   ", "x".repeat(81)])(

@@ -1,4 +1,4 @@
-import type { CareerRaceData } from "../../game/domain/race-repository";
+import type { CareerRaceData, RosterBalance } from "../../game/domain/race-repository";
 import { DEFAULT_RACE_PARAMETERS } from "../../simulation/race/engine";
 import type { RaceSimulationInput } from "../../simulation/race/types";
 /** Temporary development performance, based on roster order and team entry order, never names or special IDs. Shared by Race and Practice. */
@@ -7,6 +7,16 @@ export function developmentPerformance(index: number, teamOrder: number) {
     driver: { pace: 92 - (index % 6) * 1.5, consistency: 88 + (index % 4) * 2 },
     car: { performance: 92 - ((teamOrder - 1) % 8) * 2 },
   };
+}
+/**
+ * Entrant performance for a new session. Careers created since Content Expansion Pass A carry snapshotted balance
+ * data (development values from the source season entries); older Careers have none and keep the exact legacy
+ * profile above, so their sessions are unchanged. Never derived from names.
+ */
+export function entrantPerformance(row: { readonly balance?: RosterBalance | null; readonly teamOrder: number }, index: number) {
+  return row.balance
+    ? { driver: { pace: row.balance.pace, consistency: row.balance.consistency }, car: { performance: row.balance.carPerformance } }
+    : developmentPerformance(index, row.teamOrder);
 }
 /** Development base lap time from circuit length (Race and Practice share it). */
 export function developmentBaseLapTimeMs(lengthMeters: number) {
@@ -37,7 +47,7 @@ export function developmentRaceInput(
       driverId: row.driverId,
       teamId: row.teamId,
       gridPosition: index + 1,
-      ...developmentPerformance(index, row.teamOrder),
+      ...entrantPerformance(row, index),
     })),
   };
   return {

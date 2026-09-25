@@ -18,7 +18,7 @@ describe("fictional source content graph (no database required)", () => {
       data.circuits.length,
       data.seasons.length,
       data.events.length,
-    ]).toEqual([2, 4, 2, 1, 2]);
+    ]).toEqual([11, 22, 8, 1, 8]);
   });
   it("keeps teams, drivers, circuits and seasons in their dataset", () => {
     for (const row of [
@@ -158,6 +158,13 @@ describe("fictional source content graph (no database required)", () => {
           {
             ...data.driverEntries[0],
             id: "00000000-0000-4000-8000-000000000997",
+            seasonId: id,
+            teamId: data.teams[1].id,
+          },
+          // A season team always fields two race drivers.
+          {
+            ...data.driverEntries[1],
+            id: "00000000-0000-4000-8000-000000000996",
             seasonId: id,
             teamId: data.teams[1].id,
           },

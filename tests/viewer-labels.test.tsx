@@ -266,6 +266,23 @@ describe('refined race UI rendering', () => {
         const labels = html.match(/data-label=/g)?.length ?? 0;
         expect(labels).toBeGreaterThanOrEqual(2); expect(labels).toBeLessThan(20);
     });
+    it('live-timing tags: selected light pill, player dark outlined pill, team colour on markers and tag edges', () => {
+        const d = viewerData(20), rows = timingRows(d), tiers = labelTiers(rows, rows[0].id, d.state!);
+        const html = renderToStaticMarkup(<I18nProvider><TrackMap layout={layoutForCircuit()} rows={rows} selected={rows[0].id} onSelect={() => {}} speed={1} reduceMotion={true} tiers={tiers}/></I18nProvider>);
+        const label = (id: string) => html.match(new RegExp(`<g data-label="${id}"[\\s\\S]*?</g>`))?.[0] ?? '';
+        const selected = label(rows[0].id), player = label(rows[1].id);
+        // Selection never relies on colour alone: light pill + dark text, and a dashed ring on the marker.
+        expect(selected).toContain('fill="#f5f7f8"'); expect(selected).toContain(`>${rows[0].abbreviation}</text>`);
+        expect(html).toMatch(/stroke-dasharray="4 4"/);
+        // The other player car keeps its own outlined dark tag; both carry their team colour on the tag edge.
+        expect(player).toContain('stroke="#e6edf1"'); expect(player).toContain(`class="tag-edge"`); expect(player).toContain(`fill="${rows[1].color}"`);
+        expect(selected).toContain(`fill="${rows[0].color}"`);
+        // The connector the animation loop moves is explicitly marked.
+        expect(selected).toContain('class="tag-connector"');
+        // Every marker is drawn in its team colour; unpromoted cars stay marker-only.
+        for (const r of rows) expect(html).toMatch(new RegExp(`data-car="${r.id}"[\\s\\S]*?fill="${r.color}"`));
+        expect(html.match(/data-label=/g)!.length).toBeLessThan(rows.length);
+    });
     it('retired player car shows RETIRED and no command controls', () => {
         const d = viewerData(), s = d.state!;
         const retired = { ...d, state: { ...s, lap: 3, entrants: s.entrants.map((e, i) => i === 0 ? { ...e, incident: { status: 'RETIRED' as const, mechanicalPenaltyMs: 0, retiredLap: 3, retirementOrder: 1 } } : e) } };

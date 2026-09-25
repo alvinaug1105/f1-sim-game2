@@ -77,7 +77,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
                 slots.set(id, at.memory);
                 label.setAttribute('visibility', 'visible'); label.dataset.placed = '1';
                 label.setAttribute('transform', `translate(${at.x} ${at.y})`);
-                label.querySelector('path')?.setAttribute('d', `M ${car.x - at.x} ${car.y - at.y} L 0 0`);
+                label.querySelector('path.tag-connector')?.setAttribute('d', `M ${car.x - at.x} ${car.y - at.y} L 0 0`);
             }
             // Read-only development instrumentation used by the real-browser verification harness.
             if (process.env.NODE_ENV !== 'production') {
@@ -119,12 +119,31 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             {r.status === 'RETIRED' && <path d="M -6 -6 L 6 6 M -6 6 L 6 -6" stroke="#111" strokeWidth="3"/>}
         </g>; })}
         <g className="start-finish" transform={`translate(${start.x} ${start.y})`} pointerEvents="none"><path transform={`rotate(${angle})`} d="M 0 -14 L 0 14" stroke="white" strokeWidth="6"/><text x="-35" y="40" fill="#dfe8ee" fontSize="18" fontWeight="600" stroke="#0b1116" strokeWidth="4" paintOrder="stroke">{startText}</text></g>
-        {byTier.filter(r => tierOf(r.id) < LABEL_TIER.FIELD).map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id), size = LABEL_SIZE[tier], chosen = tier === LABEL_TIER.SELECTED; return <g key={r.id} data-label={r.id} data-tier={tier} className={`map-label tier-${tier}`} aria-hidden="true" pointerEvents="none" visibility="hidden" transform={`translate(${p.x} ${p.y})`} opacity={r.status === 'RETIRED' ? .5 : tier >= LABEL_TIER.LEADER ? .88 : 1}>
-            <path d="M 0 0" stroke={chosen ? 'white' : r.color} strokeWidth={chosen ? 1.8 : 1.2} opacity=".7"/>
-            <rect x={-size.w / 2} y={-size.h / 2} width={size.w} height={size.h} rx="5" fill={chosen ? '#f4f8fa' : '#101a22'} stroke={chosen ? r.color : r.player ? 'white' : r.color} strokeWidth={chosen ? 3 : r.player ? 1.6 : 1.4}/>
-            {r.player && <rect x={-size.w / 2 + 3} y={-size.h / 2 + 3} width="4" height={size.h - 6} rx="1" fill={r.color}/>}
-            <text y={chosen ? 7 : tier === LABEL_TIER.PLAYER ? 6 : 5} textAnchor="middle" fill={chosen ? '#0b1116' : 'white'} fontSize={chosen ? 20 : tier === LABEL_TIER.PLAYER ? 17 : 14} fontWeight={tier <= LABEL_TIER.PLAYER ? 800 : 650}>{r.abbreviation}</text>
-            {r.pitting && <text x={size.w / 2 - 6} y={-size.h / 2 - 4} textAnchor="middle" fill="#e8c86b" fontSize="14" fontWeight="700" stroke="#0b1116" strokeWidth="3" paintOrder="stroke">{t('viewer.pit')}</text>}
+        {byTier.filter(r => tierOf(r.id) < LABEL_TIER.FIELD).map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id); return <g key={r.id} data-label={r.id} data-tier={tier} className={`map-label tier-${tier}`} aria-hidden="true" pointerEvents="none" visibility="hidden" transform={`translate(${p.x} ${p.y})`} opacity={r.status === 'RETIRED' ? .5 : tier >= LABEL_TIER.LEADER ? .9 : 1}>
+            <LiveTag row={r} tier={tier} pit={t('viewer.pit')}/>
         </g>; })}
     </svg>;
 }
+/** Left edge strip of a rounded tag, filled with the team colour (the tag's identity accent). */
+function edgePath(w: number, h: number, r: number, width: number) {
+    const x = -w / 2, y = -h / 2;
+    return `M ${x + r} ${y} H ${x + width} V ${y + h} H ${x + r} A ${r} ${r} 0 0 1 ${x} ${y + h - r} V ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;
+}
+/**
+ * Live-timing style tag: compact abbreviation pill with a team-colour edge. Box size comes from LABEL_SIZE so the
+ * placement engine's geometry is unchanged. Selected = light pill with dark text (strongest); other player car = dark
+ * pill with a light outline; promoted AI cars = plain dark pill. Status text never uses the team colour.
+ */
+function LiveTag({ row: r, tier, pit }: { row: Rows[number]; tier: number; pit: string }) {
+    const size = LABEL_SIZE[tier], chosen = tier === LABEL_TIER.SELECTED, player = tier === LABEL_TIER.PLAYER || (r.player && !chosen);
+    const edge = chosen ? 7 : player ? 6 : 5, radius = 4, font = chosen ? 18 : player ? 15 : 13;
+    return <>
+        <path className="tag-connector" d="M 0 0" stroke={chosen ? '#f5f7f8' : r.color} strokeWidth={chosen ? 1.6 : 1.1} opacity={chosen ? .85 : .65}/>
+        {chosen && <rect x={-size.w / 2 + 1} y={-size.h / 2 + 2} width={size.w} height={size.h} rx={radius} fill="#000" opacity=".35"/>}
+        <rect className="tag-body" x={-size.w / 2} y={-size.h / 2} width={size.w} height={size.h} rx={radius} fill={chosen ? '#f5f7f8' : '#0c1318'} fillOpacity={chosen || player ? 1 : .9} stroke={chosen ? '#0b1116' : player ? '#e6edf1' : '#2c3942'} strokeWidth={chosen ? 1.2 : player ? 1.3 : 1}/>
+        <path className="tag-edge" d={edgePath(size.w, size.h, radius, edge)} fill={r.color}/>
+        <text x={edge / 2} y={font * .36} textAnchor="middle" fill={chosen ? '#0b1116' : player ? '#ffffff' : '#dfe6ea'} fontSize={font} fontWeight={chosen || player ? 800 : 700} letterSpacing=".6">{r.abbreviation}</text>
+        {r.pitting && <text x={size.w / 2 - 6} y={-size.h / 2 - 4} textAnchor="middle" fill="#e8c86b" fontSize="13" fontWeight="800" stroke="#0b1116" strokeWidth="3" paintOrder="stroke">{pit}</text>}
+    </>;
+}
+

@@ -1,9 +1,12 @@
 "use client";
+import type { ReactNode } from 'react';
 import { useI18n } from '../../../i18n/provider';
 import type { timingRows } from './model';
 import type { PlaybackController, PlaybackSnapshot } from './playback';
 import { PLAYBACK_SPEEDS, SEEK_LIMIT } from './playback';
 import type { Attention } from './attention';
+import type { TyreCompound } from '../../../simulation/race/tyres/model';
+import type { PaceMode, FuelMode, ErsMode } from '../../../simulation/race/commands/model';
 type Rows = ReturnType<typeof timingRows>;
 const PHASE_GLYPH = { paused: '❚❚', running: '▶', seeking: '▶▶', finished: '■' } as const;
 /** Translated one-line description of an attention item; the driver is identified by abbreviation (data, not logic). */
@@ -15,15 +18,19 @@ export function useAttentionText(rows: Rows) {
  * Playback controls plus the strategic-attention line: why playback stopped (auto-pause / Next Strategic Event / a
  * command / the finish), or — with auto-pause off — the latest strategic change while playback continues.
  */
-export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduceMotion }: { controller: PlaybackController; playback: PlaybackSnapshot; rows: Rows; reduceMotion: boolean; onReduceMotion: (value: boolean) => void }) {
+export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduceMotion, alerts }: { controller: PlaybackController; playback: PlaybackSnapshot; rows: Rows; reduceMotion: boolean; onReduceMotion: (value: boolean) => void; alerts?: ReactNode }) {
     const { t, format } = useI18n(), describe = useAttentionText(rows), done = playback.phase === 'finished';
+    // Command confirmations always name the driver the command targeted (from the command itself, not the selection).
+    const confirm = playback.confirmation, confirmDriver = confirm ? rows.find(r => r.id === confirm.entrantId)?.abbreviation ?? '' : '';
+    const confirmText = confirm ? `${confirmDriver} — ${confirm.kind === 'pit' ? (confirm.value ? t('viewer.confirm.pit', { compound: t(`tyre.${confirm.value as TyreCompound}`) }) : t('viewer.confirm.pitCancel')) : t(`viewer.confirm.${confirm.kind}`, { mode: t(`command.${confirm.value as PaceMode | FuelMode | ErsMode}`) })}` : '';
     const status = playback.busy && playback.phase !== 'finished' ? t('viewer.saving') : t(`viewer.phase.${playback.phase}`, { speed: format.number(playback.speed), limit: format.number(SEEK_LIMIT) });
     let attention: { tone: string; text: string } | null = null;
     if (playback.error) attention = null;
     else if (playback.reason === 'FINISH') attention = { tone: 'finish', text: t('viewer.reason.FINISH') };
-    else if (playback.reason === 'COMMAND') attention = { tone: 'command', text: t('viewer.reason.COMMAND') };
+    else if (playback.reason === 'COMMAND') attention = { tone: 'command', text: confirm ? `${confirmText} · ${t('viewer.resumeHint')}` : t('viewer.reason.COMMAND') };
     else if (playback.reason && playback.attention) attention = { tone: 'stopped', text: `${t('viewer.stoppedFor')} ${describe(playback.attention)}${playback.moreAttention ? ` · ${t('viewer.moreAttention', { count: format.number(playback.moreAttention) })}` : ''}` };
     else if (playback.reason) attention = { tone: 'stopped', text: t(`viewer.reason.${playback.reason}`) };
+    else if (confirm) attention = { tone: 'command', text: confirmText };
     else if (playback.playing && playback.lastAttention) attention = { tone: 'info', text: `${t('viewer.latestAttention', { lap: format.number(playback.lastAttention.lap) })} ${describe(playback.lastAttention)}` };
     return <section className="playback-bar" aria-label={t('viewer.playback')}>
         <div className="playback-buttons">
@@ -37,7 +44,11 @@ export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduce
             <label><input type="checkbox" checked={reduceMotion} onChange={e => onReduceMotion(e.target.checked)}/>{t('viewer.reduceMotion')}</label>
             <span role="status" className={`playback-phase phase-${playback.phase}`}><span aria-hidden="true">{PHASE_GLYPH[playback.phase]} </span>{status}</span>
         </div>
-        {attention && <p className={`attention-line attention-${attention.tone}`} role="status" aria-live="polite"><span aria-hidden="true">{attention.tone === 'info' ? 'ⓘ ' : attention.tone === 'finish' ? '■ ' : '⚑ '}</span>{attention.text}</p>}
-        {playback.error && <p role="alert">{t('viewer.error')}</p>}
+        {/* Fixed-height status line: alerts and attention never push the Race layout up or down. */}
+        <div className="race-status-line">
+            {alerts}
+            <p className={`attention-line attention-${attention?.tone ?? 'none'}`} role="status" aria-live="polite">{attention && <><span aria-hidden="true">{attention.tone === 'info' ? 'ⓘ ' : attention.tone === 'finish' ? '■ ' : attention.tone === 'command' ? '✓ ' : '⚑ '}</span>{attention.text}</>}</p>
+            {playback.error && <p role="alert" className="attention-line attention-error">{t('viewer.error')}</p>}
+        </div>
     </section>;
 }

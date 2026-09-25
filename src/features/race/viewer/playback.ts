@@ -30,8 +30,12 @@ export type PlaybackSnapshot = {
     moreAttention: number;
     /** Most recent strategic item, shown even when auto-pause is off and playback continued. */
     lastAttention: Attention | null;
+    /** Last successfully saved player command, identifying its driver (cleared when playback resumes). */
+    confirmation: CommandInfo | null;
     error: string | null;
 };
+/** What a player command did, so confirmations can always name the driver it targeted. */
+export interface CommandInfo { entrantId: string; kind: 'pit' | 'paceMode' | 'fuelMode' | 'ersMode'; value: string | null }
 export interface PlaybackClock {
     set(callback: () => void, delay: number): ReturnType<typeof setTimeout>;
     clear(timer: ReturnType<typeof setTimeout>): void;
@@ -66,7 +70,7 @@ export class PlaybackController {
         this.state = state;
         this.memory = initialAttention(state, playerTeamId);
         const finished = state.status === 'FINISHED';
-        this.snapshot = { phase: finished ? 'finished' : 'paused', playing: false, motion: 'paused', latencyMs: 0, busy: false, speed: 1, autoPause: true, skipping: false, reason: finished ? 'FINISH' : null, attention: null, moreAttention: 0, lastAttention: null, error: null };
+        this.snapshot = { phase: finished ? 'finished' : 'paused', playing: false, motion: 'paused', latencyMs: 0, busy: false, speed: 1, autoPause: true, skipping: false, reason: finished ? 'FINISH' : null, attention: null, moreAttention: 0, lastAttention: null, confirmation: null, error: null };
     }
     getSnapshot = () => this.snapshot;
     subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
@@ -100,7 +104,7 @@ export class PlaybackController {
     }
     private start(seeking: boolean) {
         const before = this.interval();
-        this.emit({ playing: true, skipping: seeking, phase: seeking ? 'seeking' : 'running', motion: 'playing', reason: null, attention: null, moreAttention: 0, error: null });
+        this.emit({ playing: true, skipping: seeking, phase: seeking ? 'seeking' : 'running', motion: 'playing', reason: null, attention: null, moreAttention: 0, confirmation: null, error: null });
         this.rescale(before, this.interval());
         this.budgetSince ??= this.now();
         this.schedule();
@@ -127,7 +131,7 @@ export class PlaybackController {
     step = async () => {
         this.pause();
         if (this.snapshot.busy || this.finished) return;
-        this.emit({ motion: 'settle', reason: null, attention: null, moreAttention: 0 });
+        this.emit({ motion: 'settle', reason: null, attention: null, moreAttention: 0, confirmation: null });
         await this.tick();
     };
     /** Runs `work` strictly after any in-flight mutation; `busy` stays true until every accepted mutation has finished. */
@@ -186,14 +190,14 @@ export class PlaybackController {
      * Player command (pace, fuel, ERS, pit). Stops playback first, waits for any in-flight advance to commit, then runs
      * alone. Playback stays paused afterwards so the player explicitly resumes.
      */
-    command = async (work: (state: RaceSimulationState) => Promise<RaceSimulationState>) => {
+    command = async (work: (state: RaceSimulationState) => Promise<RaceSimulationState>, info: CommandInfo | null = null) => {
         const interrupted = this.snapshot.playing || this.snapshot.skipping;
         this.pause();
         return this.exclusive(async () => {
             if (this.finished) return false;
             try {
                 this.state = await work(this.state);
-                this.emit(interrupted ? { reason: 'COMMAND', attention: null, moreAttention: 0 } : {});
+                this.emit({ confirmation: info, ...(interrupted ? { reason: 'COMMAND' as const, attention: null, moreAttention: 0 } : {}) });
                 return true;
             }
             catch (error) {

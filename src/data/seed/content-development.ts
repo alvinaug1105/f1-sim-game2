@@ -22,8 +22,9 @@ export const developmentContent = {
       key: "team-aurora",
       name: "Mercedes",
       shortName: "MER",
-      color: "#D7EE69",
-      secondaryColor: "#202820",
+      // Real-life-inspired display identity (turquoise); presentation data only.
+      color: "#00D2BE",
+      secondaryColor: "#0E2B29",
       countryCode: "DE",
       foundedYear: 2010,
     },
@@ -33,8 +34,9 @@ export const developmentContent = {
       key: "team-nova",
       name: "Ferrari",
       shortName: "FER",
-      color: "#65B5EE",
-      secondaryColor: "#182534",
+      // Real-life-inspired display identity (racing red); presentation data only.
+      color: "#E10600",
+      secondaryColor: "#2E0B0A",
       countryCode: "IT",
       foundedYear: 1929,
     },

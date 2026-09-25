@@ -211,8 +211,9 @@ model CareerTeam {
   playerFor      Career[]                @relation("PlayerTeam")
   entries        CareerSeasonTeamEntry[]
 
-  raceEntrants     CareerRaceEntrant[]
-  practiceEntrants CareerPracticeEntrant[]
+  raceEntrants       CareerRaceEntrant[]
+  practiceEntrants   CareerPracticeEntrant[]
+  qualifyingEntrants CareerQualifyingEntrant[]
 
   @@unique([careerId, id])
   @@unique([careerId, key])
@@ -237,6 +238,7 @@ model CareerDriver {
   raceEntrants        CareerRaceEntrant[]
   practiceEntrants    CareerPracticeEntrant[]
   weekendPreparations CareerWeekendPreparation[]
+  qualifyingEntrants  CareerQualifyingEntrant[]
 
   @@unique([careerId, id])
   @@unique([careerId, key])
@@ -385,8 +387,9 @@ model CareerSession {
   completedAtCareerDate DateTime?           @db.Date
   weekend               CareerRaceWeekend   @relation(fields: [careerId, careerRaceWeekendId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
-  raceSimulation     CareerRaceSimulation?
-  practiceSimulation CareerPracticeSimulation?
+  raceSimulation       CareerRaceSimulation?
+  practiceSimulation   CareerPracticeSimulation?
+  qualifyingSimulation CareerQualifyingSimulation?
 
   @@unique([careerId, id, type])
   @@unique([careerRaceWeekendId, type])
@@ -812,4 +815,126 @@ model CareerWeekendPreparation {
 
   @@unique([careerRaceWeekendId, careerDriverId])
   @@index([careerId, careerDriverId])
+}
+
+enum QualifyingPhase {
+  Q1
+  Q2
+  Q3
+}
+
+enum QualifyingPhaseStatus {
+  RUNNING
+  COMPLETE
+}
+
+enum QualifyingStatus {
+  RUNNING
+  FINISHED
+}
+
+enum QualifyingLocation {
+  GARAGE
+  OUT_LAP
+  FLYING
+  IN_LAP
+}
+
+enum QualifyingController {
+  PLAYER
+  AI
+}
+
+/// Phase 14: one Career QUALIFYING session with internal Q1/Q2/Q3 phases. Frozen inputs (format, tyres, weather)
+/// are JSON; seed/RNG and hidden preparation never leave the server.
+model CareerQualifyingSimulation {
+  id                     String                    @id @default(uuid()) @db.Uuid
+  careerId               String                    @db.Uuid
+  careerSessionId        String                    @unique @db.Uuid
+  sessionType            CareerSessionType
+  qualifyingVersion      Int
+  seed                   BigInt
+  rngState               BigInt
+  stepMs                 Int
+  weatherTickMs          Int
+  baseLapTimeMs          Int
+  formatProfile          Json
+  tyreProfile            Json
+  weatherProfile         Json
+  status                 QualifyingStatus
+  phase                  QualifyingPhase
+  phaseStatus            QualifyingPhaseStatus
+  phaseElapsedMs         Int
+  sessionElapsedMs       Int
+  rainfallIntensity      Int
+  airTemperatureMilliC   Int
+  trackTemperatureMilliC Int
+  trackWater             Int
+  drsState               String
+  weatherTick            Int
+  evolution              Int
+  autoPlayer             Boolean                   @default(false)
+  createdAt              DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime                  @updatedAt @db.Timestamptz(3)
+  session                CareerSession             @relation(fields: [careerId, careerSessionId, sessionType], references: [careerId, id, type], onDelete: Restrict, onUpdate: Restrict)
+  entrants               CareerQualifyingEntrant[]
+
+  @@unique([careerId, id])
+  @@unique([careerId, careerSessionId, sessionType])
+}
+
+model CareerQualifyingEntrant {
+  id                           String                     @id @default(uuid()) @db.Uuid
+  careerId                     String                     @db.Uuid
+  careerQualifyingSimulationId String                     @db.Uuid
+  careerDriverId               String                     @db.Uuid
+  careerTeamId                 String                     @db.Uuid
+  driverName                   String
+  teamName                     String
+  entryOrder                   Int
+  controller                   QualifyingController
+  driverPace                   Float
+  driverConsistency            Float
+  carPerformance               Float
+  /// Frozen Practice carry-over incl. the hidden setup target (server-side only).
+  preparationProfile           Json
+  fallbackRank                 Int
+  location                     QualifyingLocation
+  distanceMicrolaps            BigInt
+  lapElapsedMs                 Int
+  lapTimeMs                    Int
+  lapTrafficMs                 Int
+  tyreCompound                 TyreCompound?
+  tyreAgeLaps                  Int?
+  tyreWearPermille             Int?
+  tyreTemperatureMilliC        Int?
+  runCompound                  TyreCompound?
+  runPushLaps                  Int?
+  runPushDone                  Int?
+  runCallIn                    Boolean?
+  runStartedAtMs               Int?
+  readyAtMs                    Int
+  releaseAtMs                  Int
+  windowOffsetMs               Int
+  attempts                     Int
+  eliminatedIn                 QualifyingPhase?
+  q1BestMs                     Int?
+  q1SetAtMs                    Int?
+  q2BestMs                     Int?
+  q2SetAtMs                    Int?
+  q3BestMs                     Int?
+  q3SetAtMs                    Int?
+  lastLapMs                    Int?
+  lastLapTrafficMs             Int
+  lapsCompleted                Int
+  commandRevision              Int
+  finalPosition                Int?
+  simulation                   CareerQualifyingSimulation @relation(fields: [careerId, careerQualifyingSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  driver                       CareerDriver               @relation(fields: [careerId, careerDriverId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  team                         CareerTeam                 @relation(fields: [careerId, careerTeamId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerId, id])
+  @@unique([careerQualifyingSimulationId, careerDriverId])
+  @@unique([careerQualifyingSimulationId, entryOrder])
+  @@unique([careerQualifyingSimulationId, finalPosition])
 }

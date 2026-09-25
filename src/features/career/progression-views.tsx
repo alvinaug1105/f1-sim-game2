@@ -5,7 +5,6 @@ import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
 import { Panel } from "../../components/ui/panel";
 import {
   progressSummary,
-  sessionActions,
   type CareerProgress,
   type ProgressionErrorCode,
   type SessionIntent,
@@ -16,6 +15,7 @@ import {
   PracticeSessionControls,
   SimulateAllPractice,
 } from "../practice/weekend-controls";
+import { QualifyingSessionControls } from "../qualifying/weekend-controls";
 function TransitionControl({
   careerId,
   eventId,
@@ -160,15 +160,12 @@ export function WeekendView({
                           session={session}
                         />
                       ) : (
-                        sessionActions(session).map((intent) => (
-                          <TransitionControl
-                            key={intent}
-                            careerId={progress.career.id}
-                            eventId={event.id}
-                            sessionId={session.id}
-                            intent={intent}
-                          />
-                        ))
+                        // Qualifying is managed or simulated on the real engine; there is no development completion.
+                        <QualifyingSessionControls
+                          careerId={progress.career.id}
+                          eventId={event.id}
+                          session={session}
+                        />
                       )}
                     </div>
                   </li>
@@ -191,7 +188,7 @@ export function WeekendView({
                 )}
               {event.weekend.sessions.some(
                 (s) => s.type === "QUALIFYING" && s.status === "AVAILABLE",
-              ) && <p role="status">{t("practice.qualifyingReady")}</p>}
+              ) && <p className="ops-muted">{t("qualifying.simulateHint")}</p>}
               {event.weekend.status === "COMPLETED" && (
                 <p role="status">{t("progression.done")}</p>
               )}

@@ -29,6 +29,13 @@ export function developmentRaceInput(
   newId: () => string,
 ) {
   const totalLaps = data.circuit.defaultLapCount;
+  // A completed real Qualifying sets the grid when it covers exactly this roster; otherwise the legacy roster order.
+  const grid =
+    data.grid &&
+    data.grid.length === data.roster.length &&
+    data.roster.every((row) => data.grid!.includes(row.driverId))
+      ? data.grid
+      : null;
   const fuelBurnPerLapKg =
     Math.round((data.circuit.lengthMeters / 1000) * 0.3 * 1000) / 1000;
   const initialFuelKg = Math.round(fuelBurnPerLapKg * totalLaps * 1000) / 1000;
@@ -42,20 +49,24 @@ export function developmentRaceInput(
       baseLapTimeMs: developmentBaseLapTimeMs(data.circuit.lengthMeters),
       fuelEffectMsPerKg: 30,
     },
-    entrants: data.roster.map((row, index) => ({
-      entrantId: newId(),
-      driverId: row.driverId,
-      teamId: row.teamId,
-      gridPosition: index + 1,
-      ...entrantPerformance(row, index),
-    })),
+    // Performance keeps each driver's roster index (legacy profile); only the starting order comes from Qualifying.
+    entrants: data.roster
+      .map((row, index) => ({
+        entrantId: newId(),
+        driverId: row.driverId,
+        teamId: row.teamId,
+        gridPosition: grid ? grid.indexOf(row.driverId) + 1 : index + 1,
+        ...entrantPerformance(row, index),
+      }))
+      .sort((a, b) => a.gridPosition - b.gridPosition),
   };
+  const rosterOf = (driverId: string) => data.roster.find((row) => row.driverId === driverId)!;
   return {
     input,
-    labels: input.entrants.map((entrant, index) => ({
+    labels: input.entrants.map((entrant) => ({
       entrantId: entrant.entrantId,
-      driverName: data.roster[index].driverName,
-      teamName: data.roster[index].teamName,
+      driverName: rosterOf(entrant.driverId).driverName,
+      teamName: rosterOf(entrant.driverId).teamName,
     })),
   };
 }

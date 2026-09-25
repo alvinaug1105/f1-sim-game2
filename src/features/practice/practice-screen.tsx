@@ -29,9 +29,10 @@ function PracticeHeader({ view }: { view: PracticeView }) {
         <p className="eyebrow">{t(`progression.${view.sessionType}`)}</p>
         <h1>{view.eventName} <span className="ops-muted">· {view.circuitName}</span></h1></div>
         <nav aria-label={t('progression.sessions')} className="session-tabs"><ol>{view.sessions.map(s => {
-            const practice = s.type.startsWith('PRACTICE'), current = s.id === view.sessionId, reachable = practice && s.status !== 'LOCKED' && s.status !== 'SKIPPED';
+            const current = s.id === view.sessionId, reachable = s.status !== 'LOCKED' && s.status !== 'SKIPPED';
+            const href = s.type.startsWith('PRACTICE') ? `${weekendHref(view)}/practice/${s.id}` : s.type === 'QUALIFYING' ? `${weekendHref(view)}/qualifying` : `${weekendHref(view)}/race`;
             const label = <><span aria-hidden="true">{glyph[s.status]} </span>{t(`progression.${s.type}`)}<span className="sr-only"> · {t(`progression.${s.status}`)}</span></>;
-            return <li key={s.id} className={`session-tab status-${s.status} ${current ? 'current' : ''}`}>{reachable && !current ? <Link href={`${weekendHref(view)}/practice/${s.id}`}>{label}</Link> : <span aria-current={current ? 'page' : undefined}>{label}</span>}</li>;
+            return <li key={s.id} className={`session-tab status-${s.status} ${current ? 'current' : ''}`}>{reachable && !current ? <Link href={href}>{label}</Link> : <span aria-current={current ? 'page' : undefined}>{label}</span>}</li>;
         })}</ol></nav>
     </header>;
 }

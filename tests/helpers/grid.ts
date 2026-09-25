@@ -35,13 +35,14 @@ export async function careerGrid(playerTeamKey: string, data: ContentDataset = d
     return { career, world, roster, progress, playerTeamId: career.playerTeamId };
 }
 /** In-memory Race repository at an IN_PROGRESS Race session of the Career's first event (as the weekend would be). */
-export function raceRepository(grid: Awaited<ReturnType<typeof careerGrid>>) {
+/** `startingGrid`: driver IDs from a completed real Qualifying (P1 first), as the Race repository supplies it. */
+export function raceRepository(grid: Awaited<ReturnType<typeof careerGrid>>, startingGrid: readonly string[] | null = null) {
     const event = grid.progress.events[0], circuit = grid.world.circuits.find(c => c.id === event.careerCircuitId)!;
     const weekend = { id: "weekend", careerId: grid.career.id, careerSeasonId: event.careerSeasonId, careerCalendarEventId: event.id, status: "ACTIVE" as const,
         sessions: [{ id: "race-session", careerId: grid.career.id, careerRaceWeekendId: "weekend", type: "RACE" as const, order: 5, status: "IN_PROGRESS" as const, startedAtCareerDate: null, completedAtCareerDate: null }] };
     let data: CareerRaceData = {
         progress: { ...grid.progress, events: grid.progress.events.map((e, i) => i === 0 ? { ...e, status: "CURRENT" as const, weekend } : e) },
-        eventId: event.id, sessionId: "race-session", state: null, labels: [],
+        eventId: event.id, sessionId: "race-session", state: null, labels: [], grid: startingGrid,
         roster: grid.roster.map(r => ({ ...r, carNumber: r.carNumber! })),
         circuit: { sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters, defaultLapCount: circuit.defaultLapCount },
     };

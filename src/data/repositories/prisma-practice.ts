@@ -18,7 +18,8 @@ async function protect<T>(work: () => Promise<T>) {
     try { return await work(); } catch (cause) { if (cause instanceof PracticeError) throw cause; throw new PracticeError("PERSISTENCE_FAILED", { cause }); }
 }
 const setupFrom = (row: PrepRow, prefix: "ideal" | "setup"): Setup => Object.fromEntries(SETUP_DIMENSIONS.map(d => [d, row[`${prefix}${COLUMN[d]}` as keyof PrepRow] as number])) as Setup;
-function readPreparation(row: PrepRow): WeekendPreparationRecord {
+/** Weekend preparation row → record (shared with Qualifying, which consumes the same carry-over). */
+export function readPreparation(row: PrepRow): WeekendPreparationRecord {
     const feedback = SETUP_DIMENSIONS.map(d => row[`feedback${COLUMN[d]}` as keyof PrepRow] as number | null);
     const preparation: Preparation = {
         setup: setupFrom(row, "setup"), setupRevision: row.setupRevision, confidence: row.confidence, acclimatisation: row.acclimatisation,

@@ -47,6 +47,8 @@ describe('practice UI', () => {
         expect(text).toContain('Open session');
         expect(text).toContain('Simulate session (auto-manage)');
         expect(text).toContain('Simulate all remaining Practice');
+        expect(text).toContain('Practice sessions are fully simulated');
+        expect(text).not.toContain('Practice and Qualifying use temporary development completion');
         // After P1 is simulated, P2 offers the same two choices; still no Skip anywhere in the weekend.
         await simulatePracticeSession(w.repo, w.careerId, w.eventId, w.sessions[0].id);
         text = page();

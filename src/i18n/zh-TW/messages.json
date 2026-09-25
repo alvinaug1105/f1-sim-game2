@@ -124,7 +124,7 @@
   "progression.advance": "前往活動",
   "progression.open": "開啟比賽週末",
   "progression.back": "返回生涯",
-  "progression.notice": "練習與排位賽仍使用暫時的開發完成操作。新正賽支援輪胎、賽道互動及進站策略；舊存檔保留原有規則。目前不會計算錦標賽積分。",
+  "progression.notice": "練習賽為完整模擬：可親自管理，或交由車隊標準計畫模擬。排位賽仍使用暫時的開發完成操作。新正賽支援輪胎、賽道互動及進站策略；舊存檔保留原有規則。目前不會計算錦標賽積分。",
   "progression.active": "進行中的比賽週末",
   "progression.done": "比賽週末已完成",
   "progression.notEntered": "尚未進入此比賽週末。請從生涯總覽前往活動。",
@@ -606,5 +606,6 @@
   "practice.error.PLAN_INVALID": "跑段計畫無效。",
   "practice.error.PLAN_TOO_LONG": "剩餘時間不足以完成此跑段。",
   "practice.error.SETUP_INVALID": "設定無效。",
-  "practice.simulateHint": "不想親自管理練習賽？請選擇「模擬整節」：車隊標準計畫會以相同機制操作你的賽車，車手仍能從中學習。"
+  "practice.simulateHint": "不想親自管理練習賽？請選擇「模擬整節」：車隊標準計畫會以相同機制操作你的賽車，車手仍能從中學習。",
+  "practice.posShort": "名次"
 }

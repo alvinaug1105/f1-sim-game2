@@ -124,7 +124,7 @@
   "progression.advance": "Advance to Event",
   "progression.open": "Open Race Weekend",
   "progression.back": "Return to Career",
-  "progression.notice": "Practice and Qualifying use temporary development completion. New races support tyres, track interaction and pit strategy; older saves keep their original rules. No championship points are awarded.",
+  "progression.notice": "Practice sessions are fully simulated: manage them yourself or simulate them with the team's standard programme. Qualifying still uses temporary development completion. New races support tyres, track interaction and pit strategy; older saves keep their original rules. No championship points are awarded.",
   "progression.active": "Active weekend",
   "progression.done": "Weekend completed",
   "progression.notEntered": "This weekend has not been entered. Advance from the Career dashboard.",
@@ -606,5 +606,6 @@
   "practice.error.PLAN_INVALID": "The run plan is not valid.",
   "practice.error.PLAN_TOO_LONG": "The run does not fit in the remaining time.",
   "practice.error.SETUP_INVALID": "The setup is not valid.",
-  "practice.simulateHint": "Not managing a session yourself? Choose Simulate session: the team's standard programme runs your cars with the same mechanics, and your drivers still learn from it."
+  "practice.simulateHint": "Not managing a session yourself? Choose Simulate session: the team's standard programme runs your cars with the same mechanics, and your drivers still learn from it.",
+  "practice.posShort": "Pos"
 }

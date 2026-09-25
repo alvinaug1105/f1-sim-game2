@@ -39,7 +39,7 @@ export function PracticeTiming({ view, selected, onSelect }: { view: PracticeVie
     return <section className="ops-panel timing-panel" aria-label={title}>
         <div className="ops-panel-title"><h2>{title}</h2><span className="ops-muted">{t('practice.byBest')}</span></div>
         <div className="timing-scroll"><table className="timing-tower practice-timing"><caption className="sr-only">{title}</caption>
-            <thead><tr><th>{t('race.position')}</th><th>{t('race.driver')}</th><th>{t('race.best')}</th><th>{t('practice.laps')}</th><th>{t('practice.where')}</th></tr></thead>
+            <thead><tr><th><span aria-hidden="true">{t('practice.posShort')}</span><span className="sr-only">{t('race.position')}</span></th><th>{t('race.driver')}</th><th>{t('race.best')}</th><th>{t('practice.laps')}</th><th>{t('practice.where')}</th></tr></thead>
             <tbody>{view.entrants.map(e => {
                 const chosen = e.entrantId === selected;
                 return <tr key={e.entrantId} onClick={() => onSelect(e.entrantId)} data-entrant={e.entrantId} className={['tower-row', chosen && 'selected-row', e.player && 'player-row', e.location === 'GARAGE' && 'garage-row'].filter(Boolean).join(' ')} style={e.player ? { ['--team' as string]: e.color } : undefined}>

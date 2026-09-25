@@ -1,6 +1,6 @@
 import { checkpointDuration, type MotionMode } from './motion';
 import type { RaceSimulationState } from "../../../simulation/race/types";
-import { assessCheckpoint, initialAttention, type Attention, type AttentionMemory, type StrategicReason } from "./attention";
+import { assessCheckpoint, initialAttention, type Attention, type AttentionMemory } from "./attention";
 export const PLAYBACK_SPEEDS = [1, 2, 4, 8] as const;
 export type PlaybackSpeed = typeof PLAYBACK_SPEEDS[number];
 /** Maximum committed checkpoints one Next Strategic Event run may advance before stopping on its own. */
@@ -13,7 +13,27 @@ export const SEEK_LIMIT = 20;
  * - finished: terminal; nothing is ever scheduled again.
  */
 export type PlaybackPhase = 'paused' | 'running' | 'seeking' | 'finished';
-export type PlaybackSnapshot = {
+/**
+ * Session-specific hooks, so the same scheduler drives Race and Practice: what "finished" means, the checkpoint
+ * cadence, and how a newly committed checkpoint is assessed for attention.
+ */
+export interface PlaybackAdapter<S, M, A extends { reason: string }> {
+    finished(state: S): boolean;
+    interval(speed: PlaybackSpeed, state: S, seeking: boolean): number;
+    initialMemory(state: S): M;
+    assess(memory: M, state: S): { items: readonly A[]; memory: M };
+    seekLimit?: number;
+}
+/** The Race adapter (Phase 12C behaviour, unchanged). */
+export function raceAdapter(playerTeamId: string): PlaybackAdapter<RaceSimulationState, AttentionMemory, Attention> {
+    return {
+        finished: s => s.status === 'FINISHED',
+        interval: (speed, s, seeking) => checkpointDuration(speed, s.incidents?.mode, seeking),
+        initialMemory: s => initialAttention(s, playerTeamId),
+        assess: (memory, s) => assessCheckpoint(memory, s, playerTeamId),
+    };
+}
+export type PlaybackSnapshot<A extends { reason: string } = Attention, C = CommandInfo> = {
     phase: PlaybackPhase;
     playing: boolean;
     motion: MotionMode;
@@ -23,15 +43,15 @@ export type PlaybackSnapshot = {
     autoPause: boolean;
     skipping: boolean;
     /** Why playback stopped (null while running or after a manual pause). */
-    reason: StrategicReason | null;
+    reason: A['reason'] | 'FINISH' | 'LIMIT' | 'COMMAND' | null;
     /** The attention item that stopped playback, when a strategic change did. */
-    attention: Attention | null;
+    attention: A | null;
     /** Further strategic items detected at the same checkpoint. */
     moreAttention: number;
     /** Most recent strategic item, shown even when auto-pause is off and playback continued. */
-    lastAttention: Attention | null;
+    lastAttention: A | null;
     /** Last successfully saved player command, identifying its driver (cleared when playback resumes). */
-    confirmation: CommandInfo | null;
+    confirmation: C | null;
     error: string | null;
 };
 /** What a player command did, so confirmations can always name the driver it targeted. */
@@ -52,12 +72,13 @@ const defaultClock: PlaybackClock = { set: (callback, delay) => setTimeout(callb
  * budget is only consumed while cars are visibly moving, so Pause→Resume continues exactly where the interval stopped
  * and a checkpoint whose motion has already settled advances immediately instead of waiting a full interval.
  */
-export class PlaybackController {
-    private state: RaceSimulationState;
+export class PlaybackController<S = RaceSimulationState, M = AttentionMemory, A extends { reason: string } = Attention, C = CommandInfo> {
+    private state: S;
+    private adapter: PlaybackAdapter<S, M, A>;
     private timer: ReturnType<typeof setTimeout> | null = null;
     private listeners = new Set<() => void>();
     private seekRemaining = 0;
-    private memory: AttentionMemory;
+    private memory: M;
     /** Remaining interval of the current checkpoint (ms at the current cadence) and when consumption last started. */
     private budgetMs = 0;
     private budgetSince: number | null = null;
@@ -65,23 +86,25 @@ export class PlaybackController {
     private mutation: Promise<unknown> = Promise.resolve();
     /** Mutations accepted but not yet finished; `busy` is true while any are pending. */
     private pending = 0;
-    private snapshot: PlaybackSnapshot;
-    constructor(state: RaceSimulationState, private playerTeamId: string, private advance: (state: RaceSimulationState) => Promise<RaceSimulationState>, private clock: PlaybackClock = defaultClock) {
+    private snapshot: PlaybackSnapshot<A, C>;
+    /** `adapter` may be the player's team id, which selects the Race adapter (existing call sites are unchanged). */
+    constructor(state: S, adapter: string | PlaybackAdapter<S, M, A>, private advance: (state: S) => Promise<S>, private clock: PlaybackClock = defaultClock) {
         this.state = state;
-        this.memory = initialAttention(state, playerTeamId);
-        const finished = state.status === 'FINISHED';
+        this.adapter = typeof adapter === 'string' ? raceAdapter(adapter) as unknown as PlaybackAdapter<S, M, A> : adapter;
+        this.memory = this.adapter.initialMemory(state);
+        const finished = this.adapter.finished(state);
         this.snapshot = { phase: finished ? 'finished' : 'paused', playing: false, motion: 'paused', latencyMs: 0, busy: false, speed: 1, autoPause: true, skipping: false, reason: finished ? 'FINISH' : null, attention: null, moreAttention: 0, lastAttention: null, confirmation: null, error: null };
     }
     getSnapshot = () => this.snapshot;
     subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
     getState = () => this.state;
-    private emit(patch: Partial<PlaybackSnapshot>) {
+    private emit(patch: Partial<PlaybackSnapshot<A, C>>) {
         this.snapshot = { ...this.snapshot, ...patch };
         for (const listener of this.listeners) listener();
     }
     private now() { return this.clock.now?.() ?? Date.now(); }
-    private get finished() { return this.state.status === 'FINISHED'; }
-    private interval() { return checkpointDuration(this.snapshot.speed, this.state.incidents?.mode, this.snapshot.skipping); }
+    private get finished() { return this.adapter.finished(this.state); }
+    private interval() { return this.adapter.interval(this.snapshot.speed, this.state, this.snapshot.skipping); }
     private clearTimer() { if (this.timer !== null) this.clock.clear(this.timer); this.timer = null; }
     /** Charges elapsed visible-motion time to the budget and stops the budget clock. */
     private consume() {
@@ -127,7 +150,7 @@ export class PlaybackController {
     };
     setAutoPause = (autoPause: boolean) => this.emit({ autoPause });
     /** Next Strategic Event: advances real committed checkpoints one at a time until a public strategic change. */
-    skip = () => { if (this.finished) return; this.seekRemaining = SEEK_LIMIT; this.start(true); };
+    skip = () => { if (this.finished) return; this.seekRemaining = this.adapter.seekLimit ?? SEEK_LIMIT; this.start(true); };
     step = async () => {
         this.pause();
         if (this.snapshot.busy || this.finished) return;
@@ -154,7 +177,7 @@ export class PlaybackController {
                 this.state = after;
                 // Match the observed checkpoint cadence, including persistence time, to avoid a stop at every lap.
                 this.emit({ latencyMs: Math.min(1500, Math.max(0, this.now() - requestedAt)) });
-                const { items, memory } = assessCheckpoint(this.memory, after, this.playerTeamId);
+                const { items, memory } = this.adapter.assess(this.memory, after);
                 this.memory = memory;
                 const top = items[0] ?? null;
                 if (top) this.emit({ lastAttention: top });
@@ -162,7 +185,7 @@ export class PlaybackController {
                 // A fresh checkpoint starts a fresh budget; it only runs while its motion is visible.
                 this.budgetMs = this.interval();
                 this.budgetSince = this.snapshot.motion === 'paused' ? null : this.now();
-                if (after.status === 'FINISHED') {
+                if (this.adapter.finished(after)) {
                     const settle = this.snapshot.motion !== 'paused';
                     this.pause();
                     this.emit({ phase: 'finished', reason: 'FINISH', attention: top, moreAttention: Math.max(0, items.length - 1), motion: settle ? 'settle' : 'paused' });
@@ -190,7 +213,7 @@ export class PlaybackController {
      * Player command (pace, fuel, ERS, pit). Stops playback first, waits for any in-flight advance to commit, then runs
      * alone. Playback stays paused afterwards so the player explicitly resumes.
      */
-    command = async (work: (state: RaceSimulationState) => Promise<RaceSimulationState>, info: CommandInfo | null = null) => {
+    command = async (work: (state: S) => Promise<S>, info: C | null = null) => {
         const interrupted = this.snapshot.playing || this.snapshot.skipping;
         this.pause();
         return this.exclusive(async () => {

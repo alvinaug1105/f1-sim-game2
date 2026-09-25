@@ -206,7 +206,8 @@ model CareerTeam {
   playerFor      Career[]                @relation("PlayerTeam")
   entries        CareerSeasonTeamEntry[]
 
-  raceEntrants CareerRaceEntrant[]
+  raceEntrants     CareerRaceEntrant[]
+  practiceEntrants CareerPracticeEntrant[]
 
   @@unique([careerId, id])
   @@unique([careerId, key])
@@ -228,7 +229,9 @@ model CareerDriver {
   career          Career                    @relation(fields: [careerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   entries         CareerSeasonDriverEntry[]
 
-  raceEntrants CareerRaceEntrant[]
+  raceEntrants        CareerRaceEntrant[]
+  practiceEntrants    CareerPracticeEntrant[]
+  weekendPreparations CareerWeekendPreparation[]
 
   @@unique([careerId, id])
   @@unique([careerId, key])
@@ -345,16 +348,17 @@ enum CareerSessionStatus {
 }
 
 model CareerRaceWeekend {
-  id                    String              @id @default(uuid()) @db.Uuid
-  careerId              String              @db.Uuid
-  careerSeasonId        String              @db.Uuid
-  careerCalendarEventId String              @unique @db.Uuid
-  status                CareerWeekendStatus @default(ACTIVE)
-  createdAt             DateTime            @default(now()) @db.Timestamptz(3)
-  updatedAt             DateTime            @updatedAt @db.Timestamptz(3)
-  completedAt           DateTime?           @db.Timestamptz(3)
-  event                 CareerCalendarEvent @relation(fields: [careerId, careerSeasonId, careerCalendarEventId], references: [careerId, careerSeasonId, id], onDelete: Restrict, onUpdate: Restrict)
+  id                    String                     @id @default(uuid()) @db.Uuid
+  careerId              String                     @db.Uuid
+  careerSeasonId        String                     @db.Uuid
+  careerCalendarEventId String                     @unique @db.Uuid
+  status                CareerWeekendStatus        @default(ACTIVE)
+  createdAt             DateTime                   @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime                   @updatedAt @db.Timestamptz(3)
+  completedAt           DateTime?                  @db.Timestamptz(3)
+  event                 CareerCalendarEvent        @relation(fields: [careerId, careerSeasonId, careerCalendarEventId], references: [careerId, careerSeasonId, id], onDelete: Restrict, onUpdate: Restrict)
   sessions              CareerSession[]
+  preparations          CareerWeekendPreparation[]
 
   @@unique([careerId, id])
   @@unique([careerId, careerSeasonId, careerCalendarEventId])
@@ -371,7 +375,8 @@ model CareerSession {
   completedAtCareerDate DateTime?           @db.Date
   weekend               CareerRaceWeekend   @relation(fields: [careerId, careerRaceWeekendId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
-  raceSimulation CareerRaceSimulation?
+  raceSimulation     CareerRaceSimulation?
+  practiceSimulation CareerPracticeSimulation?
 
   @@unique([careerId, id, type])
   @@unique([careerRaceWeekendId, type])
@@ -635,4 +640,166 @@ model CareerRaceIncidents {
   simulation             CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([careerId, careerRaceSimulationId])
+}
+
+// Phase 13 — Practice sessions. Static frozen inputs (tyre and weather configuration) are JSON like the Race profiles;
+// all evolving session, car and weekend-learning state is relational.
+enum PracticeStatus {
+  RUNNING
+  FINISHED
+}
+
+enum PracticeLocation {
+  GARAGE
+  OUT_LAP
+  FLYING
+  IN_LAP
+}
+
+enum PracticeController {
+  PLAYER
+  AI
+}
+
+enum PracticePace {
+  CONSERVATIVE
+  BALANCED
+  PERFORMANCE
+}
+
+model CareerPracticeSimulation {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  careerId               String                  @db.Uuid
+  careerSessionId        String                  @unique @db.Uuid
+  sessionType            CareerSessionType
+  practiceVersion        Int
+  seed                   BigInt
+  rngState               BigInt
+  durationMs             Int
+  stepMs                 Int
+  weatherTickMs          Int
+  elapsedMs              Int
+  status                 PracticeStatus
+  baseLapTimeMs          Int
+  tyreProfile            Json
+  weatherProfile         Json
+  rainfallIntensity      Int
+  airTemperatureMilliC   Int
+  trackTemperatureMilliC Int
+  trackWater             Int
+  drsState               String
+  weatherTick            Int
+  evolution              Int
+  autoPlayer             Boolean                 @default(false)
+  createdAt              DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime                @updatedAt @db.Timestamptz(3)
+  session                CareerSession           @relation(fields: [careerId, careerSessionId, sessionType], references: [careerId, id, type], onDelete: Restrict, onUpdate: Restrict)
+  entrants               CareerPracticeEntrant[]
+
+  @@unique([careerId, id])
+  @@unique([careerId, careerSessionId, sessionType])
+}
+
+model CareerPracticeEntrant {
+  id                         String                   @id @db.Uuid
+  careerId                   String                   @db.Uuid
+  careerPracticeSimulationId String                   @db.Uuid
+  careerDriverId             String                   @db.Uuid
+  careerTeamId               String                   @db.Uuid
+  driverName                 String
+  teamName                   String
+  entryOrder                 Int
+  controller                 PracticeController
+  driverPace                 Float
+  driverConsistency          Float
+  carPerformance             Float
+  location                   PracticeLocation
+  distanceMicrolaps          BigInt
+  lapElapsedMs               Int
+  lapTimeMs                  Int
+  tyreCompound               TyreCompound?
+  tyreAgeLaps                Int?
+  tyreWearPermille           Int?
+  tyreTemperatureMilliC      Int?
+  runNumber                  Int?
+  runCompound                TyreCompound?
+  runTargetLaps              Int?
+  runPace                    PracticePace?
+  runTimedLaps               Int?
+  runBestLapMs               Int?
+  runCallIn                  Boolean?
+  runStartedAtMs             Int?
+  readyAtMs                  Int
+  lapsCompleted              Int
+  timedLaps                  Int
+  lastLapMs                  Int?
+  bestLapMs                  Int?
+  bestLapCompound            TyreCompound?
+  commandRevision            Int
+  simulation                 CareerPracticeSimulation @relation(fields: [careerId, careerPracticeSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  driver                     CareerDriver             @relation(fields: [careerId, careerDriverId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  team                       CareerTeam               @relation(fields: [careerId, careerTeamId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  runs                       CareerPracticeRun[]
+
+  @@unique([careerId, id])
+  @@unique([careerPracticeSimulationId, careerDriverId])
+  @@unique([careerPracticeSimulationId, entryOrder])
+}
+
+model CareerPracticeRun {
+  id                      String                @id @default(uuid()) @db.Uuid
+  careerId                String                @db.Uuid
+  careerPracticeEntrantId String                @db.Uuid
+  number                  Int
+  compound                TyreCompound
+  targetLaps              Int
+  pace                    PracticePace
+  timedLaps               Int
+  bestLapMs               Int?
+  startedAtMs             Int
+  endedAtMs               Int
+  entrant                 CareerPracticeEntrant @relation(fields: [careerId, careerPracticeEntrantId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerPracticeEntrantId, number])
+}
+
+/// Weekend learning for one driver, carried P1 → P2 → P3 (and available to later sessions).
+/// ideal* columns are the hidden setup target: server-only, never sent to the browser.
+model CareerWeekendPreparation {
+  id                    String            @id @default(uuid()) @db.Uuid
+  careerId              String            @db.Uuid
+  careerRaceWeekendId   String            @db.Uuid
+  careerDriverId        String            @db.Uuid
+  idealAero             Int
+  idealMechanical       Int
+  idealRide             Int
+  idealBrake            Int
+  idealTyre             Int
+  setupAero             Int
+  setupMechanical       Int
+  setupRide             Int
+  setupBrake            Int
+  setupTyre             Int
+  setupRevision         Int
+  confidence            Int
+  acclimatisation       Int
+  knowledgeSoft         Int
+  knowledgeMedium       Int
+  knowledgeHard         Int
+  knowledgeIntermediate Int
+  knowledgeWet          Int
+  feedbackAero          Int?
+  feedbackMechanical    Int?
+  feedbackRide          Int?
+  feedbackBrake         Int?
+  feedbackTyre          Int?
+  feedbackReliability   Int
+  feedbackRevision      Int
+  representativeLaps    Int
+  updatedAt             DateTime          @updatedAt @db.Timestamptz(3)
+  weekend               CareerRaceWeekend @relation(fields: [careerId, careerRaceWeekendId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+  driver                CareerDriver      @relation(fields: [careerId, careerDriverId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([careerRaceWeekendId, careerDriverId])
+  @@index([careerId, careerDriverId])
 }

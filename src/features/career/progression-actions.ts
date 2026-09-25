@@ -23,7 +23,6 @@ export async function progressionAction(
     else {
       const intents: readonly string[] = [
         "start",
-        "simulatePractice",
         "skipPractice",
         "completeDevelopment",
       ];

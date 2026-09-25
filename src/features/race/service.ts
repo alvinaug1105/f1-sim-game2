@@ -28,11 +28,12 @@ import {
   isSupportedSimulationVersion,
 } from "../../simulation/race/engine";
 import { developmentRaceInput, developmentCommandFuelKg } from "./development-profiles";
+import { careerRaceWeather, aiStartingCompound } from "./weather-scenarios";
 export function startCareerRace(
   repository: CareerRaceRepository,
   careerId: string,
   eventId: string,
-  seed: number = crypto.getRandomValues(new Uint32Array(1))[0],
+  requestedSeed?: number,
   tyreChoices?: Readonly<Record<string, TyreCompound>>,
   withTraffic = false,
   withPits = false,
@@ -40,6 +41,9 @@ export function startCareerRace(
   withWeather = false,
   withIncidents = false,
 ) {
+  // An explicit seed (tests, development tooling) keeps the legacy development weather so historical fixtures stay
+  // reproducible. Career play (no explicit seed) freezes a weather scenario seeded by stable Career/event/circuit identity.
+  const seed = requestedSeed ?? crypto.getRandomValues(new Uint32Array(1))[0];
   return repository.changeRace(careerId, eventId, (data) => {
     if (data.state) throw new RaceError("STALE");
     const event = data.progress.events.find((e) => e.id === eventId)!;
@@ -69,14 +73,27 @@ export function startCareerRace(
           Object.values(tyreChoices).some((c) => !isTyreCompound(c))
         )
           throw new RaceError("INVALID_INPUT");
+        // Career Races (v7): the player chooses only for their own drivers; rival starting tyres are never player input.
+        if (withIncidents && Object.keys(tyreChoices).some((id) => data.roster.find((e) => e.driverId === id)!.teamId !== data.progress.career.playerTeamId))
+          throw new RaceError("INVALID_ACTION");
       }
+      const weather = withWeather
+        ? requestedSeed === undefined
+          ? careerRaceWeather(data.progress.career.id, eventId, data.circuit.sourceCircuitId ?? "custom", snapshot.input.totalLaps)
+          : developmentWeather(seed, snapshot.input.totalLaps)
+        : undefined;
+      // AI teams pick starting tyres from current public grid conditions, never from player input or future weather.
+      const startingCompound = (driverId: string, teamId: string) =>
+        withIncidents && weather && teamId !== data.progress.career.playerTeamId
+          ? aiStartingCompound(weather.initial)
+          : tyreChoices?.[driverId] ?? "MEDIUM";
       const input = tyreChoices
         ? {
             ...snapshot.input,
             tyres: withWeather ? weatherTyreConfiguration() : defaultTyreConfiguration(),
             entrants: snapshot.input.entrants.map((e) => ({
               ...e,
-              startingTyre: startingTyre(tyreChoices[e.driverId] ?? "MEDIUM"),
+              startingTyre: startingTyre(startingCompound(e.driverId, e.teamId)),
             })),
           }
         : snapshot.input;
@@ -86,7 +103,7 @@ export function startCareerRace(
             ? {
                 ...input,
                 ...(withIncidents ? { incidents: defaultIncidentConfiguration() } : {}),
-                ...(withWeather ? { weather: developmentWeather(seed,input.totalLaps) } : {}),
+                ...(weather ? { weather } : {}),
                 ...(withCommands ? { commands: defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
                 ...(withPits ? { pits: defaultPitConfiguration() } : {}),
                 interaction: defaultInteractionConfiguration(),
@@ -110,6 +127,7 @@ export function startCareerRace(
         progress,
       };
     } catch (cause) {
+      if (cause instanceof RaceError) throw cause; // e.g. rival starting tyres are an ownership error, not bad input
       throw new RaceError("INVALID_INPUT", { cause });
     }
   });

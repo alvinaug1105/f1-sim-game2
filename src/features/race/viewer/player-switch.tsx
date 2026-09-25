@@ -1,13 +1,18 @@
 "use client";
 import { useId, useState } from 'react';
 import { useI18n } from '../../../i18n/provider';
-import { formatRaceGap } from '../../../i18n/race-time';
+import { formatRaceGap, formatRaceTime } from '../../../i18n/race-time';
 import type { RaceSimulationState } from '../../../simulation/race/types';
 import type { timingRows } from './model';
-import { driverSnapshot } from './race-view';
+import { driverSnapshot, driverFlags } from './race-view';
+import { FlagChips } from './flags';
 type Rows = ReturnType<typeof timingRows>;
 /** Persistent two-car switch plus a lightweight side-by-side comparison. Viewer state only; never persisted. */
-/** `attentionId`: player car named by the current strategic stop — highlighted (text + glyph), never auto-selected. */
+/**
+ * `attentionId`: player car named by the current strategic stop — flagged (text + glyph), never auto-selected.
+ * Each tab carries compact decision flags (BOX, PIT, tyre, fuel, battle, attention) so both cars can be monitored
+ * without switching.
+ */
 export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId = null }: { state: RaceSimulationState; rows: Rows; selected: string; onSelect: (id: string) => void; attentionId?: string | null }) {
     const { t, format, locale } = useI18n(), [open, setOpen] = useState(false), panel = useId();
     // Entry order, not race order, so the two buttons never swap places when positions change.
@@ -25,16 +30,17 @@ export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId =
         { key: 'ers', label: t('command.ersMode'), value: v => v.ersRatio === null ? none : format.percentage(v.ersRatio, { maximumFractionDigits: 0 }), hide: !s.input.commands },
         { key: 'pace', label: t('command.paceMode'), value: v => v.paceMode ? t(`command.${v.paceMode}`) : none, hide: !s.input.commands },
         { key: 'stops', label: t('pit.stops'), value: v => v.stops === null ? none : format.number(v.stops), hide: !s.input.pits },
+        { key: 'last', label: t('viewer.lastLap'), value: v => v.lastLapMs === null ? none : formatRaceTime(v.lastLapMs, locale) },
+        { key: 'best', label: t('viewer.bestLap'), value: v => v.bestLapMs === null ? none : formatRaceTime(v.bestLapMs, locale) },
     ];
     return <div className="player-switch-wrap">
         <div className="player-switch" role="group" aria-label={t('viewer.playerCars')}>
-            {snaps.map(({ r, v }) => <button key={r.id} onClick={() => onSelect(r.id)} aria-pressed={r.id === selected} style={{ borderColor: r.color }} title={r.name} className={r.id === attentionId ? 'attention' : undefined}>
-                {r.id === attentionId && <span className="attention-mark"><span aria-hidden="true">⚑</span><span className="sr-only">{t('viewer.needsAttention')}</span></span>}
+            {snaps.map(({ r, v }) => { const flags = driverFlags(r, rows, s, attentionId); return <button key={r.id} onClick={() => onSelect(r.id)} aria-pressed={r.id === selected} style={{ borderColor: r.color }} title={r.name} className={r.id === attentionId ? 'attention' : undefined}>
                 <span className="switch-abbr">{r.abbreviation}{r.id === selected && <span aria-hidden="true"> ◂</span>}</span>
                 <strong className="switch-pos">P{format.number(v.position)}</strong>
                 {v.compound && <span className={`tyre-token tyre-${v.compound}`} title={t(`tyre.${v.compound}`)}>{t(`viewer.tyre.${v.compound}`)}</span>}
-                {r.status !== 'RUNNING' ? <small className={`switch-status status-${r.status}`}>{t(`incident.${r.status}`)}</small> : r.pitting ? <small className="switch-status status-PIT">{t('viewer.pit')}</small> : null}
-            </button>)}
+                <FlagChips flags={flags} compact/>
+            </button>; })}
             {snaps.length > 1 && <button className="compare-toggle ops-secondary" aria-expanded={open} aria-controls={panel} onClick={() => setOpen(!open)}>{t('viewer.compare')}</button>}
         </div>
         {open && snaps.length > 1 && <div className="compare-panel" id={panel}><table><caption className="sr-only">{t('viewer.comparison')}</caption>

@@ -23,3 +23,11 @@ export type ViewerIntent = {
     revision: number;
     compound: TyreCompound | null;
 };
+/** Confirmation identity for a player command: always the entrant the intent itself targets (never the current selection). */
+export function commandInfo(intent: ViewerIntent) {
+    switch (intent.kind) {
+        case "pit": return { entrantId: intent.entrantId, kind: "pit" as const, value: intent.compound };
+        case "paceMode": case "fuelMode": case "ersMode": return { entrantId: intent.entrantId, kind: intent.kind, value: intent.mode };
+        default: return null;
+    }
+}

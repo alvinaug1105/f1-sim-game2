@@ -72,6 +72,7 @@ export function driverSnapshot(row: Row, s: RaceSimulationState) {
         fuelDeltaKg: c && s.input.commands ? Math.round(projectedFuelGrams(s, e) / 100) / 10 : null,
         ersRatio: c && s.input.commands ? c.ersCharge / s.input.commands.capacity : null,
         paceMode: c?.paceMode ?? null, stops: e.pit ? e.pit.stops.length : null,
+        lastLapMs: e.lastLapTimeMs, bestLapMs: e.bestLapTimeMs,
     };
 }
 export type FeedCategory = "CONTROL" | "INCIDENT" | "RETIREMENT" | "PIT";
@@ -95,4 +96,41 @@ export function raceFeed(s: RaceSimulationState, playerTeamId: string): FeedItem
         items.push({ key: `p${e.entrantId}:${stop.number}`, lap: stop.lap, category: "PIT", important: player, player, entrantIds: [e.entrantId], stop, order: 1 });
     }
     return items.sort((a, b) => b.lap - a.lap || b.order - a.order || (b.event?.sequence ?? 0) - (a.event?.sequence ?? 0) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)).map(item => { const { order, ...rest } = item; void order; return rest; });
+}
+/**
+ * Qualitative tyre suitability for CURRENT public conditions (the same track-water bands the conditions strip shows).
+ * Deliberately coarse: it never reveals the modelled crossover or reads future weather.
+ */
+export type Suitability = "SUITABLE" | "MARGINAL" | "POOR";
+export type SuitabilityNote = "SLICK_WET" | "SLICK_DAMP" | "INTER_DRY" | "INTER_OK" | "INTER_FLOODED" | "WET_DRY" | "WET_DAMP" | "WET_OK" | "SLICK_OK";
+export function tyreSuitability(compound: TyreCompound, weather: RaceSimulationState["weather"]): { level: Suitability; note: SuitabilityNote } | null {
+    if (!weather) return null;
+    const band = weather.trackWater < 100 ? 0 : weather.trackWater < 350 ? 1 : 2;
+    if (compound === "INTERMEDIATE") return band === 0 ? { level: "POOR", note: "INTER_DRY" } : band === 1 ? { level: "SUITABLE", note: "INTER_OK" } : { level: "MARGINAL", note: "INTER_FLOODED" };
+    if (compound === "WET") return band === 2 ? { level: "SUITABLE", note: "WET_OK" } : band === 1 ? { level: "MARGINAL", note: "WET_DAMP" } : { level: "POOR", note: "WET_DRY" };
+    return band === 0 ? { level: "SUITABLE", note: "SLICK_OK" } : band === 1 ? { level: "MARGINAL", note: "SLICK_DAMP" } : { level: "POOR", note: "SLICK_WET" };
+}
+/** Management-level ERS outlook for the car's own current mode: laps of deployment left, or sustainable / recharging. */
+export function ersOutlook(s: RaceSimulationState, e: RaceEntrantState): { kind: "LAPS"; laps: number } | { kind: "SUSTAINABLE" | "CHARGING" } | null {
+    const c = s.input.commands, m = e.commands;
+    if (!c || !m) return null;
+    const profile = c.ers[m.ersMode], net = profile.consumption - Math.round(c.baseRecovery * profile.recoveryPermille * c.ersHarvestFactorPermille / 1000000);
+    if (net < 0) return { kind: "CHARGING" };
+    if (net === 0) return { kind: "SUSTAINABLE" };
+    return { kind: "LAPS", laps: Math.floor(m.ersCharge / net) };
+}
+export function fuelShort(s: RaceSimulationState, e: RaceEntrantState) { return !!(e.commands && s.input.commands) && projectedFuelGrams(s, e) < 0; }
+/** Compact, decision-relevant flags for a player car (for the non-selected car in particular). Reuses existing state. */
+export type DriverFlag = "RETIRED" | "FINISHED" | "PIT" | "BOX" | "ATTENTION" | "TYRE_CRITICAL" | "TYRE_HIGH" | "FUEL" | "BATTLE";
+export function driverFlags(row: Row, rows: readonly Row[], s: RaceSimulationState, attentionId: string | null = null): DriverFlag[] {
+    if (row.status === "RETIRED") return ["RETIRED"];
+    if (row.status === "FINISHED" || s.status === "FINISHED") return ["FINISHED"];
+    const flags: DriverFlag[] = [], e = row.entrant, tyre = tyreCondition(s, e), battle = battleContext(rows, row.id, s);
+    if (row.pitting) flags.push("PIT");
+    if (e.pit?.pendingCompound) flags.push("BOX");
+    if (attentionId === row.id) flags.push("ATTENTION");
+    if (tyre?.wear === "CRITICAL") flags.push("TYRE_CRITICAL"); else if (tyre?.wear === "HIGH") flags.push("TYRE_HIGH");
+    if (fuelShort(s, e)) flags.push("FUEL");
+    if (battle.battleAhead || battle.battleBehind) flags.push("BATTLE");
+    return flags;
 }

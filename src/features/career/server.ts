@@ -40,3 +40,9 @@ import type { CareerPracticeRepository } from "../../game/domain/practice-reposi
 export function getPracticeRepository(): CareerPracticeRepository {
   return new PrismaPracticeRepository(getPrisma());
 }
+
+import { PrismaQualifyingRepository } from "../../data/repositories/prisma-qualifying";
+import type { CareerQualifyingRepository } from "../../game/domain/qualifying-repository";
+export function getQualifyingRepository(): CareerQualifyingRepository {
+  return new PrismaQualifyingRepository(getPrisma());
+}

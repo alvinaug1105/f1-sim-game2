@@ -919,7 +919,7 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .confirm-inline { display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap; }
 .confirm-inline > span { color:#ffd099; }
 .practice-summary { margin-bottom:14px; }
-.practice-summary .summary-body, .practice-start .summary-body { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding:14px; }
+.practice-summary .summary-body, .practice-start .summary-body, .phase-complete .summary-body { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding:14px; }
 .practice-summary li strong { border-left:4px solid; padding-left:5px; }
 .practice-summary li small { display:block; color:#93a7b6; }
 .map-car.in-garage { pointer-events:none; }
@@ -946,3 +946,33 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .team-card-drivers { display: flex; flex-direction: column; font-size: 12px; color: #c7ccd2; }
 .team-card-drivers strong { display: inline-block; min-width: 2.6em; color: #f1f2f4; letter-spacing: .5px; }
 .team-card.selected .team-card-name::after { content: " ✓"; color: var(--accent); }
+/* Phase 14 — Qualifying (Race visual language; status always glyph + text, never colour alone). */
+.q-status { display:inline-block; border:1px solid #465460; border-radius:4px; padding:1px 5px; font-size:10px; font-weight:800; white-space:nowrap; margin-left:4px; }
+.q-status.status-SAFE, .q-status.status-ADVANCED { border-color:#91ae6b; color:#dafaaf; }
+.q-status.status-AT_RISK { border-color:#e8c86b; color:#f3dc8a; }
+.q-status.status-DANGER { border-color:#e8735e; color:#ffb4a6; background:#2d1714; }
+.q-status.status-NO_TIME { color:#aebdc7; border-style:dashed; }
+.q-status.status-ELIMINATED { color:#93a7b6; }
+.q-status.status-POLE { border-color:#d7ee69; color:#f1ffb4; }
+.q-status.status-Q3 { border-color:#8fb4cf; color:#cfe6f5; }
+.qualifying-tower .cutoff-row td { padding:3px 6px; font-size:10px; font-weight:800; letter-spacing:.3px; color:#ffb4a6; background:#241512; border-top:2px dashed #e8735e; border-bottom:2px dashed #e8735e; text-align:left; }
+.qualifying-tower .eliminated-row { opacity:.6; }
+.qualifying-tower td small, .qualifying-result td small { display:block; color:#93a7b6; }
+.qualifying-tower td .q-status { margin:3px 0 0; display:inline-block; }
+.qualifying-tower .tyre-token { display:inline-flex; width:20px; height:20px; font-size:10px; margin-left:4px; }
+.cutoff-delta.inside { color:#a9e4b9; } .cutoff-delta.outside { color:#ffb4a6; }
+.out-label { color:#93a7b6; font-weight:700; }
+.q-player-switch { display:flex; gap:6px; flex-wrap:wrap; }
+.q-player-switch button { flex:1 1 120px; text-align:left; background:#1c242a; border:1px solid var(--ops-border); border-left:4px solid; color:#e6edf1; }
+.q-player-switch button[aria-pressed=true] { background:#2a3640; outline:1px solid #d9e7f0; }
+.setup-readout { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:4px 12px; margin:6px 0; }
+.setup-readout div { display:flex; justify-content:space-between; gap:6px; } .setup-readout dt { color:#93a7b6; } .setup-readout dd { margin:0; font-weight:800; }
+.traffic-note { display:block; color:#f3dc8a; font-size:10px; }
+.phase-complete, .qualifying-summary { margin-bottom:14px; }
+.qualifying-summary .summary-scroll { max-height:min(60vh,620px); overflow:auto; }
+.qualifying-result { font-size:12px; } .qualifying-result th, .qualifying-result td { padding:5px 8px; }
+.qualifying-result .summary-driver { border-left:4px solid; padding-left:5px; }
+.summary-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 14px; }
+.qualifying-bar .cutoff-info strong { color:#ffb4a6; }
+@media (min-width:1221px) and (max-width:1599px) { .qualifying-ops .ops-grid { grid-template-columns:300px minmax(260px,1fr) 300px; } }
+@media (min-width:821px) and (max-width:1220px) { .qualifying-ops .ops-grid { grid-template-columns:300px minmax(0,1fr); } }

@@ -42,6 +42,12 @@ export interface CareerRaceData {
   readonly state: RaceSimulationState | null;
   readonly labels: readonly RaceLabel[];
   readonly roster: readonly RaceRosterEntry[];
+  /**
+   * Starting order from the weekend's completed real Qualifying (driver IDs, P1 first); null when there is none
+   * (legacy placeholder Qualifying), in which case the legacy roster-order grid applies. Only used at Race start —
+   * a started Race keeps its own frozen grid.
+   */
+  readonly grid?: readonly string[] | null;
   readonly circuit: {
     readonly sourceCircuitId?: string | null;
     readonly lengthMeters: number;

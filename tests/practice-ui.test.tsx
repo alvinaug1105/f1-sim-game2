@@ -10,6 +10,7 @@ import { practiceWorld } from './helpers/practice';
 // Server actions are server-only; the weekend view only needs their identities to render forms.
 vi.mock('../src/features/career/progression-actions', () => ({ progressionAction: vi.fn() }));
 vi.mock('../src/features/practice/actions', () => ({ practiceWeekendAction: vi.fn() }));
+vi.mock('../src/features/qualifying/actions', () => ({ qualifyingWeekendAction: vi.fn() }));
 const html = (node: React.ReactNode) => renderToStaticMarkup(<I18nProvider>{node}</I18nProvider>);
 describe('practice UI', () => {
     it('own cars get garage controls (labelled range inputs, run plan); rivals are read only', async () => {
@@ -47,8 +48,11 @@ describe('practice UI', () => {
         expect(text).toContain('Open session');
         expect(text).toContain('Simulate session (auto-manage)');
         expect(text).toContain('Simulate all remaining Practice');
-        expect(text).toContain('Practice sessions are fully simulated');
-        expect(text).not.toContain('Practice and Qualifying use temporary development completion');
+        expect(text).toContain('Practice and Qualifying are fully simulated');
+        expect(text).not.toContain('temporary development completion');
+        // Qualifying has no development-placeholder controls (it is LOCKED here; see the Qualifying weekend test).
+        expect(text).not.toContain('Complete Session — Development');
+        expect(text).not.toContain('Start — Development');
         // After P1 is simulated, P2 offers the same two choices; still no Skip anywhere in the weekend.
         await simulatePracticeSession(w.repo, w.careerId, w.eventId, w.sessions[0].id);
         text = page();

@@ -45,6 +45,16 @@ async function protect<T>(work: () => Promise<T>) {
     throw new RaceError("PERSISTENCE_FAILED", { cause });
   }
 }
+/** Final classification of a finished real Qualifying (driver IDs, P1 first), or null. */
+async function qualifyingGrid(tx: Prisma.TransactionClient, sessionId: string | undefined) {
+  if (!sessionId) return null;
+  const sim = await tx.careerQualifyingSimulation.findUnique({
+    where: { careerSessionId: sessionId },
+    include: { entrants: { orderBy: { finalPosition: "asc" } } },
+  });
+  if (!sim || sim.status !== "FINISHED") return null;
+  return sim.entrants.map((e) => e.careerDriverId);
+}
 async function read(
   tx: Prisma.TransactionClient,
   careerId: string,
@@ -264,6 +274,7 @@ async function read(
         driverName: e.driverName,
         teamName: e.teamName,
       })) ?? [],
+    grid: row ? null : await qualifyingGrid(tx, event.weekend?.sessions.find((s) => s.type === "QUALIFYING")?.id),
     roster: roster.map((e) => ({
       driverId: e.careerDriverId,
       teamId: e.teamEntry.careerTeamId,

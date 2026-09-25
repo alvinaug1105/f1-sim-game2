@@ -14,6 +14,7 @@ import {
   advancePracticeSession, practiceCommand, simulatePracticeRemainder, simulatePracticeSession, simulateRemainingPractice, startPracticeSession,
 } from "../src/features/practice/service";
 import { practiceView } from "../src/features/practice/view-model";
+import { developmentPerformance } from "../src/features/race/development-profiles";
 import type { Career } from "../src/game/domain/career";
 const value = process.env.TEST_DATABASE_URL;
 if (!value) throw new Error("TEST_DATABASE_URL required; SQL tests did not run.");
@@ -104,5 +105,26 @@ describe("practice persistence", () => {
     expect([...weekend.sessions].sort((a, b) => a.order - b.order).map((s) => s.status)).toEqual(["COMPLETED", "COMPLETED", "COMPLETED", "AVAILABLE", "LOCKED"]);
     const text = JSON.stringify(practiceView((await practice.getPractice(career.id, eventId, sessions[2].id))!));
     for (const forbidden of ['"ideal"', '"timeline"', '"rngState"', '"seed"']) expect(text).not.toContain(forbidden);
+  });
+  it("Content Expansion Pass A: a new Career runs 22 entrants on its snapshotted balance; an old-shaped Career keeps the legacy profile", async () => {
+    const p1 = sessions[0].id;
+    const fresh = await startPracticeSession(practice, career.id, eventId, p1);
+    expect(fresh.state!.input.entrants).toHaveLength(22);
+    expect(fresh.state!.input.entrants.filter((e) => e.controller === "PLAYER")).toHaveLength(2);
+    const nor = fresh.roster.find((r) => r.abbreviation === "NOR")!;
+    expect(fresh.state!.input.entrants.find((e) => e.driverId === nor.driverId)).toMatchObject({ driver: { pace: 95, consistency: 91 }, car: { performance: 94 } });
+    // A Career created before Pass A has no balance snapshot: its sessions keep the exact legacy development profile.
+    const legacy = await createCareer(careers, { ...input, name: "Legacy-shaped Career" });
+    await client.careerSeasonDriverEntry.updateMany({ where: { careerId: legacy.id }, data: { pace: null, consistency: null } });
+    await client.careerSeasonTeamEntry.updateMany({ where: { careerId: legacy.id }, data: { carPerformance: null } });
+    const legacyEvent = (await progression.getProgress(legacy.id))!.events[0].id;
+    const entered = await advanceToNextEvent(progression, legacy.id, legacyEvent);
+    const legacyP1 = [...entered.events[0].weekend!.sessions].sort((a, b) => a.order - b.order)[0].id;
+    const old = await startPracticeSession(practice, legacy.id, legacyEvent, legacyP1);
+    old.state!.input.entrants.forEach((e, index) => {
+      const row = old.roster.find((r) => r.driverId === e.driverId)!;
+      expect(row.balance).toBeNull();
+      expect({ driver: e.driver, car: e.car }).toEqual(developmentPerformance(index, row.teamOrder));
+    });
   });
 });

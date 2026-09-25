@@ -75,18 +75,29 @@ describe("Career world PostgreSQL integration", () => {
     expect(career.currentDate).toBe("2026-02-20");
     expect(
       await client.careerTeam.count({ where: { careerId: career.id } }),
-    ).toBe(2);
+    ).toBe(11);
     expect(
       await client.careerDriver.count({ where: { careerId: career.id } }),
-    ).toBe(4);
+    ).toBe(22);
     expect(
       await client.careerCircuit.count({ where: { careerId: career.id } }),
-    ).toBe(2);
+    ).toBe(8);
     expect(
       await client.careerCalendarEvent.count({
         where: { careerId: career.id },
       }),
-    ).toBe(2);
+    ).toBe(8);
+    // Game-balance data is snapshotted into the Career (never read from the source at play time).
+    expect(
+      await client.careerSeasonDriverEntry.count({
+        where: { careerId: career.id, pace: null },
+      }),
+    ).toBe(0);
+    expect(
+      await client.careerSeasonTeamEntry.count({
+        where: { careerId: career.id, carPerformance: null },
+      }),
+    ).toBe(0);
   });
   it("persists the player pointer and all mappings using Career IDs", async () => {
     const teams = await client.careerTeam.findMany({
@@ -313,7 +324,7 @@ describe("Career world PostgreSQL integration", () => {
     expect(await repository.getCareerOverview(career.id)).toEqual(before);
     expect(
       await client.careerDriver.count({ where: { careerId: career.id } }),
-    ).toBe(4);
+    ).toBe(22);
   });
 });
 
@@ -322,6 +333,9 @@ import beforeRealNames from "./fixtures/development-content-before-real-names.js
 it.each([legacyContent,beforeRealNames])("reseeding identities twice preserves old Career snapshots and updates only new Careers %#", async (previous) => {
   for (const e of previous.teams) await client.team.update({where:{id:e.id},data:{name:e.name,shortName:e.shortName,countryCode:e.countryCode,foundedYear:e.foundedYear}});
   for (const e of previous.drivers) await client.driver.update({where:{id:e.id},data:{firstName:e.firstName,lastName:e.lastName,abbreviation:e.abbreviation,nationalityCode:e.nationalityCode,preferredNumber:e.preferredNumber,dateOfBirth:new Date(e.dateOfBirth)}});
+  // Pass A numbers (e.g. NOR #1, VER #3) would collide with the historical ones while the old state is simulated;
+  // park them, and the re-seed below restores every canonical number.
+  for(const [i,e] of source.driverEntries.slice(previous.driverEntries.length).entries())await client.seasonDriverEntry.update({where:{id:e.id},data:{carNumber:200+i}});
   for(const [i,e] of previous.driverEntries.entries())await client.seasonDriverEntry.update({where:{id:e.id},data:{carNumber:90+i}});
   for(const e of previous.driverEntries)await client.seasonDriverEntry.update({where:{id:e.id},data:{carNumber:e.carNumber}});
   for (const e of previous.circuits) await client.circuit.update({where:{id:e.id},data:{name:e.name,countryCode:e.countryCode,city:e.city}});

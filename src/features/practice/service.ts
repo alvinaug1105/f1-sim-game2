@@ -14,7 +14,7 @@ import {
 import { weatherTyreConfiguration } from "../../simulation/race/tyres/profiles";
 import { ProgressionError, isPractice, transitionSession, type CareerProgress } from "../../game/domain/progression";
 import { PracticeError, type CareerPracticeData, type CareerPracticeRepository, type PracticeChange } from "../../game/domain/practice-repository";
-import { developmentBaseLapTimeMs, developmentPerformance } from "../race/development-profiles";
+import { developmentBaseLapTimeMs, entrantPerformance } from "../race/development-profiles";
 import { raceWeatherSeed, scenarioWeather } from "../race/weather-scenarios";
 export type PracticeCommand =
     | { kind: "send"; entrantId: string; revision: number; plan: RunPlan }
@@ -34,7 +34,7 @@ export function practiceInput(data: CareerPracticeData, newId: () => string): { 
         return {
             entrantId: newId(), driverId: row.driverId, teamId: row.teamId,
             controller: row.teamId === data.progress.career.playerTeamId ? "PLAYER" as const : "AI" as const,
-            ...developmentPerformance(index, row.teamOrder),
+            ...entrantPerformance(row, index),
             ideal: existing?.ideal ?? hiddenIdeal(careerId, data.weekendId, row.driverId, circuitKey(data)),
         };
     });

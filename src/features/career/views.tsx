@@ -124,7 +124,7 @@ export function CareerListView({
   );
 }
 export function NewCareerView({ options }: { options: CareerCreationOptions }) {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
   const [databaseId, setDatabaseId] = useState("");
   const [seasonId, setSeasonId] = useState("");
   const [teamId, setTeamId] = useState("");
@@ -192,22 +192,47 @@ export function NewCareerView({ options }: { options: CareerCreationOptions }) {
                   </option>
                 ))}
               </select>
-              <label htmlFor="career-team">{t("career.team")}</label>
-              <select
-                id="career-team"
-                name="playerTeamId"
-                required
-                disabled={!season || pending}
-                value={teamId}
-                onChange={(e) => setTeamId(e.target.value)}
-              >
-                <option value="">{t("career.choose")}</option>
-                {season?.teams.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.name}
-                  </option>
-                ))}
-              </select>
+              {/* Native radio cards: keyboard/screen-reader friendly; each team is identified by name, a colour
+                  accent and its two race drivers (entity data, never logic), so colour is never the only cue. */}
+              <fieldset className="team-picker" disabled={!season || pending}>
+                <legend>{t("career.team")}</legend>
+                {season && season.teams.length > 0 && (
+                  <p className="team-picker-hint">
+                    {t("career.teamPickerHint", {
+                      count: format.number(season.teams.length - 1),
+                    })}
+                  </p>
+                )}
+                <div className="team-grid">
+                  {season?.teams.map((row) => (
+                    <label
+                      key={row.id}
+                      className={`team-card${teamId === row.id ? " selected" : ""}`}
+                      style={{ ["--team" as string]: row.color ?? "#a0a6af" }}
+                    >
+                      <input
+                        type="radio"
+                        name="playerTeamId"
+                        value={row.id}
+                        required
+                        checked={teamId === row.id}
+                        onChange={() => setTeamId(row.id)}
+                      />
+                      <span className="team-card-name">{row.name}</span>
+                      {row.drivers && row.drivers.length > 0 && (
+                        <span className="team-card-drivers">
+                          {row.drivers.map((driver) => (
+                            <span key={driver.abbreviation}>
+                              <strong>{driver.abbreviation}</strong>{" "}
+                              {driver.name}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               {season?.teams.length === 0 && (
                 <p role="status">{t("career.noTeams")}</p>
               )}

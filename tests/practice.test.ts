@@ -270,7 +270,8 @@ describe("practice playback", () => {
         expect(found[0]).toBe(`GARAGE:${mine.entrantId}`);
         expect(found.filter(f => f.startsWith("CLOCK"))).toHaveLength(1);
         const v = practiceView(data);
-        const wetter = { ...v, weather: { ...v.weather!, trackWater: 500 } };
+        // Move the (public, current) track water into a different band from where this session ended.
+        const wetter = { ...v, weather: { ...v.weather!, trackWater: v.weather!.trackWater >= 350 ? 0 : 500 } };
         expect(assessPracticeCheckpoint(initialPracticeAttention(v), wetter).items.map(i => i.reason)).toContain("WEATHER");
     });
     it("Next Relevant Event advances committed steps one at a time and stops on the attention item", async () => {

@@ -1,7 +1,10 @@
 import type { PrismaClient } from "../generated/prisma/client";
 import { validateContentDataset } from "../../game/domain/content-dataset";
 import { developmentContent as data } from "./content-development";
-/** Updates only known development IDs, never deletes data. Reapplies canonical fixture values. */
+/**
+ * Updates only known development IDs, never deletes data. Reapplies canonical fixture values, so re-running it
+ * converges on the same content (no duplicates: every row is upserted by its stable ID).
+ */
 export async function seedDevelopmentContent(
   client: PrismaClient,
 ): Promise<void> {
@@ -61,7 +64,9 @@ export async function seedDevelopmentContent(
           create: row,
           update: row,
         });
-      for (const row of data.events) {
+      // Descending round order: when the calendar grows, existing rounds only move later, so every update lands on
+      // a round no other row still holds (unique season/round) and re-running the seed is idempotent.
+      for (const row of [...data.events].sort((a, b) => b.round - a.round)) {
         const value = {
           ...row,
           startDate: new Date(`${row.startDate}T00:00:00.000Z`),

@@ -99,25 +99,69 @@ const eventData = () => ({
 describe("PostgreSQL migration, seed and relational constraints", () => {
   it("applies migration and reruns seed without duplicating content", async () => {
     expect(await client.gameDatabase.count({ where: { id: db } })).toBe(1);
-    expect(await client.team.count({ where: { gameDatabaseId: db } })).toBe(2);
+    expect(await client.team.count({ where: { gameDatabaseId: db } })).toBe(11);
     expect(await client.driver.count({ where: { gameDatabaseId: db } })).toBe(
-      4,
+      22,
     );
     expect(await client.circuit.count({ where: { gameDatabaseId: db } })).toBe(
-      2,
+      8,
     );
     expect(await client.season.count({ where: { gameDatabaseId: db } })).toBe(
       1,
     );
     expect(
       await client.seasonTeamEntry.count({ where: { gameDatabaseId: db } }),
-    ).toBe(2);
+    ).toBe(11);
     expect(
       await client.seasonDriverEntry.count({ where: { gameDatabaseId: db } }),
-    ).toBe(4);
+    ).toBe(22);
     expect(
       await client.calendarEvent.count({ where: { gameDatabaseId: db } }),
-    ).toBe(2);
+    ).toBe(8);
+  });
+  it("upgrades a database seeded with the pre-Pass-A content in place, idempotently", async () => {
+    // Recreate the old shape: the Japanese GP back at round 2 with its old dates, the new rows absent.
+    const newTeams = data.teams.slice(2).map((t) => t.id),
+      newDrivers = data.drivers.slice(4).map((d) => d.id),
+      newCircuits = data.circuits.slice(2).map((c) => c.id);
+    await client.calendarEvent.deleteMany({ where: { circuitId: { in: newCircuits } } });
+    await client.seasonDriverEntry.deleteMany({ where: { driverId: { in: newDrivers } } });
+    await client.seasonTeamEntry.deleteMany({ where: { teamId: { in: newTeams } } });
+    await client.driver.deleteMany({ where: { id: { in: newDrivers } } });
+    await client.team.deleteMany({ where: { id: { in: newTeams } } });
+    await client.circuit.deleteMany({ where: { id: { in: newCircuits } } });
+    const suzuka = data.events.find((e) => e.circuitId === data.circuits[1].id)!;
+    await client.calendarEvent.update({
+      where: { id: suzuka.id },
+      data: { round: 2, startDate: new Date("2026-03-20T00:00:00Z"), endDate: new Date("2026-03-22T00:00:00Z") },
+    });
+    await client.seasonTeamEntry.updateMany({ where: { gameDatabaseId: db }, data: { carPerformance: null } });
+    await client.seasonDriverEntry.updateMany({ where: { gameDatabaseId: db }, data: { pace: null, consistency: null } });
+    const snapshot = async () => ({
+      teams: await client.team.findMany({ where: { gameDatabaseId: db }, orderBy: { id: "asc" }, omit: { createdAt: true, updatedAt: true } }),
+      drivers: await client.driver.findMany({ where: { gameDatabaseId: db }, orderBy: { id: "asc" }, omit: { createdAt: true, updatedAt: true } }),
+      circuits: await client.circuit.findMany({ where: { gameDatabaseId: db }, orderBy: { id: "asc" }, omit: { createdAt: true, updatedAt: true } }),
+      teamEntries: await client.seasonTeamEntry.findMany({ where: { gameDatabaseId: db }, orderBy: { id: "asc" } }),
+      driverEntries: await client.seasonDriverEntry.findMany({ where: { gameDatabaseId: db }, orderBy: { id: "asc" } }),
+      events: await client.calendarEvent.findMany({ where: { gameDatabaseId: db }, orderBy: { round: "asc" } }),
+    });
+    await seedDevelopmentContent(client);
+    const first = await snapshot();
+    await seedDevelopmentContent(client);
+    expect(await snapshot()).toEqual(first);
+    expect([first.teams.length, first.drivers.length, first.circuits.length, first.events.length]).toEqual([11, 22, 8, 8]);
+    expect(first.events.map((e) => e.round)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(first.events.find((e) => e.id === suzuka.id)!.round).toBe(3);
+    expect(first.driverEntries.every((e) => e.pace !== null && e.consistency !== null)).toBe(true);
+    expect(first.teamEntries.every((e) => e.carPerformance !== null)).toBe(true);
+  });
+  it("rejects out-of-range balance values in SQL", async () => {
+    await expect(
+      client.seasonTeamEntry.update({ where: { id: data.teamEntries[0].id }, data: { carPerformance: 101 } }),
+    ).rejects.toThrow();
+    await expect(
+      client.seasonDriverEntry.update({ where: { id: data.driverEntries[0].id }, data: { pace: null } }),
+    ).rejects.toThrow();
   });
   it("reads the seeded database and season through repositories", async () => {
     expect((await repository.getGameDatabaseById(db))?.key).toBe(
@@ -127,7 +171,9 @@ describe("PostgreSQL migration, seed and relational constraints", () => {
   });
   it("joins season teams in entry order", async () => {
     const rows = await repository.listTeamsForSeason(db, season);
-    expect(rows.map((row) => row.entry.entryOrder)).toEqual([1, 2]);
+    expect(rows.map((row) => row.entry.entryOrder)).toEqual(
+      data.teams.map((_, i) => i + 1),
+    );
     for (const row of rows) {
       expect(row.team.gameDatabaseId).toBe(db);
       expect(row.team.id).toBe(row.entry.teamId);
@@ -135,7 +181,7 @@ describe("PostgreSQL migration, seed and relational constraints", () => {
   });
   it("reads independent drivers through season assignments", async () => {
     const rows = await repository.listDriversForSeason(db, season);
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(22);
     for (const row of rows) {
       expect(row.driver.id).toBe(row.entry.driverId);
       expect(row.driver).not.toHaveProperty("teamId");
@@ -144,7 +190,7 @@ describe("PostgreSQL migration, seed and relational constraints", () => {
   });
   it("joins circuits and sorts actual calendar queries by round", async () => {
     const rows = await repository.listCalendarEvents(db, season);
-    expect(rows.map((row) => row.event.round)).toEqual([1, 2]);
+    expect(rows.map((row) => row.event.round)).toEqual(data.events.map((_, i) => i + 1));
     for (const row of rows) {
       expect(row.circuit.id).toBe(row.event.circuitId);
       expect(row.circuit.gameDatabaseId).toBe(db);
@@ -210,7 +256,7 @@ describe("PostgreSQL migration, seed and relational constraints", () => {
           ...data.teamEntries[0],
           id: randomUUID(),
           teamId: foreign.team,
-          entryOrder: 3,
+          entryOrder: 99, // unused order: isolates the foreign-key check from the entry-order uniqueness
         },
       }),
     ).rejects.toMatchObject({ code: "P2003" });

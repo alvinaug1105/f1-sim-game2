@@ -18,7 +18,7 @@ describe("fictional source content graph (no database required)", () => {
       data.circuits.length,
       data.seasons.length,
       data.events.length,
-    ]).toEqual([2, 4, 2, 1, 2]);
+    ]).toEqual([11, 22, 8, 1, 8]);
   });
   it("keeps teams, drivers, circuits and seasons in their dataset", () => {
     for (const row of [

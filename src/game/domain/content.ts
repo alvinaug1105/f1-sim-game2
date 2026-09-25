@@ -47,6 +47,8 @@ export interface SeasonTeamEntry {
   readonly seasonId: EntityId;
   readonly teamId: EntityId;
   readonly entryOrder: number;
+  /** Game-balance data (development values, 0–100), separate from team identity. Absent on legacy content. */
+  readonly carPerformance?: number | null;
 }
 export type DriverRole = "RACE_DRIVER" | "RESERVE_DRIVER";
 export interface SeasonDriverEntry {
@@ -57,6 +59,9 @@ export interface SeasonDriverEntry {
   readonly teamId: EntityId;
   readonly carNumber: number | null;
   readonly role: DriverRole;
+  /** Game-balance data (development values, 0–100), separate from driver identity. Absent on legacy content. */
+  readonly pace?: number | null;
+  readonly consistency?: number | null;
 }
 export interface CalendarEvent {
   readonly id: EntityId;

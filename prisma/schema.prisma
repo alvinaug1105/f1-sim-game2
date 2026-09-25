@@ -106,6 +106,8 @@ model SeasonTeamEntry {
   seasonId       String              @db.Uuid
   teamId         String              @db.Uuid
   entryOrder     Int
+  /// Game-balance data (development values, 0–100); identity lives on Team.
+  carPerformance Int?
   season         Season              @relation(fields: [gameDatabaseId, seasonId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
   team           Team                @relation(fields: [gameDatabaseId, teamId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
   drivers        SeasonDriverEntry[]
@@ -123,6 +125,9 @@ model SeasonDriverEntry {
   teamId         String          @db.Uuid
   carNumber      Int?
   role           DriverRole
+  /// Game-balance data (development values, 0–100); identity lives on Driver.
+  pace           Int?
+  consistency    Int?
   teamEntry      SeasonTeamEntry @relation(fields: [gameDatabaseId, seasonId, teamId], references: [gameDatabaseId, seasonId, teamId], onDelete: Restrict, onUpdate: Restrict)
   driver         Driver          @relation(fields: [gameDatabaseId, driverId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
 
@@ -278,6 +283,8 @@ model CareerSeasonTeamEntry {
   careerSeasonId String                    @db.Uuid
   careerTeamId   String                    @db.Uuid
   entryOrder     Int
+  /// Snapshotted balance; null for Careers created before Content Expansion Pass A (legacy development profile).
+  carPerformance Int?
   season         CareerSeason              @relation(fields: [careerId, careerSeasonId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
   team           CareerTeam                @relation(fields: [careerId, careerTeamId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
   drivers        CareerSeasonDriverEntry[]
@@ -296,6 +303,9 @@ model CareerSeasonDriverEntry {
   careerSeasonTeamEntryId String                @db.Uuid
   carNumber               Int?
   role                    DriverRole
+  /// Snapshotted balance; null for Careers created before Content Expansion Pass A (legacy development profile).
+  pace                    Int?
+  consistency             Int?
   teamEntry               CareerSeasonTeamEntry @relation(fields: [careerId, careerSeasonId, careerSeasonTeamEntryId], references: [careerId, careerSeasonId, id], onDelete: Restrict, onUpdate: Restrict)
   driver                  CareerDriver          @relation(fields: [careerId, careerDriverId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 

@@ -607,5 +607,6 @@
   "practice.error.PLAN_TOO_LONG": "The run does not fit in the remaining time.",
   "practice.error.SETUP_INVALID": "The setup is not valid.",
   "practice.simulateHint": "Not managing a session yourself? Choose Simulate session: the team's standard programme runs your cars with the same mechanics, and your drivers still learn from it.",
-  "practice.posShort": "Pos"
+  "practice.posShort": "Pos",
+  "career.teamPickerHint": "You manage both of this team's race drivers. The other {count} teams are run by the AI."
 }

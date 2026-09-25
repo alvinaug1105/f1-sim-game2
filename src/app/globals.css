@@ -931,3 +931,18 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .practice-timing .location-chip { padding:2px 4px; letter-spacing:0; }
 @media (min-width:1221px) and (max-width:1599px) { .practice-ops .ops-grid { grid-template-columns:280px minmax(270px,1fr) 300px; } }
 @media (min-width:821px) and (max-width:1220px) { .practice-ops .ops-grid { grid-template-columns:280px minmax(0,1fr); } }
+/* Content Expansion Pass A: Career team picker (11 teams). Name + two drivers + colour accent; colour is never the only cue. */
+.career-form:has(.team-picker) { max-width: 920px; }
+.career-form fieldset.team-picker { display: block; margin: 4px 0 12px; }
+.team-picker legend { margin-bottom: 6px; }
+.team-picker-hint { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.team-card { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 10px 16px; border: 1px solid var(--line); border-left: 6px solid var(--team); border-radius: 6px; background: #14171b; cursor: pointer; }
+.team-card:hover { border-color: #555d67; border-left-color: var(--team); }
+.team-card.selected { background: #1f252b; border-color: var(--accent); border-left-color: var(--team); box-shadow: 0 0 0 1px var(--accent); }
+.career-form .team-card input[type=radio] { position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 0; accent-color: var(--accent); }
+.team-card:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.team-card-name { font-weight: 700; padding-right: 22px; }
+.team-card-drivers { display: flex; flex-direction: column; font-size: 12px; color: #c7ccd2; }
+.team-card-drivers strong { display: inline-block; min-width: 2.6em; color: #f1f2f4; letter-spacing: .5px; }
+.team-card.selected .team-card-name::after { content: " ✓"; color: var(--accent); }

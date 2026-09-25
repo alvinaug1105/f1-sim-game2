@@ -39,6 +39,14 @@ function positive(value: number, label: string) {
     `${label} must be a positive integer.`,
   );
 }
+/** Optional game-balance value: an integer 0–100 when present. */
+function balance(value: number | null | undefined, label: string) {
+  if (value == null) return;
+  requireValid(
+    Number.isInteger(value) && value >= 0 && value <= 100,
+    `${label} must be an integer from 0 to 100.`,
+  );
+}
 function date(value: string) {
   requireValid(
     /^\d{4}-\d{2}-\d{2}$/.test(value) &&
@@ -157,6 +165,7 @@ export function validateContentDataset(data: ContentDataset): void {
       "Team entry references a missing or foreign season/team.",
     );
     positive(row.entryOrder, "Entry order");
+    balance(row.carPerformance, "Car performance");
   }
   const participatingTeams = new Set(
     teamEntries.map((row) => `${row.seasonId}/${row.teamId}`),
@@ -186,6 +195,12 @@ export function validateContentDataset(data: ContentDataset): void {
       "Race driver requires a car number.",
     );
     if (row.carNumber !== null) positive(row.carNumber, "Car number");
+    balance(row.pace, "Driver pace");
+    balance(row.consistency, "Driver consistency");
+    requireValid(
+      (row.pace == null) === (row.consistency == null),
+      "Driver balance must be complete or absent.",
+    );
   }
   unique(
     events.map((row) => `${row.seasonId}/${row.round}`),

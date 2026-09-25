@@ -107,7 +107,7 @@ describe("real PostgreSQL Race persistence", () => {
   it("applies fourth migration and snapshots owned race entrants", async () => {
     const data = await start();
     expect(data.state!.lap).toBe(0);
-    expect(data.state!.input.entrants).toHaveLength(4);
+    expect(data.state!.input.entrants).toHaveLength(22);
     expect(data.state!.simulationVersion).toBe(1);
     expect(data.progress.events[0].weekend!.sessions[4].status).toBe(
       "IN_PROGRESS",

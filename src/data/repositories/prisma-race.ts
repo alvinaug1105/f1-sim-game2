@@ -23,6 +23,7 @@ import type { Prisma, PrismaClient } from "../generated/prisma/client";
 import { assertContentId } from "../../game/domain/content-repository";
 import {
   RaceError,
+  rosterBalance,
   type CareerRaceRepository,
   type CareerRaceData,
 } from "../../game/domain/race-repository";
@@ -270,6 +271,7 @@ async function read(
       teamName: e.teamEntry.team.name,
       teamOrder: e.teamEntry.entryOrder,
       carNumber: e.carNumber!,
+      balance: rosterBalance(e),
     })),
   };
 }

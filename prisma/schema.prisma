@@ -150,6 +150,8 @@ model CalendarEvent {
   name           String
   startDate      DateTime @db.Date
   endDate        DateTime @db.Date
+  /// NULL = legacy content (STANDARD weekend).
+  weekendFormat  WeekendFormat?
   season         Season   @relation(fields: [gameDatabaseId, seasonId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
   circuit        Circuit  @relation(fields: [gameDatabaseId, circuitId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
 
@@ -336,6 +338,8 @@ model CareerCalendarEvent {
   startDate             DateTime          @db.Date
   endDate               DateTime          @db.Date
   status                CareerEventStatus @default(UPCOMING)
+  /// Career-snapshotted weekend structure; NULL = Career created before Phase 15 (STANDARD).
+  weekendFormat         WeekendFormat?
   season                CareerSeason      @relation(fields: [careerId, careerSeasonId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
   circuit               CareerCircuit     @relation(fields: [careerId, careerCircuitId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
@@ -357,6 +361,13 @@ enum CareerSessionType {
   PRACTICE_3
   QUALIFYING
   RACE
+  SPRINT_QUALIFYING
+  SPRINT
+}
+
+enum WeekendFormat {
+  STANDARD
+  SPRINT
 }
 
 enum CareerSessionStatus {

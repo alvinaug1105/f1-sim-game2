@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import {
   RaceError,
   type RaceErrorCode,
+  type RaceKind,
 } from "../../game/domain/race-repository";
 import { getRaceRepository } from "../career/server";
 import {
@@ -15,7 +16,15 @@ import {
   setDriverPaceMode, setDriverFuelMode, setDriverErsMode,
   advanceCareerRace,
   changeCareerPitRequest,
+  simulateCareerRace,
+  simulateCareerRaceRemainder,
 } from "./service";
+/** Untrusted session kind (a hidden form field): the Grand Prix unless it is exactly the Sprint. */
+function parseRaceKind(value: string): RaceKind {
+  if (value === "" || value === "RACE") return "RACE";
+  if (value === "SPRINT") return "SPRINT";
+  throw new RaceError("INVALID_INPUT");
+}
 export async function raceAction(
   _previous: { error: RaceErrorCode | null },
   form: FormData,
@@ -26,8 +35,13 @@ export async function raceAction(
     eventId = text("eventId"),
     intent = text("intent");
   try {
-    const repository = getRaceRepository();
-    if (intent === "start") {
+    const kind = parseRaceKind(text("kind")), repository = getRaceRepository(kind);
+    if (intent === "simulate" || intent === "remainder") {
+      // Sprint only: Simulate Sprint / Simulate Remainder auto-manage both player cars on the same v7 engine.
+      if (kind !== "SPRINT") throw new RaceError("INVALID_ACTION");
+      if (intent === "simulate") await simulateCareerRace(repository, careerId, eventId);
+      else await simulateCareerRaceRemainder(repository, careerId, eventId);
+    } else if (intent === "start") {
       const choices: Record<string, TyreCompound> = {};
       for (const [key, value] of form.entries())
         if (key.startsWith("tyre:")) {

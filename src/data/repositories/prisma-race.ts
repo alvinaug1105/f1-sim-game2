@@ -26,6 +26,7 @@ import {
   rosterBalance,
   type CareerRaceRepository,
   type CareerRaceData,
+  type RaceKind,
 } from "../../game/domain/race-repository";
 import type { RaceSimulationState } from "../../simulation/race/types";
 import { loadProgress, persistProgress } from "./prisma-progression";
@@ -59,10 +60,12 @@ async function read(
   tx: Prisma.TransactionClient,
   careerId: string,
   eventId: string,
+  kind: RaceKind,
 ): Promise<CareerRaceData | null> {
   const progress = await loadProgress(tx, careerId);
   const event = progress?.events.find((e) => e.id === eventId);
-  const session = event?.weekend?.sessions.find((s) => s.type === "RACE");
+  // Exact session type: a Sprint weekend holds both SPRINT and RACE (never "the first race-like simulation").
+  const session = event?.weekend?.sessions.find((s) => s.type === kind);
   if (!progress || !event || !session) return null;
   const row = await tx.careerRaceSimulation.findUnique({
     where: { careerSessionId: session.id },
@@ -259,6 +262,7 @@ async function read(
   return {
     progress,
     eventId,
+    kind,
     sessionId: session.id,
     state,
     circuit: {
@@ -279,7 +283,8 @@ async function read(
         driverName: e.driverName,
         teamName: e.teamName,
       })) ?? [],
-    grid: row ? null : await qualifyingGrid(tx, event.weekend?.sessions.find((s) => s.type === "QUALIFYING")?.id),
+    // The Sprint starts from Sprint Qualifying; the Grand Prix from Grand Prix Qualifying — never cross-contaminated.
+    grid: row ? null : await qualifyingGrid(tx, event.weekend?.sessions.find((s) => s.type === (kind === "SPRINT" ? "SPRINT_QUALIFYING" : "QUALIFYING"))?.id),
     roster: roster.map((e) => ({
       driverId: e.careerDriverId,
       teamId: e.teamEntry.careerTeamId,
@@ -292,11 +297,11 @@ async function read(
   };
 }
 export class PrismaRaceRepository implements CareerRaceRepository {
-  constructor(private readonly client: PrismaClient) {}
+  constructor(private readonly client: PrismaClient, private readonly kind: RaceKind = "RACE") {}
   async getRace(careerId: string, eventId: string) {
     validate(careerId, eventId);
     return protect(() =>
-      this.client.$transaction((tx) => read(tx, careerId, eventId), {
+      this.client.$transaction((tx) => read(tx, careerId, eventId, this.kind), {
         isolationLevel: "RepeatableRead",
       }),
     );
@@ -315,7 +320,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
             data: { updatedAt: new Date() },
           });
           if (!locked.count) throw new RaceError("NOT_FOUND");
-          const before = await read(tx, careerId, eventId);
+          const before = await read(tx, careerId, eventId, this.kind);
           if (!before) throw new RaceError("NOT_FOUND");
           const after = change(before),
             s = after.state;
@@ -325,7 +330,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
               data: {
                 careerId,
                 careerSessionId: before.sessionId,
-                sessionType: "RACE",
+                sessionType: this.kind,
                 simulationVersion: s.simulationVersion,
 
                 seed: BigInt(s.input.seed),
@@ -422,7 +427,8 @@ export class PrismaRaceRepository implements CareerRaceRepository {
             for (const e of s.entrants)
               await tx.careerRaceEntrant.update({
                 where: { id: e.entrantId },
-                data: entrantState(e),
+                // The controller changes only when a player hands the rest of a session to auto-management.
+                data: { ...entrantState(e), strategyController: s.input.entrants.find((x) => x.entrantId === e.entrantId)?.strategyController },
               });
           }
           if (s.input.pits) {

@@ -67,6 +67,9 @@ export interface SeasonDriverEntry {
   readonly pace?: number | null;
   readonly consistency?: number | null;
 }
+/** Weekend structure of a calendar event: STANDARD (P1 → P2 → P3 → Q → Race) or SPRINT (P1 → SQ → Sprint → Q → Race). */
+export type WeekendFormat = "STANDARD" | "SPRINT";
+export const WEEKEND_FORMATS: readonly WeekendFormat[] = ["STANDARD", "SPRINT"];
 export interface CalendarEvent {
   readonly id: EntityId;
   readonly gameDatabaseId: EntityId;
@@ -76,4 +79,6 @@ export interface CalendarEvent {
   readonly name: string;
   readonly startDate: IsoDate;
   readonly endDate: IsoDate;
+  /** Absent on legacy content: STANDARD. */
+  readonly weekendFormat?: WeekendFormat | null;
 }

@@ -8,6 +8,7 @@ import { compoundFit, SETUP_DIMENSIONS } from '../../simulation/practice/model';
 import type { TyreCompound } from '../../simulation/race/tyres/model';
 import type { QualifyingEntrantView, QualifyingView, DriverStatus } from './view-model';
 import type { QualifyingCommand } from './service';
+import { nextSessionPath, phaseKey, textKey } from './labels';
 /** A player command before it is addressed to a car (entrant id + command revision are added by the caller). */
 export type QualifyingUiCommand = QualifyingCommand extends infer C ? C extends { entrantId: string; revision: number } ? Omit<C, 'entrantId' | 'revision'> : never : never;
 const LOCATION_GLYPH = { GARAGE: '■', OUT_LAP: '↗', FLYING: '▶', IN_LAP: '↘' } as const;
@@ -26,7 +27,7 @@ export function CutoffDelta({ ms }: { ms: number | null }) {
 }
 export function QualifyingTower({ view, selected, onSelect }: { view: QualifyingView; selected: string; onSelect: (id: string) => void }) {
     const { t, format, locale } = useI18n(), lap = (ms: number | null) => ms === null ? t('race.noTime') : formatRaceTime(ms, locale);
-    const finished = view.status === 'FINISHED', title = t(finished ? 'qualifying.classification' : 'qualifying.timing', { phase: view.phase });
+    const finished = view.status === 'FINISHED', title = finished ? t(textKey(view.kind, 'classification')) : t('qualifying.timing', { phase: t(phaseKey(view.kind, view.phase)) });
     return <section className="ops-panel timing-panel" aria-label={title}>
         <div className="ops-panel-title"><h2>{title}</h2>{view.cutoff !== null && <span className="ops-muted">{t('qualifying.cutoffAt', { position: format.number(view.cutoff) })}</span>}</div>
         <div className="timing-scroll"><table className="timing-tower qualifying-tower"><caption className="sr-only">{title}</caption>
@@ -38,8 +39,8 @@ export function QualifyingTower({ view, selected, onSelect }: { view: Qualifying
                     <tr onClick={() => onSelect(e.entrantId)} data-entrant={e.entrantId} className={['tower-row', chosen && 'selected-row', e.player && 'player-row', out && 'eliminated-row', e.location === 'GARAGE' && 'garage-row'].filter(Boolean).join(' ')} style={e.player ? { ['--team' as string]: e.color } : undefined}>
                         <td>{format.number(e.position)}</td>
                         <th scope="row"><button onClick={() => onSelect(e.entrantId)} aria-pressed={chosen} className="driver-select" style={{ borderColor: e.color }} title={e.name}><strong>{e.player && <span className="player-mark" aria-hidden="true">◆</span>}{e.abbreviation}{chosen && <span className="selected-mark" aria-hidden="true"> ◂</span>}</strong><small>{e.team}</small>{e.player && <span className="sr-only">{t('viewer.player')}</span>}</button></th>
-                        <td>{out && !finished ? <small className="out-label">{t('qualifying.outIn', { phase: e.eliminatedIn! })}</small> : <>{lap(time)}{!finished && e.gapMs !== null && e.gapMs > 0 && <small>{formatRaceGap(e.gapMs, locale)}</small>}{!finished && e.player && <CutoffDelta ms={e.cutoffDeltaMs}/>}</>}</td>
-                        <td>{finished || out ? (e.player ? <StatusChip status={e.status}/> : e.eliminatedIn ? <small>{t('qualifying.outIn', { phase: e.eliminatedIn })}</small> : null) : <>
+                        <td>{out && !finished ? <small className="out-label">{t('qualifying.outIn', { phase: t(phaseKey(view.kind, e.eliminatedIn!)) })}</small> : <>{lap(time)}{!finished && e.gapMs !== null && e.gapMs > 0 && <small>{formatRaceGap(e.gapMs, locale)}</small>}{!finished && e.player && <CutoffDelta ms={e.cutoffDeltaMs}/>}</>}</td>
+                        <td>{finished || out ? (e.player ? <StatusChip status={e.status}/> : e.eliminatedIn ? <small>{t('qualifying.outIn', { phase: t(phaseKey(view.kind, e.eliminatedIn)) })}</small> : null) : <>
                             <span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span>
                             {e.player && <StatusChip status={e.status}/>}
                             {e.tyre && <small className={`tyre-token tyre-${e.tyre.compound}`} title={t(`tyre.${e.tyre.compound}`)}>{t(`viewer.tyre.${e.tyre.compound}`)}</small>}</>}</td>
@@ -88,11 +89,11 @@ export function QualifyingDriverPanel({ view, e, busy, send, onSelect }: { view:
                 {e.eliminatedIn === null && <span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span>}</div>
             <StatusChip status={e.status}/>
             <div className="stat-grid">
-                <Stat label={t('qualifying.bestPhase', { phase: view.phase })}>{lap(e.bestMs)}</Stat><Stat label={t('viewer.lastLap')}>{lap(e.lastLapMs)}{e.lastLapTraffic && <small className="traffic-note">{t('qualifying.lastLapTraffic')}</small>}</Stat>
+                <Stat label={t('qualifying.bestPhase', { phase: t(phaseKey(view.kind, view.phase)) })}>{lap(e.bestMs)}</Stat><Stat label={t('viewer.lastLap')}>{lap(e.lastLapMs)}{e.lastLapTraffic && <small className="traffic-note">{t('qualifying.lastLapTraffic')}</small>}</Stat>
                 <Stat label={t('qualifying.cutoff')}><CutoffDelta ms={e.cutoffDeltaMs}/>{e.cutoffDeltaMs === null && t('race.noTime')}</Stat><Stat label={t('qualifying.runs')}>{format.number(e.attempts)}</Stat>
-                {(['Q1', 'Q2', 'Q3'] as QualifyingPhase[]).map(p => <Stat key={p} label={p}>{lap(e.times[p])}</Stat>)}
+                {(['Q1', 'Q2', 'Q3'] as QualifyingPhase[]).map(p => <Stat key={p} label={t(phaseKey(view.kind, p))}>{lap(e.times[p])}</Stat>)}
             </div>
-            {e.eliminatedIn !== null && <p className="no-commands" role="status">{t('qualifying.eliminatedNote', { phase: e.eliminatedIn, position: format.number(e.position) })}</p>}
+            {e.eliminatedIn !== null && <p className="no-commands" role="status">{t('qualifying.eliminatedNote', { phase: t(phaseKey(view.kind, e.eliminatedIn)), position: format.number(e.position) })}</p>}
             {!own ? <p className="ops-muted">{t('qualifying.rivalNote')}</p> : <>
                 {view.autoPlayer && <p className="ops-muted" role="status">{t('practice.autoManaged')}</p>}
                 {own.run && <div className="run-status"><h3>{t('qualifying.currentRun')}</h3>
@@ -101,7 +102,7 @@ export function QualifyingDriverPanel({ view, e, busy, send, onSelect }: { view:
                 </div>}
                 {commandable && e.location === 'GARAGE' && <RunPlanner key={`q-run-plan:${e.entrantId}:${own.commandRevision}`} view={view} e={e} busy={busy} send={act}/>}
                 <div className="knowledge"><h3>{t('qualifying.carriedSetup')}</h3>
-                    <p className="ops-muted">{t('qualifying.setupLocked')}</p>
+                    <p className="ops-muted">{t(textKey(view.kind, 'setupLocked'))}</p>
                     <dl className="setup-readout">{SETUP_DIMENSIONS.map(d => <div key={d}><dt>{t(`practice.dim.${d}`)}</dt><dd>{format.number(own.preparation.setup[d])}</dd></div>)}</dl>
                     <p>{t('practice.confidence')}: {format.percentage(own.preparation.confidence / 1000, { maximumFractionDigits: 0 })} · {t('practice.acclimatisation')}: {format.percentage(own.preparation.acclimatisation / 1000, { maximumFractionDigits: 0 })}</p>
                 </div>
@@ -114,11 +115,11 @@ export function PhaseCompletePanel({ view, pending, onContinue }: { view: Qualif
     const { t } = useI18n(), next = view.phase === 'Q1' ? 'Q2' : 'Q3';
     const out = view.entrants.filter(e => e.eliminatedIn === view.phase), mine = view.entrants.filter(e => e.player);
     return <section className="ops-panel phase-complete" aria-labelledby="phase-complete-title">
-        <div className="ops-panel-title"><h2 id="phase-complete-title">{t('qualifying.phaseComplete', { phase: view.phase })}</h2><span className="status-pill">■ {t('qualifying.frozen')}</span></div>
+        <div className="ops-panel-title"><h2 id="phase-complete-title">{t('qualifying.phaseComplete', { phase: t(phaseKey(view.kind, view.phase)) })}</h2><span className="status-pill">■ {t('qualifying.frozen')}</span></div>
         <div className="summary-body">
             <div><h3>{t('qualifying.eliminated')}</h3>{out.length ? <ol>{out.map(e => <li key={e.entrantId}><strong style={{ borderColor: e.color }}>{e.abbreviation}</strong> P{e.position}</li>)}</ol> : <p className="ops-muted">{t('qualifying.noEliminations')}</p>}</div>
             <div><h3>{t('prep.yourDrivers')}</h3><ul>{mine.map(e => <li key={e.entrantId}><strong>{e.abbreviation}</strong> P{e.position} <StatusChip status={e.status}/></li>)}</ul></div>
-            <div><p>{t('qualifying.breakNote')}</p><button className="send-out" disabled={pending} onClick={onContinue}>{t('qualifying.continueTo', { phase: next })}</button></div>
+            <div><p>{t('qualifying.breakNote')}</p><button className="send-out" disabled={pending} onClick={onContinue}>{t('qualifying.continueTo', { phase: t(phaseKey(view.kind, next)) })}</button></div>
         </div>
     </section>;
 }
@@ -126,18 +127,18 @@ export function PhaseCompletePanel({ view, pending, onContinue }: { view: Qualif
 export function QualifyingSummary({ view }: { view: QualifyingView }) {
     const { t, format, locale } = useI18n(), lap = (ms: number | null) => ms === null ? '—' : formatRaceTime(ms, locale);
     const pole = view.entrants.find(e => e.position === 1);
-    const raceHref = `/career/${view.careerId}/events/${view.eventId}/race`;
+    const raceHref = `/career/${view.careerId}/events/${view.eventId}/${nextSessionPath(view.kind)}`;
     return <section className="ops-panel qualifying-summary" aria-labelledby="q-summary-title">
-        <div className="ops-panel-title"><h2 id="q-summary-title">{t('qualifying.summary')}</h2>{pole && <span className="status-pill">◆ {t('qualifying.pole', { driver: pole.abbreviation })}</span>}</div>
+        <div className="ops-panel-title"><h2 id="q-summary-title">{t(textKey(view.kind, 'summary'))}</h2>{pole && <span className="status-pill">◆ {t('qualifying.pole', { driver: pole.abbreviation })}</span>}</div>
         <div className="summary-scroll"><table className="timing-tower qualifying-result">
-            <caption className="sr-only">{t('qualifying.summary')}</caption>
-            <thead><tr><th>{t('practice.posShort')}</th><th>{t('race.driver')}</th><th>Q1</th><th>Q2</th><th>Q3</th><th>{t('qualifying.reached')}</th></tr></thead>
+            <caption className="sr-only">{t(textKey(view.kind, 'summary'))}</caption>
+            <thead><tr><th>{t('practice.posShort')}</th><th>{t('race.driver')}</th><th>{t(phaseKey(view.kind, 'Q1'))}</th><th>{t(phaseKey(view.kind, 'Q2'))}</th><th>{t(phaseKey(view.kind, 'Q3'))}</th><th>{t('qualifying.reached')}</th></tr></thead>
             <tbody>{view.entrants.map(e => <tr key={e.entrantId} className={['tower-row', e.player && 'player-row'].filter(Boolean).join(' ')} style={e.player ? { ['--team' as string]: e.color } : undefined}>
                 <td>{format.number(e.position)}</td><th scope="row"><strong style={{ borderColor: e.color }} className="summary-driver">{e.player && <span aria-hidden="true">◆ </span>}{e.abbreviation}</strong> <small>{e.team}</small>{e.player && <span className="sr-only">{t('viewer.player')}</span>}</th>
-                <td>{lap(e.times.Q1)}</td><td>{lap(e.times.Q2)}</td><td>{lap(e.times.Q3)}</td><td>{e.eliminatedIn ?? 'Q3'}</td>
+                <td>{lap(e.times.Q1)}</td><td>{lap(e.times.Q2)}</td><td>{lap(e.times.Q3)}</td><td>{t(phaseKey(view.kind, e.eliminatedIn ?? 'Q3'))}</td>
             </tr>)}</tbody>
         </table></div>
-        <div className="summary-actions"><p>{t('qualifying.gridNote')}</p><Link className="button-link" href={raceHref}>{t('qualifying.continueToRace')}</Link></div>
+        <div className="summary-actions"><p>{t(textKey(view.kind, 'gridNote'))}</p><Link className="button-link" href={raceHref}>{t(textKey(view.kind, 'continueToRace'))}</Link></div>
     </section>;
 }
 export { LOCATION_GLYPH };

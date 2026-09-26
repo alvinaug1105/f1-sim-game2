@@ -12,6 +12,7 @@ import { qualifyingWorld } from './helpers/qualifying';
 vi.mock('../src/features/career/progression-actions', () => ({ progressionAction: vi.fn() }));
 vi.mock('../src/features/practice/actions', () => ({ practiceWeekendAction: vi.fn() }));
 vi.mock('../src/features/qualifying/actions', () => ({ qualifyingWeekendAction: vi.fn() }));
+vi.mock('../src/features/race/actions', () => ({ raceAction: vi.fn() }));
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const html = (node: React.ReactNode) => renderToStaticMarkup(<I18nProvider>{node}</I18nProvider>);
 let root: Root | null = null, host: HTMLElement | null = null;

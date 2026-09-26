@@ -1,6 +1,6 @@
 import { createCareer } from "../../src/features/career/create-career";
 import { developmentContent } from "../../src/data/seed/content-development";
-import { rosterBalance, type CareerRaceData, type CareerRaceRepository } from "../../src/game/domain/race-repository";
+import { rosterBalance, type CareerRaceData, type CareerRaceRepository, type RaceKind } from "../../src/game/domain/race-repository";
 import type { PracticeRosterEntry } from "../../src/game/domain/practice-repository";
 import type { CareerProgress } from "../../src/game/domain/progression";
 import type { ContentDataset } from "../../src/game/domain/content-dataset";
@@ -36,13 +36,15 @@ export async function careerGrid(playerTeamKey: string, data: ContentDataset = d
 }
 /** In-memory Race repository at an IN_PROGRESS Race session of the Career's first event (as the weekend would be). */
 /** `startingGrid`: driver IDs from a completed real Qualifying (P1 first), as the Race repository supplies it. */
-export function raceRepository(grid: Awaited<ReturnType<typeof careerGrid>>, startingGrid: readonly string[] | null = null) {
-    const event = grid.progress.events[0], circuit = grid.world.circuits.find(c => c.id === event.careerCircuitId)!;
+/** `kind: "SPRINT"`: the weekend's SPRINT session instead (its grid is then the Sprint Qualifying order). */
+export function raceRepository(grid: Awaited<ReturnType<typeof careerGrid>>, startingGrid: readonly string[] | null = null, options: { kind?: RaceKind; eventIndex?: number } = {}) {
+    const kind = options.kind ?? "RACE", index = options.eventIndex ?? 0, sessionId = kind === "SPRINT" ? "sprint-session" : "race-session";
+    const event = grid.progress.events[index], circuit = grid.world.circuits.find(c => c.id === event.careerCircuitId)!;
     const weekend = { id: "weekend", careerId: grid.career.id, careerSeasonId: event.careerSeasonId, careerCalendarEventId: event.id, status: "ACTIVE" as const,
-        sessions: [{ id: "race-session", careerId: grid.career.id, careerRaceWeekendId: "weekend", type: "RACE" as const, order: 5, status: "IN_PROGRESS" as const, startedAtCareerDate: null, completedAtCareerDate: null }] };
+        sessions: [{ id: sessionId, careerId: grid.career.id, careerRaceWeekendId: "weekend", type: kind, order: kind === "SPRINT" ? 3 : 5, status: "IN_PROGRESS" as const, startedAtCareerDate: null, completedAtCareerDate: null }] };
     let data: CareerRaceData = {
-        progress: { ...grid.progress, events: grid.progress.events.map((e, i) => i === 0 ? { ...e, status: "CURRENT" as const, weekend } : e) },
-        eventId: event.id, sessionId: "race-session", state: null, labels: [], grid: startingGrid,
+        progress: { ...grid.progress, events: grid.progress.events.map((e, i) => i === index ? { ...e, status: "CURRENT" as const, weekend } : e) },
+        eventId: event.id, kind, sessionId, state: null, labels: [], grid: startingGrid,
         roster: grid.roster.map(r => ({ ...r, carNumber: r.carNumber! })),
         circuit: { sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters, defaultLapCount: circuit.defaultLapCount,
             // As the Prisma repository reads it: the snapshotted Career circuit Race profile, or null (legacy Career).

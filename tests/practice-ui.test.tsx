@@ -11,6 +11,7 @@ import { practiceWorld } from './helpers/practice';
 vi.mock('../src/features/career/progression-actions', () => ({ progressionAction: vi.fn() }));
 vi.mock('../src/features/practice/actions', () => ({ practiceWeekendAction: vi.fn() }));
 vi.mock('../src/features/qualifying/actions', () => ({ qualifyingWeekendAction: vi.fn() }));
+vi.mock('../src/features/race/actions', () => ({ raceAction: vi.fn() }));
 const html = (node: React.ReactNode) => renderToStaticMarkup(<I18nProvider>{node}</I18nProvider>);
 describe('practice UI', () => {
     it('own cars get garage controls (labelled range inputs, run plan); rivals are read only', async () => {
@@ -48,7 +49,7 @@ describe('practice UI', () => {
         expect(text).toContain('Open session');
         expect(text).toContain('Simulate session (auto-manage)');
         expect(text).toContain('Simulate all remaining Practice');
-        expect(text).toContain('Practice and Qualifying are fully simulated');
+        expect(text).toContain('Practice, Qualifying and Sprint sessions are fully simulated');
         expect(text).not.toContain('temporary development completion');
         // Qualifying has no development-placeholder controls (it is LOCKED here; see the Qualifying weekend test).
         expect(text).not.toContain('Complete Session — Development');

@@ -30,6 +30,7 @@ import {
   isSupportedSimulationVersion,
 } from "../../simulation/race/engine";
 import { developmentRaceInput, developmentCommandFuelKg } from "./development-profiles";
+import type { RaceSimulationState } from "../../simulation/race/types";
 import { careerRaceWeather, aiStartingCompound } from "./weather-scenarios";
 export function startCareerRace(
   repository: CareerRaceRepository,
@@ -42,6 +43,7 @@ export function startCareerRace(
   withCommands = false,
   withWeather = false,
   withIncidents = false,
+  autoPlayer = false,
 ) {
   // An explicit seed (tests, development tooling) keeps the legacy development weather so historical fixtures stay
   // reproducible. Career play (no explicit seed) freezes a weather scenario seeded by stable Career/event/circuit identity.
@@ -81,14 +83,15 @@ export function startCareerRace(
       }
       const weather = withWeather
         ? requestedSeed === undefined
-          ? careerRaceWeather(data.progress.career.id, eventId, data.circuit.sourceCircuitId ?? "custom", snapshot.input.totalLaps)
+          ? careerRaceWeather(data.progress.career.id, eventId, data.circuit.sourceCircuitId ?? "custom", snapshot.input.totalLaps, data.kind)
           : developmentWeather(seed, snapshot.input.totalLaps)
         : undefined;
       // AI teams pick starting tyres from current public grid conditions, never from player input or future weather.
       // Career Races (v7) also give each AI car its own stable strategic character: on a dry grid a strong soft
       // preference starts on the soft (never the hard). Wet or damp grids keep the current-conditions choice.
       const startingCompound = (driverId: string, teamId: string, gridPosition: number) => {
-        if (!(withIncidents && weather && teamId !== data.progress.career.playerTeamId)) return tyreChoices?.[driverId] ?? "MEDIUM";
+        // Auto-managed player cars (Simulate) start like any AI car: from current public conditions and character.
+        if (!(withIncidents && weather && (autoPlayer || teamId !== data.progress.career.playerTeamId))) return tyreChoices?.[driverId] ?? "MEDIUM";
         const compound = aiStartingCompound(weather.initial);
         return compound === "MEDIUM" ? aiDryStartingCompound(strategyPreference(seed, gridPosition)) : compound;
       };
@@ -120,7 +123,7 @@ export function startCareerRace(
                   ...(withPits
                     ? {
                         strategyController: (e.teamId ===
-                        data.progress.career.playerTeamId
+                        data.progress.career.playerTeamId && !autoPlayer
                           ? "PLAYER"
                           : "DEVELOPMENT_AI") as StrategyController,
                       }
@@ -301,4 +304,34 @@ export function startWeatherCareerRace(repository: CareerRaceRepository, careerI
 
 export function startIncidentCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
  return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true);
+}
+
+/**
+ * Simulate (e.g. Simulate Sprint): the real v7 Race from a clean start with BOTH player cars auto-managed by the same
+ * legal AI mechanics (commands, pit strategy, starting tyres), then run to the flag. No fake classification.
+ */
+export async function simulateCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, seed?: number) {
+  await startCareerRace(repository, careerId, eventId, seed, {}, true, true, true, true, true, true);
+  const data = await repository.getRace(careerId, eventId);
+  if (!data?.state) throw new RaceError("NOT_FOUND");
+  return advanceCareerRace(repository, careerId, eventId, data.state.lap, "finish");
+}
+/** Hands the player's cars to the fair AI controller (current information only; pending pit requests are kept). */
+export function autoManagePlayerCars(state: RaceSimulationState): RaceSimulationState {
+  return { ...state, input: { ...state.input, entrants: state.input.entrants.map((e) => e.strategyController === "PLAYER" ? { ...e, strategyController: "DEVELOPMENT_AI" as StrategyController } : e) } };
+}
+/**
+ * Simulate Remainder / Finish: from the exact persisted checkpoint, both player cars become auto-managed for the rest
+ * of the session (so they can still pit for weather), and the same v7 engine runs to the flag.
+ */
+export function simulateCareerRaceRemainder(repository: CareerRaceRepository, careerId: string, eventId: string, expectedLap?: number) {
+  return repository.changeRace(careerId, eventId, (data) => {
+    if (!data.state || data.state.status !== "RUNNING" || data.state.simulationVersion !== 7) throw new RaceError("INVALID_ACTION");
+    if (expectedLap !== undefined && data.state.lap !== expectedLap) throw new RaceError("STALE");
+    const event = data.progress.events.find((e) => e.id === eventId)!;
+    const session = event.weekend!.sessions.find((s) => s.id === data.sessionId)!;
+    if (session.status !== "IN_PROGRESS" || event.status !== "CURRENT" || data.progress.career.status !== "ACTIVE") throw new RaceError("INVALID_ACTION");
+    const state = advanceRace(autoManagePlayerCars(data.state), data.state.input.totalLaps);
+    return { state, labels: data.labels, progress: transitionSession(data.progress, eventId, data.sessionId, "completeDevelopment") };
+  });
 }

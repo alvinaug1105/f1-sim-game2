@@ -6,6 +6,7 @@ import type {
   AuditedContent,
   IsoDate,
   DriverRole,
+  WeekendFormat,
 } from "./content";
 export type CareerStatus = "ACTIVE" | "COMPLETED" | "ABANDONED";
 export interface Career extends AuditedContent {
@@ -76,6 +77,8 @@ export interface CareerCalendarEvent {
   readonly startDate: IsoDate;
   readonly endDate: IsoDate;
   readonly status: "UPCOMING" | "CURRENT" | "COMPLETED";
+  /** Career-snapshotted weekend structure; null for Careers created before Phase 15 (always STANDARD). */
+  readonly weekendFormat?: WeekendFormat | null;
 }
 export interface CareerWorld {
   readonly career: Career;

@@ -3,12 +3,28 @@ import { getRaceRepository } from "../../career/server";
 import { RaceError } from "../../../game/domain/race-repository";
 import type { ViewerIntent } from "./intents";
 import { applyViewerIntent } from "./service";
-export async function viewerAction(careerId: string, eventId: string, lap: number, intent: ViewerIntent) {
+import { simulateCareerRaceRemainder } from "../service";
+const kindOf = (kind: unknown) => { if (kind !== "RACE" && kind !== "SPRINT") throw new RaceError("INVALID_INPUT"); return kind; };
+export async function viewerAction(careerId: string, eventId: string, lap: number, intent: ViewerIntent, kind: unknown = "RACE") {
     try {
-        return { data: await applyViewerIntent(getRaceRepository(), careerId, eventId, lap, intent), error: null };
+        return { data: await applyViewerIntent(getRaceRepository(kindOf(kind)), careerId, eventId, lap, intent), error: null };
     }
     catch (error) {
         console.error("Viewer intent failed", error);
+        return { data: null, error: error instanceof RaceError ? error.code : "PERSISTENCE_FAILED" as const };
+    }
+}
+/** Sprint: Simulate Remainder from the exact checkpoint (both player cars auto-managed to the flag). */
+export async function sprintRemainderAction(careerId: string, eventId: string, lap: number) {
+    try {
+        const repository = getRaceRepository("SPRINT");
+        await simulateCareerRaceRemainder(repository, careerId, eventId, lap);
+        const data = await repository.getRace(careerId, eventId);
+        if (!data?.state) throw new RaceError("NOT_FOUND");
+        return { data, error: null };
+    }
+    catch (error) {
+        console.error("Sprint remainder failed", error);
         return { data: null, error: error instanceof RaceError ? error.code : "PERSISTENCE_FAILED" as const };
     }
 }

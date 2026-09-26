@@ -8,6 +8,8 @@ import { WEATHER_TYRE_COMPOUNDS } from "../../simulation/race/tyres/model";
 import { raceAction } from "./actions";
 import { careerRaceWeather, aiStartingCompound } from "./weather-scenarios";
 import { forecastAt } from "../../simulation/race/weather/model";
+import { scheduledLaps } from "./development-profiles";
+import { useState } from "react";
 
 export function RaceView({ data }: { data: CareerRaceData }) {
   return data.state ? <RaceOperations key={data.sessionId} initialData={data} /> : <RacePreparation data={data} />;
@@ -16,33 +18,35 @@ export function RaceView({ data }: { data: CareerRaceData }) {
 function RacePreparation({ data }: { data: CareerRaceData }) {
   const { t, format } = useI18n();
   const [actionState, action, pending] = useActionState(raceAction, { error: null as RaceErrorCode | null });
-  const { progress, eventId } = data;
+  const { progress, eventId } = data, sprint = data.kind === "SPRINT";
   // The same deterministic configuration the Race will freeze at start; only public parts (grid conditions and the
   // approximate forecast) are shown, never the timeline.
-  const laps = data.circuit.defaultLapCount, weather = careerRaceWeather(progress.career.id, eventId, data.circuit.sourceCircuitId ?? "custom", laps), grid = weather.initial;
+  const laps = scheduledLaps(data), weather = careerRaceWeather(progress.career.id, eventId, data.circuit.sourceCircuitId ?? "custom", laps, data.kind), grid = weather.initial;
   const mine = data.roster.filter((row) => row.teamId === progress.career.playerTeamId), rivals = data.roster.filter((row) => row.teamId !== progress.career.playerTeamId);
   const percent = (n: number) => format.percentage(n / 1000, { maximumFractionDigits: 0 });
   const event = progress.events.find((e) => e.id === eventId)!;
   const session = event.weekend!.sessions.find((s) => s.id === data.sessionId)!;
   const canStart = ["AVAILABLE", "IN_PROGRESS"].includes(session.status);
   return <>
-    <LocalizedPageTitle titleKey="race.title" />
+    <LocalizedPageTitle titleKey={sprint ? "sprint.title" : "race.title"} />
     <div className="page-header">
-      <div><p className="eyebrow">{t("race.title")}</p><h1>{event.name}</h1><p>{event.circuitName}</p></div>
+      <div><p className="eyebrow">{t(sprint ? "sprint.title" : "race.title")}</p><h1>{event.name}</h1><p>{event.circuitName}</p></div>
       <Link className="text-link" href={`/career/${progress.career.id}/events/${eventId}`}>{t("race.back")}</Link>
     </div>
     <p className="development-notice">{t("incident.notice")}</p>
-    <p>{t(canStart ? "race.ready" : "race.unavailable")}</p>
+    <p>{t(sprint ? (canStart ? "sprint.ready" : "sprint.unavailable") : canStart ? "race.ready" : "race.unavailable")}</p>
     <form action={action} className="race-controls">
       <input type="hidden" name="careerId" value={progress.career.id} />
       <input type="hidden" name="eventId" value={eventId} />
+      <input type="hidden" name="kind" value={data.kind ?? "RACE"} />
       <input type="hidden" name="lap" value={0} />
       <fieldset disabled={pending}>
         {canStart && <>
           <section className="race-context" aria-label={t("prep.context")}>
             <h2>{t("prep.context")}</h2>
             <dl>
-              <div><dt>{t("prep.laps")}</dt><dd>{format.number(laps)}</dd></div>
+              <div><dt>{t(sprint ? "sprint.distance" : "prep.laps")}</dt><dd>{sprint ? t("sprint.distanceValue", { laps: format.number(laps), km: format.number(laps * data.circuit.lengthMeters / 1000, { maximumFractionDigits: 1 }) }) : format.number(laps)}</dd></div>
+              {sprint && <div><dt>{t("sprint.title")}</dt><dd>{t("sprint.gridNote")}</dd></div>}
               <div><dt>{t("prep.conditions")}</dt><dd>{t(grid.rainfallIntensity === 0 ? "weather.dry" : grid.rainfallIntensity < 650 ? "weather.light" : "weather.heavy")} · {t("weather.water")} {percent(grid.trackWater)} ({t(grid.trackWater < 100 ? "weather.dry" : grid.trackWater < 350 ? "weather.damp" : "weather.wet")}) · {format.number(grid.airTemperatureMilliC / 1000, { style: "unit", unit: "celsius", maximumFractionDigits: 0 })}</dd></div>
               <div><dt>{t("weather.forecast")}</dt><dd>{(() => { const windows = forecastAt(weather, 1).slice(1); /* window 0 describes the grid itself */ return windows.length ? <ul>{windows.map((f, n) => <li key={n}>{t(f.rainfallMax < 200 ? "weather.easing" : "weather.expected")}: {t("weather.window", { from: format.number(f.arrivalMinLap), to: format.number(f.arrivalMaxLap), min: percent(f.rainfallMin), max: percent(f.rainfallMax) })}</li>)}</ul> : t("prep.noRain"); })()}<small>{t("weather.uncertainty")}</small></dd></div>
             </dl>
@@ -58,7 +62,9 @@ function RacePreparation({ data }: { data: CareerRaceData }) {
             </label>)}
             {rivals.length > 0 && <><h3>{t("prep.rivals")}</h3><p className="ops-muted">{t("prep.rivalNote")}</p><ul className="rival-list">{rivals.map((row) => <li key={row.driverId}>{row.driverName} <span>{row.teamName}</span></li>)}</ul></>}
           </div>
-          <button name="intent" value="start">{t("race.start")}</button>
+          <button name="intent" value="start">{t(sprint ? "sprint.manage" : "race.start")}</button>
+          {/* Sprint: Manage or Simulate — never a plain skip. Simulate runs the same v7 engine with both cars auto-managed. */}
+          {sprint && <SimulateSubmit disabled={pending} />}
         </>}
       </fieldset>
       {pending && <p role="status">{t("progression.pending")}</p>}
@@ -66,4 +72,13 @@ function RacePreparation({ data }: { data: CareerRaceData }) {
     </form>
     <Link className="text-link" href={`/career/${progress.career.id}`}>{t("progression.back")}</Link>
   </>;
+}
+
+/** Sprint: confirmed submit of this form with intent=simulate (tyre choices ignored: both cars are auto-managed). */
+function SimulateSubmit({ disabled }: { disabled: boolean }) {
+  const { t } = useI18n(), [asking, setAsking] = useState(false);
+  if (!asking) return <button type="button" className="ops-secondary" disabled={disabled} onClick={() => setAsking(true)}>{t("sprint.simulate")}</button>;
+  return <span className="confirm-inline" role="group" aria-label={t("sprint.simulate")}><span>{t("sprint.simulateConfirm")}</span>
+    <button type="submit" name="intent" value="simulate" disabled={disabled}>{t("practice.confirm")}</button>
+    <button type="button" className="ops-secondary" onClick={() => setAsking(false)}>{t("practice.cancel")}</button></span>;
 }

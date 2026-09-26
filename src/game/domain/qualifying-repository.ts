@@ -1,12 +1,15 @@
 import type { CareerProgress } from "./progression";
 import type { PracticeRosterEntry, WeekendPreparationRecord } from "./practice-repository";
-import type { QualifyingState } from "../../simulation/qualifying/model";
+import type { QualifyingKind, QualifyingState } from "../../simulation/qualifying/model";
+export type { QualifyingKind };
 import type { QualifyingRuleCode } from "../../simulation/qualifying/engine";
 export interface CareerQualifyingData {
     readonly progress: CareerProgress;
     readonly eventId: string;
     readonly weekendId: string;
-    /** The weekend's single QUALIFYING session (Q1/Q2/Q3 are internal phases). */
+    /** Which of the weekend's Qualifying-type sessions this is (a Sprint weekend has both). */
+    readonly kind: QualifyingKind;
+    /** The weekend's session of exactly that type (Q1/Q2/Q3 — or SQ1/SQ2/SQ3 — are internal phases). */
     readonly sessionId: string;
     readonly state: QualifyingState | null;
     /** Career-snapshotted race drivers (entrants are created from it when Qualifying starts). */
@@ -22,6 +25,7 @@ export class QualifyingError extends Error {
     constructor(readonly code: QualifyingErrorCode, options?: ErrorOptions) { super(`Qualifying operation: ${code}`, options); }
 }
 export interface QualifyingChange { readonly state: QualifyingState; readonly progress: CareerProgress }
+/** A repository instance serves one session kind; every lookup is by the exact session of that type. */
 export interface CareerQualifyingRepository {
     getQualifying(careerId: string, eventId: string): Promise<CareerQualifyingData | null>;
     /** Runs `change` under the Career lock; persists the Qualifying state and progression atomically. */

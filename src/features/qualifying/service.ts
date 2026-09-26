@@ -36,13 +36,15 @@ function preparationFor(data: CareerQualifyingData, driverId: string): Qualifyin
 }
 /** Session input from the Career snapshot. Seeds come from stable identity, so the same session always replays. */
 export function qualifyingInput(data: CareerQualifyingData, newId: () => string): QualifyingInput {
-    const careerId = data.progress.career.id, format = qualifyingFormat(data.roster.length);
     if (!data.roster.length) throw new QualifyingError("INVALID_INPUT");
+    // Grand Prix Qualifying keeps its exact Phase-14 identity labels; Sprint Qualifying has its own seed and weather.
+    const careerId = data.progress.career.id, kind = data.kind ?? "QUALIFYING", format = qualifyingFormat(data.roster.length, kind);
+    const [seedLabel, weatherLabel] = kind === "SPRINT_QUALIFYING" ? ["sprint-qualifying", "SPRINT_QUALIFYING"] : ["qualifying", "QUALIFYING"];
     return {
-        version: QUALIFYING_VERSION, seed: raceWeatherSeed([careerId, data.eventId, data.sessionId, "qualifying"]),
+        version: QUALIFYING_VERSION, seed: raceWeatherSeed([careerId, data.eventId, data.sessionId, seedLabel]),
         stepMs: QUALIFYING_STEP_MS, weatherTickMs: QUALIFYING_WEATHER_TICK_MS, baseLapTimeMs: developmentBaseLapTimeMs(data.circuit.lengthMeters),
         format, tyres: weatherTyreConfiguration(),
-        weather: scenarioWeather(raceWeatherSeed([careerId, data.eventId, circuitKey(data), "QUALIFYING"]), qualifyingWeatherTicks(format, QUALIFYING_WEATHER_TICK_MS)),
+        weather: scenarioWeather(raceWeatherSeed([careerId, data.eventId, circuitKey(data), weatherLabel]), qualifyingWeatherTicks(format, QUALIFYING_WEATHER_TICK_MS)),
         entrants: data.roster.map((row, index) => {
             const practiceRank = data.practiceOrder.indexOf(row.driverId);
             return {

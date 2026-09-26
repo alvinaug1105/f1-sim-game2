@@ -12,6 +12,7 @@ import { practiceAdvanceAction, practiceCommandAction, practiceRemainderAction, 
 import { practiceAdapter, PRACTICE_SEEK_LIMIT, type PracticeAttention, type PracticeAttentionMemory, type PracticeCommandInfo } from './playback';
 import type { PracticeView } from './view-model';
 import { ConfirmButton, PracticeDriverPanel, PracticeSummary, PracticeTiming, sessionClock, type PracticeUiCommand } from './components';
+import { sessionHref } from '../career/session-links';
 type Controller = PlaybackController<PracticeView, PracticeAttentionMemory, PracticeAttention, PracticeCommandInfo>;
 type Snapshot = PlaybackSnapshot<PracticeAttention, PracticeCommandInfo>;
 const weekendHref = (v: PracticeView) => `/career/${v.careerId}/events/${v.eventId}`;
@@ -30,7 +31,7 @@ function PracticeHeader({ view }: { view: PracticeView }) {
         <h1>{view.eventName} <span className="ops-muted">· {view.circuitName}</span></h1></div>
         <nav aria-label={t('progression.sessions')} className="session-tabs"><ol>{view.sessions.map(s => {
             const current = s.id === view.sessionId, reachable = s.status !== 'LOCKED' && s.status !== 'SKIPPED';
-            const href = s.type.startsWith('PRACTICE') ? `${weekendHref(view)}/practice/${s.id}` : s.type === 'QUALIFYING' ? `${weekendHref(view)}/qualifying` : `${weekendHref(view)}/race`;
+            const href = sessionHref(weekendHref(view), s);
             const label = <><span aria-hidden="true">{glyph[s.status]} </span>{t(`progression.${s.type}`)}<span className="sr-only"> · {t(`progression.${s.status}`)}</span></>;
             return <li key={s.id} className={`session-tab status-${s.status} ${current ? 'current' : ''}`}>{reachable && !current ? <Link href={href}>{label}</Link> : <span aria-current={current ? 'page' : undefined}>{label}</span>}</li>;
         })}</ol></nav>

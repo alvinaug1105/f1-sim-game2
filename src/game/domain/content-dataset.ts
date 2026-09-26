@@ -9,6 +9,7 @@ import type {
   SeasonDriverEntry,
   CalendarEvent,
 } from "./content";
+import { WEEKEND_FORMATS } from "./content";
 import { assertContentId } from "./content-repository";
 type Source<T> = Omit<T, keyof AuditedContent>;
 export interface ContentDataset {
@@ -246,5 +247,6 @@ export function validateContentDataset(data: ContentDataset): void {
     date(row.startDate);
     date(row.endDate);
     requireValid(row.startDate <= row.endDate, "Event ends before it starts.");
+    requireValid(row.weekendFormat == null || WEEKEND_FORMATS.includes(row.weekendFormat), "Unknown weekend format.");
   }
 }

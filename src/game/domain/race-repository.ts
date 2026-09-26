@@ -36,15 +36,20 @@ export interface RaceLabel {
   readonly driverName: string;
   readonly teamName: string;
 }
+/** Race-type sessions sharing the Race v7 engine and persistence: the Grand Prix and the Sprint. */
+export type RaceKind = "RACE" | "SPRINT";
 export interface CareerRaceData {
   readonly progress: CareerProgress;
   readonly eventId: string;
+  /** Which Race-type session of the weekend this is (a Sprint weekend has both). Absent = the Grand Prix. */
+  readonly kind?: RaceKind;
   readonly sessionId: string;
   readonly state: RaceSimulationState | null;
   readonly labels: readonly RaceLabel[];
   readonly roster: readonly RaceRosterEntry[];
   /**
-   * Starting order from the weekend's completed real Qualifying (driver IDs, P1 first); null when there is none
+   * Starting order from the weekend's completed real Qualifying — Grand Prix Qualifying for the Race, Sprint Qualifying
+   * for the Sprint, never the other (driver IDs, P1 first); null when there is none
    * (legacy placeholder Qualifying), in which case the legacy roster-order grid applies. Only used at Race start —
    * a started Race keeps its own frozen grid.
    */

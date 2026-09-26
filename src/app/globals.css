@@ -976,3 +976,8 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .qualifying-bar .cutoff-info strong { color:#ffb4a6; }
 @media (min-width:1221px) and (max-width:1599px) { .qualifying-ops .ops-grid { grid-template-columns:300px minmax(260px,1fr) 300px; } }
 @media (min-width:821px) and (max-width:1220px) { .qualifying-ops .ops-grid { grid-template-columns:300px minmax(0,1fr); } }
+/* Phase 15 — Sprint weekend: session identity is text (never colour alone). */
+.session-kind-badge { display:inline-block; vertical-align:middle; font-size:.55em; padding:2px 7px; border:1px solid #ffb347; border-radius:3px; color:#ffd099; letter-spacing:.08em; }
+.weekend-format { color:#ffd099; font-weight:700; }
+.sprint-remainder { display:flex; justify-content:flex-end; padding:4px 10px 8px; }
+.sprint-summary { margin-bottom:14px; }

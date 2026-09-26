@@ -94,6 +94,8 @@ model Season {
   key            String
   year           Int
   name           String
+  /// Championship scoring rules; NULL = legacy content, which scores under F1_2026.
+  scoringRulesVersion ScoringRulesVersion?
   teams          SeasonTeamEntry[]
   events         CalendarEvent[]
   createdAt      DateTime          @default(now()) @db.Timestamptz(3)
@@ -164,6 +166,10 @@ enum CareerStatus {
   ACTIVE
   COMPLETED
   ABANDONED
+}
+
+enum ScoringRulesVersion {
+  F1_2026
 }
 
 enum CareerSeasonStatus {
@@ -278,6 +284,8 @@ model CareerSeason {
   year           Int
   name           String
   status         CareerSeasonStatus      @default(UPCOMING)
+  /// Career-snapshotted scoring rules; NULL = Career created before Phase 16, which scores under F1_2026.
+  scoringRulesVersion ScoringRulesVersion?
   startDate      DateTime?               @db.Date
   endDate        DateTime?               @db.Date
   career         Career                  @relation("WorldSeasons", fields: [careerId], references: [id], onDelete: Restrict, onUpdate: Restrict)

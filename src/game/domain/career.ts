@@ -7,6 +7,7 @@ import type {
   IsoDate,
   DriverRole,
   WeekendFormat,
+  ScoringRulesVersion,
 } from "./content";
 export type CareerStatus = "ACTIVE" | "COMPLETED" | "ABANDONED";
 export interface Career extends AuditedContent {
@@ -44,6 +45,8 @@ export interface CareerSeason {
   readonly status: "UPCOMING" | "ACTIVE" | "COMPLETED";
   readonly startDate: IsoDate | null;
   readonly endDate: IsoDate | null;
+  /** Career-snapshotted scoring rules; absent/NULL = Career created before Phase 16 (F1_2026). */
+  readonly scoringRulesVersion?: ScoringRulesVersion | null;
 }
 export interface CareerSeasonTeamEntry {
   readonly id: EntityId;

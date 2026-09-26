@@ -191,6 +191,7 @@ export function buildCareerWorld(
       year: season.year,
       name: season.name,
       status: "UPCOMING",
+      scoringRulesVersion: season.scoringRulesVersion ?? "F1_2026",
       startDate: starts[0] ?? null,
       endDate: ends.at(-1) ?? null,
     },

@@ -15,8 +15,8 @@ function withoutDisplayNames(value: unknown): unknown {
  * IDs, keys, relationships and simulation values for the original teams, drivers, circuits and entries.
  */
 // The Post-Phase-14 Race Dynamics pass likewise adds only the circuit Race interaction balance columns, and Phase 15
-// the calendar weekend format.
-const PASS_A_ADDED = ["pace", "consistency", "carPerformance", "overtakingDifficulty", "dirtyAirSensitivityPermille", "drsEffectivenessPermille", "weekendFormat"], CALENDAR_ORDER = ["round", "startDate", "endDate"];
+// the calendar weekend format, and Phase 16 the season scoring rules version.
+const PASS_A_ADDED = ["pace", "consistency", "carPerformance", "overtakingDifficulty", "dirtyAirSensitivityPermille", "drsEffectivenessPermille", "weekendFormat", "scoringRulesVersion"], CALENDAR_ORDER = ["round", "startDate", "endDate"];
 function originalSubset(fixture: Record<string, unknown>) {
   const pick = (name: string, rows: readonly Record<string, unknown>[]) => {
     const ids = new Set((fixture[name] as { id: string }[]).map(row => row.id));

@@ -11,13 +11,13 @@ import { TrackMap } from '../src/features/race/viewer/track-map';
 import { DriverPanel } from '../src/features/race/viewer/driver-panel';
 import { layoutForCircuit } from '../src/data/seed/circuit-layouts';
 import { I18nProvider } from '../src/i18n/provider';
-import { viewerData } from './helpers/viewer';
-import type { CareerRaceData } from '../src/game/domain/race-repository';
+import { viewerView } from './helpers/viewer';
+import type { RaceViewData } from '../src/features/race/public-view';
 const bounds: Rect = { x: 0, y: 0, w: 1000, h: 650 };
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 /** Fixture with explicit authoritative order and intervals; nothing is simulated. */
-function withIntervals(intervals: (number | null)[]): CareerRaceData {
-    const d = viewerData(intervals.length), s = d.state!;
+function withIntervals(intervals: (number | null)[]): RaceViewData {
+    const d = viewerView(intervals.length), s = d.state!;
     let gap = 0;
     const entrants = s.entrants.map((e, i) => { gap += intervals[i] ?? 0; return { ...e, position: i + 1, intervalToAheadMs: i === 0 ? null : intervals[i], gapToLeaderMs: i === 0 ? null : gap }; });
     return { ...d, state: { ...s, lap: 5, entrants } };
@@ -227,26 +227,26 @@ describe('derived race views', () => {
         expect(labelTiers(rows, player.id, d.state!).get(player.id)).toBe(LABEL_TIER.SELECTED);
     });
     it('reads DRS state from engine flags only', () => {
-        const d = viewerData(), s = d.state!;
+        const d = viewerView(), s = d.state!;
         expect(drsState(s)).toBe('ENABLED');
         expect(drsState({ ...s, weather: { ...s.weather!, drsState: 'DRS_DISABLED_WET' } })).toBe('WET');
         expect(drsState({ ...s, incidents: { ...s.incidents!, mode: 'SAFETY_CAR' } })).toBe('CONTROL');
         expect(drsState({ ...s, incidents: { ...s.incidents!, drsDelay: 2 } })).toBe('RESTART');
-        expect(drsState({ ...s, input: { ...s.input, interaction: undefined } })).toBe('UNAVAILABLE');
+        expect(drsState({ ...s, input: { ...s.input, interaction: false } })).toBe('UNAVAILABLE');
     });
     it('flags tyre warnings from the compound profile thresholds', () => {
-        const s = viewerData().state!, e = s.entrants[0], p = s.input.tyres!.profiles[e.stint!.tyre.compound];
+        const s = viewerView().state!, e = s.entrants[0], p = s.input.tyres!.profiles[e.stint!.tyre.compound]!;
         const at = (wearPermille: number, temperatureMilliC = (p.idealTemperatureMinMilliC + p.idealTemperatureMaxMilliC) / 2) => tyreCondition(s, { ...e, stint: { ...e.stint!, tyre: { ...e.stint!.tyre, wearPermille, temperatureMilliC } } });
         expect(at(0)).toEqual({ wear: 'OK', temperature: 'OK' });
         expect(at(p.degradationStartWear)!.wear).toBe('HIGH'); expect(at(p.cliffWear)!.wear).toBe('CRITICAL');
         expect(at(0, p.idealTemperatureMinMilliC - 1)!.temperature).toBe('COLD'); expect(at(0, p.idealTemperatureMaxMilliC + 1)!.temperature).toBe('HOT');
     });
     it('comparison snapshot does not mutate state and rounds fuel delta to 0.1 kg', () => {
-        const d = viewerData(), before = structuredClone(d), v = driverSnapshot(timingRows(d)[0], d.state!);
+        const d = viewerView(), before = structuredClone(d), v = driverSnapshot(timingRows(d)[0], d.state!);
         expect(d).toEqual(before); expect(Number.isInteger(Math.round(v.fuelDeltaKg! * 10))).toBe(true);
     });
     it('builds a categorised, newest-first feed from persisted records and marks important/player items', () => {
-        const d = viewerData(), s = d.state!, team = d.progress.career.playerTeamId, me = s.entrants[0].entrantId, ai = s.entrants[3].entrantId;
+        const d = viewerView(), s = d.state!, team = d.progress.career.playerTeamId, me = s.entrants[0].entrantId, ai = s.entrants[3].entrantId;
         const state = { ...s, lap: 6, incidents: { ...s.incidents!, events: [
             { sequence: 1, lap: 2, type: 'INCIDENT' as const, entrantIds: [ai], kind: 'SPIN' as const, severity: 'MINOR' as const, timeLossMs: 900 },
             { sequence: 2, lap: 4, type: 'SAFETY_CAR_START' as const, entrantIds: [], kind: null, severity: null, timeLossMs: 0 },
@@ -260,14 +260,14 @@ describe('derived race views', () => {
 });
 describe('refined race UI rendering', () => {
     it('renders every marker but only prioritised labels on the map', () => {
-        const d = viewerData(20), rows = timingRows(d), tiers = labelTiers(rows, rows[0].id, d.state!);
+        const d = viewerView(20), rows = timingRows(d), tiers = labelTiers(rows, rows[0].id, d.state!);
         const html = renderToStaticMarkup(<I18nProvider><TrackMap layout={layoutForCircuit()} rows={rows} selected={rows[0].id} onSelect={() => {}} speed={1} reduceMotion={true} tiers={tiers}/></I18nProvider>);
         expect(html.match(/data-car=/g)).toHaveLength(20);
         const labels = html.match(/data-label=/g)?.length ?? 0;
         expect(labels).toBeGreaterThanOrEqual(2); expect(labels).toBeLessThan(20);
     });
     it('live-timing tags: selected light pill, player dark outlined pill, team colour on markers and tag edges', () => {
-        const d = viewerData(20), rows = timingRows(d), tiers = labelTiers(rows, rows[0].id, d.state!);
+        const d = viewerView(20), rows = timingRows(d), tiers = labelTiers(rows, rows[0].id, d.state!);
         const html = renderToStaticMarkup(<I18nProvider><TrackMap layout={layoutForCircuit()} rows={rows} selected={rows[0].id} onSelect={() => {}} speed={1} reduceMotion={true} tiers={tiers}/></I18nProvider>);
         const label = (id: string) => html.match(new RegExp(`<g data-label="${id}"[\\s\\S]*?</g>`))?.[0] ?? '';
         const selected = label(rows[0].id), player = label(rows[1].id);
@@ -284,7 +284,7 @@ describe('refined race UI rendering', () => {
         expect(html.match(/data-label=/g)!.length).toBeLessThan(rows.length);
     });
     it('retired player car shows RETIRED and no command controls', () => {
-        const d = viewerData(), s = d.state!;
+        const d = viewerView(), s = d.state!;
         const retired = { ...d, state: { ...s, lap: 3, entrants: s.entrants.map((e, i) => i === 0 ? { ...e, incident: { status: 'RETIRED' as const, mechanicalPenaltyMs: 0, retiredLap: 3, retirementOrder: 1 } } : e) } };
         const row = timingRows(retired)[0];
         expect(row.player).toBe(true);
@@ -292,7 +292,7 @@ describe('refined race UI rendering', () => {
         expect(html).not.toContain('<button'); expect(html).toContain('Retired on lap 3');
     });
     it('editable player car keeps pace, fuel, ERS and pit controls', () => {
-        const d = viewerData(), row = timingRows(d)[0];
+        const d = viewerView(), row = timingRows(d)[0];
         const html = renderToStaticMarkup(<I18nProvider><DriverPanel data={d} row={row} busy={false} send={() => {}}/></I18nProvider>);
         for (const text of ['Attack', 'Conserve', 'Overtake', 'Harvest', 'Box this lap']) expect(html).toContain(text);
     });

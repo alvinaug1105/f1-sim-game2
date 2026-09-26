@@ -1,3 +1,4 @@
+import { pub } from './helpers/viewer';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { circuitLayouts, fallbackLayout, layoutForCircuit } from '../src/data/seed/circuit-layouts';
 import { normalizeCircuitPoints, projectCoordinates, prepareCircuitPath, circuitProjection, pointAtProgress } from '../src/game/domain/circuit-geometry';
@@ -107,18 +108,18 @@ describe('shared unwrapped visual timeline', () => {
         const m=new RaceMotion(targets); m.reconcile(targets.map(e=>({...e,progress:e.progress+1})),1); m.configure('playing',300); frames(m,0,400); m.configure('paused',1000,true); expect(s).toEqual(before);
     });
     it('automatic strategic pause freezes motion; explicit step can settle; a late response cannot resume manual pause', async () => {
-        vi.useFakeTimers(); const s=quietRace(); const c=new PlaybackController(s,s.input.entrants[0].teamId,async state=>neutralise(advanceRaceLap(state),'VSC'));
+        vi.useFakeTimers(); const s=quietRace(); let a=s, b=s; const c=new PlaybackController(pub(s),s.input.entrants[0].teamId,async()=>pub(a=neutralise(advanceRaceLap(a),'VSC')));
         c.skip(); await vi.runAllTimersAsync(); expect(c.getSnapshot().motion).toBe('paused'); expect(c.getSnapshot().reason).toBe('CONTROL');
-        const step=new PlaybackController(s,s.input.entrants[0].teamId,async state=>advanceRaceLap(state)); await step.step(); expect(step.getSnapshot().motion).toBe('settle');
-        let finish!:(state: typeof s)=>void; const late=new PlaybackController(s,s.input.entrants[0].teamId,()=>new Promise(resolve=>finish=resolve)); const task=late.step(); late.pause(); finish(advanceRaceLap(s)); await task; expect(late.getSnapshot().motion).toBe('paused');
+        const step=new PlaybackController(pub(s),s.input.entrants[0].teamId,async()=>pub(b=advanceRaceLap(b))); await step.step(); expect(step.getSnapshot().motion).toBe('settle');
+        let finish!:(state: ReturnType<typeof pub>)=>void; const late=new PlaybackController(pub(s),s.input.entrants[0].teamId,()=>new Promise(resolve=>finish=resolve)); const task=late.step(); late.pause(); finish(pub(advanceRaceLap(s))); await task; expect(late.getSnapshot().motion).toBe('paused');
     });
 });
 
 it('measures persistence latency for presentation without extra requests or altered results', async () => {
-    vi.useFakeTimers(); const s=quietRace(); const advance=vi.fn(async()=>{ await new Promise(resolve=>setTimeout(resolve,180)); return advanceRaceLap(s); });
+    vi.useFakeTimers(); const s=quietRace(); const advance=vi.fn(async()=>{ await new Promise(resolve=>setTimeout(resolve,180)); return pub(advanceRaceLap(s)); });
     // Phase 12C: play advances immediately (nothing left to animate); the next request follows one full interval after the commit (180 + 2400 ms).
-    const c=new PlaybackController(s,s.input.entrants[0].teamId,advance); c.play(); await vi.advanceTimersByTimeAsync(2570);
-    expect(c.getSnapshot().latencyMs).toBe(180); expect(advance).toHaveBeenCalledTimes(1); expect(c.getState()).toEqual(advanceRaceLap(s)); c.pause();
+    const c=new PlaybackController(pub(s),s.input.entrants[0].teamId,advance); c.play(); await vi.advanceTimersByTimeAsync(2570);
+    expect(c.getSnapshot().latencyMs).toBe(180); expect(advance).toHaveBeenCalledTimes(1); expect(c.getState()).toEqual(pub(advanceRaceLap(s))); c.pause();
 });
 
 it('starts a checkpoint after idle without consuming the old frame timestamp', () => {

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useI18n } from '../../../i18n/provider';
 import { formatRaceGap } from '../../../i18n/race-time';
-import type { CareerRaceData } from '../../../game/domain/race-repository';
+import type { RaceViewData } from '../public-view';
 import type { timingRows } from './model';
 import { ConfirmButton } from '../../practice/components';
 type Rows = ReturnType<typeof timingRows>;
@@ -12,7 +12,7 @@ export function SprintRemainder({ busy, onConfirm }: { busy: boolean; onConfirm:
     return <div className="sprint-remainder"><ConfirmButton className="ops-secondary" disabled={busy} label={t('sprint.remainder')} confirmText={t('sprint.remainderConfirm')} confirmLabel={t('practice.confirm')} onConfirm={onConfirm}/></div>;
 }
 /** Sprint Result: P1–P22 with gap/status and stops; player cars highlighted; the way on is Grand Prix Qualifying. */
-export function SprintSummary({ data, rows }: { data: CareerRaceData; rows: Rows }) {
+export function SprintSummary({ data, rows }: { data: RaceViewData; rows: Rows }) {
     const { t, format, locale } = useI18n(), winner = rows.find(r => r.entrant.position === 1);
     const ordered = [...rows].sort((a, b) => a.entrant.position - b.entrant.position), leaderLaps = ordered[0]?.entrant.completedLaps ?? 0;
     const gap = (r: Rows[number]) => r.status === 'RETIRED' ? t('incident.RETIRED')

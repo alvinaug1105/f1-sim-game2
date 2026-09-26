@@ -291,6 +291,8 @@
   "incident.VSC": "Virtual Safety Car",
   "incident.SAFETY_CAR": "Safety Car",
   "incident.remaining": "{count} neutralised laps remaining",
+  "incident.endingThisLap.SAFETY_CAR": "Safety Car in this lap",
+  "incident.endingThisLap.VSC": "VSC ending",
   "incident.drsSuspended": "DRS Suspended",
   "incident.restart": "Restart DRS delay: {count} green laps",
   "incident.events": "Race Events",

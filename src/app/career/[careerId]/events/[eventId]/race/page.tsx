@@ -3,6 +3,7 @@ import { assertContentId } from "@/game/domain/content-repository";
 import { getRaceRepository, loadCareerData } from "@/features/career/server";
 import { CareerUnavailable } from "@/features/career/views";
 import { RaceView } from "@/features/race/view";
+import { projectRaceView } from "@/features/race/projection";
 export const dynamic = "force-dynamic";
 export default async function RacePage({
   params,
@@ -21,5 +22,6 @@ export default async function RacePage({
   );
   if (!result.ok) return <CareerUnavailable titleKey="race.title" />;
   if (!result.data) notFound();
-  return <RaceView data={result.data} />;
+  // Only the public projection crosses into the client: never the authoritative Race state.
+  return <RaceView data={projectRaceView(result.data)} />;
 }

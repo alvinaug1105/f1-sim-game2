@@ -2,7 +2,7 @@
 import { useId, useState } from 'react';
 import { useI18n } from '../../../i18n/provider';
 import { formatRaceGap, formatRaceTime } from '../../../i18n/race-time';
-import type { RaceSimulationState } from '../../../simulation/race/types';
+import type { RacePublicState } from '../public-view';
 import type { timingRows } from './model';
 import { driverSnapshot, driverFlags } from './race-view';
 import { FlagChips } from './flags';
@@ -13,7 +13,7 @@ type Rows = ReturnType<typeof timingRows>;
  * Each tab carries compact decision flags (BOX, PIT, tyre, fuel, battle, attention) so both cars can be monitored
  * without switching.
  */
-export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId = null }: { state: RaceSimulationState; rows: Rows; selected: string; onSelect: (id: string) => void; attentionId?: string | null }) {
+export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId = null }: { state: RacePublicState; rows: Rows; selected: string; onSelect: (id: string) => void; attentionId?: string | null }) {
     const { t, format, locale } = useI18n(), [open, setOpen] = useState(false), panel = useId();
     // Entry order, not race order, so the two buttons never swap places when positions change.
     const players = s.input.entrants.map(e => rows.find(r => r.id === e.entrantId)!).filter(r => r?.player);

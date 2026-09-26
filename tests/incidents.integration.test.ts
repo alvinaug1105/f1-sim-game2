@@ -124,16 +124,17 @@ it("v7 full results ignore renamed driver/team/circuit/event labels", async () =
 import {applyViewerIntent} from '../src/features/race/viewer/service';
 import {checkpointDuration} from '../src/features/race/viewer/motion';
 import {PlaybackController,type PlaybackClock} from '../src/features/race/viewer/playback';
+import {projectRaceView} from '../src/features/race/projection';
 it('viewer 1x and 8x persist EXACTLY the same full v7 result under the same commands',async()=>{
  const initial=await start(),id=player(initial);
  async function run(speed:1|8){
   let queued:(()=>void)|null=null;const delays:number[]=[];
   // Virtual presentation clock: time never passes between callbacks, so each scheduled delay is exact.
   const clock:PlaybackClock={set:(callback,delay)=>{expect(queued).toBeNull();queued=callback;delays.push(delay);return 1 as unknown as ReturnType<typeof setTimeout>;},clear:()=>{queued=null;},now:()=>0};
-  const controller=new PlaybackController(initial.state!,initial.progress.career.playerTeamId,async s=>{
+  const controller=new PlaybackController(projectRaceView(initial).state!,initial.progress.career.playerTeamId,async s=>{
    if(s.lap===4){const e=s.entrants.find(e=>e.entrantId===id)!;await applyViewerIntent(races,career.id,eventId,s.lap,{kind:'paceMode',entrantId:id,revision:e.commands!.commandRevision,mode:'PUSH'});}
    if(s.lap===8){const d=await get(),e=d.state!.entrants.find(e=>e.entrantId===id)!;await applyViewerIntent(races,career.id,eventId,s.lap,{kind:'pit',entrantId:id,revision:e.pit!.commandRevision,compound:'HARD'});}
-   return (await applyViewerIntent(races,career.id,eventId,s.lap,{kind:'advance'})).state!;
+   return projectRaceView(await applyViewerIntent(races,career.id,eventId,s.lap,{kind:'advance'})).state!;
   },clock);
   controller.setAutoPause(false);controller.setSpeed(speed);controller.play();
   while(controller.getSnapshot().playing){
@@ -144,7 +145,7 @@ it('viewer 1x and 8x persist EXACTLY the same full v7 result under the same comm
    const tick=queued!;expect(tick).toBeTypeOf('function');queued=null;tick();await completed;
   }
   expect(delays).toHaveLength(initial.state!.input.totalLaps);expect(delays[0]).toBe(0);expect(delays.slice(1).every(d=>d>=2400/speed)).toBe(true);
-  const reopened=await get();expect(reopened.state).toEqual(controller.getState());return reopened.state;
+  const reopened=await get();expect(projectRaceView(reopened).state).toEqual(controller.getState());return reopened.state;
  }
  const slow=await run(1);
  // Test-only reset in this suite's disposable schema; restore the identical frozen checkpoint and IDs.

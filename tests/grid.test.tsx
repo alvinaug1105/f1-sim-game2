@@ -1,3 +1,4 @@
+import { projectRaceView } from '../src/features/race/projection';
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -157,21 +158,21 @@ describe("22-car Race (real Career Race start, v7)", () => {
   it("starts 22 entrants with 2 player cars; runs laps; tower shows P1–P22; all markers; labels stay prioritised", async () => {
     const g = await careerGrid("team-williams"), m = raceRepository(g);
     await startIncidentCareerRace(m.repository, g.career.id, m.eventId, {});
-    let data = m.get();
+    const data = m.get();
     const s = data.state!;
     expect(s.simulationVersion).toBe(7);
     expect(s.input.entrants).toHaveLength(22);
     expect(() => validateRaceInput(s.input)).not.toThrow();
     expect(s.input.entrants.filter(e => e.teamId === g.playerTeamId)).toHaveLength(2);
-    data = { ...data, state: advanceRace(s, 6) };
-    const rows = timingRows(data);
+    const view = projectRaceView({ ...data, state: advanceRace(s, 6) });
+    const rows = timingRows(view);
     expect(rows).toHaveLength(22);
     expect(rows.map(r => r.entrant.position).sort((a, b) => a - b)).toEqual(Array.from({ length: 22 }, (_, i) => i + 1));
     expect(rows.filter(r => r.player)).toHaveLength(2);
     expect(new Set(rows.map(r => r.abbreviation)).size).toBe(22);
-    const tower = html(<TimingTower state={data.state!} rows={rows} selected={rows.find(r => r.player)!.id} onSelect={() => {}} interval={false} onInterval={() => {}}/>);
+    const tower = html(<TimingTower state={view.state!} rows={rows} selected={rows.find(r => r.player)!.id} onSelect={() => {}} interval={false} onInterval={() => {}}/>);
     expect(tower.match(/data-entrant=/g)).toHaveLength(22);
-    const selected = rows.find(r => r.player)!.id, tiers = labelTiers(rows, selected, data.state!);
+    const selected = rows.find(r => r.player)!.id, tiers = labelTiers(rows, selected, view.state!);
     const map = html(<TrackMap layout={layoutForCircuit(data.circuit.sourceCircuitId)} rows={rows} selected={selected} onSelect={() => {}} speed={1} reduceMotion tiers={tiers}/>);
     expect(map.match(/data-car=/g)).toHaveLength(22);
     const labels = map.match(/data-label=/g)?.length ?? 0;

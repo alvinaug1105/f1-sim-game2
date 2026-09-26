@@ -1,10 +1,10 @@
 "use client";
 import { useI18n } from '../../../i18n/provider';
-import type { CareerRaceData } from '../../../game/domain/race-repository';
+import type { RaceViewData } from '../public-view';
 import { raceFeed, type FeedItem } from './race-view';
 const RECENT = 8;
 /** Structured Race records translated at render time; important items are marked by text, glyph and weight. */
-export function EventFeed({ data }: { data: CareerRaceData }) {
+export function EventFeed({ data }: { data: RaceViewData }) {
     const { t, format } = useI18n(), s = data.state!, items = raceFeed(s, data.progress.career.playerTeamId);
     const name = (id: string) => data.labels.find(l => l.entrantId === id)?.driverName ?? id;
     const seconds = (ms: number, digits = 2) => format.number(ms / 1000, { style: 'unit', unit: 'second', maximumFractionDigits: digits });

@@ -7,6 +7,7 @@ import { QualifyingSummary, QualifyingTower } from '../src/features/qualifying/c
 import { qualifyingView } from '../src/features/qualifying/view-model';
 import { simulateQualifyingSession } from '../src/features/qualifying/service';
 import { RaceView } from '../src/features/race/view';
+import { projectRaceView } from '../src/features/race/projection';
 import { SprintSummary } from '../src/features/race/viewer/sprint-panels';
 import { timingRows } from '../src/features/race/viewer/model';
 import { simulateCareerRace } from '../src/features/race/service';
@@ -81,14 +82,14 @@ describe('Sprint weekend UI', () => {
     });
     it('Sprint page: Manage / Simulate Sprint with the Sprint distance; the Sprint Result lists P1–P22 and continues to Qualifying', async () => {
         const g = await careerGrid('team-aurora'), m = raceRepository(g, null, { kind: 'SPRINT', eventIndex: 1 });
-        const prep = html(<RaceView data={m.get()}/>);
+        const prep = html(<RaceView data={projectRaceView(m.get())}/>);
         expect(prep).toContain('Manage Sprint');
         expect(prep).toContain('Simulate Sprint');
         expect(prep).toContain('Sprint distance');
         expect(prep).toContain('name="kind" value="SPRINT"');
         expect(prep).not.toContain('Start Race');
         await simulateCareerRace(m.repository, g.career.id, m.eventId);
-        const data = m.get(), summary = html(<SprintSummary data={data} rows={timingRows(data)}/>);
+        const data = projectRaceView(m.get()), summary = html(<SprintSummary data={data} rows={timingRows(data)}/>);
         expect(summary).toContain('Sprint Result');
         expect(summary).not.toContain('Grand Prix result');
         expect(summary.match(/scope="row"/g)).toHaveLength(22);

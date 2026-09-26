@@ -15,9 +15,12 @@ interface RuleSet {
   readonly race: readonly number[];
   /** Shortened Grand Prix bands, longest first: leader distance ≥ num/den of the scheduled distance → table. */
   readonly raceBands: readonly { readonly num: number; readonly den: number; readonly points: readonly number[] }[];
-  /** Below the shortest band but at least `raceMinLaps` leader laps. */
+  /** Below the shortest band (an eligible Grand Prix of under 25 %). */
   readonly raceShort: readonly number[];
+  /** Eligibility: the leader must complete at least this many laps … */
   readonly raceMinLaps: number;
+  /** … of which at least this many under green-flag racing (not behind the Safety Car or VSC). */
+  readonly raceMinGreenLaps: number;
   readonly sprint: readonly number[];
   /** The Sprint scores only when the leader covered at least num/den of the scheduled distance. */
   readonly sprintMin: { readonly num: number; readonly den: number };
@@ -33,6 +36,7 @@ const RULES: Readonly<Record<ScoringRulesVersion, RuleSet>> = {
     ],
     raceShort: [6, 4, 3, 2, 1],
     raceMinLaps: 2,
+    raceMinGreenLaps: 2,
     sprint: [8, 7, 6, 5, 4, 3, 2, 1],
     sprintMin: { num: 1, den: 2 },
   },
@@ -45,18 +49,59 @@ export function scoringRulesOf(version: string | null | undefined): ScoringRules
 function integer(value: number, label: string, min: number) {
   if (!Number.isInteger(value) || value < min) throw new RangeError(`${label} must be an integer ≥ ${min}`);
 }
+/** The distance a classified session covered, as the scoring policy sees it. */
+export interface SessionDistance {
+  readonly scheduledLaps: number;
+  /** Laps completed by the classified leader. */
+  readonly leaderLaps: number;
+  /**
+   * The leader's laps run under green-flag racing — laps not neutralised by the Safety Car or VSC. Supplied
+   * explicitly by the caller from the persisted Race control record; never inferred from names, weather or text.
+   */
+  readonly leaderGreenLaps: number;
+}
+function validateDistance(d: SessionDistance) {
+  integer(d.scheduledLaps, "Scheduled laps", 1);
+  integer(d.leaderLaps, "Leader laps", 0);
+  integer(d.leaderGreenLaps, "Leader green laps", 0);
+  if (d.leaderLaps > d.scheduledLaps) throw new RangeError("Leader laps exceed the scheduled distance");
+  if (d.leaderGreenLaps > d.leaderLaps) throw new RangeError("Leader green laps exceed the leader's laps");
+}
 /**
- * Whole points by classified position for one session, from the leader's distance (exact integer comparisons, so
- * 25 %, 50 % and 75 % boundaries belong to the higher band). An empty table means the session awards nothing.
+ * Grand Prix eligibility — decided BEFORE any distance band: no championship points at all unless the leader
+ * completed at least 2 laps, at least 2 of them under green-flag racing.
  */
-export function pointsTable(version: ScoringRulesVersion, kind: ScoredSessionKind, leaderLaps: number, scheduledLaps: number): readonly number[] {
-  integer(scheduledLaps, "Scheduled laps", 1);
-  integer(leaderLaps, "Leader laps", 0);
-  if (leaderLaps > scheduledLaps) throw new RangeError("Leader laps exceed the scheduled distance");
+export function grandPrixEligible(version: ScoringRulesVersion, distance: SessionDistance): boolean {
+  validateDistance(distance);
   const rules = RULES[version];
+  return distance.leaderLaps >= rules.raceMinLaps && distance.leaderGreenLaps >= rules.raceMinGreenLaps;
+}
+/**
+ * Whole points by classified position for one session. An empty table means the session awards nothing.
+ * Grand Prix: 1. eligibility (see {@link grandPrixEligible}); 2. only then the distance band by leader laps, with
+ * exact integer comparisons (25 %, 50 % and 75 % boundaries belong to the higher band).
+ * Sprint (unchanged): full Sprint points from 50 % of the distance, otherwise none; green laps are not a Sprint rule.
+ */
+export function pointsTable(version: ScoringRulesVersion, kind: ScoredSessionKind, distance: SessionDistance): readonly number[] {
+  validateDistance(distance);
+  const rules = RULES[version], { leaderLaps, scheduledLaps } = distance;
   if (kind === "SPRINT") return leaderLaps * rules.sprintMin.den >= scheduledLaps * rules.sprintMin.num ? rules.sprint : [];
+  // 1. Eligibility first: an ineligible Grand Prix awards nothing, whatever share of the distance it covered.
+  if (!grandPrixEligible(version, distance)) return [];
+  // 2. Only an eligible Grand Prix is placed in a distance band.
   for (const band of rules.raceBands) if (leaderLaps * band.den >= scheduledLaps * band.num) return band.points;
-  return leaderLaps >= rules.raceMinLaps ? rules.raceShort : [];
+  return rules.raceShort;
+}
+/**
+ * The leader's green-flag laps: laps 1…leaderLaps minus those neutralised by a Safety Car / VSC period. A period
+ * deployed at the end of lap `startLap` neutralises laps startLap+1 … endLap (inclusive); `endLap` null = still
+ * deployed at the flag.
+ */
+export function countGreenLaps(leaderLaps: number, neutralised: readonly { readonly startLap: number; readonly endLap: number | null }[]): number {
+  integer(leaderLaps, "Leader laps", 0);
+  const laps = new Set<number>();
+  for (const p of neutralised) for (let lap = p.startLap + 1; lap <= Math.min(p.endLap ?? leaderLaps, leaderLaps); lap++) laps.add(lap);
+  return leaderLaps - laps.size;
 }
 export interface ClassifiedEntry {
   /** Career driver ID — the championship identity (never a name). */
@@ -66,10 +111,7 @@ export interface ClassifiedEntry {
   /** Final classified position; equal positions are a dead heat (the next position skips accordingly). */
   readonly position: number;
 }
-export interface SessionClassification {
-  readonly scheduledLaps: number;
-  /** Laps completed by the classified leader. */
-  readonly leaderLaps: number;
+export interface SessionClassification extends SessionDistance {
   readonly entries: readonly ClassifiedEntry[];
 }
 export interface ScoredEntry extends ClassifiedEntry {
@@ -87,7 +129,7 @@ function validateEntries(entries: readonly ClassifiedEntry[]) {
 /** Points per classified car (retired or not — the authoritative final classification decides). */
 export function scoreSession(version: ScoringRulesVersion, kind: ScoredSessionKind, session: SessionClassification): readonly ScoredEntry[] {
   validateEntries(session.entries);
-  const table = pointsTable(version, kind, session.leaderLaps, session.scheduledLaps);
+  const table = pointsTable(version, kind, session);
   const byPosition = new Map<number, ClassifiedEntry[]>();
   for (const e of session.entries) byPosition.set(e.position, [...(byPosition.get(e.position) ?? []), e]);
   const shares = new Map<number, number>();
@@ -236,7 +278,7 @@ function accumulate(input: ChampionshipInput, cutoff: StandingsCutoff | null) {
   for (const r of rounds) {
     for (const part of ["SPRINT", "RACE"] as const) {
       const session = part === "SPRINT" ? r.sprint : r.race;
-      if (!session || !includes(cutoff, r.round, part)) continue;
+      if (!hasClassification(session) || !includes(cutoff, r.round, part)) continue;
       through = { round: r.round, stage: part };
       for (const e of scoreSession(input.version, part, session)) {
         const d = at(drivers, e.driverId), t = at(teams, e.teamId);
@@ -288,15 +330,15 @@ export function computeStandings(input: ChampionshipInput, cutoff: StandingsCuto
 export function reachedCutoffs(rounds: readonly ScoredRound[]): readonly StandingsCutoff[] {
   const out: StandingsCutoff[] = [];
   for (const r of [...rounds].sort((a, b) => a.round - b.round)) {
-    if (r.sprint) out.push({ round: r.round, stage: "SPRINT" });
-    if (r.race) out.push({ round: r.round, stage: "RACE" });
+    if (hasClassification(r.sprint)) out.push({ round: r.round, stage: "SPRINT" });
+    if (hasAuthoritativeGrandPrix(r)) out.push({ round: r.round, stage: "RACE" });
   }
   return out;
 }
-/** Season history: the championship leaders after each round whose Grand Prix is complete. */
+/** Season history: the championship leaders after each round with an authoritative Grand Prix result. */
 export function seasonHistory(input: ChampionshipInput) {
   return [...input.rounds]
-    .filter((r) => r.race)
+    .filter(hasAuthoritativeGrandPrix)
     .sort((a, b) => a.round - b.round)
     .map((r) => {
       const s = computeStandings(input, { round: r.round, stage: "RACE" });
@@ -304,16 +346,31 @@ export function seasonHistory(input: ChampionshipInput) {
       return { eventId: r.eventId, round: r.round, driverLeaders: leaders(s.drivers), constructorLeaders: leaders(s.constructors) };
     });
 }
-/** The season is decided only when every calendar event has a completed Grand Prix — never an early clinch. */
-export function isSeasonComplete(events: readonly { readonly raceCompleted: boolean }[]) {
-  return events.length > 0 && events.every((e) => e.raceCompleted);
+/**
+ * A session result is authoritative only when a classification was supplied — callers supply one solely for a
+ * COMPLETED session whose simulation FINISHED — and it classifies at least one car. A session completed by
+ * development scaffolding (no simulation) has none.
+ */
+export function hasClassification(session: SessionClassification | null | undefined): session is SessionClassification {
+  return session != null && session.entries.length > 0;
+}
+/** The one definition of "this Grand Prix has an authoritative result" — used for scoring, cutoffs, history and completion. */
+export function hasAuthoritativeGrandPrix(round: Pick<ScoredRound, "race">): boolean {
+  return hasClassification(round.race);
+}
+/**
+ * The season is decided only when EVERY calendar round has an authoritative Grand Prix result — never on session
+ * status alone (a placeholder-completed Race), a Sprint or a Qualifying, and never an early clinch.
+ */
+export function isSeasonComplete(rounds: readonly Pick<ScoredRound, "race">[]) {
+  return rounds.length > 0 && rounds.every(hasAuthoritativeGrandPrix);
 }
 /** Weekend points for one round (Sprint + Grand Prix), by driver. */
 export function weekendPoints(version: ScoringRulesVersion, round: Pick<ScoredRound, "sprint" | "race">) {
   const out = new Map<string, { sprint: number | null; race: number | null; total: number }>();
   for (const part of ["SPRINT", "RACE"] as const) {
     const session = part === "SPRINT" ? round.sprint : round.race;
-    if (!session) continue;
+    if (!hasClassification(session)) continue;
     for (const e of scoreSession(version, part, session)) {
       const row = out.get(e.driverId) ?? { sprint: null, race: null, total: 0 };
       out.set(e.driverId, { ...row, [part === "SPRINT" ? "sprint" : "race"]: e.units, total: row.total + e.units });

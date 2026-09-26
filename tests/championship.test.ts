@@ -3,6 +3,9 @@ import {
   POINT_UNITS,
   computeStandings,
   isSeasonComplete,
+  countGreenLaps,
+  grandPrixEligible,
+  hasAuthoritativeGrandPrix,
   pointsTable,
   reachedCutoffs,
   scoreSession,
@@ -18,9 +21,11 @@ const GP = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 const SPRINT = [8, 7, 6, 5, 4, 3, 2, 1];
 const pts = (units: number) => units / POINT_UNITS;
 /** A classification of `order` (driver IDs, winner first); team = `t-<driver>` unless given. */
-function classified(order: readonly string[], teamOf: (d: string) => string = (d) => `t-${d}`, laps = { leader: 20, scheduled: 20 }): SessionClassification {
-  return { scheduledLaps: laps.scheduled, leaderLaps: laps.leader, entries: order.map((driverId, i) => ({ driverId, teamId: teamOf(driverId), position: i + 1 })) };
+function classified(order: readonly string[], teamOf: (d: string) => string = (d) => `t-${d}`, laps: { leader: number; scheduled: number; green?: number } = { leader: 20, scheduled: 20 }): SessionClassification {
+  return { scheduledLaps: laps.scheduled, leaderLaps: laps.leader, leaderGreenLaps: laps.green ?? laps.leader, entries: order.map((driverId, i) => ({ driverId, teamId: teamOf(driverId), position: i + 1 })) };
 }
+/** An all-green distance unless `green` says otherwise. */
+const dist = (leaderLaps: number, scheduledLaps: number, leaderGreenLaps = leaderLaps) => ({ leaderLaps, scheduledLaps, leaderGreenLaps });
 const field = (n: number) => Array.from({ length: n }, (_, i) => `d${String(i + 1).padStart(2, "0")}`);
 function round(r: number, race: SessionClassification | null, extra: Partial<ScoredRound> = {}): ScoredRound {
   return { eventId: `e${r}`, round: r, sprint: null, race, qualifying: null, ...extra };
@@ -30,7 +35,7 @@ function input(rounds: readonly ScoredRound[], drivers: readonly string[] = [], 
 }
 describe("2026 points tables", () => {
   it("Grand Prix: 25-18-15-12-10-8-6-4-2-1 at full distance, nothing from P11", () => {
-    expect(pointsTable("F1_2026", "RACE", 57, 57)).toEqual(GP);
+    expect(pointsTable("F1_2026", "RACE", dist(57, 57))).toEqual(GP);
     const scored = scoreSession("F1_2026", "RACE", classified(field(22)));
     expect(scored.map((e) => pts(e.units))).toEqual([...GP, ...Array(12).fill(0)]);
   });
@@ -46,7 +51,7 @@ describe("2026 points tables", () => {
     expect(pts(sum("SPRINT"))).toBe(36);
   });
   it("shortened Grand Prix bands by leader distance — exact 25 / 50 / 75 % boundaries belong to the higher band", () => {
-    const at = (leader: number, scheduled = 20) => pointsTable("F1_2026", "RACE", leader, scheduled);
+    const at = (leader: number, scheduled = 20) => pointsTable("F1_2026", "RACE", dist(leader, scheduled));
     expect(at(0)).toEqual([]);
     expect(at(1)).toEqual([]);
     expect(at(2)).toEqual([6, 4, 3, 2, 1]);
@@ -65,17 +70,64 @@ describe("2026 points tables", () => {
     expect(at(42, 57)).toEqual([19, 14, 12, 10, 8, 6, 4, 3, 2, 1]);
     expect(at(43, 57)).toEqual(GP);
   });
+  it("A/B: fewer than 2 leader laps never score — 0 or 1 lap of 1, 2, 4 or 100 scheduled", () => {
+    for (const scheduled of [1, 2, 4, 100]) {
+      expect(pointsTable("F1_2026", "RACE", dist(0, scheduled))).toEqual([]);
+      expect(pointsTable("F1_2026", "RACE", dist(1, scheduled))).toEqual([]);
+      expect(grandPrixEligible("F1_2026", dist(1, scheduled))).toBe(false);
+      expect(scoreSession("F1_2026", "RACE", classified(field(22), undefined, { leader: 1, scheduled })).every((e) => e.units === 0)).toBe(true);
+    }
+  });
+  it("C: 2+ leader laps but fewer than 2 green-flag laps never score, whatever the distance covered", () => {
+    for (const [leader, scheduled, green] of [[2, 20, 1], [2, 2, 0], [10, 20, 1], [19, 20, 1], [57, 57, 0], [60, 60, 1]]) {
+      expect(grandPrixEligible("F1_2026", dist(leader, scheduled, green))).toBe(false);
+      expect(pointsTable("F1_2026", "RACE", dist(leader, scheduled, green))).toEqual([]);
+    }
+    expect(scoreSession("F1_2026", "RACE", classified(field(22), undefined, { leader: 57, scheduled: 57, green: 1 })).every((e) => e.units === 0)).toBe(true);
+  });
+  it("D–G: an eligible Grand Prix (2+ laps, 2+ green) is then placed in its band; exact 25 / 50 / 75 % take the higher band", () => {
+    const short = [6, 4, 3, 2, 1], q = [13, 10, 8, 6, 5, 4, 3, 2, 1], h = [19, 14, 12, 10, 8, 6, 4, 3, 2, 1];
+    expect(pointsTable("F1_2026", "RACE", dist(2, 20, 2))).toEqual(short); // D: lowest band
+    expect(pointsTable("F1_2026", "RACE", dist(2, 4, 2))).toEqual(h); // D: 2 of 4 laps = 50 %
+    expect(pointsTable("F1_2026", "RACE", dist(2, 2, 2))).toEqual(GP); // 2 of 2 = full distance
+    expect(pointsTable("F1_2026", "RACE", dist(14, 56, 2))).toEqual(q); // E: exactly 25 %
+    expect(pointsTable("F1_2026", "RACE", dist(15, 60, 3))).toEqual(q);
+    expect(pointsTable("F1_2026", "RACE", dist(28, 56, 2))).toEqual(h); // F: exactly 50 %
+    expect(pointsTable("F1_2026", "RACE", dist(30, 60, 30))).toEqual(h);
+    expect(pointsTable("F1_2026", "RACE", dist(42, 56, 2))).toEqual(GP); // G: exactly 75 %
+    expect(pointsTable("F1_2026", "RACE", dist(45, 60, 40))).toEqual(GP);
+    // Just below each boundary (integer comparisons, no floating percentages): 56 / 57 / 60 laps.
+    expect(pointsTable("F1_2026", "RACE", dist(13, 56))).toEqual(short);
+    expect(pointsTable("F1_2026", "RACE", dist(27, 56))).toEqual(q);
+    expect(pointsTable("F1_2026", "RACE", dist(41, 56))).toEqual(h);
+    expect(pointsTable("F1_2026", "RACE", dist(14, 60))).toEqual(short);
+    expect(pointsTable("F1_2026", "RACE", dist(29, 60))).toEqual(q);
+    expect(pointsTable("F1_2026", "RACE", dist(44, 60))).toEqual(h);
+  });
+  it("H: a normal full-distance Grand Prix still awards the standard 101 points", () => {
+    for (const laps of [56, 57, 60]) expect(pts(scoreSession("F1_2026", "RACE", classified(field(22), undefined, { leader: laps, scheduled: laps })).reduce((a, e) => a + e.units, 0))).toBe(101);
+  });
+  it("green laps come from Safety Car / VSC periods: laps start+1 … end are neutralised; an open period runs to the flag", () => {
+    expect(countGreenLaps(57, [])).toBe(57);
+    expect(countGreenLaps(57, [{ startLap: 10, endLap: 14 }, { startLap: 30, endLap: 32 }])).toBe(57 - 4 - 2);
+    expect(countGreenLaps(20, [{ startLap: 18, endLap: null }])).toBe(18);
+    expect(countGreenLaps(4, [{ startLap: 1, endLap: null }])).toBe(1); // green only on lap 1 → ineligible
+    expect(countGreenLaps(10, [{ startLap: 2, endLap: 5 }, { startLap: 4, endLap: 6 }])).toBe(6); // overlaps never double count
+    expect(countGreenLaps(0, [{ startLap: 0, endLap: null }])).toBe(0);
+  });
   it("Sprint scores only from 50 % of its distance (exactly 50 % scores)", () => {
-    expect(pointsTable("F1_2026", "SPRINT", 9, 20)).toEqual([]);
-    expect(pointsTable("F1_2026", "SPRINT", 10, 20)).toEqual(SPRINT);
-    expect(pointsTable("F1_2026", "SPRINT", 9, 19)).toEqual([]);
-    expect(pointsTable("F1_2026", "SPRINT", 10, 19)).toEqual(SPRINT);
+    expect(pointsTable("F1_2026", "SPRINT", dist(9, 20))).toEqual([]);
+    expect(pointsTable("F1_2026", "SPRINT", dist(10, 20))).toEqual(SPRINT);
+    expect(pointsTable("F1_2026", "SPRINT", dist(9, 19))).toEqual([]);
+    expect(pointsTable("F1_2026", "SPRINT", dist(10, 19))).toEqual(SPRINT);
     const none = scoreSession("F1_2026", "SPRINT", classified(field(22), undefined, { leader: 9, scheduled: 20 }));
     expect(none.every((e) => e.units === 0)).toBe(true);
   });
   it("rejects impossible distances and unknown rule versions; NULL means F1_2026", () => {
-    expect(() => pointsTable("F1_2026", "RACE", 21, 20)).toThrow(RangeError);
-    expect(() => pointsTable("F1_2026", "RACE", 1, 0)).toThrow(RangeError);
+    expect(() => pointsTable("F1_2026", "RACE", dist(21, 20))).toThrow(RangeError);
+    expect(() => pointsTable("F1_2026", "RACE", dist(1, 0))).toThrow(RangeError);
+    expect(() => pointsTable("F1_2026", "RACE", dist(5, 10, 6))).toThrow(/green laps exceed/);
+    expect(() => pointsTable("F1_2026", "RACE", dist(5, 10, -1))).toThrow(RangeError);
     expect(scoringRulesOf(null)).toBe("F1_2026");
     expect(scoringRulesOf(undefined)).toBe("F1_2026");
     expect(scoringRulesOf("F1_2026")).toBe("F1_2026");
@@ -94,18 +146,18 @@ describe("dead heats (unreachable from Race v7, which persists unique positions)
       { driverId: "b", teamId: "y", position: 1 },
       { driverId: "c", teamId: "z", position: 3 },
     ];
-    const s = scoreSession("F1_2026", "RACE", { scheduledLaps: 10, leaderLaps: 10, entries });
+    const s = scoreSession("F1_2026", "RACE", { scheduledLaps: 10, leaderLaps: 10, leaderGreenLaps: 10, entries });
     expect(s.map((e) => pts(e.units))).toEqual([21.5, 21.5, 15]);
-    const s2 = scoreSession("F1_2026", "RACE", { scheduledLaps: 10, leaderLaps: 10, entries: [{ driverId: "a", teamId: "x", position: 10 }, { driverId: "b", teamId: "y", position: 10 }] });
+    const s2 = scoreSession("F1_2026", "RACE", { scheduledLaps: 10, leaderLaps: 10, leaderGreenLaps: 10, entries: [{ driverId: "a", teamId: "x", position: 10 }, { driverId: "b", teamId: "y", position: 10 }] });
     expect(s2.map((e) => pts(e.units))).toEqual([0.5, 0.5]);
   });
   it("a wider dead heat shares when representable and refuses to round when not", () => {
     const three = (position: number) => ["a", "b", "c"].map((driverId) => ({ driverId, teamId: driverId, position }));
-    expect(scoreSession("F1_2026", "RACE", { scheduledLaps: 10, leaderLaps: 10, entries: three(4) }).map((e) => pts(e.units))).toEqual([10, 10, 10]);
-    expect(() => scoreSession("F1_2026", "RACE", { scheduledLaps: 10, leaderLaps: 10, entries: three(1) })).toThrow(/not representable/);
+    expect(scoreSession("F1_2026", "RACE", { scheduledLaps: 10, leaderLaps: 10, leaderGreenLaps: 10, entries: three(4) }).map((e) => pts(e.units))).toEqual([10, 10, 10]);
+    expect(() => scoreSession("F1_2026", "RACE", { scheduledLaps: 10, leaderLaps: 10, leaderGreenLaps: 10, entries: three(1) })).toThrow(/not representable/);
   });
   it("rejects a driver classified twice", () => {
-    expect(() => scoreSession("F1_2026", "RACE", { scheduledLaps: 1, leaderLaps: 1, entries: [{ driverId: "a", teamId: "x", position: 1 }, { driverId: "a", teamId: "x", position: 2 }] })).toThrow(RangeError);
+    expect(() => scoreSession("F1_2026", "RACE", { scheduledLaps: 1, leaderLaps: 1, leaderGreenLaps: 1, entries: [{ driverId: "a", teamId: "x", position: 1 }, { driverId: "a", teamId: "x", position: 2 }] })).toThrow(RangeError);
   });
 });
 describe("Drivers' and Constructors' standings", () => {
@@ -196,8 +248,8 @@ describe("Drivers' and Constructors' standings", () => {
   });
   it("transfer-safe: each result scores for the team the car was entered for at that event", () => {
     const rounds = [
-      round(1, { scheduledLaps: 10, leaderLaps: 10, entries: [{ driverId: "a", teamId: "old", position: 1 }, { driverId: "b", teamId: "new", position: 2 }] }),
-      round(2, { scheduledLaps: 10, leaderLaps: 10, entries: [{ driverId: "a", teamId: "new", position: 1 }, { driverId: "b", teamId: "old", position: 2 }] }),
+      round(1, { scheduledLaps: 10, leaderLaps: 10, leaderGreenLaps: 10, entries: [{ driverId: "a", teamId: "old", position: 1 }, { driverId: "b", teamId: "new", position: 2 }] }),
+      round(2, { scheduledLaps: 10, leaderLaps: 10, leaderGreenLaps: 10, entries: [{ driverId: "a", teamId: "new", position: 1 }, { driverId: "b", teamId: "old", position: 2 }] }),
     ];
     const s = computeStandings({ version: "F1_2026", rounds, drivers: [{ id: "a", teamId: "old" }, { id: "b", teamId: "new" }], teams: ["old", "new"] });
     expect(s.constructors.map((r) => [r.id, pts(r.units)])).toEqual([["new", 43], ["old", 43]]);
@@ -251,9 +303,14 @@ describe("cutoffs, movement and history", () => {
   it("weekend points and season completion", () => {
     const w = weekendPoints("F1_2026", rounds[1]);
     expect(Object.fromEntries([...w].map(([id, p]) => [id, [p.sprint && pts(p.sprint), p.race && pts(p.race), pts(p.total)]]))).toEqual({ b: [8, 18, 26], c: [7, 25, 32], a: [6, 15, 21] });
+    const real = classified(["a", "b"]), empty = { ...real, entries: [] };
     expect(isSeasonComplete([])).toBe(false);
-    expect(isSeasonComplete([{ raceCompleted: true }, { raceCompleted: false }])).toBe(false);
-    expect(isSeasonComplete([{ raceCompleted: true }, { raceCompleted: true }])).toBe(true);
+    expect(isSeasonComplete([{ race: real }, { race: null }])).toBe(false);
+    expect(isSeasonComplete([{ race: real }, { race: empty }])).toBe(false); // no classified car is no result
+    expect(isSeasonComplete([{ race: real }, { race: real }])).toBe(true);
+    expect(hasAuthoritativeGrandPrix(round(1, null, { sprint: real }))).toBe(false); // a Sprint never completes a round
+    // An ineligible (zero-point) Grand Prix is still an authoritative result.
+    expect(isSeasonComplete([{ race: classified(["a"], undefined, { leader: 1, scheduled: 50 }) }])).toBe(true);
   });
   it("is order-independent and deterministic", () => {
     const shuffled = input([rounds[2], rounds[0], rounds[1]], ["c", "b", "a"]);

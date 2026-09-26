@@ -4,10 +4,11 @@ import type { SessionStatus, SessionType } from "../../src/game/domain/progressi
 export const TEAMS = ["t1", "t2", "t3"] as const;
 export const DRIVERS = ["d1", "d2", "d3", "d4", "d5", "d6"] as const;
 export const teamOf = (d: string) => `t${Math.ceil(Number(d.slice(1)) / 2)}`;
-export function session(order: readonly string[], opts: { scheduled?: number; leader?: number; retired?: readonly string[]; team?: (d: string) => string } = {}): ChampionshipSession {
+export function session(order: readonly string[], opts: { scheduled?: number; leader?: number; green?: number; retired?: readonly string[]; team?: (d: string) => string } = {}): ChampionshipSession {
   const scheduled = opts.scheduled ?? 20, leader = opts.leader ?? scheduled;
   return {
     scheduledLaps: scheduled,
+    leaderGreenLaps: opts.green ?? leader,
     entrants: order.map((driverId, i) => ({
       driverId,
       teamId: (opts.team ?? teamOf)(driverId),
@@ -22,8 +23,11 @@ export function session(order: readonly string[], opts: { scheduled?: number; le
 }
 const standard: SessionType[] = ["PRACTICE_1", "PRACTICE_2", "PRACTICE_3", "QUALIFYING", "RACE"];
 const sprint: SessionType[] = ["PRACTICE_1", "SPRINT_QUALIFYING", "SPRINT", "QUALIFYING", "RACE"];
-export function event(round: number, parts: { format?: "STANDARD" | "SPRINT"; sprint?: ChampionshipSession | null; race?: ChampionshipSession | null; qualifying?: ChampionshipEvent["qualifying"]; entered?: boolean } = {}): ChampionshipEvent {
+export function event(round: number, parts: { format?: "STANDARD" | "SPRINT"; sprint?: ChampionshipSession | null; race?: ChampionshipSession | null; qualifying?: ChampionshipEvent["qualifying"]; entered?: boolean; placeholder?: boolean } = {}): ChampionshipEvent {
   const format = parts.format ?? "STANDARD";
+  // `placeholder`: every session COMPLETED by development scaffolding, with no simulation or classification.
+  if (parts.placeholder)
+    return { id: `e${round}`, round, name: `Event ${round}`, circuitName: `Circuit ${round}`, format, status: "COMPLETED", sessions: (format === "SPRINT" ? sprint : standard).map((type) => ({ type, status: "COMPLETED" as const })), sprint: parts.sprint ?? null, race: null, qualifying: null };
   const done = (type: SessionType): SessionStatus => (type === "RACE" ? (parts.race ? "COMPLETED" : "LOCKED") : type === "SPRINT" ? (parts.sprint ? "COMPLETED" : parts.race ? "COMPLETED" : "AVAILABLE") : "COMPLETED");
   return {
     id: `e${round}`,

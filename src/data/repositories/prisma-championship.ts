@@ -1,8 +1,17 @@
 import type { PrismaClient } from "../generated/prisma/client";
 import { assertContentId } from "../../game/domain/content-repository";
-import { scoringRulesOf } from "../../game/domain/championship";
+import { countGreenLaps, scoringRulesOf } from "../../game/domain/championship";
 import type { ChampionshipRepository, ChampionshipSession, ChampionshipSource } from "../../game/domain/championship-repository";
-import type { EntrantIncidentState } from "../../simulation/race/incidents/model";
+import type { EntrantIncidentState, RaceEvent } from "../../simulation/race/incidents/model";
+/** Safety Car / VSC periods from the structured Race control events (a start without an end ran to the flag). */
+function neutralisedPeriods(events: readonly RaceEvent[] | undefined) {
+  const periods: { startLap: number; endLap: number | null }[] = [];
+  for (const e of [...(events ?? [])].sort((a, b) => a.sequence - b.sequence)) {
+    if (e.type === "SAFETY_CAR_START" || e.type === "VSC_START") periods.push({ startLap: e.lap, endLap: null });
+    else if ((e.type === "SAFETY_CAR_END" || e.type === "VSC_END") && periods.at(-1)?.endLap === null) periods.at(-1)!.endLap = e.lap;
+  }
+  return periods;
+}
 /**
  * Loads the current season's championship inputs in a fixed number of queries (no per-round or per-car reads). Only a
  * COMPLETED session whose simulation is FINISHED contributes a classification; hidden simulation state (seed, RNG,
@@ -42,8 +51,8 @@ export class PrismaChampionshipRepository implements ChampionshipRepository {
             select: { id: true, careerDriverId: true, careerTeamId: true, position: true, gridPosition: true, completedLaps: true, elapsedTimeMs: true, stopCount: true },
             orderBy: { position: "asc" },
           },
-          // Only the per-car status map (RUNNING/FINISHED/RETIRED) — public result data.
-          incidentProfile: { select: { entrants: true } },
+          // Only the per-car status map (RUNNING/FINISHED/RETIRED) and the public Race control log (for green laps).
+          incidentProfile: { select: { entrants: true, events: true } },
         },
       }),
       this.client.careerQualifyingSimulation.findMany({
@@ -70,8 +79,10 @@ export class PrismaChampionshipRepository implements ChampionshipRepository {
     for (const sim of races) {
       const eventId = sim.session.weekend.careerCalendarEventId;
       const status = sim.incidentProfile?.entrants as unknown as Record<string, EntrantIncidentState> | undefined;
+      const leaderLaps = Math.min(sim.entrants.find((e) => e.position === 1)?.completedLaps ?? 0, sim.totalLaps);
       const session: ChampionshipSession = {
         scheduledLaps: sim.totalLaps,
+        leaderGreenLaps: countGreenLaps(leaderLaps, neutralisedPeriods(sim.incidentProfile?.events as unknown as RaceEvent[] | undefined)),
         entrants: sim.entrants.map((e) => ({
           driverId: e.careerDriverId,
           teamId: e.careerTeamId,

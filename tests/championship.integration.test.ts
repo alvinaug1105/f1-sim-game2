@@ -190,12 +190,60 @@ describe("Championship from persisted results", () => {
     }
   }, 60000);
 });
+describe("Placeholder completion is not a result (B2)", () => {
+  it("all 8 Race sessions COMPLETED by development scaffolding: zero points, not season complete, no champion", async () => {
+    const career = await createCareer(new PrismaCareerRepository(client), { ...input, name: "Placeholders" });
+    for (let round = 1; round <= 8; round++) await w.developmentWeekend(career.id, await w.enter(career.id));
+    const progress = (await w.progression.getProgress(career.id))!;
+    expect(progress.events.every((e) => e.status === "COMPLETED" && e.weekend!.sessions.some((x) => x.type === "RACE" && x.status === "COMPLETED"))).toBe(true);
+    const s = (await w.championship.load(career.id))!;
+    expect(s.events.every((e) => e.race === null && e.sprint === null)).toBe(true);
+    const page = standingsPage(s, null);
+    expect(page.seasonComplete).toBe(false);
+    expect(page.champions).toBeNull();
+    expect(page.history).toEqual([]);
+    expect(page.through).toBeNull();
+    expect(page.drivers.every((d) => d.units === 0)).toBe(true);
+    expect(championshipSummary(s).seasonComplete).toBe(false);
+  }, 120000);
+  it("mixed: rounds 1–2 real, 3–8 placeholders → real points stand, no champion", async () => {
+    const career = await createCareer(new PrismaCareerRepository(client), { ...input, name: "Mixed" });
+    for (let round = 1; round <= 8; round++) {
+      const eventId = await w.enter(career.id);
+      if (round <= 2) await w.play(career.id, eventId);
+      else await w.developmentWeekend(career.id, eventId);
+    }
+    const s = (await w.championship.load(career.id))!;
+    const page = standingsPage(s, null);
+    expect(total(page.drivers)).toBe(2 * 101 + 36);
+    expect(total(page.constructors)).toBe(2 * 101 + 36);
+    expect(page.seasonComplete).toBe(false);
+    expect(page.champions).toBeNull();
+    expect(page.history.map((h) => h.round)).toEqual([1, 2]);
+    expect(page.through).toMatchObject({ round: 2, stage: "RACE" });
+    // Cutoffs still stop exactly where asked.
+    expect(total(computeStandings(championshipInput(s), { round: 2, stage: "BEFORE" }).drivers)).toBe(101);
+    expect(total(computeStandings(championshipInput(s), { round: 2, stage: "SPRINT" }).drivers)).toBe(137);
+    expect(total(computeStandings(championshipInput(s), { round: 2, stage: "RACE" }).drivers)).toBe(238);
+  }, 180000);
+});
 describe("Full development season sanity (8 rounds, 3 Sprints)", () => {
   it("8 Grands Prix + 3 Sprints: 22 WDC, 11 WCC, conserved points, a champion only at the end, deterministic", async () => {
     const career = await createCareer(new PrismaCareerRepository(client), { ...input, name: "Full season" });
     const leaders: string[] = [];
     for (let round = 1; round <= 8; round++) {
       const eventId = await w.enter(career.id);
+      if (round === 8) {
+        // The last round (a Sprint weekend): Sprint Qualifying, Sprint and Qualifying done, no Grand Prix yet.
+        await w.play(career.id, eventId, "RACE");
+        const pending = (await w.championship.load(career.id))!;
+        expect(pending.events.find((e) => e.id === eventId)).toMatchObject({ format: "SPRINT", race: null });
+        expect(pending.events.find((e) => e.id === eventId)!.sprint).not.toBeNull();
+        const page = standingsPage(pending, null);
+        expect(page.seasonComplete).toBe(false);
+        expect(page.champions).toBeNull();
+        expect(championshipSummary(pending).seasonComplete).toBe(false);
+      }
       await w.play(career.id, eventId);
       const s = (await w.championship.load(career.id))!;
       const page = standingsPage(s, null);
@@ -213,6 +261,16 @@ describe("Full development season sanity (8 rounds, 3 Sprints)", () => {
     expect(total(standings.drivers)).toBe(8 * 101 + 3 * 36);
     expect(total(standings.constructors)).toBe(8 * 101 + 3 * 36);
     for (const d of standings.drivers) expect(d.units).toBe(d.rounds.reduce((a, r) => a + (r.sprint?.units ?? 0) + (r.race?.units ?? 0), 0));
+    // Every real v7 Grand Prix is full distance with ≥ 2 green laps (eligible for full points); green laps are
+    // the leader's laps minus the Safety Car / VSC laps in its persisted Race control log.
+    for (const e of s.events) {
+      expect(e.race!.leaderGreenLaps).toBeGreaterThanOrEqual(2);
+      expect(e.race!.leaderGreenLaps).toBeLessThanOrEqual(e.race!.scheduledLaps);
+    }
+    const champions = standingsPage(s, null).champions!;
+    expect(champions.drivers.map((d) => d.id)).toEqual(standings.drivers.filter((r) => r.position === 1).map((r) => r.id));
+    expect(champions.constructors.map((t) => t.id)).toEqual(standings.constructors.filter((r) => r.position === 1).map((r) => r.id));
+    console.info(`[season sanity] green laps by round: ${s.events.map((e) => `${e.race!.leaderGreenLaps}/${e.race!.scheduledLaps}`).join(" ")}`);
     expect(standings.drivers.reduce((a, d) => a + d.wins, 0)).toBe(8);
     for (let i = 1; i < standings.drivers.length; i++) expect(standings.drivers[i - 1].units).toBeGreaterThanOrEqual(standings.drivers[i].units);
     const page = standingsPage(s, null);
@@ -271,6 +329,9 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
       await fullClient.careerSeasonDriverEntry.updateMany({ where: { careerId: ids.legacy }, data: { pace: null, consistency: null } });
       await fullClient.careerCalendarEvent.updateMany({ where: { careerId: ids.legacy }, data: { weekendFormat: null } });
       await f.play(ids.legacy, await f.enter(ids.legacy));
+      // An old Career whose whole calendar was completed by development scaffolding (no simulations at all).
+      ids.placeholder = (await createCareer(careers, { ...input, name: "Old placeholders" })).id;
+      for (let round = 1; round <= 8; round++) await f.developmentWeekend(ids.placeholder, await f.enter(ids.placeholder));
       for (const [k, id] of Object.entries(ids)) expected[k] = standingsPage((await f.championship.load(id))!, null);
     } finally {
       await fullClient.$disconnect();
@@ -280,6 +341,7 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
     expect((expected.legacy as ReturnType<typeof standingsPage>).constructors).toHaveLength(2);
     expect(total((expected.legacy as ReturnType<typeof standingsPage>).drivers)).toBe(25 + 18 + 15 + 12);
     expect(total((expected.sprint as ReturnType<typeof standingsPage>).drivers)).toBe(137);
+    expect(expected.placeholder).toMatchObject({ seasonComplete: false, champions: null, through: null, history: [] });
     // A pre-Phase-16 schema: every earlier migration applied as SQL, then the rows copied into it.
     const old = `pre16_${randomUUID().replaceAll("-", "")}`;
     extraSchemas.push(old);

@@ -64,6 +64,54 @@ describe("Championship view models", () => {
     expect(standingsPage(source([r1(), r2Full()]), parseCutoff("r1")).champions).toBeNull();
     expect(done.history.map((h) => [h.round, h.raceWinner?.id, h.sprintWinner?.id ?? null])).toEqual([[1, "d3", null], [2, "d1", "d1"]]);
   });
+  it("B2: placeholder-completed Races (no simulation) never complete a season or crown anyone", () => {
+    const placeholders = source([1, 2, 3, 4, 5, 6, 7, 8].map((r) => event(r, { placeholder: true, format: [2, 6, 8].includes(r) ? "SPRINT" : "STANDARD" })));
+    const all = standingsPage(placeholders, null);
+    expect(all.seasonComplete).toBe(false);
+    expect(all.champions).toBeNull();
+    expect(all.history).toEqual([]);
+    expect(all.through).toBeNull();
+    expect(championshipSummary(placeholders).seasonComplete).toBe(false);
+    const text = html(<StandingsView page={all} />);
+    for (const s of ["Season Complete", "Every Grand Prix has been run", "Drivers&#x27; Champion", "Constructors&#x27; Champion"]) expect(text).not.toContain(s);
+    const panel = html(<ChampionshipSummaryPanel summary={championshipSummary(placeholders)} />);
+    expect(panel).not.toContain("Season Complete");
+    expect(panel).not.toContain("Champion<");
+    // Mixed: rounds 1–2 real, 3–8 placeholders → the real points stand, no champion, no fabricated history.
+    const mixed = standingsPage(source([r1(), r2Full(), ...[3, 4, 5, 6, 7, 8].map((r) => event(r, { placeholder: true }))]), null);
+    expect(mixed.seasonComplete).toBe(false);
+    expect(mixed.champions).toBeNull();
+    expect(mixed.history.map((h) => h.round)).toEqual([1, 2]);
+    expect(mixed.drivers.find((d) => d.driver.id === "d1")!.units / 2).toBe(18 + 8 + 25);
+    expect(mixed.through).toMatchObject({ round: 2, stage: "RACE" });
+  });
+  it("B2: a Sprint weekend with Sprint Qualifying, Sprint and Qualifying done but no Grand Prix result does not complete the season", () => {
+    const sprintOnly = event(2, { format: "SPRINT", sprint: session(["d1", "d3", "d2", "d4", "d5", "d6"], { scheduled: 19 }), qualifying: [{ driverId: "d1", teamId: "t1", position: 1 }] });
+    const page = standingsPage(source([r1(), sprintOnly]), null);
+    expect(page.seasonComplete).toBe(false);
+    expect(page.champions).toBeNull();
+    // Even a placeholder-completed Race session alongside a real Sprint is not a Grand Prix result.
+    const placeholderRace = standingsPage(source([r1(), event(2, { format: "SPRINT", placeholder: true, sprint: session(["d1", "d2"], { scheduled: 19 }) })]), null);
+    expect(placeholderRace.seasonComplete).toBe(false);
+    expect(placeholderRace.history.map((h) => h.round)).toEqual([1]);
+  });
+  it("B2: the final authoritative Grand Prix completes the season; the champions are exactly the final P1 rows", () => {
+    const before = standingsPage(source([r1(), r2Sprint()]), null);
+    expect(before.seasonComplete).toBe(false);
+    const after = standingsPage(source([r1(), r2Full()]), null);
+    expect(after.seasonComplete).toBe(true);
+    expect(after.champions!.drivers.map((d) => d.id)).toEqual(after.drivers.filter((r) => r.position === 1).map((r) => r.driver.id));
+    expect(after.champions!.constructors.map((t) => t.id)).toEqual(after.constructors.filter((r) => r.position === 1).map((r) => r.team.id));
+    // A genuinely completed season may still end in a perfect tie: both are champions.
+    const tied = standingsPage(source([event(1, { race: session(["d1", "d3"]) }), event(2, { race: session(["d3", "d1"]) })]), null);
+    expect(tied.champions!.drivers.map((d) => d.id)).toEqual(["d1", "d3"]);
+  });
+  it("B1: an ineligible Grand Prix (under 2 green laps) is an authoritative result worth zero points", () => {
+    const page = standingsPage(source([event(1, { race: session(["d1", "d2", "d3"], { scheduled: 57, green: 1 }) })]), null);
+    expect(page.drivers.every((d) => d.units === 0)).toBe(true);
+    expect(page.seasonComplete).toBe(true);
+    expect(weekendResultsPage(source([event(1, { race: session(["d1", "d2"], { scheduled: 4, leader: 1 }) })]), "e1")!.race!.rows.every((r) => r.units === 0)).toBe(true);
+  });
   it("weekend results: Sprint + Grand Prix with points and championship positions after the event; tolerant of a partial weekend", () => {
     const partial = weekendResultsPage(source([r1(), r2Sprint()]), "e2")!;
     expect(partial.sprint!.rows.map((r) => r.units / 2)).toEqual([8, 7, 6, 5, 4, 3]);

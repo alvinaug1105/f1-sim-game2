@@ -11,7 +11,7 @@ import {
   type StandingRow,
   type StandingsCutoff,
 } from "../../game/domain/championship";
-import type { ChampionshipEvent, ChampionshipSession, ChampionshipSource } from "../../game/domain/championship-repository";
+import type { ChampionshipSession, ChampionshipSource } from "../../game/domain/championship-repository";
 import type { WeekendFormat } from "../../game/domain/content";
 /**
  * Championship view models: pure projections of the persisted, completed results (no Prisma, React, locale or clock).
@@ -23,6 +23,7 @@ function classification(session: ChampionshipSession | null): SessionClassificat
   return {
     scheduledLaps: session.scheduledLaps,
     leaderLaps: Math.min(leader.completedLaps, session.scheduledLaps),
+    leaderGreenLaps: session.leaderGreenLaps,
     entries: session.entrants.map(({ driverId, teamId, position }) => ({ driverId, teamId, position })),
   };
 }
@@ -39,10 +40,6 @@ export function championshipInput(source: ChampionshipSource): ChampionshipInput
     drivers: source.roster.map((r) => ({ id: r.driverId, teamId: r.teamId })),
     teams: source.teams,
   };
-}
-/** Completed Grand Prix session = the event can no longer change its championship contribution. */
-function raceCompleted(e: ChampionshipEvent) {
-  return e.sessions.some((s) => s.type === "RACE" && s.status === "COMPLETED");
 }
 export function cutoffValue(c: StandingsCutoff) {
   return c.stage === "RACE" ? `r${c.round}` : c.stage === "SPRINT" ? `r${c.round}-sprint` : `before-r${c.round}`;
@@ -159,7 +156,8 @@ export function standingsPage(source: ChampionshipSource, requested: StandingsCu
   const cutoff = known ? requested : null;
   const { standings, drivers, constructors } = standingsViews(source, input, cutoff);
   const { team, driver } = labels(source);
-  const seasonComplete = isSeasonComplete(source.events.map((e) => ({ raceCompleted: raceCompleted(e) })));
+  // Authoritative Grand Prix results only — a placeholder-completed Race session is not a result.
+  const seasonComplete = isSeasonComplete(input.rounds);
   const history = seasonHistory(input).map((h) => {
     const event = source.events.find((e) => e.id === h.eventId)!;
     const s = computeStandings(input, { round: h.round, stage: "RACE" });
@@ -308,6 +306,6 @@ export function championshipSummary(source: ChampionshipSource): ChampionshipSum
     constructorLeaders: constructors.filter((r) => r.position === 1).map((r) => ({ team: r.team, units: r.units })),
     playerDrivers: drivers.filter((r) => playerDriverIds.has(r.driver.id)).map((r) => ({ driver: r.driver, position: r.position, tied: r.tied, units: r.units })),
     playerTeam: player ? { team: player.team, position: player.position, tied: player.tied, units: player.units } : null,
-    seasonComplete: isSeasonComplete(source.events.map((e) => ({ raceCompleted: raceCompleted(e) }))),
+    seasonComplete: isSeasonComplete(input.rounds),
   };
 }

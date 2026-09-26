@@ -18,6 +18,11 @@ export interface ChampionshipResultRow {
 }
 export interface ChampionshipSession {
   readonly scheduledLaps: number;
+  /**
+   * The classified leader's laps under green-flag racing: the leader's laps minus those neutralised by a Safety Car
+   * or VSC in the persisted Race control record. A Race without incident control (pre-v7) was all green.
+   */
+  readonly leaderGreenLaps: number;
   readonly entrants: readonly ChampionshipResultRow[];
 }
 export interface ChampionshipEvent {

@@ -27,17 +27,21 @@ Starting main: `4593321` (the merge of Phase 15 `a8fcb30`). Race simulation stay
 
 ## 2026 points (exact integers, half-point units)
 - **Grand Prix:** 25-18-15-12-10-8-6-4-2-1. There is **no fastest-lap point**, and no Qualifying or Sprint Qualifying points.
-- **Shortened Grand Prix:** a pure policy keyed on the leader's completed laps against the scheduled laps. It uses exact integer comparisons, so an exact boundary belongs to the higher band:
+- **Shortened Grand Prix:** a pure policy in two steps, in this order (focused repair):
+  1. **Eligibility** (`grandPrixEligible`). A Grand Prix awards no championship points unless the leader completed **at least 2 laps, at least 2 of them under green-flag racing**. The explicit input is `SessionDistance = { scheduledLaps, leaderLaps, leaderGreenLaps }`. 1 of 1, 2 or 4 laps, or 57 laps with only 1 green lap, all score **zero**.
+  2. **Distance band.** Only an eligible Grand Prix is placed in a band by leader laps against scheduled laps. Exact integer comparisons mean an exact boundary belongs to the higher band:
 
-| Leader distance | Points |
+| Leader distance (eligible Grand Prix) | Points |
 |---|---|
-| < 2 laps | none |
-| ≥ 2 laps and < 25 % | 6-4-3-2-1 |
+| ineligible (< 2 laps, or < 2 green laps) | none |
+| < 25 % | 6-4-3-2-1 |
 | 25 % to < 50 % | 13-10-8-6-5-4-3-2-1 |
 | 50 % to < 75 % | 19-14-12-10-8-6-4-3-2-1 |
 | ≥ 75 % | full points |
 
-  Race v7 always runs its full distance, so today every Grand Prix scores full points. The bands are exercised only by unit tests.
+  **Green laps** are never inferred from names, weather or display text. The repository counts them from the persisted, structured Race control log (`countGreenLaps`): a Safety Car or VSC deployed at the end of lap L and withdrawn on lap M neutralises laps L+1 … M, and a period still deployed at the flag neutralises the rest. A Race with no incident control (pre-v7) was all green.
+
+  Race v7 is unchanged and always runs its full distance, so today every Grand Prix is eligible for full points. The ineligible cases and bands are exercised by unit tests. The Sprint rule is unchanged: it has no green-lap condition.
 - **Sprint:** 8-7-6-5-4-3-2-1 from 50 % of its distance (exactly 50 % scores). Below 50 % it scores nothing.
 - **Classification:** points follow the authoritative final classified position. A retired car scores from its classified position.
 - **Dead heats:** equal positions pool the covered positions' points and share them equally, in half-point units, so a two-way dead heat is always exact. A share that half points cannot represent is refused rather than rounded. Race v7 persists unique positions (a database constraint), so dead heats are **unreachable** today.
@@ -74,7 +78,15 @@ Starting main: `4593321` (the merge of Phase 15 `a8fcb30`). Race simulation stay
 - **Empty:** before any completed session, an empty state is shown.
 
 ## Season complete
-- **Condition:** every calendar event has a **completed Grand Prix session**. There is no early clinch.
+- **Condition:** every calendar event has an **authoritative Grand Prix result**. That means a classification loaded only for a COMPLETED `RACE` session whose simulation is FINISHED, with at least one classified car. There is no early clinch.
+- **One definition:** `hasAuthoritativeGrandPrix` is the single rule for scoring, cutoffs, Season History and completion. Session status alone never counts, so these do not complete a round:
+  - a Race session completed by development scaffolding;
+  - a missing or unfinished simulation;
+  - a Sprint only;
+  - Qualifying only.
+
+  Placeholder rounds get no Season History card and fabricate no winner or leader.
+- **Ineligible Grand Prix:** an ineligible (zero-point) Grand Prix is still an authoritative result.
 - **Display:** the standings page shows **Season Complete** with the Drivers' Champion and Constructors' Champion (a perfect tie is shown as Tied) above the final tables. The dashboard switches its labels to Champion.
 - **Scope:** no rollover or new season (not in scope). Historical cutoffs never show a champion.
 
@@ -91,7 +103,7 @@ Starting main: `4593321` (the merge of Phase 15 `a8fcb30`). Race simulation stay
 
 ## Legacy Careers
 - **Existing results:** Careers created before Phase 16 derive standings **immediately** from their existing results, with no backfill.
-- **Unclassified sessions:** a session completed through development scaffolding, with no simulation, has no classification and scores nothing.
+- **Unclassified sessions:** a session completed through development scaffolding, with no simulation, has no classification. It scores nothing and never completes the season. An all-placeholder Career shows zero points, no champion and no history.
 - **Legacy 4-car Careers (2 teams):** list 4 drivers and 2 constructors.
 - **Legacy formats:** `NULL` weekend formats are Standard, and `NULL` scoring rules mean F1_2026.
 

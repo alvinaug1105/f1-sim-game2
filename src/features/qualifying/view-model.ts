@@ -11,6 +11,9 @@ import { QUALIFYING_PHASES, maxPushLaps, phaseFormat, phaseIndex, type Qualifyin
 import type { Setup } from "../../simulation/practice/model";
 import type { TyreCompound } from "../../simulation/race/tyres/model";
 import type { WeatherState } from "../../simulation/race/weather/model";
+/** A moment on the session clock: time remaining in a phase, or (remainingMs null) the break before that phase. */
+export interface ForecastPoint { readonly phase: QualifyingPhase; readonly remainingMs: number | null }
+export interface QualifyingForecastWindow { readonly from: ForecastPoint; readonly to: ForecastPoint; readonly rainfallMin: number; readonly rainfallMax: number }
 export type DriverStatus = "SAFE" | "AT_RISK" | "DANGER" | "NO_TIME" | "ELIMINATED" | "ADVANCED" | "POLE" | "Q3";
 export type GripBand = "LOW" | "IMPROVING" | "GOOD" | "HIGH";
 export interface QualifyingOwnView {
@@ -75,7 +78,8 @@ export interface QualifyingView {
     /** Number of cars that advance from the current phase when anyone can be eliminated; null otherwise (Q3, small fields). */
     readonly cutoff: number | null;
     readonly weather: WeatherState | null;
-    readonly forecast: readonly { readonly fromMinute: number; readonly toMinute: number; readonly rainfallMin: number; readonly rainfallMax: number }[];
+    /** Approximate public windows, expressed on the session clock the player sees: a phase and its time remaining. */
+    readonly forecast: readonly QualifyingForecastWindow[];
     readonly grip: GripBand | null;
     readonly traffic: "CLEAR" | "MODERATE" | "BUSY" | null;
     readonly entrants: readonly QualifyingEntrantView[];
@@ -97,6 +101,36 @@ function displayOrder(s: QualifyingState) {
     const out = (phase: QualifyingPhase) => phaseClassification(s, phase).filter(i => s.entrants[i].eliminatedIn === phase);
     const phases = QUALIFYING_PHASES.slice(0, phaseIndex(s.phase) + 1).reverse();
     return [...phaseClassification(s, s.phase).filter(i => s.entrants[i].eliminatedIn === null), ...phases.flatMap(out)];
+}
+/** Remaining times are rounded to 30 s: the windows are approximate and must not read as a precise timeline. */
+const FORECAST_ROUNDING_MS = 30_000;
+/**
+ * Maps a public forecast window (absolute session time) onto the phase schedule as it stands now: the current phase
+ * runs to its scheduled length (or has already ended), then a break, then each later phase. Overtime can shift later
+ * phases slightly, which is why the copy says "~". Uses only public timing; windows after the session are dropped.
+ */
+export function qualifyingForecast(s: QualifyingState): QualifyingForecastWindow[] {
+    if (s.status !== "RUNNING") return [];
+    const phases = s.input.format.phases, now = s.sessionElapsedMs, slots: { phase: QualifyingPhase; start: number; end: number }[] = [];
+    let i = phaseIndex(s.phase), end: number;
+    if (s.phaseStatus === "COMPLETE") end = now;
+    else { const start = now - s.phaseElapsedMs; end = Math.max(now, start + phases[i].durationMs); slots.push({ phase: s.phase, start, end }); }
+    for (i += 1; i < phases.length; i++) { const start = end + s.input.format.intermissionMs; end = start + phases[i].durationMs; slots.push({ phase: phases[i].phase, start, end }); }
+    const point = (t: number): ForecastPoint | null => {
+        const at = Math.max(t, now);
+        for (const slot of slots) {
+            if (at < slot.start) return { phase: slot.phase, remainingMs: null };
+            if (at <= slot.end) return { phase: slot.phase, remainingMs: Math.round((slot.end - at) / FORECAST_ROUNDING_MS) * FORECAST_ROUNDING_MS };
+        }
+        return null;
+    };
+    const last = slots.at(-1), sessionTime = (tick: number) => (tick - 1) * s.input.weatherTickMs;
+    return s.input.weather.forecast.slice(1).filter(w => w.arrivalMaxLap >= s.weatherTick).flatMap(w => {
+        const from = point(sessionTime(w.arrivalMinLap));
+        if (!from || !last) return [];
+        const to = point(sessionTime(w.arrivalMaxLap)) ?? { phase: last.phase, remainingMs: 0 };
+        return [{ from, to, rainfallMin: w.rainfallMin, rainfallMax: w.rainfallMax }];
+    });
 }
 function statusOf(s: QualifyingState, index: number, position: number): DriverStatus {
     const e = s.entrants[index], f = phaseFormat(s);
@@ -126,13 +160,13 @@ export function qualifyingView(data: CareerQualifyingData): QualifyingView {
     }
     const f = phaseFormat(s), order = displayOrder(s), cutoff = s.status === "RUNNING" && f.advancing < f.eligible ? f.advancing : null;
     const phaseOrder = phaseClassification(s, s.phase), timeAt = (position: number) => s.entrants[phaseOrder[position - 1]]?.best[s.phase]?.ms ?? null;
-    const leader = timeAt(1), tick = s.weatherTick, minute = (t: number) => Math.max(0, Math.round(((t - 1) * s.input.weatherTickMs - s.sessionElapsedMs) / 60_000));
+    const leader = timeAt(1);
     return {
         ...base, status: s.status, legacyInProgress: false, phase: s.phase, phaseComplete: s.phaseStatus === "COMPLETE", phaseElapsedMs: s.phaseElapsedMs, phaseDurationMs: f.durationMs,
         sessionElapsedMs: s.sessionElapsedMs, stepMs: s.input.stepMs, step: Math.round(s.sessionElapsedMs / s.input.stepMs), autoPlayer: s.autoPlayer,
         format: s.input.format.phases, cutoff, weather: s.weather,
-        // Approximate public windows only (never the truth timeline), in minutes from now.
-        forecast: s.input.weather.forecast.slice(1).filter(w => w.arrivalMaxLap >= tick).map(w => ({ fromMinute: minute(w.arrivalMinLap), toMinute: minute(w.arrivalMaxLap), rainfallMin: w.rainfallMin, rainfallMax: w.rainfallMax })),
+        // Approximate public windows only (never the truth timeline), on the phase clock.
+        forecast: qualifyingForecast(s),
         grip: gripBand(s), traffic: s.status === "RUNNING" ? trafficBand(s) : null,
         entrants: order.map((i, rank) => {
             const e = s.entrants[i], source = s.input.entrants[i], roster = data.roster.find(r => r.driverId === source.driverId);

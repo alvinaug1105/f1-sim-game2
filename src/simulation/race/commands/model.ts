@@ -1,4 +1,5 @@
 import type { RaceEntrantState, RaceSimulationState } from "../types";
+import { validateRacecraftConfiguration, type RacecraftConfiguration } from "../traffic/racecraft";
 export const PACE_MODES = ["CONSERVE", "LIGHT", "STANDARD", "PUSH", "ATTACK"] as const;
 export const FUEL_MODES = ["CONSERVE", "BALANCED", "PUSH"] as const;
 export const ERS_MODES = ["HARVEST", "NEUTRAL", "DEPLOY", "OVERTAKE"] as const;
@@ -15,6 +16,8 @@ export interface CommandConfiguration {
   ersHarvestFactorPermille: number; ersDeploymentEffectivenessPermille: number;
   exhaustionPenaltyMs: number;
   ai: { lowCharge: number; battleGapMs: number; highWear: number; lateLaps: number; surplusGrams: number };
+  /** Close-racing pressure and selective AI aggression (new Career Races only; absent = previous behaviour). */
+  racecraft?: RacecraftConfiguration;
 }
 /** Provisional version-one tuning, copied into every v5 race. */
 export function defaultCommandConfiguration(): CommandConfiguration {
@@ -44,6 +47,7 @@ export function validateCommandConfiguration(c: CommandConfiguration) {
   integer(c.capacity, 1, 1000); integer(c.initialCharge, 0, c.capacity); integer(c.baseRecovery, 0, 1000);
   integer(c.ersHarvestFactorPermille, 0, 3000); integer(c.ersDeploymentEffectivenessPermille, 0, 3000); integer(c.exhaustionPenaltyMs, 60000, 600000);
   integer(c.ai.lowCharge, 0, c.capacity); integer(c.ai.battleGapMs, 0, 10000); integer(c.ai.highWear, 0, 1000); integer(c.ai.lateLaps, 1, 1000); integer(c.ai.surplusGrams, 0, 100000);
+  if (c.racecraft !== undefined) validateRacecraftConfiguration(c.racecraft);
 }
 export function validateCommandState(s: CommandState, c: CommandConfiguration) {
   if (!PACE_MODES.includes(s.paceMode) || !FUEL_MODES.includes(s.fuelMode) || !ERS_MODES.includes(s.ersMode)) throw new RangeError("Invalid command mode");

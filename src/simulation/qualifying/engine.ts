@@ -45,6 +45,8 @@ export function validateQualifyingInput(input: QualifyingInput) {
 }
 export const isAuto = (state: QualifyingState, index: number) => state.input.entrants[index].controller === "AI" || state.autoPlayer;
 export const phaseExpired = (state: QualifyingState) => state.phaseElapsedMs >= phaseFormat(state).durationMs;
+/** Sprint SQ3's single run: two timed laps, the last starting at least this long before the flag (plus the stagger). */
+const LATE_RUN_PUSH_LAPS = 2, LATE_RUN_MARGIN_MS = 20_000;
 /** Deterministic per-phase auto-manager plan: staggered first release and final-run window (never a mass release). */
 function planPhase(state: QualifyingState, rng: StatefulRandomSource): QualifyingState {
     const phase = state.phase;
@@ -55,7 +57,12 @@ function planPhase(state: QualifyingState, rng: StatefulRandomSource): Qualifyin
         // Release times are tuned to the Grand Prix phase lengths; a shorter phase (Sprint Qualifying) compresses them
         // proportionally. For standard lengths the ratio is exactly 1, so Grand Prix Qualifying is unchanged.
         const duration = phaseFormat(state).durationMs, reference = PHASE_DURATION_MS[phase];
-        const releaseAtMs = duration === reference ? standard : Math.round(standard * duration / reference);
+        // A short final phase (Sprint SQ3, 8 minutes) has room for one run only: scheduling it from the start put every
+        // final lap in the middle of the phase. Instead the run is timed back from the flag, so its last timed lap starts
+        // in the closing ~20–120 s (staggered by the same draw), and the phase ends on its climax. Grand Prix Q3 unchanged.
+        const lateRun = phase === "Q3" && duration < reference;
+        const releaseAtMs = lateRun ? Math.max(0, duration - timeToLastFlyingStart(state.input, LATE_RUN_PUSH_LAPS) - LATE_RUN_MARGIN_MS - (standard - 30_000))
+            : duration === reference ? standard : Math.round(standard * duration / reference);
         return { ...e, readyAtMs: 0, attempts: 0, releaseAtMs, windowOffsetMs: Math.floor(rng.next() * 16) * 10_000 };
     }) };
 }

@@ -75,9 +75,9 @@ export function driverSnapshot(row: Row, s: RacePublicState) {
     };
 }
 export type { ErsOutlook };
-export type FeedCategory = "CONTROL" | "INCIDENT" | "RETIREMENT" | "PIT";
+export type FeedCategory = "CONTROL" | "INCIDENT" | "RETIREMENT" | "PIT" | "OVERTAKE";
 export interface FeedItem { key: string; lap: number; category: FeedCategory; important: boolean; player: boolean; entrantIds: readonly string[]; event?: RaceEvent; stop?: NonNullable<RacePublicEntrant["pit"]>["stops"][number] }
-const CATEGORY: Record<RaceEvent["type"], FeedCategory> = { INCIDENT: "INCIDENT", RETIREMENT: "RETIREMENT", VSC_START: "CONTROL", VSC_END: "CONTROL", SAFETY_CAR_START: "CONTROL", SAFETY_CAR_END: "CONTROL" };
+const CATEGORY: Record<RaceEvent["type"], FeedCategory> = { INCIDENT: "INCIDENT", RETIREMENT: "RETIREMENT", VSC_START: "CONTROL", VSC_END: "CONTROL", SAFETY_CAR_START: "CONTROL", SAFETY_CAR_END: "CONTROL", OVERTAKE: "OVERTAKE" };
 /**
  * Structured feed from persisted Race records only (Race Control events plus pit-stop history), newest first.
  * Translation happens at render time; nothing here is prose.
@@ -87,7 +87,9 @@ export function raceFeed(s: RacePublicState, playerTeamId: string): FeedItem[] {
     const items: (FeedItem & { order: number })[] = [];
     for (const event of s.incidents?.events ?? []) {
         const category = CATEGORY[event.type], player = event.entrantIds.some(id => players.has(id));
-        const important = event.type === "SAFETY_CAR_START" || event.type === "VSC_START" || category === "RETIREMENT" || (player && category === "INCIDENT") || event.severity === "MAJOR";
+        // On-track passes are shown only when a player car passes or is passed (no midfield spam).
+        if (category === "OVERTAKE" && !player) continue;
+        const important = event.type === "SAFETY_CAR_START" || event.type === "VSC_START" || category === "RETIREMENT" || (player && (category === "INCIDENT" || category === "OVERTAKE")) || event.severity === "MAJOR";
         items.push({ key: `e${event.sequence}`, lap: event.lap, category, important, player, entrantIds: event.entrantIds, event, order: 0 });
     }
     for (const e of s.entrants) for (const stop of e.pit?.stops ?? []) {

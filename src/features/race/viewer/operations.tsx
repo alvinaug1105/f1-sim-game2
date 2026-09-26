@@ -7,7 +7,7 @@ import { layoutForCircuit } from '../../../data/seed/circuit-layouts';
 import { timingRows } from './model';
 import { PlaybackController } from './playback';
 import { PlaybackBar } from './playback-bar';
-import { sprintRemainderAction, viewerAction } from './actions';
+import { raceCheckpointAction, sprintRemainderAction, viewerAction } from './actions';
 import { SprintRemainder, SprintSummary } from './sprint-panels';
 import { commandInfo, type ViewerIntent } from './intents';
 import { TrackMap } from './track-map';
@@ -34,6 +34,22 @@ export function RaceOperations({ initialData }: {
     const send = (intent: ViewerIntent) => { void controller.command(async (state) => { const result = await viewerAction(data.progress.career.id, data.eventId, state.lap, intent, data.kind ?? 'RACE'); if (!result.data)
         throw new Error(result.error!); setData(result.data); return result.data.state!; }, commandInfo(intent)); };
     const attentionId = playback.reason && playback.reason !== 'FINISH' ? playback.attention?.entrantId ?? null : null;
+    // Multi-tab: a STALE answer to a command, or a returning tab whose checkpoint is behind the saved Race, gets a
+    // clear notice. The server already refused the stale request, so the authoritative Race is unchanged.
+    const [advancedElsewhere, setAdvancedElsewhere] = useState(false);
+    const stale = advancedElsewhere || playback.error === 'STALE';
+    useEffect(() => {
+        const check = () => {
+            if (document.visibilityState !== 'visible' || controller.getSnapshot().busy) return;
+            const lap = controller.getState().lap;
+            void raceCheckpointAction(initialData.progress.career.id, initialData.eventId, initialData.kind ?? 'RACE').then(saved => {
+                if (saved && saved.lap !== lap && controller.getState().lap === lap && !controller.getSnapshot().busy) { controller.pause(); setAdvancedElsewhere(true); }
+            });
+        };
+        window.addEventListener('focus', check);
+        document.addEventListener('visibilitychange', check);
+        return () => { window.removeEventListener('focus', check); document.removeEventListener('visibilitychange', check); };
+    }, [controller, initialData]);
     const sprint = data.kind === 'SPRINT';
     // Sprint Simulate Remainder goes through the controller's single mutation queue like every other command.
     const remainder = () => { void controller.command(async (state) => { const result = await sprintRemainderAction(data.progress.career.id, data.eventId, state.lap); if (!result.data)
@@ -46,6 +62,7 @@ export function RaceOperations({ initialData }: {
    <div className="race-bar-top"><RaceClock data={data}/><ConditionsStrip data={data}/></div>
    <PlaybackBar controller={controller} playback={playback} rows={rows} reduceMotion={reduceMotion} onReduceMotion={setReduceMotion} alerts={<RaceAlerts data={data} rows={rows}/>}/>
    {sprint && s.status === 'RUNNING' && <SprintRemainder busy={playback.busy} onConfirm={remainder}/>}
+   {stale && <p className="race-stale" role="alert"><span>{t('viewer.stale')}</span><button type="button" onClick={() => window.location.reload()}>{t('viewer.refresh')}</button></p>}
   </div>
   {sprint && s.status === 'FINISHED' && <SprintSummary data={data} rows={rows}/>}
   <div className="ops-grid">

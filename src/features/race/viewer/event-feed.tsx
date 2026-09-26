@@ -8,7 +8,11 @@ export function EventFeed({ data }: { data: RaceViewData }) {
     const { t, format } = useI18n(), s = data.state!, items = raceFeed(s, data.progress.career.playerTeamId);
     const name = (id: string) => data.labels.find(l => l.entrantId === id)?.driverName ?? id;
     const seconds = (ms: number, digits = 2) => format.number(ms / 1000, { style: 'unit', unit: 'second', maximumFractionDigits: digits });
-    const describe = (item: FeedItem) => item.stop
+    const mine = new Set(s.input.entrants.filter(e => e.teamId === data.progress.career.playerTeamId).map(e => e.entrantId));
+    // Player-involved pass: who passed whom, and the safe post-event cause (never probabilities or hidden pace).
+    const overtake = (item: FeedItem) => { const [by, on] = item.event!.entrantIds, lost = mine.has(on) && !mine.has(by);
+        return <><strong>{t(lost ? 'viewer.overtake.lost' : 'viewer.overtake.gained')}</strong> · {t(`viewer.overtakeCause.${item.event!.cause ?? 'NONE'}`)}<p>{t('viewer.overtake.detail', { by: name(by), on: name(on) })}</p></>; };
+    const describe = (item: FeedItem) => item.event?.type === 'OVERTAKE' ? overtake(item) : item.stop
         ? <><strong>{t('pit.pitStop')}</strong> · {t('viewer.tyreChange', { old: t(`tyre.${item.stop.oldCompound}`), next: t(`tyre.${item.stop.newCompound}`) })}<p>{name(item.entrantIds[0])} · {seconds(item.stop.totalLossMs, 1)}</p></>
         : <><strong>{t(`incident.${item.event!.type}`)}</strong>{item.event!.kind && <> · {t(`incident.${item.event!.kind}`)}</>}{item.event!.entrantIds.length > 0 && <p>{item.event!.entrantIds.map(name).join(' · ')}{item.event!.timeLossMs > 0 && <> +{seconds(item.event!.timeLossMs)}</>}</p>}</>;
     const entry = (item: FeedItem) => <li key={item.key} className={`feed-${item.category} ${item.important ? 'important' : ''} ${item.player ? 'player-event' : ''}`}>

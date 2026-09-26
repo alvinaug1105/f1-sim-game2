@@ -17,7 +17,7 @@ import {
 import { qualifyingAdapter, type QualifyingAttention, type QualifyingAttentionMemory, type QualifyingCommandInfo } from './playback';
 import type { QualifyingView } from './view-model';
 import { PhaseCompletePanel, QualifyingDriverPanel, QualifyingSummary, QualifyingTower, type QualifyingUiCommand } from './components';
-import { nextSessionPath, phaseKey, textKey } from './labels';
+import { forecastText, nextSessionPath, phaseKey, textKey } from './labels';
 import { sessionHref } from '../career/session-links';
 type Controller = PlaybackController<QualifyingView, QualifyingAttentionMemory, QualifyingAttention, QualifyingCommandInfo>;
 type Snapshot = PlaybackSnapshot<QualifyingAttention, QualifyingCommandInfo>;
@@ -90,7 +90,7 @@ function QualifyingBar({ controller, playback, view, onRemainder }: { controller
                 {w && <span>{t(w.rainfallIntensity === 0 ? 'weather.dry' : w.rainfallIntensity < 650 ? 'weather.light' : 'weather.heavy')} · {t('weather.water')} {percent(w.trackWater)} ({t((['weather.dry', 'weather.damp', 'weather.wet'] as const)[waterBand(w)])})</span>}
                 {view.grip && <span>{t('qualifying.grip')}: <strong>{t(`qualifying.grip.${view.grip}`)}</strong></span>}
                 {view.traffic && <span>{t('qualifying.traffic')}: <strong>{t(`qualifying.traffic.${view.traffic}`)}</strong></span>}
-                <span title={t('weather.uncertainty')}>{t('weather.forecast')}: {next ? t('practice.forecastWindow', { from: format.number(next.fromMinute), to: format.number(next.toMinute), min: percent(next.rainfallMin), max: percent(next.rainfallMax) }) : t('prep.noRain')}</span>
+                <span title={t('weather.uncertainty')}>{t('weather.forecast')}: {next ? forecastText(next, view.kind, t, ms => sessionClock(ms, locale), percent, w?.rainfallIntensity ?? 0) : t('prep.noRain')}</span>
             </section>
         </div>
         <section className="playback-bar" aria-label={t('viewer.playback')}>

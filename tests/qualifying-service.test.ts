@@ -174,7 +174,10 @@ describe("information boundary", () => {
         for (const k of ["seed", "rngState", "timeline", "ideal", "input", "releaseAtMs", "windowOffsetMs", "lapTrafficMs", "lastLapTrafficMs", "fallbackRank", "evolution"]) expect(all.has(k), k).toBe(false);
         for (const e of view.entrants) expect(e.own !== null).toBe(e.teamId === w.playerTeamId);
         expect(view.entrants.filter(e => e.own)).toHaveLength(2);
-        for (const f of view.forecast) expect(Object.keys(f).sort()).toEqual(["fromMinute", "rainfallMax", "rainfallMin", "toMinute"]);
+        for (const f of view.forecast) {
+            expect(Object.keys(f).sort()).toEqual(["from", "rainfallMax", "rainfallMin", "to"]);
+            for (const p of [f.from, f.to]) expect(Object.keys(p).sort()).toEqual(["phase", "remainingMs"]);
+        }
     });
 });
 describe("Qualifying → Race grid", () => {

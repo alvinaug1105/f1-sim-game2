@@ -109,7 +109,7 @@ export function projectRaceState(s: RaceSimulationState, playerTeamId: string): 
             mode: control.mode,
             drsDelay: control.drsDelay,
             endingThisLap: control.mode !== "GREEN" && control.remainingLaps === 1,
-            events: control.events.map((e) => ({ sequence: e.sequence, type: e.type, lap: e.lap, entrantIds: [...e.entrantIds], kind: e.kind, severity: e.severity, timeLossMs: e.timeLossMs })),
+            events: control.events.map((e) => ({ sequence: e.sequence, type: e.type, lap: e.lap, entrantIds: [...e.entrantIds], kind: e.kind, severity: e.severity, timeLossMs: e.timeLossMs, ...(e.cause ? { cause: e.cause } : {}) })),
           },
         }
       : {}),

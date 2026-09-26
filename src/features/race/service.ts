@@ -1,3 +1,4 @@
+import { defaultRacecraftConfiguration } from "../../simulation/race/traffic/racecraft";
 import { defaultIncidentConfiguration, defaultReliability } from "../../simulation/race/incidents/model";
 import { developmentWeather } from "../../simulation/race/weather/model";
 import { weatherTyreConfiguration } from "../../simulation/race/tyres/profiles";
@@ -112,7 +113,8 @@ export function startCareerRace(
                 ...input,
                 ...(withIncidents ? { incidents: defaultIncidentConfiguration() } : {}),
                 ...(weather ? { weather } : {}),
-                ...(withCommands ? { commands: defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
+                // Career Races (v7) also freeze the racecraft tuning (close-racing pressure, selective AI aggression).
+                ...(withCommands ? { commands: withIncidents ? { ...defaultCommandConfiguration(), racecraft: defaultRacecraftConfiguration() } : defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
                 // Career Races (v7) freeze the AI pit strategy and the Career circuit's Race interaction identity
                 // (neutral defaults when the Career predates it). Older Race versions keep their historical inputs.
                 ...(withPits ? { pits: withIncidents ? { ...defaultPitConfiguration(), strategy: defaultAiStrategyConfiguration() } : defaultPitConfiguration() } : {}),

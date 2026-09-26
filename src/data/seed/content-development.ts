@@ -135,6 +135,7 @@ export const developmentContent = {
       key: "season-2026",
       year: 2026,
       name: "2026 Fictional Formula Championship",
+      scoringRulesVersion: "F1_2026",
     },
   ],
   // Entry IDs 500+ / 600+ follow the team / driver order above (Mercedes 500, Ferrari 501; RUS 600 … HAM 603).

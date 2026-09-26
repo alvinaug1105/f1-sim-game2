@@ -981,3 +981,54 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .weekend-format { color:#ffd099; font-weight:700; }
 .sprint-remainder { display:flex; justify-content:flex-end; padding:4px 10px 8px; }
 .sprint-summary { margin-bottom:14px; }
+/* Phase 16 — Championship / Results. The player's rows carry a ◆ marker and screen-reader text, never colour alone. */
+.cutoff-form { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 18px; }
+.cutoff-form select { padding:8px 10px; color:inherit; background:#1b1d21; border:1px solid #53565c; border-radius:4px; font:inherit; max-width:100%; }
+.cutoff-form select:focus-visible, .round-breakdown summary:focus-visible, .tab:focus-visible, .tab-panel:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.cutoff-form button { padding:8px 14px; }
+.tab-list { display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid var(--line); margin-bottom:14px; }
+.tab-list .tab { background:transparent; color:var(--muted); border-radius:5px 5px 0 0; padding:9px 14px; border-bottom:3px solid transparent; font-weight:600; }
+.tab-list .tab.active { color:#f1f2f4; border-bottom-color:var(--accent); background:#20242a; }
+.standings-scroll { overflow-x:auto; max-width:100%; }
+.standings-table { width:100%; border-collapse:collapse; font-size:13px; }
+.standings-table caption { text-align:left; color:var(--muted); font-size:12px; padding:0 0 8px; }
+.standings-table th, .standings-table td { padding:7px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+.standings-table thead th { color:var(--muted); font-size:11px; font-weight:600; white-space:nowrap; }
+.standings-table tbody th { font-weight:400; }
+.standings-table .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.standings-table .pos { width:3.5em; font-variant-numeric:tabular-nums; font-weight:700; white-space:nowrap; }
+.standings-table .move { width:1.8em; text-align:center; }
+.standings-table .points { font-weight:700; }
+.standings-table .team-cell { color:#c9ced5; }
+.standings-table .player-row { background:#1f2419; box-shadow:inset 3px 0 0 var(--team,#bddd74); }
+.standings-driver { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.standings-abbr { border-left:3px solid; padding-left:5px; }
+.player-diamond { color:var(--accent); }
+.team-swatch { display:inline-block; width:10px; height:10px; border-radius:2px; border:1px solid #ffffff55; }
+.movement { font-weight:700; }
+.movement-up { color:#9fe0a8; }
+.movement-down { color:#ffab9a; }
+.movement-same { color:var(--muted); }
+.round-breakdown summary { cursor:pointer; color:var(--accent); white-space:nowrap; }
+.round-breakdown ol { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:4px 10px; max-width:420px; }
+.round-breakdown li { display:inline-flex; gap:5px; font-size:12px; white-space:nowrap; }
+.standings-note { font-size:12px; margin-top:10px; }
+.season-complete { border:1px solid #6d7a3b; background:#23291a; border-radius:7px; padding:18px 22px; margin-bottom:22px; }
+.season-complete h2 { font-size:18px; color:var(--accent); }
+.season-complete p { color:var(--muted); margin:4px 0 12px; }
+.season-complete dl { display:flex; flex-wrap:wrap; gap:14px 40px; margin:0; }
+.season-complete dt { color:var(--muted); font-size:11px; }
+.season-complete dd { margin:3px 0 0; font-size:16px; }
+.season-history { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; }
+.season-history li { border:1px solid var(--line); border-radius:6px; padding:12px 14px; }
+.season-history h3 { font-size:15px; margin:2px 0 8px; }
+.season-history dl { margin:0 0 8px; display:grid; gap:6px; }
+.season-history dt { color:var(--muted); font-size:11px; }
+.season-history dd { margin:0; }
+.results-stack { display:grid; gap:22px; }
+.results-stack .standings-scroll + .standings-scroll { margin-top:22px; }
+.header-links { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.weekend-result-links { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-top:16px; }
+.championship-summary .summary-line { display:block; }
+.championship-summary .eyebrow { margin-bottom:4px; }
+.championship-summary .career-facts { margin:12px 0 16px; }

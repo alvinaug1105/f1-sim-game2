@@ -9,7 +9,7 @@ import type {
   SeasonDriverEntry,
   CalendarEvent,
 } from "./content";
-import { WEEKEND_FORMATS } from "./content";
+import { SCORING_RULES_VERSIONS, WEEKEND_FORMATS } from "./content";
 import { assertContentId } from "./content-repository";
 type Source<T> = Omit<T, keyof AuditedContent>;
 export interface ContentDataset {
@@ -154,6 +154,7 @@ export function validateContentDataset(data: ContentDataset): void {
   for (const row of seasons) {
     positive(row.year, "Season year");
     requireValid(Boolean(row.name.trim()), "Season name is required.");
+    requireValid(row.scoringRulesVersion == null || SCORING_RULES_VERSIONS.includes(row.scoringRulesVersion), "Unknown scoring rules version.");
   }
   const teamIds = new Set(teams.map((row) => row.id)),
     driverIds = new Set(drivers.map((row) => row.id)),

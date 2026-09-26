@@ -18,6 +18,8 @@ import type {
 } from "../../game/domain/career";
 import { CAREER_NAME_LIMIT } from "../../game/domain/career-snapshot";
 import { createCareerAction } from "./actions";
+import { ChampionshipSummaryPanel } from "../championship/views";
+import type { ChampionshipSummary } from "../championship/model";
 import type { CareerActionState } from "./form-state";
 const statuses: Record<CareerStatus, TranslationKey> = {
   ACTIVE: "career.active",
@@ -267,9 +269,11 @@ export function NewCareerView({ options }: { options: CareerCreationOptions }) {
 export function CareerOverviewView({
   overview,
   progress,
+  championship = null,
 }: {
   overview: CareerOverview;
   progress: CareerProgress;
+  championship?: ChampionshipSummary | null;
 }) {
   const { t, format } = useI18n();
   const { playerTeam, season } = overview;
@@ -350,14 +354,17 @@ export function CareerOverviewView({
             )}
           </Panel>
         )}
-        <Panel
-          title={t("dashboard.championship")}
-          label={t("common.notImplemented")}
-        >
-          <EmptyState title={t("dashboard.newSeason")}>
-            {t("dashboard.standingsBody")}
-          </EmptyState>
-        </Panel>
+        {championship ? (
+          <ChampionshipSummaryPanel summary={championship} />
+        ) : (
+          <Panel title={t("dashboard.championship")}>
+            <div className="career-content">
+              <Link className="text-link" href={`/career/${career.id}/standings`}>
+                {t("championship.open")} →
+              </Link>
+            </div>
+          </Panel>
+        )}
       </div>
     </>
   );

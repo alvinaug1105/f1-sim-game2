@@ -48,3 +48,10 @@ import type { CareerQualifyingRepository, QualifyingKind } from "../../game/doma
 export function getQualifyingRepository(kind: QualifyingKind = "QUALIFYING"): CareerQualifyingRepository {
   return new PrismaQualifyingRepository(getPrisma(), kind);
 }
+
+import { PrismaChampionshipRepository } from "../../data/repositories/prisma-championship";
+import type { ChampionshipRepository } from "../../game/domain/championship-repository";
+/** Read-only Championship source: completed results of the Career's current season, loaded in bounded queries. */
+export function getChampionshipRepository(): ChampionshipRepository {
+  return new PrismaChampionshipRepository(getPrisma());
+}

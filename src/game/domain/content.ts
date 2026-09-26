@@ -44,7 +44,12 @@ export interface Circuit extends ScopedContent, AuditedContent {
 export interface Season extends ScopedContent, AuditedContent {
   readonly year: number;
   readonly name: string;
+  /** Championship scoring rules; absent/NULL on legacy content = F1_2026. */
+  readonly scoringRulesVersion?: ScoringRulesVersion | null;
 }
+/** Championship scoring rule sets (points tables, shortened-race bands, countback). */
+export type ScoringRulesVersion = "F1_2026";
+export const SCORING_RULES_VERSIONS: readonly ScoringRulesVersion[] = ["F1_2026"];
 export interface SeasonTeamEntry {
   readonly id: EntityId;
   readonly gameDatabaseId: EntityId;

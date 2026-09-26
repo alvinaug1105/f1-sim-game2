@@ -98,6 +98,36 @@ export function ProgressPanel({ progress }: { progress: CareerProgress }) {
     </Panel>
   );
 }
+/** After the Grand Prix: the weekend's results and the championship. A finished Sprint already has results to show. */
+function WeekendResultLinks({
+  careerId,
+  eventId,
+  sessions,
+}: {
+  careerId: string;
+  eventId: string;
+  sessions: readonly { type: string; status: string }[];
+}) {
+  const { t } = useI18n();
+  const done = (type: string) =>
+    sessions.some((s) => s.type === type && s.status === "COMPLETED");
+  if (!done("RACE") && !done("SPRINT")) return null;
+  return (
+    <div className="weekend-result-links">
+      <Link
+        className="button-link"
+        href={`/career/${careerId}/events/${eventId}/results`}
+      >
+        {t("championship.viewWeekendResults")}
+      </Link>
+      {done("RACE") && (
+        <Link className="text-link" href={`/career/${careerId}/standings`}>
+          {t("championship.viewChampionship")}
+        </Link>
+      )}
+    </div>
+  );
+}
 export function WeekendView({
   progress,
   eventId,
@@ -206,6 +236,11 @@ export function WeekendView({
               {event.weekend.status === "COMPLETED" && (
                 <p role="status">{t("progression.done")}</p>
               )}
+              <WeekendResultLinks
+                careerId={progress.career.id}
+                eventId={event.id}
+                sessions={event.weekend.sessions}
+              />
             </>
           )}
         </div>

@@ -55,7 +55,7 @@ export interface AiStrategyConfiguration {
 }
 export function defaultAiStrategyConfiguration(): AiStrategyConfiguration {
   return {
-    version: 1, windowOpenPermille: 400, stopPointPermille: 650, preferenceSpreadPermille: 280, trafficWindowMs: 1500, trafficCostPermille: 110,
+    version: 1, windowOpenPermille: 400, stopPointPermille: 650, preferenceSpreadPermille: 140, trafficWindowMs: 1500, trafficCostPermille: 110,
     maxTrafficPermille: 400, cleanAirBonusPermille: 80, undercutGapMs: 1500, undercutBonusPermille: 220, clearAirMs: 2500,
     extendBonusPermille: 180, forceStopPermille: 1700, neutralWindowPermille: 700, compoundToleranceMs: 1500,
     crossoverSpreadPermille: 250, extraStopTrackPositionMs: 6000,
@@ -120,18 +120,23 @@ export function publicWeather(c: WeatherConfiguration): PublicWeather {
 const passingFactor = (input: RaceSimulationInput) => 0.5 + (input.interaction?.overtakingDifficulty ?? 35) / 70;
 const isDry = (c: TyreCompound) => (TYRE_COMPOUNDS as readonly string[]).includes(c);
 
-/** Per-lap tyre + water cost of a stint from `initial`, as prefix sums (index n = first n laps), under the public forecast. */
+/**
+ * Per-lap tyre + water cost of a stint from `initial`, as prefix sums (index n = first n laps), under the public
+ * forecast. `life` is the longest stint the car can actually run: the stop rule forces a stop once wear reaches the
+ * compound's cliff, so a stint may only start its last lap below the cliff.
+ */
 function stintCosts(initial: TyreState, laps: number, lap: number, weather: WeatherState, c: PublicWeather, tyres: TyreConfiguration) {
   const out = [0];
-  let t = initial, w = weather, total = 0;
+  let t = initial, w = weather, total = 0, life = laps;
   for (let n = 1; n <= laps; n++) {
+    if (life === laps && t.wearPermille >= tyres.profiles[t.compound].cliffWear) life = n - 1;
     w = evolveWeather(w, forecastRain(c, lap + n + 1, w.rainfallIntensity), w.airTemperatureMilliC, c);
     const x = tyreContributions(t, tyres.profiles[t.compound]);
     total += x.tyreCompoundMs + x.tyreWearMs + x.tyreTemperatureMs + waterPenaltyMs(t.compound, w.trackWater, c);
     out.push(total);
     t = advanceWeatherTyre(t, tyres, w, c);
   }
-  return out;
+  return Object.assign(out, { life });
 }
 function fresh(compound: TyreCompound, input: Pick<RaceSimulationInput, "pits">): TyreState {
   return { compound, ageLaps: 0, wearPermille: 0, temperatureMilliC: input.pits!.newTyreTemperatureMilliC };
@@ -185,19 +190,29 @@ export function assessAiStop(ctx: StrategyContext, strategy: AiStrategyConfigura
     return saving > required ? { ...hold("WEATHER"), compound: options[0].compound } : hold("NO_WINDOW");
   }
   const gain = Math.round(saving * 1000 / greenThreshold);
-  const pick = () => dryCompound(ctx, strategy, preference, tyres, remaining);
+  // Future stints are planned at standard wear: the current pace mode (e.g. nursing a worn tyre) says nothing about
+  // how the fresh set will be driven.
+  const pick = () => dryCompound(ctx, strategy, preference, input.tyres!, remaining);
   const profile = input.tyres!.profiles[e.stint!.tyre.compound];
   if (gain >= strategy.forceStopPermille || e.stint!.tyre.wearPermille >= profile.cliffWear) return { ...hold("FORCED", gain), compound: pick() };
-  const bias = Math.round(preference.stopBias * strategy.preferenceSpreadPermille);
+  const character = Math.round(preference.stopBias * strategy.preferenceSpreadPermille);
   // Each car's window floor is its own too (no shared lap where every early-biased car is clamped together).
-  const floor = strategy.windowOpenPermille + Math.round(bias / 2);
+  const floor = strategy.windowOpenPermille + Math.round(character / 2);
   if (gain < floor) return hold("NO_WINDOW", gain);
   if (ctx.mode !== "GREEN") {
     // A reduced-cost stop is attractive, but only for a tyre already well into its life, judged by each car's own
     // character (never the whole field on the same call).
-    const required = strategy.neutralWindowPermille + bias;
+    const required = strategy.neutralWindowPermille + character;
     return saving > effectiveThreshold && gain >= required ? { ...hold("NEUTRAL", gain, required), compound: pick() } : hold("HOLD", gain, required);
   }
+  // The character shifts the green stop point only where that is a real strategic option, never a built-in handicap:
+  // - a longer-stint bias applies only on a tyre that is still viable (the same limit as the extension option,
+  //   halfway from degradation onset to the cliff) — past it the car would just be nursing a dying tyre;
+  // - an earlier bias does not create a stop the Race does not need: none while the current tyre can reach the flag
+  //   (standard wear, below its cliff), where only the neutral tyre-gain rule can call the car in.
+  const viable = e.stint!.tyre.wearPermille < profile.degradationStartWear + Math.round((profile.cliffWear - profile.degradationStartWear) / 2);
+  const reachesFlag = () => stintCosts(current, remaining, lap, ctx.weather, c, input.tyres!).life >= remaining;
+  const bias = (preference.stopBias > 0 && !viable) || (preference.stopBias < 0 && reachesFlag()) ? 0 : character;
   // Release traffic: busier rejoin → wait (more so where passing is hard); a clean gap → go a little earlier.
   const traffic = releaseTraffic(state, e, input.pits!.pitLaneLossMs + input.pits!.stationaryBaseMs, strategy.trafficWindowMs);
   const passing = passingFactor(input);
@@ -210,7 +225,7 @@ export function assessAiStop(ctx: StrategyContext, strategy: AiStrategyConfigura
     ? -Math.round(strategy.undercutBonusPermille * preference.undercut) : 0;
   const clearAhead = !ahead || e.intervalToAheadMs === null || e.intervalToAheadMs > strategy.clearAirMs;
   const safeBehind = !behind || behind.intervalToAheadMs === null || behind.intervalToAheadMs > 1000;
-  const extend = clearAhead && safeBehind && e.stint!.tyre.wearPermille < profile.degradationStartWear + Math.round((profile.cliffWear - profile.degradationStartWear) / 2)
+  const extend = clearAhead && safeBehind && viable
     ? Math.round(strategy.extendBonusPermille * (1 - preference.undercut)) : 0;
   const required = Math.max(floor, strategy.stopPointPermille + bias + trafficAdjust + undercut + extend);
   return gain >= required ? { ...hold("WINDOW", gain, required, traffic), compound: pick() } : hold("HOLD", gain, required, traffic);
@@ -230,14 +245,17 @@ export function dryCompound(ctx: StrategyContext, strategy: AiStrategyConfigurat
   // passing is difficult).
   const stop = ctx.greenPitLaneLossMs + input.pits!.stationaryBaseMs + ctx.publicWeather.strategy.marginMs + Math.round(strategy.extraStopTrackPositionMs * passingFactor(input)),
     minimum = ctx.publicWeather.strategy.minimumStintLaps;
-  const plan = (x: TyreCompound) => {
-    const costs = prefix.get(x)!;
-    let best = costs[remaining];
+  // Only plans the car can actually drive: a stint never runs past its compound's cliff (where the stop rule would
+  // force an unplanned extra stop). If no compound can finish within one further stop, the constraint is relaxed.
+  const plan = (x: TyreCompound, feasibleOnly: boolean) => {
+    const costs = prefix.get(x)!, fits = (y: TyreCompound, laps: number) => !feasibleOnly || laps <= prefix.get(y)!.life;
+    let best = fits(x, remaining) ? costs[remaining] : Infinity;
     for (let k = minimum; k <= remaining - minimum; k++)
-      for (const y of dry) best = Math.min(best, costs[k] + stop + prefix.get(y)![remaining - k]);
+      for (const y of dry) if (fits(x, k) && fits(y, remaining - k)) best = Math.min(best, costs[k] + stop + prefix.get(y)![remaining - k]);
     return best;
   };
-  const plans = dry.map(compound => ({ compound, cost: plan(compound) }));
+  const feasible = dry.map(compound => ({ compound, cost: plan(compound, true) }));
+  const plans = feasible.some(p => Number.isFinite(p.cost)) ? feasible : dry.map(compound => ({ compound, cost: plan(compound, false) }));
   const best = Math.min(...plans.map(p => p.cost));
   const sensible = plans.filter(p => p.cost - best <= strategy.compoundToleranceMs).map(p => p.compound); // softest → hardest
   const index = Math.min(sensible.length - 1, Math.max(0, Math.round((preference.compound + 1) / 2 * (sensible.length - 1))));

@@ -83,5 +83,26 @@ The strategy is enabled by a configuration frozen into each new Career Race (`Pi
 | Overtakes / 10 laps: Monaco · Marina Bay · Silverstone · Bahrain · Spa | 3.3 · 3.0 · 2.4 · 3.4 · 3.1 | 2.4 · 2.9 · 6.4 · 7.1 · 9.3 |
 | Pass success: Monaco · Spa | 37% · 42% | 22% · 46% |
 
+## Stop-bias balance repair (focused, after formal QA of `147dec3`)
+- **Formal finding:** long-bias characters systematically lost places (longest quintile about −1.95; 53% lost places, against 32% for early). A hidden character must be a preference, not a handicap.
+- **Root cause (traced lap by lap):**
+  - The long bias pushed a car past the point where its tyre was still viable. From wear 700 the command policy already nurses the tyre at LIGHT pace (+300 ms/lap), so long cars lost time before stopping.
+  - After a late first stop, the compound plan projected future wear at that nursing pace mode, and allowed a stint to run past the compound's cliff (where the stop rule forces a stop). That led to Soft picks that could not last, and an unplanned second stop.
+  - The early side had a milder mirror effect: a stop the Race did not need.
+- **Repair (strategy decisions only, all from Race state):**
+  1. `preferenceSpreadPermille` goes from 280 to 140. This affects new Races only; saved Races keep their snapshot.
+  2. On the green stop point, the longer-stint bias applies only while the tyre is viable: wear below halfway from degradation onset to the cliff, the same limit as the extension option. The earlier bias does not apply while the current tyre can reach the flag (standard wear, below its cliff). The window floor and the SC/VSC rule keep the ungated character, unchanged in form.
+  3. The compound plan uses standard wear for future stints, and a planned stint never runs past its compound's cliff. If nothing fits within one further stop, the constraint is relaxed.
+- **Unchanged:** character still never touches pace, passing, reliability or incidents.
+- **Builder sample:** 3 × 64 Races, independent Race seeds per Race, early / neutral / long terciles. Places gained are shown with the share of cars losing places in brackets.
+
+| Tercile | `147dec3` | Repair |
+|---|---|---|
+| Early | +0.37 … +0.86 (30–33%) | 0.00 … +0.16 (35–36%) |
+| Neutral | +0.80 … +0.96 (30–33%) | +0.31 … +0.38 (34%) |
+| Long | −1.05 … −1.21 (50–53%) | −0.04 … −0.15 (39–40%) |
+
+- **Desync kept:** median largest pit wave 5–6; median distinct first-stop laps 11 (12 before); 18+ waves only on sudden heavy-rain crossovers.
+
 ## Deferred (untouched)
 Global DRS, the minimum-gap floor, tyre degradation, ERS / PUSH balance, the pit-lane queue model, Sprint and Championship.

@@ -31,12 +31,53 @@ function insideWindow(count: number) {
 const softness = (c: TyreCompound) => TYRE_COMPOUNDS.indexOf(c as (typeof TYRE_COMPOUNDS)[number]);
 
 describe("AI pit strategy — deterministic window with per-car character", () => {
-  it("identical conditions, different character: earlier bias < neutral < longer-stint bias (no single synchronised lap)", () => {
+  it("normal dry window, clean air: the earlier character goes first; the longer one does not nurse a dying tyre", () => {
     const [early, neutral, long] = [EARLY, NEUTRAL, LONG].map(p => firstCall(strategyRace(1), p)!);
     expect(early.lap).toBeLessThan(neutral.lap);
-    expect(neutral.lap).toBeLessThan(long.lap);
-    // A window, not a lottery: the whole spread stays within a handful of laps of the neutral point.
+    // By the time a lone car's window opens its tyre is past the viable limit, so the longer-stint bias has no
+    // rational extension left and the car stops on the neutral rule (the long bias is an option, not a handicap).
+    expect(long.lap).toBe(neutral.lap);
     expect(long.lap - early.lap).toBeLessThanOrEqual(10);
+  });
+  it("undercut opportunity on a still-viable tyre: earlier < neutral < longer character — three different reasonable calls", () => {
+    const keen = { ...NEUTRAL, undercut: 1 }, calls: Record<string, number> = {};
+    for (let s = strategyRace(2); s.lap < 50; s = advanceRaceLap(s)) {
+      const p2 = s.entrants.find(e => e.position === 2)!;
+      const t = { ...s, entrants: s.entrants.map(e => e.entrantId === p2.entrantId ? { ...e, intervalToAheadMs: 800 } : e) };
+      for (const [name, stopBias] of [["early", -1], ["neutral", 0], ["long", 1]] as const)
+        if (calls[name] === undefined && assess(t, t.entrants.find(e => e.entrantId === p2.entrantId)!, { ...keen, stopBias }).compound) calls[name] = s.lap;
+    }
+    expect(calls.early).toBeLessThan(calls.neutral);
+    expect(calls.neutral).toBeLessThan(calls.long);
+  });
+  it("long-stint extension: the longer character stays out on a still-viable tyre, but not once it would be nursing it", () => {
+    const s = advanceRace(strategyRace(2), 28), p2 = s.entrants.find(e => e.position === 2)!;
+    const pr = s.input.tyres!.profiles[p2.stint!.tyre.compound], limit = pr.degradationStartWear + Math.round((pr.cliffWear - pr.degradationStartWear) / 2);
+    const stops = (wear: number, p: StrategyPreference) => {
+      const t = { ...s, entrants: s.entrants.map(e => e.entrantId === p2.entrantId ? { ...e, intervalToAheadMs: 800, stint: { ...e.stint!, tyre: { ...e.stint!.tyre, wearPermille: wear } } } : e) };
+      return assess(t, t.entrants.find(e => e.entrantId === p2.entrantId)!, { ...p, undercut: 1 }).compound !== null;
+    };
+    expect(limit - 30).toBeLessThan(limit);
+    expect([stops(limit - 30, NEUTRAL), stops(limit - 30, LONG)]).toEqual([true, false]);   // viable: extension is an option
+    expect([stops(limit + 30, NEUTRAL), stops(limit + 30, LONG)]).toEqual([true, true]);    // past it: both stop
+  });
+  it("an earlier character never creates a stop the Race does not need (current tyre reaches the flag)", () => {
+    const at = (lap: number) => {
+      const s0 = advanceRace(strategyRace(1), lap), e0 = s0.entrants[0];
+      return { ...s0, entrants: [{ ...e0, commands: { ...e0.commands!, paceMode: "PUSH" as const }, stint: { ...e0.stint!, startedAtLap: lap - 12, tyre: { ...e0.stint!.tyre, wearPermille: 580, ageLaps: 12 } } }] };
+    };
+    const nearFlag = at(46), farFromFlag = at(30);
+    expect(assess(nearFlag, nearFlag.entrants[0], EARLY).requiredPermille).toBe(assess(nearFlag, nearFlag.entrants[0], NEUTRAL).requiredPermille);
+    expect(assess(farFromFlag, farFromFlag.entrants[0], EARLY).requiredPermille).toBeLessThan(assess(farFromFlag, farFromFlag.entrants[0], NEUTRAL).requiredPermille);
+  });
+  it("traffic-heavy release holds every character that a clean release would send", () => {
+    const s = insideWindow(4), e = s.entrants.find(x => x.position === 1)!, loss = s.input.pits!.pitLaneLossMs + s.input.pits!.stationaryBaseMs;
+    for (let t = s; t.lap < 50; t = advanceRaceLap(t)) {
+      const car = t.entrants.find(x => x.entrantId === e.entrantId)!;
+      const at = (offsets: number[]) => ({ ...t, entrants: t.entrants.map(x => x.entrantId === car.entrantId ? x : { ...x, elapsedTimeMs: car.elapsedTimeMs + loss + offsets[t.entrants.indexOf(x) % offsets.length] }) });
+      for (const p of [EARLY, NEUTRAL, LONG])
+        expect(assess(at([-400, 150, 700]), car, p).requiredPermille).toBeGreaterThanOrEqual(assess(at([9000, 12000, 15000]), car, p).requiredPermille);
+    }
   });
   it("a stop is a candidate only once the tyre is becoming worth replacing (fresh tyres never stop)", () => {
     const s = strategyRace(1);
@@ -143,19 +184,21 @@ describe("weather and Race Control", () => {
     const blind = { ...s, input: { ...s.input, weather: { ...s.input.weather!, timeline: [{ startLap: 1, rainfall: 0, airTemperatureMilliC: 24000 }] } } };
     expect(assess(blind, blind.entrants[0], NEUTRAL)).toEqual(assess(s, s.entrants[0], NEUTRAL));
   });
-  it("SC/VSC: a cheap stop tempts cars on worn tyres — but not the whole field, and never a car on fresh tyres", () => {
+  it("SC/VSC: a cheap stop tempts cars on worn tyres — judged per car, never the whole field, never on fresh tyres", () => {
     for (const mode of ["SAFETY_CAR", "VSC"] as const) {
-      // Walk one car's stint; at the first checkpoint where ANY character would take the cheap stop, not all do.
-      let s = strategyRace(1), decisions: boolean[] = [];
-      for (; s.lap < 50; s = advanceRaceLap(s)) {
+      let split = false;
+      for (let s = strategyRace(1); s.lap < 50; s = advanceRaceLap(s)) {
         const sc = neutralise(s, mode);
-        decisions = Array.from({ length: 21 }, (_, n) => assess(sc, sc.entrants[0], { ...NEUTRAL, stopBias: -1 + n / 10 }).compound !== null);
-        if (decisions.some(Boolean)) break;
+        const decisions = Array.from({ length: 21 }, (_, n) => assess(sc, sc.entrants[0], { ...NEUTRAL, stopBias: -1 + n / 10 }).compound ? "1" : "0").join("");
+        expect(decisions).toMatch(/^1*0*$/); // an earlier character stops whenever a later one does
+        split ||= decisions.includes("1") && decisions.includes("0");
       }
-      expect(decisions.some(Boolean)).toBe(true);
-      expect(decisions.every(Boolean)).toBe(false);
-      expect(decisions[0]).toBe(true); // the earliest character takes the cheap stop …
-      expect(decisions[20]).toBe(false); // … the longest-stint character stays out
+      // Under SC the characters split on the same worn tyre (VSC saves less, so its window is narrower).
+      if (mode === "SAFETY_CAR") expect(split).toBe(true);
+      // Not the whole field: a car on fresher tyres stays out while a car on worn tyres takes the cheap stop.
+      const worn = neutralise(advanceRace(strategyRace(1), 36), mode), fresher = neutralise(advanceRace(strategyRace(1), 20), mode);
+      expect(assess(worn, worn.entrants[0], NEUTRAL).compound).not.toBeNull();
+      expect(assess(fresher, fresher.entrants[0], NEUTRAL).compound).toBeNull();
       const fresh = neutralise(advanceRace(strategyRace(1), 6), mode);
       expect(assess(fresh, fresh.entrants[0], EARLY).compound).toBeNull();
     }
@@ -221,6 +264,16 @@ describe("configuration and architecture", () => {
     walk("src/simulation/race");
     const banned = /Math\.random|monaco|spa-franc|francorchamps|bahrain|silverstone|suzuka|shanghai|marina|albert park|singapore|mercedes|ferrari|mclaren|red bull/i;
     for (const f of files) expect(readFileSync(f, "utf8"), f).not.toMatch(banned);
+  });
+  it("character only shapes stop decisions: the engine never reads it outside the pit decision (no pace, passing, reliability or incident effect)", () => {
+    const users: string[] = [];
+    const walk = (dir: string) => { for (const f of readdirSync(dir)) { const p = join(dir, f); if (statSync(p).isDirectory()) walk(p); else if (p.endsWith(".ts") && readFileSync(p, "utf8").includes("strategyPreference(")) users.push(p.replaceAll("\\", "/")); } };
+    walk("src/simulation");
+    expect(users.sort()).toEqual(["src/simulation/race/pits/ai-strategy.ts", "src/simulation/race/pits/model.ts"]);
+    // In the pit model it feeds only the AI stop decision, whose sole output is "stop now on compound X" or not.
+    expect(readFileSync("src/simulation/race/pits/model.ts", "utf8").match(/strategyPreference\(/g)).toHaveLength(1);
+    const a = assess(insideWindow(4), insideWindow(4).entrants[1], LONG);
+    expect(Object.keys(a).sort()).toEqual(["compound", "gainPermille", "reason", "releaseTraffic", "requiredPermille"]);
   });
   it("strategy never draws Race RNG (identical stream position before and after assessing)", () => {
     const s = insideWindow(4);

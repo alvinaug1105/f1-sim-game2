@@ -44,7 +44,9 @@ export function raceRepository(grid: Awaited<ReturnType<typeof careerGrid>>, sta
         progress: { ...grid.progress, events: grid.progress.events.map((e, i) => i === 0 ? { ...e, status: "CURRENT" as const, weekend } : e) },
         eventId: event.id, sessionId: "race-session", state: null, labels: [], grid: startingGrid,
         roster: grid.roster.map(r => ({ ...r, carNumber: r.carNumber! })),
-        circuit: { sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters, defaultLapCount: circuit.defaultLapCount },
+        circuit: { sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters, defaultLapCount: circuit.defaultLapCount,
+            // As the Prisma repository reads it: the snapshotted Career circuit Race profile, or null (legacy Career).
+            raceProfile: circuit.overtakingDifficulty != null ? { overtakingDifficulty: circuit.overtakingDifficulty, dirtyAirSensitivityPermille: circuit.dirtyAirSensitivityPermille!, drsEffectivenessPermille: circuit.drsEffectivenessPermille! } : null },
     };
     const repository: CareerRaceRepository = {
         getRace: async () => structuredClone(data),

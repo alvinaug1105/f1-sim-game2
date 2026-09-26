@@ -14,7 +14,8 @@ function withoutDisplayNames(value: unknown): unknown {
  * development calendar into 2026-season order. Everything that existed before must otherwise be unchanged: the same
  * IDs, keys, relationships and simulation values for the original teams, drivers, circuits and entries.
  */
-const PASS_A_ADDED = ["pace", "consistency", "carPerformance"], CALENDAR_ORDER = ["round", "startDate", "endDate"];
+// The Post-Phase-14 Race Dynamics pass likewise adds only the circuit Race interaction balance columns.
+const PASS_A_ADDED = ["pace", "consistency", "carPerformance", "overtakingDifficulty", "dirtyAirSensitivityPermille", "drsEffectivenessPermille"], CALENDAR_ORDER = ["round", "startDate", "endDate"];
 function originalSubset(fixture: Record<string, unknown>) {
   const pick = (name: string, rows: readonly Record<string, unknown>[]) => {
     const ids = new Set((fixture[name] as { id: string }[]).map(row => row.id));

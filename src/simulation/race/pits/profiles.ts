@@ -1,4 +1,5 @@
 import type { PitConfiguration } from "./types";
+import { validateAiStrategyConfiguration } from "./ai-strategy";
 /** Provisional v4 game tuning, not measured F1 specifications. */
 export function defaultPitConfiguration(): PitConfiguration {
   return {
@@ -21,4 +22,5 @@ export function validatePitConfiguration(c: PitConfiguration) {
   integer(c.newTyreTemperatureMilliC, 0, 160000);
   integer(c.aiWearThresholdPermille, 100, 1000);
   integer(c.aiMinimumStintLaps, 1, 100);
+  if (c.strategy !== undefined) validateAiStrategyConfiguration(c.strategy);
 }

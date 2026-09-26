@@ -1,3 +1,4 @@
+import { aiDryStartingCompound, strategyPreference } from '../src/simulation/race/pits/ai-strategy';
 import React, { type ReactElement, type ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -164,7 +165,9 @@ describe('starting-tyre ownership (Career Race start)', () => {
         expect([byDriver(mine[0].driverId), byDriver(mine[1].driverId)]).toEqual(['SOFT', 'HARD']);
         // AI chose from the public grid conditions of the frozen, identity-seeded weather.
         expect(s.input.weather).toEqual(careerRaceWeather('career', 'event', m.get().circuit.sourceCircuitId!, s.input.totalLaps));
-        expect(byDriver(rival.driverId)).toBe(aiStartingCompound(s.input.weather!.initial));
+        // Dry grid: each AI car's frozen strategic character (Race seed + grid slot) may start it on the soft instead.
+        const current = aiStartingCompound(s.input.weather!.initial), slot = s.input.entrants.find(e => e.driverId === rival.driverId)!.gridPosition;
+        expect(byDriver(rival.driverId)).toBe(current === 'MEDIUM' ? aiDryStartingCompound(strategyPreference(s.input.seed, slot)) : current);
     });
     it('an explicit simulation seed keeps the legacy development weather (reproducible fixtures)', async () => {
         const m = preStart(); vi.spyOn(crypto, 'getRandomValues');

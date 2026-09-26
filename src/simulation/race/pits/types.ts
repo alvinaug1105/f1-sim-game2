@@ -1,4 +1,5 @@
 import type { TyreCompound, TyreState } from "../tyres/model";
+import type { AiStrategyConfiguration } from "./ai-strategy";
 export type StrategyController = "PLAYER" | "DEVELOPMENT_AI";
 export interface PitConfiguration {
   readonly pitLaneLossMs: number;
@@ -7,6 +8,8 @@ export interface PitConfiguration {
   readonly newTyreTemperatureMilliC: number;
   readonly aiWearThresholdPermille: number;
   readonly aiMinimumStintLaps: number;
+  /** Post-Phase-14 AI pit strategy (v7 weather Races). Absent on Races saved before it: the legacy policy applies. */
+  readonly strategy?: AiStrategyConfiguration;
 }
 export interface RaceStint {
   readonly number: number;

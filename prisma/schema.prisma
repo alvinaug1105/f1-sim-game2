@@ -75,6 +75,10 @@ model Circuit {
   city            String?
   lengthMeters    Int
   defaultLapCount Int
+  /// Race interaction game-balance data (all three or none; NULL = legacy content → neutral Race defaults).
+  overtakingDifficulty        Int?
+  dirtyAirSensitivityPermille Int?
+  drsEffectivenessPermille    Int?
   events          CalendarEvent[]
   createdAt       DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime        @updatedAt @db.Timestamptz(3)
@@ -254,6 +258,10 @@ model CareerCircuit {
   city            String?
   lengthMeters    Int
   defaultLapCount Int
+  /// Race interaction game-balance data (all three or none; NULL = Careers created before the Race Dynamics pass → neutral Race defaults).
+  overtakingDifficulty        Int?
+  dirtyAirSensitivityPermille Int?
+  drsEffectivenessPermille    Int?
   career          Career                @relation(fields: [careerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   events          CareerCalendarEvent[]
 
@@ -574,6 +582,8 @@ model CareerRacePitProfile {
   newTyreTemperatureMilliC Int
   aiWearThresholdPermille  Int
   aiMinimumStintLaps       Int
+  /// Snapshotted AI pit strategy configuration; NULL = Race started before the Race Dynamics pass (legacy policy).
+  strategy                 Json?
   simulation               CareerRaceSimulation @relation(fields: [careerId, careerRaceSimulationId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([careerId, careerRaceSimulationId])

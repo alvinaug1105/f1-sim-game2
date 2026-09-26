@@ -291,6 +291,8 @@
   "incident.VSC": "虛擬安全車",
   "incident.SAFETY_CAR": "安全車",
   "incident.remaining": "中立化尚餘 {count} 圈",
+  "incident.endingThisLap.SAFETY_CAR": "安全車本圈進站",
+  "incident.endingThisLap.VSC": "VSC 即將結束",
   "incident.drsSuspended": "DRS 暫停使用",
   "incident.restart": "重新起跑 DRS 等待：{count} 個綠旗圈",
   "incident.events": "賽事事件",

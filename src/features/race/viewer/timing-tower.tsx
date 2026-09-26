@@ -1,7 +1,7 @@
 "use client";
 import { useI18n } from '../../../i18n/provider';
 import { formatRaceGap, formatRaceTime } from '../../../i18n/race-time';
-import type { RaceSimulationState } from '../../../simulation/race/types';
+import type { RacePublicState } from '../public-view';
 import type { timingRows } from './model';
 import { controlMode, drsState, driverFlags } from './race-view';
 import { FlagChips } from './flags';
@@ -12,7 +12,7 @@ type Rows = ReturnType<typeof timingRows>;
  * control, so there are no nested interactive elements). Rows are compact and the body scrolls under a sticky header,
  * so the tower scales to a full grid.
  */
-export function TimingTower({ state: s, rows, selected, onSelect, interval, onInterval, attentionId = null }: { state: RaceSimulationState; rows: Rows; selected: string; onSelect: (id: string) => void; interval: boolean; onInterval: (interval: boolean) => void; attentionId?: string | null }) {
+export function TimingTower({ state: s, rows, selected, onSelect, interval, onInterval, attentionId = null }: { state: RacePublicState; rows: Rows; selected: string; onSelect: (id: string) => void; interval: boolean; onInterval: (interval: boolean) => void; attentionId?: string | null }) {
     const { t, format, locale } = useI18n(), finished = s.status === 'FINISHED', control = controlMode(s), drsOpen = drsState(s) === 'ENABLED';
     const gap = (value: number | null) => value === null ? t('race.lapped') : formatRaceGap(value, locale);
     const title = t(finished ? 'race.classification' : 'viewer.timing');

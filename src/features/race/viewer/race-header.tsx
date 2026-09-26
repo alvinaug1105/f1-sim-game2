@@ -2,31 +2,30 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useI18n } from '../../../i18n/provider';
-import type { CareerRaceData } from '../../../game/domain/race-repository';
-import { forecastAt } from '../../../simulation/race/weather/model';
+import type { RaceViewData } from '../public-view';
 import type { timingRows } from './model';
 import { controlMode, drsState, type DrsState } from './race-view';
 type Rows = ReturnType<typeof timingRows>;
 const CONTROL_GLYPH = { GREEN: '●', VSC: '◆', SAFETY_CAR: '▲' } as const;
 /** Race identity, lap clock and a text + glyph Race Control state (never colour alone). */
-export function RaceHeader({ data }: { data: CareerRaceData }) {
+export function RaceHeader({ data }: { data: RaceViewData }) {
     const { t } = useI18n(), event = data.progress.events.find(e => e.id === data.eventId)!;
     return <header className="ops-header"><div><Link className="ops-back" href={`/career/${data.progress.career.id}/events/${data.eventId}`}>← {t('race.back')}</Link><p className="eyebrow">{t(data.kind === 'SPRINT' ? 'sprint.title' : 'viewer.title')}</p><h1>{event.name} {data.kind === 'SPRINT' && <strong className="session-kind-badge">{t('sprint.title')}</strong>} <span className="ops-muted">· {event.circuitName}</span></h1></div></header>;
 }
 /** Lap clock + text/glyph Race Control state; lives in the sticky Race bar so it never scrolls away. */
-export function RaceClock({ data }: { data: CareerRaceData }) {
+export function RaceClock({ data }: { data: RaceViewData }) {
     const { t, format } = useI18n(), s = data.state!, control = controlMode(s);
     return <div className="race-clock"><span>{data.kind === 'SPRINT' ? `${t('sprint.title')} · ` : ''}{t('viewer.lap')}</span><strong>{format.number(s.lap)}<small> / {format.number(s.input.totalLaps)}</small></strong>
         <span className={`control-state control-${s.status === 'FINISHED' ? 'FINISHED' : control}`} role="status"><span aria-hidden="true">{s.status === 'FINISHED' ? '■' : CONTROL_GLYPH[control]}</span> {t(s.status === 'FINISHED' ? 'incident.FINISHED' : s.incidents ? `incident.${control}` : 'race.running')}</span>
-        {s.incidents && control !== 'GREEN' && s.status !== 'FINISHED' && <small>{t('incident.remaining', { count: format.number(s.incidents.remainingLaps) })}</small>}
+        {s.incidents?.endingThisLap && control !== 'GREEN' && s.status !== 'FINISHED' && <small>{t(`incident.endingThisLap.${control}`)}</small>}
     </div>;
 }
 /** Persistent conditions: rain, water, temperatures and DRS state stay visible without opening the forecast. */
-export function ConditionsStrip({ data }: { data: CareerRaceData }) {
+export function ConditionsStrip({ data }: { data: RaceViewData }) {
     const { t, format } = useI18n(), s = data.state!, w = s.weather, drs = drsState(s);
     const percent = (n: number) => format.percentage(n / 1000, { maximumFractionDigits: 0 });
     const temperature = (n: number) => format.number(n / 1000, { style: 'unit', unit: 'celsius', maximumFractionDigits: 1 });
-    const next = w && s.input.weather && s.status === 'RUNNING' ? forecastAt(s.input.weather, s.lap + 1)[0] : undefined;
+    const next = w && s.status === 'RUNNING' ? s.forecast?.[0] : undefined;
     return <section className="weather-strip" aria-label={t('weather.title')}>
         {w ? <>
             <span>{t('weather.rain')} <strong>{percent(w.rainfallIntensity)}</strong> <em>{t(w.rainfallIntensity === 0 ? 'weather.dry' : w.rainfallIntensity < 650 ? 'weather.light' : 'weather.heavy')}</em></span>
@@ -42,12 +41,12 @@ export function ConditionsStrip({ data }: { data: CareerRaceData }) {
  * Contextual Race-state banner: neutralisation, DRS changes and player-car PIT / RETIRED. Only shows what is true at
  * the current checkpoint; a DRS re-enable notice lasts for the checkpoint where the change was observed.
  */
-export function RaceAlerts({ data, rows }: { data: CareerRaceData; rows: Rows }) {
+export function RaceAlerts({ data, rows }: { data: RaceViewData; rows: Rows }) {
     const { t, format } = useI18n(), s = data.state!, control = controlMode(s), drs = drsState(s);
     const [seen, setSeen] = useState<{ drs: DrsState; enabledAt: number | null }>({ drs, enabledAt: null });
     if (seen.drs !== drs) setSeen({ drs, enabledAt: drs === 'ENABLED' ? s.lap : null });
     const alerts: { key: string; text: string; tone: string }[] = [];
-    if (s.status === 'RUNNING' && control !== 'GREEN') alerts.push({ key: 'control', tone: `control-${control}`, text: `${t(`incident.${control}`)} · ${t('incident.remaining', { count: format.number(s.incidents!.remainingLaps) })}` });
+    if (s.status === 'RUNNING' && control !== 'GREEN') alerts.push({ key: 'control', tone: `control-${control}`, text: s.incidents!.endingThisLap ? `${t(`incident.${control}`)} · ${t(`incident.endingThisLap.${control}`)}` : t(`incident.${control}`) });
     if (s.status === 'RUNNING' && (drs === 'WET' || drs === 'RESTART')) alerts.push({ key: 'drs', tone: 'alert-drs-off', text: t(`viewer.drs.${drs}`, { count: format.number(s.incidents?.drsDelay ?? 0) }) });
     if (s.status === 'RUNNING' && drs === 'ENABLED' && seen.enabledAt === s.lap && s.lap > 0) alerts.push({ key: 'drs-on', tone: 'alert-drs-on', text: t('viewer.drsEnabledNow') });
     for (const r of rows.filter(r => r.player)) {

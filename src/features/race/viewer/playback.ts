@@ -1,5 +1,5 @@
 import { checkpointDuration, type MotionMode } from './motion';
-import type { RaceSimulationState } from "../../../simulation/race/types";
+import type { RacePublicState } from "../public-view";
 import { assessCheckpoint, initialAttention, type Attention, type AttentionMemory } from "./attention";
 export const PLAYBACK_SPEEDS = [1, 2, 4, 8] as const;
 export type PlaybackSpeed = typeof PLAYBACK_SPEEDS[number];
@@ -25,7 +25,7 @@ export interface PlaybackAdapter<S, M, A extends { reason: string }> {
     seekLimit?: number;
 }
 /** The Race adapter (Phase 12C behaviour, unchanged). */
-export function raceAdapter(playerTeamId: string): PlaybackAdapter<RaceSimulationState, AttentionMemory, Attention> {
+export function raceAdapter(playerTeamId: string): PlaybackAdapter<RacePublicState, AttentionMemory, Attention> {
     return {
         finished: s => s.status === 'FINISHED',
         interval: (speed, s, seeking) => checkpointDuration(speed, s.incidents?.mode, seeking),
@@ -72,7 +72,7 @@ const defaultClock: PlaybackClock = { set: (callback, delay) => setTimeout(callb
  * budget is only consumed while cars are visibly moving, so Pause→Resume continues exactly where the interval stopped
  * and a checkpoint whose motion has already settled advances immediately instead of waiting a full interval.
  */
-export class PlaybackController<S = RaceSimulationState, M = AttentionMemory, A extends { reason: string } = Attention, C = CommandInfo> {
+export class PlaybackController<S = RacePublicState, M = AttentionMemory, A extends { reason: string } = Attention, C = CommandInfo> {
     private state: S;
     private adapter: PlaybackAdapter<S, M, A>;
     private timer: ReturnType<typeof setTimeout> | null = null;
@@ -88,7 +88,11 @@ export class PlaybackController<S = RaceSimulationState, M = AttentionMemory, A 
     private pending = 0;
     private snapshot: PlaybackSnapshot<A, C>;
     /** `adapter` may be the player's team id, which selects the Race adapter (existing call sites are unchanged). */
-    constructor(state: S, adapter: string | PlaybackAdapter<S, M, A>, private advance: (state: S) => Promise<S>, private clock: PlaybackClock = defaultClock) {
+    /**
+     * A plain player-team id selects the Race adapter, which is only defined over the PUBLIC Race view: an authoritative
+     * RaceSimulationState can never be driven (and so never held) by a browser-side controller.
+     */
+    constructor(state: S, adapter: ([S] extends [RacePublicState] ? string : never) | PlaybackAdapter<S, M, A>, private advance: (state: S) => Promise<S>, private clock: PlaybackClock = defaultClock) {
         this.state = state;
         this.adapter = typeof adapter === 'string' ? raceAdapter(adapter) as unknown as PlaybackAdapter<S, M, A> : adapter;
         this.memory = this.adapter.initialMemory(state);

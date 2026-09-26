@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect, useSyncExternalStore } from 'react';
 import { useI18n, LocalizedPageTitle } from '../../../i18n/provider';
-import type { CareerRaceData } from '../../../game/domain/race-repository';
+import type { RaceViewData } from '../public-view';
 import { formatRaceTime } from '../../../i18n/race-time';
 import { layoutForCircuit } from '../../../data/seed/circuit-layouts';
 import { timingRows } from './model';
@@ -19,7 +19,7 @@ import { PlayerSwitch } from './player-switch';
 import { EventFeed } from './event-feed';
 import { controlMode, labelTiers } from './race-view';
 export function RaceOperations({ initialData }: {
-    initialData: CareerRaceData;
+    initialData: RaceViewData;
 }) {
     const { t, format, locale } = useI18n();
     const [data, setData] = useState(initialData);
@@ -56,6 +56,6 @@ export function RaceOperations({ initialData }: {
    </div>
    <DriverPanel key={row.id} data={data} row={row} rows={rows} busy={playback.busy} send={send}/>
   </div>
-  <details className="ops-diagnostics"><summary>{t('viewer.diagnostics')}</summary><p>{t('race.seed')}: {format.number(s.input.seed, { useGrouping: false })} · {t('race.version')}: {format.number(s.simulationVersion)}</p>{rows.map(r => <p key={r.id}>{r.name} · {t('race.total')}: {formatRaceTime(r.entrant.elapsedTimeMs, locale)} · {t('race.best')}: {r.entrant.bestLapTimeMs ? formatRaceTime(r.entrant.bestLapTimeMs, locale) : t('race.noTime')} · {t('traffic.overtakes')}: {format.number(r.entrant.track?.overtakesCompleted ?? 0)}</p>)}</details>
+  <details className="ops-diagnostics"><summary>{t('viewer.diagnostics')}</summary><p>{t('race.version')}: {format.number(s.simulationVersion)}</p>{rows.map(r => <p key={r.id}>{r.name} · {t('race.total')}: {formatRaceTime(r.entrant.elapsedTimeMs, locale)} · {t('race.best')}: {r.entrant.bestLapTimeMs ? formatRaceTime(r.entrant.bestLapTimeMs, locale) : t('race.noTime')} · {t('traffic.overtakes')}: {format.number(r.entrant.track?.overtakesCompleted ?? 0)}</p>)}</details>
  </div>;
 }

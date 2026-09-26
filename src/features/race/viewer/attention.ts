@@ -1,12 +1,11 @@
 /**
  * Strategic attention: pure, presentation-side detection of player-relevant changes between committed checkpoints.
- * Reads only public Race state (current timing, current weather/track, Race Control, the player's own resources and
+ * Reads only the public Race view (current timing, current weather/track, Race Control, the player's own resources and
  * persisted events). Never reads the hidden weather timeline, AI internals or future state. Transition-based with a
  * small memory of what was last announced, so an unchanged warning never fires twice.
  */
-import type { RaceSimulationState, RaceEntrantState } from "../../../simulation/race/types";
-import { projectedFuelGrams } from "../../../simulation/race/commands/model";
-import { controlMode, drsState, tyreCondition, BATTLE_GAP_MS, type DrsState, type WearLevel } from "./race-view";
+import type { RacePublicEntrant, RacePublicState } from "../public-view";
+import { controlMode, drsState, fuelShort, tyreCondition, BATTLE_GAP_MS, type DrsState, type WearLevel } from "./race-view";
 /** A battle ends only once the nearest neighbour gap opens beyond this (hysteresis against re-entry spam). */
 export const BATTLE_EXIT_MS = 1500;
 export type AttentionKind =
@@ -32,15 +31,15 @@ export interface AttentionMemory {
     battle: Readonly<Record<string, boolean>>;
 }
 const WEAR_RANK: Record<WearLevel, number> = { OK: 0, HIGH: 1, CRITICAL: 2 };
-function rainBand(s: RaceSimulationState) { const r = s.weather?.rainfallIntensity ?? 0; return r === 0 ? 0 : r < 650 ? 1 : 2; }
-function waterBand(s: RaceSimulationState) { const w = s.weather?.trackWater ?? 0; return w < 100 ? 0 : w < 350 ? 1 : 2; }
-function players(s: RaceSimulationState, teamId: string) {
+function rainBand(s: RacePublicState) { const r = s.weather?.rainfallIntensity ?? 0; return r === 0 ? 0 : r < 650 ? 1 : 2; }
+function waterBand(s: RacePublicState) { const w = s.weather?.trackWater ?? 0; return w < 100 ? 0 : w < 350 ? 1 : 2; }
+function players(s: RacePublicState, teamId: string) {
     const ids = new Set(s.input.entrants.filter(e => e.teamId === teamId).map(e => e.entrantId));
     return s.entrants.filter(e => ids.has(e.entrantId));
 }
-function running(e: RaceEntrantState) { return (e.incident?.status ?? "RUNNING") === "RUNNING"; }
+function running(e: RacePublicEntrant) { return (e.incident?.status ?? "RUNNING") === "RUNNING"; }
 /** Authoritative neighbour gaps in classification order, skipping retired cars (no map distance involved). */
-function neighbourGaps(s: RaceSimulationState, id: string) {
+function neighbourGaps(s: RacePublicState, id: string) {
     const order = s.entrants.filter(e => e.incident?.status !== "RETIRED").sort((a, b) => a.position - b.position);
     const i = order.findIndex(e => e.entrantId === id), me = order[i];
     if (!me) return { ahead: null, behind: null };
@@ -48,9 +47,9 @@ function neighbourGaps(s: RaceSimulationState, id: string) {
     const behind = order[i + 1] && order[i + 1].position === me.position + 1 ? order[i + 1].intervalToAheadMs : null;
     return { ahead, behind };
 }
-function fuelDeficit(s: RaceSimulationState, e: RaceEntrantState) { return !!(e.commands && s.input.commands) && projectedFuelGrams(s, e) < 0; }
+function fuelDeficit(s: RacePublicState, e: RacePublicEntrant) { return fuelShort(s, e); }
 /** Snapshot of the current situation, announcing nothing: used for a freshly opened Race or a quiet re-baseline. */
-export function initialAttention(s: RaceSimulationState, playerTeamId: string): AttentionMemory {
+export function initialAttention(s: RacePublicState, playerTeamId: string): AttentionMemory {
     const mine = players(s, playerTeamId);
     return {
         control: controlMode(s), drs: drsState(s), rain: rainBand(s), water: waterBand(s), events: s.incidents?.events.length ?? 0,
@@ -61,7 +60,7 @@ export function initialAttention(s: RaceSimulationState, playerTeamId: string): 
     };
 }
 /** Compares one newly committed checkpoint with what was already announced. Returns items (priority order) and the next memory. */
-export function assessCheckpoint(memory: AttentionMemory, s: RaceSimulationState, playerTeamId: string): { items: Attention[]; memory: AttentionMemory } {
+export function assessCheckpoint(memory: AttentionMemory, s: RacePublicState, playerTeamId: string): { items: Attention[]; memory: AttentionMemory } {
     const items: Attention[] = [], lap = s.lap;
     const add = (kind: AttentionKind, entrantId: string | null = null) => items.push({ kind, reason: REASON[kind], entrantId, lap });
     const mine = players(s, playerTeamId), mineIds = new Set(mine.map(e => e.entrantId));

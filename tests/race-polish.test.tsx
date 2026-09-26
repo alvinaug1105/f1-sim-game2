@@ -14,9 +14,10 @@ import { driverFlags, tyreSuitability, ersOutlook } from '../src/features/race/v
 import { scenarioWeather, scenarioFor, raceWeatherSeed, careerRaceWeather, aiStartingCompound, WEATHER_SCENARIOS } from '../src/features/race/weather-scenarios';
 import { startIncidentCareerRace } from '../src/features/race/service';
 import { validateWeatherConfiguration } from '../src/simulation/race/weather/model';
-import { advanceRace, advanceRaceLap, createRace } from '../src/simulation/race/engine';
+import { advanceRace, createRace } from '../src/simulation/race/engine';
 import { formatRaceTime } from '../src/i18n/race-time';
-import { viewerData } from './helpers/viewer';
+import { viewerData, viewerView, view, pub } from './helpers/viewer';
+import type { RaceViewData } from '../src/features/race/public-view';
 import { incidentInput } from './helpers/incidents';
 import type { CareerRaceData, CareerRaceRepository } from '../src/game/domain/race-repository';
 import type { RaceSimulationState } from '../src/simulation/race/types';
@@ -32,7 +33,9 @@ function probe<P>(component: (props: P) => ReactNode, props: P, inspect: (tree: 
     function Probe() { const tree = component(props); inspect(tree); return <>{tree}</>; }
     return renderToStaticMarkup(<I18nProvider><Probe/></I18nProvider>);
 }
-const at = (d: CareerRaceData, laps: number): CareerRaceData => ({ ...d, state: advanceRace(d.state!, laps) });
+/** An authoritative fixture advanced `laps`, as the browser receives it (the public projection). */
+const at = (d: CareerRaceData, laps: number): RaceViewData => view({ ...d, state: advanceRace(d.state!, laps) });
+const advanced = (d: CareerRaceData, laps: number): CareerRaceData => ({ ...d, state: advanceRace(d.state!, laps) });
 describe('timing tower: whole-row selection', () => {
     it('every row selects its entrant from anywhere, with exactly one interactive control per row', () => {
         const d = at(viewerData(6), 3), rows = timingRows(d), picked: string[] = [], viaButton: string[] = [];
@@ -47,8 +50,10 @@ describe('timing tower: whole-row selection', () => {
         expect(viaButton).toEqual(rows.map(r => r.id));                              // the row's keyboard control
     });
     it('player rows carry compact flags (BOX when a pit is requested); AI rows never expose AI intentions', () => {
-        const d = at(viewerData(4), 3), s = d.state!;
-        const boxed: CareerRaceData = { ...d, state: { ...s, entrants: s.entrants.map((e, i) => i === 1 || i === 3 ? { ...e, pit: { ...e.pit!, pendingCompound: 'HARD' as const } } : e) } };
+        const d = advanced(viewerData(4), 3), s = d.state!;
+        // Both a player car and an AI car have a pending stop on the server; only the player's reaches the view.
+        const boxed = view({ ...d, state: { ...s, entrants: s.entrants.map((e, i) => i === 1 || i === 3 ? { ...e, pit: { ...e.pit!, pendingCompound: 'HARD' as const } } : e) } });
+        expect(boxed.state!.entrants[3].pit!.pendingCompound).toBeNull();
         const rows = timingRows(boxed);
         const html = renderToStaticMarkup(<I18nProvider><TimingTower state={boxed.state!} rows={rows} selected={rows[0].id} onSelect={() => {}} interval={false} onInterval={() => {}}/></I18nProvider>);
         const row = (id: string) => html.match(new RegExp(`<tr[^>]*data-entrant="${id}"[\\s\\S]*?</tr>`))![0];
@@ -62,13 +67,13 @@ describe('command safety and two-driver awareness', () => {
         expect(commandInfo(intent)).toEqual({ entrantId: 'car-b', kind: 'pit', value: 'SOFT' });
         expect(commandInfo({ kind: 'paceMode', entrantId: 'car-a', revision: 1, mode: 'PUSH' })).toEqual({ entrantId: 'car-a', kind: 'paceMode', value: 'PUSH' });
         expect(commandInfo({ kind: 'advance' })).toBeNull();
-        const d = viewerData(), c = new PlaybackController(d.state!, d.progress.career.playerTeamId, async s => advanceRaceLap(s));
+        const d = viewerView(), c = new PlaybackController(d.state!, d.progress.career.playerTeamId, async s => s);
         await c.command(async s => s, commandInfo(intent));
         expect(c.getSnapshot().confirmation).toEqual({ entrantId: 'car-b', kind: 'pit', value: 'SOFT' });
         c.play(); expect(c.getSnapshot().confirmation).toBeNull(); c.pause();
     });
     it('the confirmation line names the targeted driver', () => {
-        const d = viewerData(), rows = timingRows(d), c = new PlaybackController(d.state!, d.progress.career.playerTeamId, async s => s);
+        const d = viewerView(), rows = timingRows(d), c = new PlaybackController(d.state!, d.progress.career.playerTeamId, async s => s);
         const playback = { ...c.getSnapshot(), reason: 'COMMAND' as const, confirmation: { entrantId: rows[1].id, kind: 'pit' as const, value: 'SOFT' } };
         const html = renderToStaticMarkup(<I18nProvider><PlaybackBar controller={c} playback={playback} rows={rows} reduceMotion={false} onReduceMotion={() => {}}/></I18nProvider>);
         expect(html).toContain(`${rows[1].abbreviation} — Pit requested: Soft`);
@@ -84,9 +89,9 @@ describe('command safety and two-driver awareness', () => {
         expect(new Set(sent.map(i => 'entrantId' in i ? i.entrantId : null))).toEqual(new Set([rows[1].id]));
     });
     it('the non-selected player tab shows decision flags, including a pending pit request', () => {
-        const d = at(viewerData(4), 5), s = d.state!, p = s.input.tyres!.profiles[s.entrants[1].stint!.tyre.compound];
-        const state: RaceSimulationState = { ...s, entrants: s.entrants.map((e, i) => i === 1 ? { ...e, pit: { ...e.pit!, pendingCompound: 'HARD' as const }, stint: { ...e.stint!, tyre: { ...e.stint!.tyre, wearPermille: p.cliffWear } } } : e) };
-        const data = { ...d, state }, rows = timingRows(data);
+        const d = advanced(viewerData(4), 5), s = d.state!, p = s.input.tyres!.profiles[s.entrants[1].stint!.tyre.compound];
+        const authoritative: RaceSimulationState = { ...s, entrants: s.entrants.map((e, i) => i === 1 ? { ...e, pit: { ...e.pit!, pendingCompound: 'HARD' as const }, stint: { ...e.stint!, tyre: { ...e.stint!.tyre, wearPermille: p.cliffWear } } } : e) };
+        const data = view({ ...d, state: authoritative }), state = data.state!, rows = timingRows(data);
         expect(driverFlags(rows[1], rows, state)).toEqual(expect.arrayContaining(['BOX', 'TYRE_CRITICAL']));
         const html = renderToStaticMarkup(<I18nProvider><PlayerSwitch state={state} rows={rows} selected={rows[0].id} onSelect={() => {}} attentionId={rows[1].id}/></I18nProvider>);
         const tab = html.match(/<button[^>]*title="Driver 2"[\s\S]*?<\/button>/)![0];
@@ -115,8 +120,9 @@ describe('live timing and decision feedback', () => {
         expect(tyreSuitability.length).toBe(2);
     });
     it('ERS outlook is a rounded management estimate for the current mode', () => {
-        const s = createRace(incidentInput(2)), e = s.entrants[0];
-        const mode = (ersMode: 'HARVEST' | 'NEUTRAL' | 'DEPLOY') => ersOutlook(s, { ...e, commands: { ...e.commands!, ersMode } });
+        // Computed on the server from the ERS model; the browser receives only the outlook.
+        const s = createRace(incidentInput(2));
+        const mode = (ersMode: 'HARVEST' | 'NEUTRAL' | 'DEPLOY') => ersOutlook(pub({ ...s, entrants: s.entrants.map((x, i) => i === 0 ? { ...x, commands: { ...x.commands!, ersMode } } : x) }).entrants[0]);
         expect(mode('HARVEST')).toEqual({ kind: 'CHARGING' }); expect(mode('NEUTRAL')).toEqual({ kind: 'SUSTAINABLE' });
         expect(mode('DEPLOY')).toEqual({ kind: 'LAPS', laps: expect.any(Number) });
     });

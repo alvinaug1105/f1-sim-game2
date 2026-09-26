@@ -224,6 +224,7 @@ export function buildCareerWorld(
       startDate: event.startDate,
       endDate: event.endDate,
       status: "UPCOMING",
+      weekendFormat: event.weekendFormat ?? "STANDARD",
     })),
   };
 }

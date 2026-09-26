@@ -12,6 +12,7 @@ import {
   transitionSession,
   progressSummary,
   sessionActions,
+  isPractice,
   type CareerProgress,
   type SessionIntent,
 } from "../src/game/domain/progression";
@@ -42,12 +43,16 @@ function act(index: number, intent: SessionIntent) {
     intent,
   );
 }
+/** Completes the active weekend in session order, whatever its format (Practice is simulated, the rest run). */
 function complete() {
-  for (let i = 0; i < 3; i++) act(i, "simulatePractice");
-  for (let i = 3; i < 5; i++) {
-    act(i, "start");
-    act(i, "completeDevelopment");
-  }
+  const sessions = progressSummary(state).active!.weekend!.sessions;
+  sessions.forEach((s, i) => {
+    if (isPractice(s.type)) act(i, "simulatePractice");
+    else {
+      act(i, "start");
+      act(i, "completeDevelopment");
+    }
+  });
 }
 describe("Career progression domain", () => {
   it("selects lowest upcoming round independent of input order", () => {

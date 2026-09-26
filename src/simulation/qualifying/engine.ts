@@ -14,7 +14,7 @@ import { advanceWeather, advanceWeatherTyre, validateWeatherConfiguration, water
 import { effectiveIdeal, isSetup, setupPenaltyMs } from "../practice/model";
 import { finalClassification, phaseClassification } from "./classification";
 import {
-    GARAGE_TURNAROUND_MS, IN_LAP_PERMILLE, INITIAL_EVOLUTION, OUT_LAP_PERMILLE, QUALIFYING_PHASES, isRunPlan, maxPushLaps, phaseFormat, phaseIndex,
+    GARAGE_TURNAROUND_MS, IN_LAP_PERMILLE, INITIAL_EVOLUTION, OUT_LAP_PERMILLE, PHASE_DURATION_MS, QUALIFYING_PHASES, isRunPlan, maxPushLaps, phaseFormat, phaseIndex,
     qualifyingWeatherTicks, timeToLastFlyingStart,
     type QualifyingEntrantState, type QualifyingInput, type QualifyingLocation, type QualifyingPhase, type QualifyingState, type RunPlan,
 } from "./model";
@@ -50,8 +50,12 @@ function planPhase(state: QualifyingState, rng: StatefulRandomSource): Qualifyin
     const phase = state.phase;
     return { ...state, entrants: state.entrants.map((e, i) => {
         if (e.eliminatedIn !== null) return e;
-        const releaseAtMs = phase === "Q1" ? 45_000 + Math.floor(rng.next() * 14) * 30_000 + (i % 4) * 10_000
+        const standard = phase === "Q1" ? 45_000 + Math.floor(rng.next() * 14) * 30_000 + (i % 4) * 10_000
             : phase === "Q2" ? 30_000 + Math.floor(rng.next() * 8) * 30_000 : 30_000 + Math.floor(rng.next() * 6) * 20_000;
+        // Release times are tuned to the Grand Prix phase lengths; a shorter phase (Sprint Qualifying) compresses them
+        // proportionally. For standard lengths the ratio is exactly 1, so Grand Prix Qualifying is unchanged.
+        const duration = phaseFormat(state).durationMs, reference = PHASE_DURATION_MS[phase];
+        const releaseAtMs = duration === reference ? standard : Math.round(standard * duration / reference);
         return { ...e, readyAtMs: 0, attempts: 0, releaseAtMs, windowOffsetMs: Math.floor(rng.next() * 16) * 10_000 };
     }) };
 }

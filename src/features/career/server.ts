@@ -30,9 +30,10 @@ export function getProgressionRepository(): CareerProgressionRepository {
 }
 
 import { PrismaRaceRepository } from "../../data/repositories/prisma-race";
-import type { CareerRaceRepository } from "../../game/domain/race-repository";
-export function getRaceRepository(): CareerRaceRepository {
-  return new PrismaRaceRepository(getPrisma());
+import type { CareerRaceRepository, RaceKind } from "../../game/domain/race-repository";
+/** One repository per session kind: the Grand Prix (RACE) or the Sprint (SPRINT). */
+export function getRaceRepository(kind: RaceKind = "RACE"): CareerRaceRepository {
+  return new PrismaRaceRepository(getPrisma(), kind);
 }
 
 import { PrismaPracticeRepository } from "../../data/repositories/prisma-practice";
@@ -42,7 +43,8 @@ export function getPracticeRepository(): CareerPracticeRepository {
 }
 
 import { PrismaQualifyingRepository } from "../../data/repositories/prisma-qualifying";
-import type { CareerQualifyingRepository } from "../../game/domain/qualifying-repository";
-export function getQualifyingRepository(): CareerQualifyingRepository {
-  return new PrismaQualifyingRepository(getPrisma());
+import type { CareerQualifyingRepository, QualifyingKind } from "../../game/domain/qualifying-repository";
+/** One repository per session kind: Grand Prix Qualifying or Sprint Qualifying. */
+export function getQualifyingRepository(kind: QualifyingKind = "QUALIFYING"): CareerQualifyingRepository {
+  return new PrismaQualifyingRepository(getPrisma(), kind);
 }

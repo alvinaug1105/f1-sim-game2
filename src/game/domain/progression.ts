@@ -1,6 +1,7 @@
 import type { Career, CareerCalendarEvent } from "./career";
+import type { WeekendFormat } from "./content";
 export type SessionType =
-  "PRACTICE_1" | "PRACTICE_2" | "PRACTICE_3" | "QUALIFYING" | "RACE";
+  "PRACTICE_1" | "PRACTICE_2" | "PRACTICE_3" | "QUALIFYING" | "RACE" | "SPRINT_QUALIFYING" | "SPRINT";
 export type SessionStatus =
   "LOCKED" | "AVAILABLE" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED";
 export interface CareerSession {
@@ -53,8 +54,20 @@ const standardSequence: readonly SessionType[] = [
   "QUALIFYING",
   "RACE",
 ];
-export function getSessionSequence(): readonly SessionType[] {
-  return standardSequence;
+/** Sprint weekend: one Practice, then Sprint Qualifying → Sprint, then the Grand Prix Qualifying → Race. */
+const sprintSequence: readonly SessionType[] = [
+  "PRACTICE_1",
+  "SPRINT_QUALIFYING",
+  "SPRINT",
+  "QUALIFYING",
+  "RACE",
+];
+/** Career-snapshotted format; a missing value (Career created before Phase 15) is always STANDARD. */
+export function weekendFormatOf(event: Pick<CareerCalendarEvent, "weekendFormat">): WeekendFormat {
+  return event.weekendFormat === "SPRINT" ? "SPRINT" : "STANDARD";
+}
+export function getSessionSequence(format: WeekendFormat = "STANDARD"): readonly SessionType[] {
+  return format === "SPRINT" ? sprintSequence : standardSequence;
 }
 export function isPractice(type: SessionType) {
   return (
@@ -116,7 +129,7 @@ export function enterNextEvent(
     careerSeasonId: next.careerSeasonId,
     careerCalendarEventId: next.id,
     status: "ACTIVE",
-    sessions: getSessionSequence().map((type, index) => ({
+    sessions: getSessionSequence(weekendFormatOf(next)).map((type, index) => ({
       id: newId(),
       careerId: progress.career.id,
       careerRaceWeekendId: id,

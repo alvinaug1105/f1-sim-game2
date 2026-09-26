@@ -7,7 +7,8 @@ import { layoutForCircuit } from '../../../data/seed/circuit-layouts';
 import { timingRows } from './model';
 import { PlaybackController } from './playback';
 import { PlaybackBar } from './playback-bar';
-import { viewerAction } from './actions';
+import { sprintRemainderAction, viewerAction } from './actions';
+import { SprintRemainder, SprintSummary } from './sprint-panels';
 import { commandInfo, type ViewerIntent } from './intents';
 import { TrackMap } from './track-map';
 import { DriverPanel } from './driver-panel';
@@ -22,7 +23,7 @@ export function RaceOperations({ initialData }: {
 }) {
     const { t, format, locale } = useI18n();
     const [data, setData] = useState(initialData);
-    const [controller] = useState(() => new PlaybackController(initialData.state!, initialData.progress.career.playerTeamId, async (state) => { const result = await viewerAction(initialData.progress.career.id, initialData.eventId, state.lap, { kind: 'advance' }); if (!result.data)
+    const [controller] = useState(() => new PlaybackController(initialData.state!, initialData.progress.career.playerTeamId, async (state) => { const result = await viewerAction(initialData.progress.career.id, initialData.eventId, state.lap, { kind: 'advance' }, initialData.kind ?? 'RACE'); if (!result.data)
         throw new Error(result.error!); setData(result.data); return result.data.state!; }));
     const playback = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
     useEffect(() => () => controller.pause(), [controller]);
@@ -30,17 +31,23 @@ export function RaceOperations({ initialData }: {
     const rows = useMemo(() => timingRows(data), [data]), [selected, setSelected] = useState(() => timingRows(initialData).find(r => r.player)?.id ?? initialData.state!.entrants[0].entrantId), [interval, setIntervalView] = useState(false), [reduceMotion, setReduceMotion] = useState(false);
     const s = data.state!, row = rows.find(r => r.id === selected) ?? rows[0], layout = layoutForCircuit(data.circuit.sourceCircuitId), control = controlMode(s), weather = s.weather;
     const tiers = useMemo(() => labelTiers(rows, row.id, s), [rows, row.id, s]);
-    const send = (intent: ViewerIntent) => { void controller.command(async (state) => { const result = await viewerAction(data.progress.career.id, data.eventId, state.lap, intent); if (!result.data)
+    const send = (intent: ViewerIntent) => { void controller.command(async (state) => { const result = await viewerAction(data.progress.career.id, data.eventId, state.lap, intent, data.kind ?? 'RACE'); if (!result.data)
         throw new Error(result.error!); setData(result.data); return result.data.state!; }, commandInfo(intent)); };
     const attentionId = playback.reason && playback.reason !== 'FINISH' ? playback.attention?.entrantId ?? null : null;
+    const sprint = data.kind === 'SPRINT';
+    // Sprint Simulate Remainder goes through the controller's single mutation queue like every other command.
+    const remainder = () => { void controller.command(async (state) => { const result = await sprintRemainderAction(data.progress.career.id, data.eventId, state.lap); if (!result.data)
+        throw new Error(result.error!); setData(result.data); return result.data.state!; }, null); };
     return <div className="race-ops">
-  <LocalizedPageTitle titleKey="viewer.title"/>
+  <LocalizedPageTitle titleKey={sprint ? 'sprint.title' : 'viewer.title'}/>
   <RaceHeader data={data}/>
   {/* Sticky Race bar: conditions, playback and a fixed-height status line keep Race context visible while commanding. */}
   <div className="race-bar">
    <div className="race-bar-top"><RaceClock data={data}/><ConditionsStrip data={data}/></div>
    <PlaybackBar controller={controller} playback={playback} rows={rows} reduceMotion={reduceMotion} onReduceMotion={setReduceMotion} alerts={<RaceAlerts data={data} rows={rows}/>}/>
+   {sprint && s.status === 'RUNNING' && <SprintRemainder busy={playback.busy} onConfirm={remainder}/>}
   </div>
+  {sprint && s.status === 'FINISHED' && <SprintSummary data={data} rows={rows}/>}
   <div className="ops-grid">
    <TimingTower state={s} rows={rows} selected={row.id} onSelect={setSelected} interval={interval} onInterval={setIntervalView} attentionId={attentionId}/>
    <div className="map-column"><section className="ops-panel track-panel"><div className="ops-panel-title"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId}/><TrackMap key={layout.id} layout={layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} tiers={tiers}/><p className="map-notice">{t('viewer.interpolation')} {t('viewer.labelNote')}</p></section>

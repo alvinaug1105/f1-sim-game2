@@ -1,4 +1,5 @@
 import type { ContentDataset } from "../../game/domain/content-dataset";
+import type { WeekendFormat } from "../../game/domain/content";
 // Stable source identifiers, unrelated to display names. Existing IDs/keys are never renumbered or renamed
 // (the Mercedes/Ferrari, Albert Park/Suzuka keys pre-date the real-name pass and stay as they are).
 const id = (n: number) =>
@@ -93,16 +94,17 @@ const CIRCUIT_RACE_PROFILE: Readonly<Record<number, readonly [overtakingDifficul
   306: [15, 900, 1350], // Spa-Francorchamps: strong passing
   307: [62, 1300, 650], // Marina Bay: relatively difficult
 };
-type EventRow = readonly [n: number, circuit: number, round: number, name: string, startDate: string, endDate: string];
+/** Weekend format is calendar data (2026 Sprint weekends among the 8 development rounds), never derived from a name. */
+type EventRow = readonly [n: number, circuit: number, round: number, name: string, startDate: string, endDate: string, weekendFormat: WeekendFormat];
 const EVENTS: readonly EventRow[] = [
-  [700, 300, 1, "Australian Grand Prix", "2026-03-06", "2026-03-08"],
-  [702, 302, 2, "Chinese Grand Prix", "2026-03-13", "2026-03-15"],
-  [701, 301, 3, "Japanese Grand Prix", "2026-03-27", "2026-03-29"],
-  [703, 303, 4, "Bahrain Grand Prix", "2026-04-10", "2026-04-12"],
-  [704, 304, 5, "Monaco Grand Prix", "2026-06-05", "2026-06-07"],
-  [705, 305, 6, "British Grand Prix", "2026-07-03", "2026-07-05"],
-  [706, 306, 7, "Belgian Grand Prix", "2026-07-17", "2026-07-19"],
-  [707, 307, 8, "Singapore Grand Prix", "2026-10-09", "2026-10-11"],
+  [700, 300, 1, "Australian Grand Prix", "2026-03-06", "2026-03-08", "STANDARD"],
+  [702, 302, 2, "Chinese Grand Prix", "2026-03-13", "2026-03-15", "SPRINT"],
+  [701, 301, 3, "Japanese Grand Prix", "2026-03-27", "2026-03-29", "STANDARD"],
+  [703, 303, 4, "Bahrain Grand Prix", "2026-04-10", "2026-04-12", "STANDARD"],
+  [704, 304, 5, "Monaco Grand Prix", "2026-06-05", "2026-06-07", "STANDARD"],
+  [705, 305, 6, "British Grand Prix", "2026-07-03", "2026-07-05", "SPRINT"],
+  [706, 306, 7, "Belgian Grand Prix", "2026-07-17", "2026-07-19", "STANDARD"],
+  [707, 307, 8, "Singapore Grand Prix", "2026-10-09", "2026-10-11", "SPRINT"],
 ];
 
 export const developmentContent = {
@@ -143,7 +145,7 @@ export const developmentContent = {
     id: id(400 + n), gameDatabaseId, seasonId, teamId: id(team), driverId: id(n), carNumber, role: "RACE_DRIVER" as const,
     pace: DRIVER_BALANCE[n][0], consistency: DRIVER_BALANCE[n][1],
   })),
-  events: EVENTS.map(([n, circuit, round, name, startDate, endDate]) => ({
-    id: id(n), gameDatabaseId, seasonId, circuitId: id(circuit), round, name, startDate, endDate,
+  events: EVENTS.map(([n, circuit, round, name, startDate, endDate, weekendFormat]) => ({
+    id: id(n), gameDatabaseId, seasonId, circuitId: id(circuit), round, name, startDate, endDate, weekendFormat,
   })),
 } satisfies ContentDataset;

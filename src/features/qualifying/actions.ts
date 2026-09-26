@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { QualifyingError, type CareerQualifyingData, type QualifyingErrorCode } from "../../game/domain/qualifying-repository";
+import { QualifyingError, type CareerQualifyingData, type QualifyingErrorCode, type QualifyingKind } from "../../game/domain/qualifying-repository";
 import { isRunPlan, QUALIFYING_PHASES, type QualifyingPhase } from "../../simulation/qualifying/model";
 import { getQualifyingRepository } from "../career/server";
 import {
@@ -32,31 +32,36 @@ function parseCommand(value: unknown): QualifyingCommand {
     throw new QualifyingError("INVALID_INPUT");
 }
 const career = (careerId: string) => `/career/${careerId}`;
-export async function qualifyingStartAction(careerId: string, eventId: string) {
-    return run(() => startQualifyingSession(getQualifyingRepository(), careerId, eventId));
+/** Untrusted session kind → the repository for exactly that weekend session. */
+const repo = (kind: unknown) => {
+    if (kind !== "QUALIFYING" && kind !== "SPRINT_QUALIFYING") throw new QualifyingError("INVALID_INPUT");
+    return getQualifyingRepository(kind as QualifyingKind);
+};
+export async function qualifyingStartAction(careerId: string, eventId: string, kind: unknown) {
+    return run(async () => startQualifyingSession(repo(kind), careerId, eventId));
 }
-export async function qualifyingAdvanceAction(careerId: string, eventId: string, expectedSessionElapsedMs: number) {
-    return run(async () => advanceQualifyingSession(getQualifyingRepository(), careerId, eventId, token(expectedSessionElapsedMs)), career(careerId));
+export async function qualifyingAdvanceAction(careerId: string, eventId: string, kind: unknown, expectedSessionElapsedMs: number) {
+    return run(async () => advanceQualifyingSession(repo(kind), careerId, eventId, token(expectedSessionElapsedMs)), career(careerId));
 }
-export async function qualifyingCommandAction(careerId: string, eventId: string, expectedSessionElapsedMs: number, command: unknown) {
-    return run(async () => qualifyingCommand(getQualifyingRepository(), careerId, eventId, token(expectedSessionElapsedMs), parseCommand(command)));
+export async function qualifyingCommandAction(careerId: string, eventId: string, kind: unknown, expectedSessionElapsedMs: number, command: unknown) {
+    return run(async () => qualifyingCommand(repo(kind), careerId, eventId, token(expectedSessionElapsedMs), parseCommand(command)));
 }
-export async function qualifyingContinueAction(careerId: string, eventId: string, expectedSessionElapsedMs: number, expectedPhase: unknown) {
-    return run(async () => continueQualifyingPhase(getQualifyingRepository(), careerId, eventId, token(expectedSessionElapsedMs), phase(expectedPhase)));
+export async function qualifyingContinueAction(careerId: string, eventId: string, kind: unknown, expectedSessionElapsedMs: number, expectedPhase: unknown) {
+    return run(async () => continueQualifyingPhase(repo(kind), careerId, eventId, token(expectedSessionElapsedMs), phase(expectedPhase)));
 }
-export async function qualifyingRemainderAction(careerId: string, eventId: string, expectedSessionElapsedMs: number) {
-    return run(async () => simulateQualifyingRemainder(getQualifyingRepository(), careerId, eventId, token(expectedSessionElapsedMs)), career(careerId));
+export async function qualifyingRemainderAction(careerId: string, eventId: string, kind: unknown, expectedSessionElapsedMs: number) {
+    return run(async () => simulateQualifyingRemainder(repo(kind), careerId, eventId, token(expectedSessionElapsedMs)), career(careerId));
 }
-export async function qualifyingSimulateAction(careerId: string, eventId: string) {
-    return run(() => simulateQualifyingSession(getQualifyingRepository(), careerId, eventId), career(careerId));
+export async function qualifyingSimulateAction(careerId: string, eventId: string, kind: unknown) {
+    return run(async () => simulateQualifyingSession(repo(kind), careerId, eventId), career(careerId));
 }
 /** Weekend page form action: Simulate Qualifying / Simulate Remainder (no plain skip exists). */
 export async function qualifyingWeekendAction(_previous: { error: QualifyingErrorCode | null }, form: FormData): Promise<{ error: QualifyingErrorCode | null }> {
     const text = (key: string) => typeof form.get(key) === "string" ? String(form.get(key)) : "";
-    const careerId = text("careerId"), eventId = text("eventId"), intent = text("intent");
+    const careerId = text("careerId"), eventId = text("eventId"), intent = text("intent"), kind = text("kind") || "QUALIFYING";
     try {
-        if (intent === "simulate") await simulateQualifyingSession(getQualifyingRepository(), careerId, eventId);
-        else if (intent === "remainder") await simulateQualifyingRemainder(getQualifyingRepository(), careerId, eventId);
+        if (intent === "simulate") await simulateQualifyingSession(repo(kind), careerId, eventId);
+        else if (intent === "remainder") await simulateQualifyingRemainder(repo(kind), careerId, eventId);
         else throw new QualifyingError("INVALID_ACTION");
     }
     catch (error) {

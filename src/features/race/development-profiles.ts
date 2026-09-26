@@ -22,13 +22,28 @@ export function entrantPerformance(row: { readonly balance?: RosterBalance | nul
 export function developmentBaseLapTimeMs(lengthMeters: number) {
   return Math.round((lengthMeters / 60) * 1000);
 }
+/**
+ * Sprint distance: the least number of complete laps whose total distance EXCEEDS 100 km, from the Career-snapshotted
+ * circuit length (never a per-circuit constant). Invalid lengths fail safely instead of producing NaN.
+ */
+export function sprintLapCount(lengthMeters: number) {
+  if (!Number.isSafeInteger(lengthMeters) || lengthMeters <= 0) throw new RangeError("Invalid circuit length");
+  const laps = Math.floor(100_000 / lengthMeters) + 1;
+  if (!Number.isSafeInteger(laps) || laps < 1) throw new RangeError("Invalid Sprint distance");
+  return laps;
+}
+/** Scheduled laps of a Race-type session: the circuit's Grand Prix distance, or the Sprint distance. */
+export function scheduledLaps(data: Pick<CareerRaceData, "kind" | "circuit">) {
+  return data.kind === "SPRINT" ? sprintLapCount(data.circuit.lengthMeters) : data.circuit.defaultLapCount;
+}
 /** Temporary version-1 profiles, based on roster order, never names or special IDs. */
 export function developmentRaceInput(
   data: CareerRaceData,
   seed: number,
   newId: () => string,
 ) {
-  const totalLaps = data.circuit.defaultLapCount;
+  // Fuel below is derived from this distance, so a Sprint naturally starts with far less fuel than the Grand Prix.
+  const totalLaps = scheduledLaps(data);
   // A completed real Qualifying sets the grid when it covers exactly this roster; otherwise the legacy roster order.
   const grid =
     data.grid &&

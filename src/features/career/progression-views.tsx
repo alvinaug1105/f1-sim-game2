@@ -10,7 +10,8 @@ import {
   type SessionIntent,
 } from "../../game/domain/progression";
 import { progressionAction } from "./progression-actions";
-import { isPractice } from "../../game/domain/progression";
+import { isPractice, weekendFormatOf } from "../../game/domain/progression";
+import { SprintSessionControls } from "../race/weekend-controls";
 import {
   PracticeSessionControls,
   SimulateAllPractice,
@@ -111,7 +112,7 @@ export function WeekendView({
       <LocalizedPageTitle titleKey="progression.weekend" />
       <div className="page-header">
         <div>
-          <p className="eyebrow">{t("progression.weekend")}</p>
+          <p className="eyebrow">{t("progression.weekend")} · <strong className="weekend-format">{t(`progression.format.${weekendFormatOf(event)}`)}</strong></p>
           <h1>{event.name}</h1>
           <p>
             {event.circuitName} ·{" "}
@@ -152,6 +153,13 @@ export function WeekendView({
                             {t("race.open")}
                           </Link>
                         )
+                      ) : session.type === "SPRINT" ? (
+                        // The Sprint runs on the Race v7 engine: managed, or simulated with both cars auto-managed.
+                        <SprintSessionControls
+                          careerId={progress.career.id}
+                          eventId={event.id}
+                          session={session}
+                        />
                       ) : isPractice(session.type) ? (
                         // Practice is never bypassed: not managing it yourself means simulating it.
                         <PracticeSessionControls
@@ -189,6 +197,12 @@ export function WeekendView({
               {event.weekend.sessions.some(
                 (s) => s.type === "QUALIFYING" && s.status === "AVAILABLE",
               ) && <p className="ops-muted">{t("qualifying.simulateHint")}</p>}
+              {event.weekend.sessions.some(
+                (s) => s.type === "SPRINT_QUALIFYING" && s.status === "AVAILABLE",
+              ) && <p className="ops-muted">{t("sprintQualifying.simulateHint")}</p>}
+              {event.weekend.sessions.some(
+                (s) => s.type === "SPRINT" && s.status === "AVAILABLE",
+              ) && <p className="ops-muted">{t("sprint.simulateHint")}</p>}
               {event.weekend.status === "COMPLETED" && (
                 <p role="status">{t("progression.done")}</p>
               )}

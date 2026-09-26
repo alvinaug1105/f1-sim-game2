@@ -11,12 +11,12 @@ const CONTROL_GLYPH = { GREEN: '●', VSC: '◆', SAFETY_CAR: '▲' } as const;
 /** Race identity, lap clock and a text + glyph Race Control state (never colour alone). */
 export function RaceHeader({ data }: { data: CareerRaceData }) {
     const { t } = useI18n(), event = data.progress.events.find(e => e.id === data.eventId)!;
-    return <header className="ops-header"><div><Link className="ops-back" href={`/career/${data.progress.career.id}/events/${data.eventId}`}>← {t('race.back')}</Link><p className="eyebrow">{t('viewer.title')}</p><h1>{event.name} <span className="ops-muted">· {event.circuitName}</span></h1></div></header>;
+    return <header className="ops-header"><div><Link className="ops-back" href={`/career/${data.progress.career.id}/events/${data.eventId}`}>← {t('race.back')}</Link><p className="eyebrow">{t(data.kind === 'SPRINT' ? 'sprint.title' : 'viewer.title')}</p><h1>{event.name} {data.kind === 'SPRINT' && <strong className="session-kind-badge">{t('sprint.title')}</strong>} <span className="ops-muted">· {event.circuitName}</span></h1></div></header>;
 }
 /** Lap clock + text/glyph Race Control state; lives in the sticky Race bar so it never scrolls away. */
 export function RaceClock({ data }: { data: CareerRaceData }) {
     const { t, format } = useI18n(), s = data.state!, control = controlMode(s);
-    return <div className="race-clock"><span>{t('viewer.lap')}</span><strong>{format.number(s.lap)}<small> / {format.number(s.input.totalLaps)}</small></strong>
+    return <div className="race-clock"><span>{data.kind === 'SPRINT' ? `${t('sprint.title')} · ` : ''}{t('viewer.lap')}</span><strong>{format.number(s.lap)}<small> / {format.number(s.input.totalLaps)}</small></strong>
         <span className={`control-state control-${s.status === 'FINISHED' ? 'FINISHED' : control}`} role="status"><span aria-hidden="true">{s.status === 'FINISHED' ? '■' : CONTROL_GLYPH[control]}</span> {t(s.status === 'FINISHED' ? 'incident.FINISHED' : s.incidents ? `incident.${control}` : 'race.running')}</span>
         {s.incidents && control !== 'GREEN' && s.status !== 'FINISHED' && <small>{t('incident.remaining', { count: format.number(s.incidents.remainingLaps) })}</small>}
     </div>;

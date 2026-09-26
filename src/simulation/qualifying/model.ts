@@ -15,8 +15,16 @@ export type QualifyingLocation = "GARAGE" | "OUT_LAP" | "FLYING" | "IN_LAP";
 export type QualifyingController = "PLAYER" | "AI";
 export const QUALIFYING_COMPOUNDS: readonly TyreCompound[] = ["SOFT", "MEDIUM", "HARD", "INTERMEDIATE", "WET"];
 export const MAX_PUSH_LAPS = 3;
+/**
+ * Session kind configured on the one shared Qualifying core: Grand Prix Qualifying (Q1/Q2/Q3) or Sprint Qualifying
+ * (shown as SQ1/SQ2/SQ3 — the internal phases stay Q1/Q2/Q3). Only phase lengths differ; field sizes, the break,
+ * clock rules, evolution, traffic, weather and classification are identical.
+ */
+export type QualifyingKind = "QUALIFYING" | "SPRINT_QUALIFYING";
 /** 2026 standard phase lengths and the break between phases. */
 export const PHASE_DURATION_MS: Readonly<Record<QualifyingPhase, number>> = { Q1: 18 * 60_000, Q2: 15 * 60_000, Q3: 13 * 60_000 };
+/** 2026 Sprint Qualifying phase lengths (SQ1 / SQ2 / SQ3). */
+export const SPRINT_PHASE_DURATION_MS: Readonly<Record<QualifyingPhase, number>> = { Q1: 12 * 60_000, Q2: 10 * 60_000, Q3: 8 * 60_000 };
 export const INTERMISSION_MS = 7 * 60_000;
 export const QUALIFYING_STEP_MS = 20_000;
 export const QUALIFYING_WEATHER_TICK_MS = 90_000;
@@ -31,11 +39,11 @@ export interface QualifyingFormat { readonly phases: readonly PhaseFormat[]; rea
  * Data-driven format by eligible field size: Q3 is a top-10 shoot-out and Q2 keeps 10 + half of the remainder
  * (rounded up). 22 → 16 → 10, 20 → 15 → 10; a field of 10 or fewer runs all three phases with every car.
  */
-export function qualifyingFormat(entrants: number): QualifyingFormat {
+export function qualifyingFormat(entrants: number, kind: QualifyingKind = "QUALIFYING"): QualifyingFormat {
     if (!Number.isSafeInteger(entrants) || entrants < 1) throw new RangeError("Invalid qualifying field size");
     const q3 = Math.min(10, entrants), q2 = entrants <= 10 ? entrants : 10 + Math.ceil((entrants - 10) / 2);
-    const sizes = [entrants, q2, q3], next = [q2, q3, q3];
-    return { phases: QUALIFYING_PHASES.map((phase, i) => ({ phase, durationMs: PHASE_DURATION_MS[phase], eligible: sizes[i], advancing: next[i] })), intermissionMs: INTERMISSION_MS };
+    const sizes = [entrants, q2, q3], next = [q2, q3, q3], durations = kind === "SPRINT_QUALIFYING" ? SPRINT_PHASE_DURATION_MS : PHASE_DURATION_MS;
+    return { phases: QUALIFYING_PHASES.map((phase, i) => ({ phase, durationMs: durations[phase], eligible: sizes[i], advancing: next[i] })), intermissionMs: INTERMISSION_MS };
 }
 export interface RunPlan { readonly compound: TyreCompound; readonly pushLaps: number }
 /** A timed lap: `setAtMs` is the phase clock time the lap was completed (earlier wins a tie). */

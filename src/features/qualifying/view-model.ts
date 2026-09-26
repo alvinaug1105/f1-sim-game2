@@ -3,7 +3,7 @@
  * no seed / RNG, no weather timeline, no hidden setup target or setup-distance truth, no AI release plans, and no
  * traffic cost of a lap still being driven.
  */
-import type { CareerQualifyingData } from "../../game/domain/qualifying-repository";
+import type { CareerQualifyingData, QualifyingKind } from "../../game/domain/qualifying-repository";
 import type { SessionStatus } from "../../game/domain/progression";
 import { phaseClassification, finalClassification } from "../../simulation/qualifying/classification";
 import { trafficBand } from "../../simulation/qualifying/engine";
@@ -53,6 +53,8 @@ export interface QualifyingView {
     readonly careerId: string;
     readonly eventId: string;
     readonly sessionId: string;
+    /** Grand Prix Qualifying or Sprint Qualifying (labels only; the same engine and rules). */
+    readonly kind: QualifyingKind;
     readonly sessionStatus: SessionStatus;
     readonly eventName: string;
     readonly circuitName: string;
@@ -110,7 +112,7 @@ export function qualifyingView(data: CareerQualifyingData): QualifyingView {
     const event = data.progress.events.find(e => e.id === data.eventId)!, weekend = event.weekend!;
     const session = weekend.sessions.find(s => s.id === data.sessionId)!, s = data.state, team = data.progress.career.playerTeamId;
     const base = {
-        careerId: data.progress.career.id, eventId: data.eventId, sessionId: data.sessionId, sessionStatus: session.status,
+        careerId: data.progress.career.id, eventId: data.eventId, sessionId: data.sessionId, kind: data.kind ?? "QUALIFYING", sessionStatus: session.status,
         eventName: event.name, circuitName: event.circuitName, sourceCircuitId: data.circuit.sourceCircuitId,
         sessions: [...weekend.sessions].sort((a, b) => a.order - b.order).map(x => ({ id: x.id, type: x.type, status: x.status })),
     };

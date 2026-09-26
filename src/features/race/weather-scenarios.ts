@@ -63,8 +63,9 @@ export function scenarioWeather(seed: number, totalLaps: number, scenario: Weath
     return { ...base, timeline, forecast, initial };
 }
 /** Weather a Career Race will use: seeded only by stable identity, so the pre-Race screen can show its public forecast. */
-export function careerRaceWeather(careerId: string, eventId: string, circuitKey: string, totalLaps: number) {
-    return scenarioWeather(raceWeatherSeed([careerId, eventId, circuitKey]), totalLaps);
+export function careerRaceWeather(careerId: string, eventId: string, circuitKey: string, totalLaps: number, kind: "RACE" | "SPRINT" = "RACE") {
+    // The Grand Prix keeps its original identity seed; the Sprint of the same weekend has its own weather.
+    return scenarioWeather(raceWeatherSeed(kind === "SPRINT" ? [careerId, eventId, circuitKey, "SPRINT"] : [careerId, eventId, circuitKey]), totalLaps);
 }
 /** AI starting tyre from CURRENT public conditions only (same information the player sees on the grid). */
 export function aiStartingCompound(initial: WeatherState): TyreCompound {

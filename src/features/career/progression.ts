@@ -47,6 +47,8 @@ export function runScaffoldingAction(
     if (
       session?.type === "RACE" ||
       session?.type === "QUALIFYING" ||
+      session?.type === "SPRINT_QUALIFYING" ||
+      session?.type === "SPRINT" ||
       (session && isPractice(session.type))
     )
       throw new ProgressionError("INVALID_TRANSITION");

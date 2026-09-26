@@ -17,6 +17,8 @@ import {
 import { qualifyingAdapter, type QualifyingAttention, type QualifyingAttentionMemory, type QualifyingCommandInfo } from './playback';
 import type { QualifyingView } from './view-model';
 import { PhaseCompletePanel, QualifyingDriverPanel, QualifyingSummary, QualifyingTower, type QualifyingUiCommand } from './components';
+import { nextSessionPath, phaseKey, textKey } from './labels';
+import { sessionHref } from '../career/session-links';
 type Controller = PlaybackController<QualifyingView, QualifyingAttentionMemory, QualifyingAttention, QualifyingCommandInfo>;
 type Snapshot = PlaybackSnapshot<QualifyingAttention, QualifyingCommandInfo>;
 const weekendHref = (v: QualifyingView) => `/career/${v.careerId}/events/${v.eventId}`;
@@ -32,11 +34,11 @@ function QualifyingHeader({ view }: { view: QualifyingView }) {
     const glyph = { LOCKED: '🔒︎', AVAILABLE: '○', IN_PROGRESS: '▶', COMPLETED: '✓', SKIPPED: '–' } as const;
     return <header className="ops-header practice-header"><div>
         <Link className="ops-back" href={weekendHref(view)}>← {t('practice.back')}</Link>
-        <p className="eyebrow">{t('progression.QUALIFYING')}</p>
+        <p className="eyebrow">{t(`progression.${view.kind}`)}</p>
         <h1>{view.eventName} <span className="ops-muted">· {view.circuitName}</span></h1></div>
         <nav aria-label={t('progression.sessions')} className="session-tabs"><ol>{view.sessions.map(s => {
-            const current = s.type === 'QUALIFYING', reachable = s.status !== 'LOCKED' && s.status !== 'SKIPPED';
-            const href = s.type.startsWith('PRACTICE') ? `${weekendHref(view)}/practice/${s.id}` : s.type === 'RACE' ? `${weekendHref(view)}/race` : null;
+            const current = s.type === view.kind, reachable = s.status !== 'LOCKED' && s.status !== 'SKIPPED';
+            const href = sessionHref(weekendHref(view), s);
             const label = <><span aria-hidden="true">{glyph[s.status as keyof typeof glyph]} </span>{t(`progression.${s.type as 'QUALIFYING'}`)}<span className="sr-only"> · {t(`progression.${s.status as 'AVAILABLE'}`)}</span></>;
             return <li key={s.id} className={`session-tab status-${s.status} ${current ? 'current' : ''}`}>{reachable && !current && href ? <Link href={href}>{label}</Link> : <span aria-current={current ? 'page' : undefined}>{label}</span>}</li>;
         })}</ol></nav>
@@ -46,19 +48,19 @@ function QualifyingStart({ view, onView }: { view: QualifyingView; onView: (v: Q
     const { t } = useI18n(), [pending, start] = useTransition(), [error, setError] = useState<QualifyingErrorCode | null>(null);
     const available = view.sessionStatus === 'AVAILABLE' || view.legacyInProgress;
     const run = (action: () => Promise<QualifyingActionResult>) => start(async () => { const result = await action(); if (result.view) onView(result.view); setError(result.error); });
-    const message = view.status === 'LEGACY_COMPLETED' ? 'qualifying.legacyCompleted' : view.legacyInProgress ? 'qualifying.legacyInProgress' : available ? 'qualifying.ready' : 'qualifying.unavailable';
+    const message = view.status === 'LEGACY_COMPLETED' ? 'qualifying.legacyCompleted' : view.legacyInProgress ? 'qualifying.legacyInProgress' : textKey(view.kind, available ? 'ready' : 'unavailable');
     return <div className="race-ops practice-ops qualifying-ops">
-        <LocalizedPageTitle titleKey="qualifying.title"/>
+        <LocalizedPageTitle titleKey={textKey(view.kind, 'title')}/>
         <QualifyingHeader view={view}/>
-        <section className="ops-panel practice-start"><div className="ops-panel-title"><h2>{t('progression.QUALIFYING')}</h2><span className="status-pill">{t(`progression.${view.sessionStatus}`)}</span></div>
+        <section className="ops-panel practice-start"><div className="ops-panel-title"><h2>{t(`progression.${view.kind}`)}</h2><span className="status-pill">{t(`progression.${view.sessionStatus}`)}</span></div>
             <div className="summary-body">
                 <p>{t(message)}</p>
-                {available && <><p className="ops-muted">{t('qualifying.intro')}</p>
+                {available && <><p className="ops-muted">{t(textKey(view.kind, 'intro'))}</p>
                     <div className="setup-actions">
-                        <button disabled={pending} onClick={() => run(() => qualifyingStartAction(view.careerId, view.eventId))}>{t(view.legacyInProgress ? 'practice.resume' : 'qualifying.manage')}</button>
-                        <ConfirmButton className="ops-secondary" disabled={pending} label={t('qualifying.simulate')} confirmText={t('qualifying.simulateConfirm')} confirmLabel={t('practice.confirm')} onConfirm={() => run(() => qualifyingSimulateAction(view.careerId, view.eventId))}/>
+                        <button disabled={pending} onClick={() => run(() => qualifyingStartAction(view.careerId, view.eventId, view.kind))}>{t(view.legacyInProgress ? 'practice.resume' : textKey(view.kind, 'manage'))}</button>
+                        <ConfirmButton className="ops-secondary" disabled={pending} label={t(textKey(view.kind, 'simulate'))} confirmText={t(textKey(view.kind, 'simulateConfirm'))} confirmLabel={t('practice.confirm')} onConfirm={() => run(() => qualifyingSimulateAction(view.careerId, view.eventId, view.kind))}/>
                     </div></>}
-                {view.status === 'LEGACY_COMPLETED' && <Link className="button-link" href={`${weekendHref(view)}/race`}>{t('qualifying.continueToRace')}</Link>}
+                {view.status === 'LEGACY_COMPLETED' && <Link className="button-link" href={`${weekendHref(view)}/${nextSessionPath(view.kind)}`}>{t(textKey(view.kind, 'continueToRace'))}</Link>}
                 {pending && <p role="status">{t('progression.pending')}</p>}
                 {error && <p role="alert">{t(`qualifying.error.${error}`)}</p>}
                 <Link className="text-link" href={weekendHref(view)}>{t('practice.back')}</Link>
@@ -74,14 +76,14 @@ function QualifyingBar({ controller, playback, view, onRemainder }: { controller
     const cutoffCar = view.cutoff === null ? null : view.entrants.find(e => e.position === view.cutoff && e.eliminatedIn === null);
     let line: string | null = null, tone = 'none';
     if (playback.error) line = null;
-    else if (view.status === 'FINISHED') { line = t('qualifying.finished'); tone = 'finish'; }
-    else if (view.phaseComplete) { line = t('qualifying.phaseComplete', { phase: view.phase }); tone = 'finish'; }
+    else if (view.status === 'FINISHED') { line = t(textKey(view.kind, 'finished')); tone = 'finish'; }
+    else if (view.phaseComplete) { line = t('qualifying.phaseComplete', { phase: t(phaseKey(view.kind, view.phase)) }); tone = 'finish'; }
     else if (playback.reason === 'COMMAND' || playback.confirmation) { const c = playback.confirmation; line = c ? `${who(c.entrantId)} — ${t(`practice.confirm.${c.kind}`)}` : t('viewer.reason.COMMAND'); tone = 'command'; }
     else if (playback.reason === 'LIMIT') { line = t('qualifying.reason.LIMIT'); tone = 'stopped'; }
     else if (playback.reason && playback.attention) { const a = playback.attention; line = t(`qualifying.reason.${a.reason}`, { driver: who(a.entrantId), time: a.lapMs ? formatRaceTime(a.lapMs, locale) : '' }); tone = 'stopped'; }
     return <div className="race-bar practice-bar qualifying-bar">
         <div className="race-bar-top">
-            <div className="race-clock"><span>{view.phase}</span><strong>{sessionClock(Math.max(0, remaining), locale)}</strong>
+            <div className="race-clock"><span>{t(phaseKey(view.kind, view.phase))}</span><strong>{sessionClock(Math.max(0, remaining), locale)}</strong>
                 <span className="control-state" role="status"><span aria-hidden="true">{frozen ? '■' : remaining <= 0 ? '⚑' : '●'}</span> {frozen ? t('qualifying.frozen') : t(remaining <= 0 ? 'qualifying.flag' : 'qualifying.remaining')}</span></div>
             <section className="weather-strip" aria-label={t('weather.title')}>
                 {cutoffCar && <span className="cutoff-info">{t('qualifying.cutoffAt', { position: format.number(view.cutoff!) })}: <strong>{cutoffCar.bestMs === null ? t('race.noTime') : formatRaceTime(cutoffCar.bestMs, locale)}</strong></span>}
@@ -98,7 +100,7 @@ function QualifyingBar({ controller, playback, view, onRemainder }: { controller
                     <button className="ops-secondary" onClick={() => void controller.step()} disabled={playback.busy}>{t('practice.step', { seconds: format.number(view.stepMs / 1000) })}</button>
                     <div role="group" aria-label={t('viewer.speed')}>{PLAYBACK_SPEEDS.map(speed => <button className="speed-button" key={speed} onClick={() => controller.setSpeed(speed)} aria-pressed={playback.speed === speed}>{format.number(speed)}×</button>)}</div>
                     <button className="ops-secondary" onClick={controller.skip} disabled={playback.skipping} aria-pressed={playback.skipping}><span aria-hidden="true">▶▶ </span>{t('practice.nextEvent')}</button>
-                    <ConfirmButton className="ops-secondary" disabled={playback.busy} label={t('practice.simulateRemainder')} confirmText={t('qualifying.remainderConfirm')} confirmLabel={t('practice.confirm')} onConfirm={onRemainder}/>
+                    <ConfirmButton className="ops-secondary" disabled={playback.busy} label={t('practice.simulateRemainder')} confirmText={t(textKey(view.kind, 'remainderConfirm'))} confirmLabel={t('practice.confirm')} onConfirm={onRemainder}/>
                 </div>
                 <div className="viewer-settings">
                     <label><input type="checkbox" checked={playback.autoPause} onChange={e => controller.setAutoPause(e.target.checked)}/>{t('viewer.autoPause')}</label>
@@ -116,7 +118,7 @@ function QualifyingOperations({ initial, onView }: { initial: QualifyingView; on
     const { t } = useI18n();
     const [view, setLocal] = useState(initial);
     const setView = (v: QualifyingView) => { setLocal(v); onView(v); };
-    const ids = [initial.careerId, initial.eventId] as const;
+    const ids = [initial.careerId, initial.eventId, initial.kind] as const;
     const [controller] = useState<Controller>(() => new PlaybackController(initial, qualifyingAdapter, async v => { const next = unwrap(await qualifyingAdvanceAction(...ids, v.sessionElapsedMs)); setView(next); return next; }));
     const playback = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
     useEffect(() => () => controller.pause(), [controller]);
@@ -138,7 +140,7 @@ function QualifyingOperations({ initial, onView }: { initial: QualifyingView; on
     const remainder = () => { void controller.command(async v => { const next = unwrap(await qualifyingRemainderAction(...ids, v.sessionElapsedMs)); setView(next); return next; }, null); };
     const continuePhase = () => startContinue(async () => { const result = await qualifyingContinueAction(...ids, view.sessionElapsedMs, view.phase); setContinueError(result.error); if (result.view) setView(result.view); });
     return <div className="race-ops practice-ops qualifying-ops">
-        <LocalizedPageTitle titleKey="qualifying.title"/>
+        <LocalizedPageTitle titleKey={textKey(view.kind, 'title')}/>
         <QualifyingHeader view={view}/>
         <QualifyingBar controller={controller} playback={playback} view={view} onRemainder={remainder}/>
         {view.status === 'FINISHED' && <QualifyingSummary view={view}/>}

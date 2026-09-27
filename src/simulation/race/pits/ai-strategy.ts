@@ -12,7 +12,7 @@ import type { RaceEntrantState, RaceSimulationInput, RaceSimulationState } from 
 import { TYRE_COMPOUNDS, WEATHER_TYRE_COMPOUNDS, tyreContributions, type TyreCompound, type TyreState, type TyreConfiguration } from "../tyres/model";
 import { advanceWeatherTyre, evolveWeather, forecastRain, waterPenaltyMs, type WeatherConfiguration, type WeatherState } from "../weather/model";
 import { createSeededRandom } from "../../core/random";
-import { familyCostsMs, tyreFamily } from "../tyres/suitability";
+import { assessTyreFamilies, currentCompoundCostMs, familyCostsMs, tyreFamily } from "../tyres/suitability";
 
 /** Snapshotted game tuning (integers). Not real-world strategy data. */
 export interface AiStrategyConfiguration {
@@ -57,8 +57,9 @@ export interface AiStrategyConfiguration {
    * Weather sanity gate (closure repair): a switch to another tyre family is only taken when that family is, in the
    * CURRENT conditions (the shared tyre-suitability assessment), at most this much slower than the car's current
    * family — per car ± `weatherGateSpreadMs` from its stop bias (early gamblers accept a slower tyre now, late cars
-   * want the new family clearly faster). The forecast/horizon rule must still pay off as before. Absent in Races
-   * frozen before the repair, which keep the previous weather rule exactly.
+   * want the new family clearly faster). Anticipatory switches must still repay the forecast/horizon cost;
+   * a POOR current family can instead recover when its current-condition deficit repays a stop over the remaining
+   * distance. Absent in Races frozen before the repair, which keep the previous weather rule exactly.
    */
   readonly weatherGateMs?: number;
   readonly weatherGateSpreadMs?: number;
@@ -185,7 +186,31 @@ export function assessAiStop(ctx: StrategyContext, strategy: AiStrategyConfigura
   const { state, entrant: e } = ctx, input = state.input, lap = state.lap, c = ctx.publicWeather;
   const hold = (reason: StrategyAssessment["reason"], gainPermille = 0, requiredPermille = 0, traffic = 0): StrategyAssessment => ({ compound: null, reason, gainPermille, requiredPermille, releaseTraffic: traffic });
   const remaining = input.totalLaps - lap - 1; // a request commits after the next completed lap
-  if (remaining < 1 || lap - e.stint!.startedAtLap < c.strategy.minimumStintLaps) return hold("NO_WINDOW");
+  if (remaining < 1) return hold("NO_WINDOW");
+  // Recovery is distinct from forecasting a crossover. A short forecast horizon can never repay a stop for
+  // some late-biased cars even when their current family is POOR for dozens of remaining laps. Use the shared
+  // current-condition model, not another water threshold or future weather truth. The existing optional gate
+  // also versions this path: accepted Races without the closure fields retain their exact previous policy.
+  if (strategy.weatherGateMs !== undefined && strategy.weatherGateSpreadMs !== undefined) {
+    const family = tyreFamily(e.stint!.tyre.compound);
+    const assessment = assessTyreFamilies(ctx.weather, input.tyres!, c);
+    if (assessment?.levels[family] === "POOR") {
+      const costs = familyCostsMs(ctx.weather, input.tyres!, c);
+      const deficit = costs[family]! - costs[assessment.best]!;
+      // A current-conditions payback estimate, not a claim that today's weather will persist. Include the
+      // existing margin and stop bias; the caller supplies the effective (including SC/VSC) pit-lane loss.
+      const required = Math.round((input.pits!.pitLaneLossMs + input.pits!.stationaryBaseMs + c.strategy.marginMs)
+        * (1000 + preference.stopBias * strategy.crossoverSpreadPermille) / 1000);
+      if (deficit * remaining > required) {
+        const compound = WEATHER_TYRE_COMPOUNDS.filter(x => input.tyres!.profiles[x] && c.waterProfiles[x] && tyreFamily(x) === assessment.best)
+          .sort((a, b) => currentCompoundCostMs(a, ctx.weather, input.tyres!, c) - currentCompoundCostMs(b, ctx.weather, input.tyres!, c))[0];
+        // Minimum stint is a strategy anti-churn rule, not pit legality. Only a profitable POOR-family
+        // recovery bypasses it; execution still uses the ordinary next-lap pit machinery and final-lap guard.
+        return { ...hold("WEATHER"), compound };
+      }
+    }
+  }
+  if (lap - e.stint!.startedAtLap < c.strategy.minimumStintLaps) return hold("NO_WINDOW");
   const pace = input.commands!.pace[e.commands!.paceMode];
   const tyres: TyreConfiguration = { ...input.tyres!, tyreWearMultiplierPermille: Math.round(input.tyres!.tyreWearMultiplierPermille * pace.tyreWearMultiplierPermille / 1000), tyreEnergyMultiplierPermille: Math.round(input.tyres!.tyreEnergyMultiplierPermille * pace.tyreEnergyMultiplierPermille / 1000) };
   const horizon = Math.min(remaining, c.strategy.horizonLaps);

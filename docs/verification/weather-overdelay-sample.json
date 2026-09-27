@@ -1,0 +1,3954 @@
+[
+  {
+    "name": "low-water",
+    "seed": 202,
+    "rows": [
+      {
+        "lap": 0,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 1,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 2,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 3,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 4,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 5,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 6,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 7,
+        "water": 2,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 8,
+        "water": 5,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 9,
+        "water": 9,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 10,
+        "water": 14,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 11,
+        "water": 19,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 12,
+        "water": 25,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 13,
+        "water": 31,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 14,
+        "water": 37,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 15,
+        "water": 43,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 16,
+        "water": 49,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 17,
+        "water": 55,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 18,
+        "water": 61,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 19,
+        "water": 68,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 20,
+        "water": 75,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 17,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 21,
+        "water": 82,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 15,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 22,
+        "water": 220,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 6,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 23,
+        "water": 358,
+        "best": "INTERMEDIATE",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 0,
+        "maxDeficitMs": 1941,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 24,
+        "water": 497,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 25,
+        "water": 636,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 26,
+        "water": 775,
+        "best": "WET",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 705,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 27,
+        "water": 914,
+        "best": "WET",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 0,
+        "maxDeficitMs": 1968,
+        "inferiorNoWindow": 0
+      }
+    ],
+    "switches": [
+      {
+        "id": "pit-entrant-0",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-1",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-2",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-4",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-5",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-6",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-8",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-11",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-12",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-14",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-15",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-16",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-17",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-18",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-19",
+        "stops": [
+          {
+            "lap": 24,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-3",
+        "stops": [
+          {
+            "lap": 22,
+            "from": "MEDIUM",
+            "to": "SOFT"
+          },
+          {
+            "lap": 24,
+            "from": "SOFT",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-7",
+        "stops": [
+          {
+            "lap": 23,
+            "from": "MEDIUM",
+            "to": "SOFT"
+          },
+          {
+            "lap": 24,
+            "from": "SOFT",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-9",
+        "stops": [
+          {
+            "lap": 22,
+            "from": "MEDIUM",
+            "to": "SOFT"
+          },
+          {
+            "lap": 24,
+            "from": "SOFT",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-10",
+        "stops": [
+          {
+            "lap": 22,
+            "from": "MEDIUM",
+            "to": "SOFT"
+          },
+          {
+            "lap": 24,
+            "from": "SOFT",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-13",
+        "stops": [
+          {
+            "lap": 21,
+            "from": "MEDIUM",
+            "to": "SOFT"
+          },
+          {
+            "lap": 24,
+            "from": "SOFT",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 28,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "gradual-dry-inter",
+    "seed": 202,
+    "rows": [
+      {
+        "lap": 0,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 1,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 2,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 3,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 4,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 5,
+        "water": 28,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 6,
+        "water": 58,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 7,
+        "water": 89,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 8,
+        "water": 121,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 9,
+        "water": 154,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 10,
+        "water": 187,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 11,
+        "water": 220,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 17,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 12,
+        "water": 254,
+        "best": "DRY",
+        "dry": 17,
+        "inter": 3,
+        "wet": 0,
+        "noWindow": 15,
+        "maxDeficitMs": 178,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 13,
+        "water": 288,
+        "best": "INTERMEDIATE",
+        "dry": 12,
+        "inter": 8,
+        "wet": 0,
+        "noWindow": 8,
+        "maxDeficitMs": 468,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 14,
+        "water": 322,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 15,
+        "water": 356,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 16,
+        "water": 390,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 17,
+        "water": 424,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 18,
+        "water": 458,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 19,
+        "water": 492,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 20,
+        "water": 526,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 21,
+        "water": 560,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 22,
+        "water": 594,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 23,
+        "water": 628,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 24,
+        "water": 662,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 25,
+        "water": 696,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 19,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 26,
+        "water": 730,
+        "best": "WET",
+        "dry": 0,
+        "inter": 19,
+        "wet": 1,
+        "noWindow": 18,
+        "maxDeficitMs": 211,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 27,
+        "water": 764,
+        "best": "WET",
+        "dry": 0,
+        "inter": 17,
+        "wet": 3,
+        "noWindow": 20,
+        "maxDeficitMs": 592,
+        "inferiorNoWindow": 0
+      }
+    ],
+    "switches": [
+      {
+        "id": "pit-entrant-0",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-1",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-4",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-5",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-2",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-6",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-7",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-9",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-8",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-11",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-12",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-14",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-15",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-16",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-18",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-17",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-19",
+        "stops": [
+          {
+            "lap": 14,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-3",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 27,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-10",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 26,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-13",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 27,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "rapid-dry-inter",
+    "seed": 202,
+    "rows": [
+      {
+        "lap": 0,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 1,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 2,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 3,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 4,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 5,
+        "water": 160,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 6,
+        "water": 320,
+        "best": "INTERMEDIATE",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 0,
+        "maxDeficitMs": 1097,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 7,
+        "water": 480,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 8,
+        "water": 640,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 9,
+        "water": 800,
+        "best": "WET",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 955,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 10,
+        "water": 960,
+        "best": "WET",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 0,
+        "maxDeficitMs": 2318,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 11,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 12,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 13,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 14,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 15,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 16,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 17,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 18,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 19,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 20,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 21,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 22,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 23,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 24,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 25,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 26,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 27,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      }
+    ],
+    "switches": [
+      {
+        "id": "pit-entrant-0",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-1",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-2",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-3",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-4",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-5",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-6",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-7",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-8",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-9",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-10",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-11",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-12",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-13",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-14",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-15",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-16",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-17",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-18",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-19",
+        "stops": [
+          {
+            "lap": 7,
+            "from": "MEDIUM",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "gradual-inter-wet",
+    "seed": 202,
+    "rows": [
+      {
+        "lap": 0,
+        "water": 450,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 1,
+        "water": 485,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 2,
+        "water": 521,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 3,
+        "water": 558,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 4,
+        "water": 596,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 5,
+        "water": 635,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 6,
+        "water": 674,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 7,
+        "water": 714,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 17,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 8,
+        "water": 754,
+        "best": "WET",
+        "dry": 0,
+        "inter": 17,
+        "wet": 3,
+        "noWindow": 17,
+        "maxDeficitMs": 487,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 9,
+        "water": 794,
+        "best": "WET",
+        "dry": 0,
+        "inter": 14,
+        "wet": 6,
+        "noWindow": 18,
+        "maxDeficitMs": 896,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 10,
+        "water": 834,
+        "best": "WET",
+        "dry": 0,
+        "inter": 12,
+        "wet": 8,
+        "noWindow": 15,
+        "maxDeficitMs": 1279,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 11,
+        "water": 874,
+        "best": "WET",
+        "dry": 0,
+        "inter": 7,
+        "wet": 13,
+        "noWindow": 13,
+        "maxDeficitMs": 1637,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 12,
+        "water": 915,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 13,
+        "water": 956,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 14,
+        "water": 997,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 15,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 16,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 17,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 18,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 19,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 20,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 21,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 22,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 23,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 24,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 25,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 26,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 27,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      }
+    ],
+    "switches": [
+      {
+        "id": "pit-entrant-0",
+        "stops": [
+          {
+            "lap": 10,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-3",
+        "stops": [
+          {
+            "lap": 8,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-4",
+        "stops": [
+          {
+            "lap": 9,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-1",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-5",
+        "stops": [
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-2",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-9",
+        "stops": [
+          {
+            "lap": 9,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-10",
+        "stops": [
+          {
+            "lap": 8,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-7",
+        "stops": [
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-6",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-13",
+        "stops": [
+          {
+            "lap": 8,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-8",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-12",
+        "stops": [
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-11",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-16",
+        "stops": [
+          {
+            "lap": 10,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-18",
+        "stops": [
+          {
+            "lap": 9,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-14",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-15",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-17",
+        "stops": [
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-19",
+        "stops": [
+          {
+            "lap": 11,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "rapid-inter-wet",
+    "seed": 202,
+    "rows": [
+      {
+        "lap": 0,
+        "water": 450,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 1,
+        "water": 610,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 2,
+        "water": 770,
+        "best": "WET",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 654,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 3,
+        "water": 930,
+        "best": "WET",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 0,
+        "maxDeficitMs": 2094,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 4,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 5,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 6,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 7,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 8,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 9,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 10,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 11,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 12,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 13,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 14,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 15,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 16,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 17,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 18,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 19,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 20,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 21,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 22,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 23,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 24,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 25,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 26,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 27,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      }
+    ],
+    "switches": [
+      {
+        "id": "pit-entrant-0",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-1",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-2",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-3",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-4",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-5",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-6",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-7",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-8",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-9",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-10",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-11",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-12",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-13",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-14",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-15",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-16",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-17",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-18",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-19",
+        "stops": [
+          {
+            "lap": 4,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "heavy",
+    "seed": 202,
+    "rows": [
+      {
+        "lap": 0,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 0,
+        "maxDeficitMs": 2595,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 1,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 2,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 3,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 4,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 5,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 6,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 7,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 8,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 9,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 10,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 11,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 12,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 13,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 14,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 15,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 16,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 17,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 18,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 19,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 20,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 21,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 22,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 23,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 24,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 25,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 26,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 27,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      }
+    ],
+    "switches": [
+      {
+        "id": "pit-entrant-0",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-1",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-2",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-3",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-4",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-5",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-6",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-7",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-8",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-9",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-10",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-11",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-12",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-13",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-14",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-15",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-16",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-17",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-18",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-19",
+        "stops": [
+          {
+            "lap": 1,
+            "from": "INTERMEDIATE",
+            "to": "WET"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "drying",
+    "seed": 202,
+    "rows": [
+      {
+        "lap": 0,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 1,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 2,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 3,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 4,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 5,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 6,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 7,
+        "water": 1000,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 8,
+        "water": 941,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 9,
+        "water": 879,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 10,
+        "water": 815,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 11,
+        "water": 749,
+        "best": "WET",
+        "dry": 0,
+        "inter": 0,
+        "wet": 20,
+        "noWindow": 14,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 12,
+        "water": 682,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 6,
+        "wet": 14,
+        "noWindow": 6,
+        "maxDeficitMs": 467,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 13,
+        "water": 614,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 14,
+        "water": 545,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 15,
+        "water": 476,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 16,
+        "water": 406,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 17,
+        "water": 336,
+        "best": "INTERMEDIATE",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 18,
+        "water": 266,
+        "best": "DRY",
+        "dry": 0,
+        "inter": 20,
+        "wet": 0,
+        "noWindow": 7,
+        "maxDeficitMs": 14,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 19,
+        "water": 195,
+        "best": "DRY",
+        "dry": 13,
+        "inter": 7,
+        "wet": 0,
+        "noWindow": 13,
+        "maxDeficitMs": 1254,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 20,
+        "water": 124,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 21,
+        "water": 53,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 22,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 23,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 24,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 25,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 26,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      },
+      {
+        "lap": 27,
+        "water": 0,
+        "best": "DRY",
+        "dry": 20,
+        "inter": 0,
+        "wet": 0,
+        "noWindow": 20,
+        "maxDeficitMs": 0,
+        "inferiorNoWindow": 0
+      }
+    ],
+    "switches": [
+      {
+        "id": "pit-entrant-0",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-3",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-4",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-1",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 20,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-5",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-2",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 20,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-6",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 20,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-7",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-10",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-9",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-8",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 20,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-13",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-12",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-11",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 20,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-14",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 20,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-16",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-15",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 20,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-18",
+        "stops": [
+          {
+            "lap": 12,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-17",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      },
+      {
+        "id": "pit-entrant-19",
+        "stops": [
+          {
+            "lap": 13,
+            "from": "WET",
+            "to": "INTERMEDIATE"
+          },
+          {
+            "lap": 19,
+            "from": "INTERMEDIATE",
+            "to": "SOFT"
+          }
+        ]
+      }
+    ]
+  }
+]

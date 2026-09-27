@@ -36,6 +36,12 @@ export interface RacecraftConfiguration {
    * a genuine closing threat, whoever drives it. Absent in Races frozen before the repair.
    */
   readonly aiThreatEdgeMs?: number;
+  /**
+   * Fuel starvation (closure repair): a car without usable fuel for the lap is stricken — it leaves the traffic
+   * resolution (nobody queues behind it) and pulls off at the end of that lap as a FUEL_STARVATION retirement. Absent in
+   * Races frozen before the repair, where a starved car keeps circulating with the exhaustion penalty.
+   */
+  readonly fuelStarvationRetirement?: boolean;
 }
 export function defaultRacecraftConfiguration(): RacecraftConfiguration {
   return {
@@ -52,6 +58,7 @@ export function defaultRacecraftConfiguration(): RacecraftConfiguration {
     commandEdgePermille: 350,
     commandEdgeCapMs: 300,
     aiThreatEdgeMs: 400,
+    fuelStarvationRetirement: true,
   };
 }
 function integer(n: number, lo: number, hi: number) {
@@ -72,4 +79,5 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   if (c.commandEdgePermille !== undefined) integer(c.commandEdgePermille, 0, 1000);
   if (c.commandEdgeCapMs !== undefined) integer(c.commandEdgeCapMs, 0, 5000);
   if (c.aiThreatEdgeMs !== undefined) integer(c.aiThreatEdgeMs, 0, 5000);
+  if (c.fuelStarvationRetirement !== undefined && typeof c.fuelStarvationRetirement !== "boolean") throw new RangeError("Invalid racecraft configuration");
 }

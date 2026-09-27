@@ -79,6 +79,8 @@ export function commandLapEffects(e: RaceEntrantState, baseKg: number, c: Comman
   return {
     deltaMs: commandMs + (fuel < burn ? c.exhaustionPenaltyMs : 0),
     commandMs,
+    /** Not enough usable fuel for this lap: the car is starved (exhaustion penalty). */
+    starved: fuel < burn,
     fuelMassKg: Math.max(0, fuel - burn) / 1000,
     commands: { ...s, ersCharge: Math.max(0, Math.min(c.capacity, s.ersCharge - used + recovery)) },
   };

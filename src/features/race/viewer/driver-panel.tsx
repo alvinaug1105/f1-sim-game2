@@ -7,16 +7,18 @@ import { timingRows } from './model';
 import { PACE_MODES, FUEL_MODES, ERS_MODES, type PaceMode, type FuelMode, type ErsMode } from '../../../simulation/race/commands/model';
 import { isTyreCompound, type TyreCompound } from '../../../simulation/race/tyres/model';
 import type { ViewerIntent } from './intents';
-import { battleContext, drsState, tyreCondition, tyreSuitability, ersOutlook } from './race-view';
+import { battleContext, drsState, fuelCritical, tyreCondition, tyreSuitability, ersOutlook } from './race-view';
 import { tyreFamily } from '../../../simulation/race/tyres/family';
 type Row = ReturnType<typeof timingRows>[number];
 /** Laps-to-cliff at or below this reads as "high wear risk soon". Presentation wording only. */
 const RISK_LAPS = 3;
 /** Mode row: buttons for an editable player car, otherwise the active mode as read-only text. */
-function Modes<T extends PaceMode | FuelMode | ErsMode>({ label, modes, active, editable, busy, onPick }: { label: string; modes: readonly T[]; active: T; editable: boolean; busy: boolean; onPick: (mode: T) => void }) {
+function Modes<T extends PaceMode | FuelMode | ErsMode>({ label, modes, active, editable, busy, onPick, fuel = false }: { label: string; modes: readonly T[]; active: T; editable: boolean; busy: boolean; onPick: (mode: T) => void; fuel?: boolean }) {
     const { t } = useI18n();
-    return <div className="mode-row"><div className="resource-heading"><h3>{label}</h3><strong className="mode-active">{t(`command.${active}`)}</strong></div>
-        {editable && <div className="mode-buttons" role="group" aria-label={label}>{modes.map(mode => <button key={mode} disabled={busy || active === mode} aria-pressed={active === mode} onClick={() => onPick(mode)}>{active === mode && <span aria-hidden="true">✓ </span>}{t(`command.${mode}`)}</button>)}</div>}
+    // Fuel modes have their own wording (Lean / Balanced / Rich) so they never read like the Pace modes.
+    const name = (mode: T) => fuel ? t(`command.fuel.${mode as FuelMode}`) : t(`command.${mode}`);
+    return <div className="mode-row"><div className="resource-heading"><h3>{label}</h3><strong className="mode-active">{name(active)}</strong></div>
+        {editable && <div className="mode-buttons" role="group" aria-label={label}>{modes.map(mode => <button key={mode} disabled={busy || active === mode} aria-pressed={active === mode} onClick={() => onPick(mode)}>{active === mode && <span aria-hidden="true">✓ </span>}{name(mode)}</button>)}</div>}
     </div>;
 }
 function Stat({ label, children, tone }: { label: string; children: ReactNode; tone?: string }) { return <div className={`stat ${tone ?? ''}`}><span>{label}</span><strong>{children}</strong></div>; }
@@ -68,7 +70,8 @@ export function DriverPanel({ data, row, busy, send, rows }: {
   </div><div className="driver-resources">{c && s.input.commands ? <>
    <div className="resource-heading"><h3>{t('race.fuel')}</h3><strong>{e.fuelMassKg === null ? t('race.noTime') : kg(e.fuelMassKg)}</strong></div>
    <p className={`fuel-delta ${projection! < 0 ? 'fuel-warning' : 'fuel-ok'}`}>{t('command.projectedFuel')}: <strong>{kg(projection!, true)}</strong></p>
-   <Modes label={t('command.fuelMode')} modes={FUEL_MODES} active={c.fuelMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'fuelMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+   {fuelCritical(s, e) && <p className="fuel-delta fuel-warning" role="status"><span aria-hidden="true">⚠ </span>{t('command.fuelCritical', { laps: format.number(e.insight!.fuelLapsRemaining!) })}</p>}
+   <Modes fuel label={t('command.fuelMode')} modes={FUEL_MODES} active={c.fuelMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'fuelMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
    <div className="resource-heading"><h3>{t('command.ersMode')}</h3><strong>{format.percentage(c.ersCharge / s.input.commands.capacity, { maximumFractionDigits: 0 })}</strong></div><progress max={s.input.commands.capacity} value={c.ersCharge} aria-label={t('command.energy')}/>
    {ers && <p className="ers-outlook ops-muted">{ers.kind === 'LAPS' ? t('viewer.ersLaps', { count: format.number(ers.laps) }) : t(ers.kind === 'CHARGING' ? 'viewer.ersCharging' : 'viewer.ersSustainable')}</p>}
    <Modes label={t('viewer.ersDeployment')} modes={ERS_MODES} active={c.ersMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'ersMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>

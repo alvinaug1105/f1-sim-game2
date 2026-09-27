@@ -180,7 +180,7 @@ describe('auto-pause and strategic attention', () => {
     });
     it('fuel deficit and Race Control announce once per transition', () => {
         const s = advanceRace(quietRace(), 5), t = team(s), first = s.entrants[0];
-        const short = { ...s, entrants: s.entrants.map((e, i) => i === 0 ? { ...e, fuelMassKg: 1 } : e) };
+        const short = { ...s, entrants: s.entrants.map((e, i) => i === 0 ? { ...e, fuelMassKg: 20 } : e) };   // short at the flag, not yet critical
         let r = assessCheckpoint(initialAttention(pub(s), t), pub(short), t);
         expect(r.items.map(i => i.kind)).toContain('FUEL'); expect(r.items.find(i => i.kind === 'FUEL')!.entrantId).toBe(first.entrantId);
         r = assessCheckpoint(r.memory, pub({ ...short, lap: 6 }), t); expect(r.items.map(i => i.kind)).not.toContain('FUEL');

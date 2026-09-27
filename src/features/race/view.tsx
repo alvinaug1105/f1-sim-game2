@@ -7,6 +7,7 @@ import type { RaceErrorCode } from "../../game/domain/race-repository";
 import type { RacePreparationView, RaceViewData } from "./public-view";
 import { raceAction } from "./actions";
 import { useState } from "react";
+import { forecastItems, quietForecastKey } from "./forecast-copy";
 
 /** Receives only the server's public projection (public-view.ts), never the authoritative Race state. */
 export function RaceView({ data }: { data: RaceViewData }) {
@@ -45,7 +46,7 @@ function RacePreparation({ data, prep }: { data: RaceViewData; prep: RacePrepara
               <div><dt>{t(sprint ? "sprint.distance" : "prep.laps")}</dt><dd>{sprint ? t("sprint.distanceValue", { laps: format.number(laps), km: format.number(laps * data.circuit.lengthMeters / 1000, { maximumFractionDigits: 1 }) }) : format.number(laps)}</dd></div>
               {sprint && <div><dt>{t("sprint.title")}</dt><dd>{t("sprint.gridNote")}</dd></div>}
               <div><dt>{t("prep.conditions")}</dt><dd>{t(grid.rainfallIntensity === 0 ? "weather.dry" : grid.rainfallIntensity < 650 ? "weather.light" : "weather.heavy")} · {t("weather.water")} {percent(grid.trackWater)} ({t(grid.trackWater < 100 ? "weather.dry" : grid.trackWater < 350 ? "weather.damp" : "weather.wet")}) · {format.number(grid.airTemperatureMilliC / 1000, { style: "unit", unit: "celsius", maximumFractionDigits: 0 })}</dd></div>
-              <div><dt>{t("weather.forecast")}</dt><dd>{(() => { const windows = prep.forecast; return windows.length ? <ul>{windows.map((f, n) => <li key={n}>{t(f.rainfallMax < 200 ? "weather.easing" : "weather.expected")}: {t("weather.window", { from: format.number(f.arrivalMinLap), to: format.number(f.arrivalMaxLap), min: percent(f.rainfallMin), max: percent(f.rainfallMax) })}</li>)}</ul> : t("prep.noRain"); })()}<small>{t("weather.uncertainty")}</small></dd></div>
+              <div><dt>{t("weather.forecast")}</dt><dd>{(() => { const items = forecastItems(prep.forecast, prep.conditions.rainfallIntensity); return items.length ? <ul>{items.map(({ label, window: f }, n) => <li key={n}>{t(label)}: {t("weather.window", { from: format.number(f.arrivalMinLap), to: format.number(f.arrivalMaxLap), min: percent(f.rainfallMin), max: percent(f.rainfallMax) })}</li>)}</ul> : t(quietForecastKey(prep.conditions.rainfallIntensity)); })()}<small>{t("weather.uncertainty")}</small></dd></div>
             </dl>
           </section>
           <div className="tyre-selection">

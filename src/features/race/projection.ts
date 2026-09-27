@@ -9,7 +9,7 @@ import type { CareerRaceData } from "../../game/domain/race-repository";
 import type { RaceEntrantState, RaceSimulationState } from "../../simulation/race/types";
 import type { TyreState } from "../../simulation/race/tyres/model";
 import { WEATHER_TYRE_COMPOUNDS, type TyreCompound } from "../../simulation/race/tyres/model";
-import { projectedFuelGrams } from "../../simulation/race/commands/model";
+import { fuelBurnGrams, projectedFuelGrams } from "../../simulation/race/commands/model";
 import { forecastAt } from "../../simulation/race/weather/model";
 import { assessTyreFamilies } from "../../simulation/race/tyres/suitability";
 import { estimatePitWindow } from "./strategy-estimate";
@@ -41,6 +41,7 @@ function insight(s: RaceSimulationState, e: RaceEntrantState): PlayerCarInsight 
   const est = e.pit && e.stint && s.input.pits && s.input.tyres ? estimatePitWindow(s, e) : null;
   return {
     projectedFuelGrams: e.commands && s.input.commands ? projectedFuelGrams(s, e) : null,
+    fuelLapsRemaining: e.commands && s.input.commands ? Math.floor(Math.round(e.fuelMassKg * 1000) / Math.max(1, fuelBurnGrams(s.input.fuelBurnPerLapKg, e.commands.fuelMode, s.input.commands))) : null,
     ers: ersOutlook(s, e),
     pitEstimate: est ? { lapsToCliff: est.lapsToCliff, minimumLossMs: est.minimumLossMs, maximumLossMs: est.maximumLossMs } : null,
   };
@@ -112,7 +113,8 @@ export function projectRaceState(s: RaceSimulationState, playerTeamId: string): 
             mode: control.mode,
             drsDelay: control.drsDelay,
             endingThisLap: control.mode !== "GREEN" && control.remainingLaps === 1,
-            events: control.events.map((e) => ({ sequence: e.sequence, type: e.type, lap: e.lap, entrantIds: [...e.entrantIds], kind: e.kind, severity: e.severity, timeLossMs: e.timeLossMs, ...(e.cause ? { cause: e.cause } : {}) })),
+            // A rival's fuel retirement is public as "stopped on track" — its fuel state stays private.
+            events: control.events.map((e) => ({ sequence: e.sequence, type: e.type, lap: e.lap, entrantIds: [...e.entrantIds], kind: e.kind === "FUEL_STARVATION" && !e.entrantIds.some((id) => own.has(id)) ? "STOPPED" : e.kind, severity: e.severity, timeLossMs: e.timeLossMs, ...(e.cause ? { cause: e.cause } : {}) })),
           },
         }
       : {}),

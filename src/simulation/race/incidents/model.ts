@@ -4,6 +4,11 @@ import { waterPenaltyMs } from "../weather/model";
 import type { OvertakeCause } from "../traffic/model";
 export type RaceControlMode = "GREEN" | "VSC" | "SAFETY_CAR";
 export type IncidentKind = "DRIVER_MISTAKE" | "SPIN" | "LOCK_UP" | "CONTACT" | "MECHANICAL_PROBLEM" | "MECHANICAL_RETIREMENT";
+/**
+ * Event kinds: incident kinds plus FUEL_STARVATION (a car out of usable fuel pulls off; RETIREMENT only). STOPPED exists
+ * only in the browser view: a rival's fuel retirement is shown as a car stopped on track, never as a fuel fact.
+ */
+export type RaceEventKind = IncidentKind | "FUEL_STARVATION" | "STOPPED";
 export interface ReliabilityProfile {
     reliability: number;
     powerUnitCondition: number;
@@ -22,7 +27,7 @@ export interface RaceEvent {
     type: "INCIDENT" | "RETIREMENT" | "VSC_START" | "VSC_END" | "SAFETY_CAR_START" | "SAFETY_CAR_END" | "OVERTAKE";
     lap: number;
     entrantIds: readonly string[];
-    kind: IncidentKind | null;
+    kind: RaceEventKind | null;
     severity: "MINOR" | "MODERATE" | "MAJOR" | null;
     timeLossMs: number;
     /** OVERTAKE only: the safe post-hoc cause (tyres, ERS in use, DRS or pace). */
@@ -172,7 +177,7 @@ export function validateIncidentState(state: RaceSimulationState) {
         integer(e.sequence, n + 1, n + 1);
         integer(e.lap, 1, state.lap);
         integer(e.timeLossMs, 0, 300000);
-        if (e.kind !== null && !Object.hasOwn(state.input.incidents!.losses, e.kind))
+        if (e.kind !== null && !Object.hasOwn(state.input.incidents!.losses, e.kind) && !(e.kind === "FUEL_STARVATION" && e.type === "RETIREMENT"))
             throw new RangeError("Invalid incident kind");
         if (e.severity !== null && !["MINOR", "MODERATE", "MAJOR"].includes(e.severity))
             throw new RangeError("Invalid incident severity");

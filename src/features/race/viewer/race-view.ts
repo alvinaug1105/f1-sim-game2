@@ -117,6 +117,13 @@ export function tyreSuitability(compound: TyreCompound, s: Pick<RacePublicState,
 export function ersOutlook(e: RacePublicEntrant): ErsOutlook | null { return e.insight?.ers ?? null; }
 /** Fuel projected short at the flag (server-derived for the player's own cars). */
 export function fuelShort(s: RacePublicState, e: RacePublicEntrant) { return !!(e.commands && s.input.commands) && (e.insight?.projectedFuelGrams ?? 0) < 0; }
+/** Fuel runs out within this many laps (and before the flag): the projected deficit has become critical. */
+export const FUEL_CRITICAL_LAPS = 3;
+/** Critical fuel: projected short at the flag AND the car's own fuel lasts only a few more laps in its current mode. */
+export function fuelCritical(s: RacePublicState, e: RacePublicEntrant) {
+    const left = e.insight?.fuelLapsRemaining;
+    return (e.incident?.status ?? "RUNNING") === "RUNNING" && s.status === "RUNNING" && fuelShort(s, e) && left != null && left <= FUEL_CRITICAL_LAPS && left < s.input.totalLaps - s.lap;
+}
 /** Compact, decision-relevant flags for a player car (for the non-selected car in particular). Reuses existing state. */
 export type DriverFlag = "RETIRED" | "FINISHED" | "PIT" | "BOX" | "ATTENTION" | "TYRE_CRITICAL" | "TYRE_HIGH" | "FUEL" | "BATTLE";
 export function driverFlags(row: Row, rows: readonly Row[], s: RacePublicState, attentionId: string | null = null): DriverFlag[] {

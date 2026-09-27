@@ -53,6 +53,8 @@ export type ErsOutlook = { readonly kind: "LAPS"; readonly laps: number } | { re
 export interface PlayerCarInsight {
   /** Fuel at the flag in the current fuel mode (grams, negative = short); null when the Race has no commands. */
   readonly projectedFuelGrams: number | null;
+  /** Whole laps the car's own fuel lasts in its current fuel mode; null when the Race has no commands. */
+  readonly fuelLapsRemaining?: number | null;
   readonly ers: ErsOutlook | null;
   /** Presentation-only pit window estimate (laps to the current compound's cliff and the current stop cost). */
   readonly pitEstimate: { readonly lapsToCliff: number; readonly minimumLossMs: number; readonly maximumLossMs: number } | null;

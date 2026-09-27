@@ -22,6 +22,8 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
     const lap = state.lap + 1, weather = advanceWeather(state.weather!, state.input.weather!, lap), random = createSeededRandom(state.rngState), stops = committedStops(state);
     const input = { ...state.input, interaction: { ...state.input.interaction!, drsZoneCount: neutral || control.drsDelay > 0 || weather.drsState === "DRS_DISABLED_WET" ? 0 : state.input.interaction!.drsZoneCount } };
     const expectedLapMs = new Map<string, number>(), commandLapMs = new Map<string, number>();
+    // Fuel starvation (Races frozen with the closure repair): cars without usable fuel for this lap.
+    const starvedRetire = state.input.commands?.racecraft?.fuelStarvationRetirement === true, starved = new Set<string>();
     const potential = [...state.input.entrants].sort((a, b) => a.gridPosition - b.gridPosition).map(source => {
         const old = state.entrants.find(e => e.entrantId === source.entrantId)!;
         const effect = commandLapEffects(old, state.input.fuelBurnPerLapKg * (p ? p.fuelMultiplierPermille / 1000 : 1), state.input.commands!, neutral || stops.has(source.entrantId));
@@ -30,6 +32,7 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
         const time = p ? Math.round(input.circuit.baseLapTimeMs * p.lapMultiplierPermille / 1000) : Math.max(1, result.lapTimeMs + effect.deltaMs + old.incident!.mechanicalPenaltyMs + waterPenaltyMs(old.stint!.tyre.compound, weather.trackWater, input.weather!));
         expectedLapMs.set(source.entrantId, Math.max(1, time - result.variationMs));
         commandLapMs.set(source.entrantId, p ? 0 : effect.commandMs);
+        if (starvedRetire && effect.starved) starved.add(source.entrantId);
         return { ...old, commands: effect.commands, fuelMassKg: effect.fuelMassKg, stint: { ...old.stint!, tyre: advanceWeatherTyre(old.stint!.tyre, tyres, weather, p ? { ...input.weather!, waterProfiles: Object.fromEntries(Object.entries(input.weather!.waterProfiles).map(([key, value]) => [key, { ...value, dryTargetMilliC: Math.round(weather.trackTemperatureMilliC + (value.dryTargetMilliC - weather.trackTemperatureMilliC) * p.energyMultiplierPermille / 1000), wetTargetMilliC: Math.round(weather.trackTemperatureMilliC + (value.wetTargetMilliC - weather.trackTemperatureMilliC) * p.energyMultiplierPermille / 1000) }])) as NonNullable<typeof input.weather>["waterProfiles"] } : input.weather!) }, completedLaps: lap, elapsedTimeMs: old.elapsedTimeMs + time, lastLapTimeMs: time, bestLapTimeMs: Math.min(old.bestLapTimeMs ?? time, time) };
     });
     // Queue compression is applied before pit-route crossings; each interval shrinks gradually.
@@ -50,10 +53,15 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
             previousNew = e;
         }
     }
-    const previous = state.entrants.filter(e => !stops.has(e.entrantId)).map((e, i) => ({ ...e, position: i + 1 }));
-    const onTrack = potential.filter(e => !stops.has(e.entrantId));
+    // A stricken (fuel-starved) car is not a traffic car: it is left out of the green-flag traffic resolution, so no
+    // healthy car queues behind or has to "attack" it, and rejoins the order at its own (very slow) crossing time. It
+    // pulls off at the end of the lap (below). No pass events: the retirement is the public explanation.
+    const stricken = (id: string) => !neutral && starved.has(id) && !stops.has(id);
+    const previous = state.entrants.filter(e => !stops.has(e.entrantId) && !stricken(e.entrantId)).map((e, i) => ({ ...e, position: i + 1 }));
+    const onTrack = potential.filter(e => !stops.has(e.entrantId) && !stricken(e.entrantId));
+    const strickenCars = potential.filter(e => stricken(e.entrantId)).map(e => ({ ...e, track: { ...e.track!, drsEligible: false, drsBenefitMs: 0, dirtyAirMs: 0, trafficLossMs: 0, attempted: false, passed: false, potentialLapTimeMs: e.lastLapTimeMs! } }));
     const traffic = neutral ? null : resolveTraffic(previous, onTrack, input, lap, random, expectedLapMs, commandLapMs);
-    let entries = completePitLap(state, potential, traffic ? traffic.entrants : orderedClassification(onTrack.sort((a, b) => a.elapsedTimeMs - b.elapsedTimeMs), input), stops, random);
+    let entries = completePitLap(state, potential, [...(traffic ? traffic.entrants : orderedClassification(onTrack.sort((a, b) => a.elapsedTimeMs - b.elapsedTimeMs), input)), ...strickenCars], stops, random);
     const events: RaceEvent[] = [...control.events], incidentRandom = createSeededRandom(control.rngState), affected = new Set<string>();
     const emit = (event: Omit<RaceEvent, "sequence" | "lap">) => events.push({ ...event, sequence: events.length + 1, lap });
     // Racecraft Races record each completed on-track pass (post-event facts only; never the probability or draw).
@@ -61,8 +69,11 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
         for (const a of traffic?.attempts ?? [])
             if (a.success) emit({ type: "OVERTAKE", entrantIds: [a.attackerId, a.defenderId], kind: null, severity: null, timeLossMs: 0, cause: a.cause });
     let trigger: RaceControlMode = "GREEN", duration = 0;
-    const retire = (id: string, kind: IncidentKind) => { const i = entries.findIndex(e => e.entrantId === id); if (i < 0 || entries[i].incident!.status === "RETIRED")
+    const retire = (id: string, kind: IncidentKind | "FUEL_STARVATION") => { const i = entries.findIndex(e => e.entrantId === id); if (i < 0 || entries[i].incident!.status === "RETIRED")
         return; const e = entries[i]; emit({ type: "RETIREMENT", entrantIds: [id], kind, severity: "MAJOR", timeLossMs: 0 }); entries[i] = { ...e, incident: { ...e.incident!, status: "RETIRED", retiredLap: lap, retirementOrder: events.length }, pit: { ...e.pit!, pendingCompound: null, stints: closeRetiredStints(e.pit!.stints, lap, e.stint!.tyre) }, track: { ...e.track!, drsEligible: false, drsBenefitMs: 0, attempted: false, passed: false } }; };
+    // Out of usable fuel: the car pulls off at the end of this lap (grid order; no RNG, no Race Control trigger).
+    for (const source of [...saved.input.entrants].sort((a, b) => a.gridPosition - b.gridPosition))
+        if (starved.has(source.entrantId)) { retire(source.entrantId, "FUEL_STARVATION"); affected.add(source.entrantId); }
     // Exactly six draws per ORIGINAL grid slot per world lap, including retired/suppressed slots.
     for (const source of [...saved.input.entrants].sort((a, b) => a.gridPosition - b.gridPosition)) {
         const [error, kindRoll, severityRoll, mechanical, outcome, durationRoll] = Array.from({ length: 6 }, () => incidentRandom.next());

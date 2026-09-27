@@ -5,6 +5,7 @@ import { useI18n } from '../../../i18n/provider';
 import type { RaceViewData } from '../public-view';
 import type { timingRows } from './model';
 import { controlMode, drsState, type DrsState } from './race-view';
+import { forecastItems, quietForecastKey } from '../forecast-copy';
 type Rows = ReturnType<typeof timingRows>;
 const CONTROL_GLYPH = { GREEN: '●', VSC: '◆', SAFETY_CAR: '▲' } as const;
 /** Race identity, lap clock and a text + glyph Race Control state (never colour alone). */
@@ -25,7 +26,7 @@ export function ConditionsStrip({ data }: { data: RaceViewData }) {
     const { t, format } = useI18n(), s = data.state!, w = s.weather, drs = drsState(s);
     const percent = (n: number) => format.percentage(n / 1000, { maximumFractionDigits: 0 });
     const temperature = (n: number) => format.number(n / 1000, { style: 'unit', unit: 'celsius', maximumFractionDigits: 1 });
-    const next = w && s.status === 'RUNNING' ? s.forecast?.[0] : undefined;
+    const running = !!w && s.status === 'RUNNING', next = running ? forecastItems(s.forecast, w!.rainfallIntensity)[0] : undefined;
     return <section className="weather-strip" aria-label={t('weather.title')}>
         {w ? <>
             <span>{t('weather.rain')} <strong>{percent(w.rainfallIntensity)}</strong> <em>{t(w.rainfallIntensity === 0 ? 'weather.dry' : w.rainfallIntensity < 650 ? 'weather.light' : 'weather.heavy')}</em></span>
@@ -34,7 +35,8 @@ export function ConditionsStrip({ data }: { data: RaceViewData }) {
             <span>{t('weather.track')} <strong>{temperature(w.trackTemperatureMilliC)}</strong></span>
         </> : <span>{t('viewer.legacy')}</span>}
         {drs !== 'UNAVAILABLE' && drs !== 'FINISHED' && <span className={`drs-chip ${drs === 'ENABLED' ? 'drs-on' : 'drs-off'}`}>{t(`viewer.drs.${drs}`, { count: format.number(s.incidents?.drsDelay ?? 0) })}</span>}
-        {next && <span className="forecast-next">{t('weather.forecast')} <strong>{t(next.rainfallMax < 200 ? 'weather.easing' : 'weather.expected')}</strong> <em>{t('weather.window', { from: format.number(next.arrivalMinLap), to: format.number(next.arrivalMaxLap), min: percent(next.rainfallMin), max: percent(next.rainfallMax) })}</em></span>}
+        {next ? <span className="forecast-next">{t('weather.forecast')} <strong>{t(next.label)}</strong> <em>{t('weather.window', { from: format.number(next.window.arrivalMinLap), to: format.number(next.window.arrivalMaxLap), min: percent(next.window.rainfallMin), max: percent(next.window.rainfallMax) })}</em></span>
+            : running && <span className="forecast-next">{t('weather.forecast')} <strong>{t(quietForecastKey(w!.rainfallIntensity))}</strong></span>}
     </section>;
 }
 /**

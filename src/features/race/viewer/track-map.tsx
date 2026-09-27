@@ -5,7 +5,9 @@ import { prepareCircuitPath, circuitProjection } from '../../../game/domain/circ
 import type { timingRows } from './model';
 import { RaceMotion, checkpointDuration, type MotionMode } from './motion';
 import { useI18n } from '../../../i18n/provider';
-import { placeLabels, startFinishReserve, pathLength, lookahead, lookaheadScale, LABEL_TIER, LABEL_SIZE, type Rect, type SlotMemory, type Point } from './labels';
+import { pathLength, startFinishReserve, LABEL_TIER } from './labels';
+import { prepareVisualSpeed } from './speed-profile';
+import { MarkerPacks, BADGE, badgeText } from './marker-packs';
 /**
  * What the map needs from a row (Race timing rows satisfy it structurally; Practice builds its own). `hidden` cars are
  * in the garage: kept in the motion model so they re-emerge smoothly, but not drawn, focusable or labelled.
@@ -19,8 +21,8 @@ const subscribeMotion = (notify: () => void) => { const media = window.matchMedi
 const getMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const targets = (rows: readonly MapRow[]) => rows.map(r => ({ id: r.id, progress: r.progress, retired: r.status === 'RETIRED' }));
 /** One loop for the entire field. React handles checkpoints/selection, never individual frames. */
-const MAP_BOUNDS: Rect = { x: 4, y: 4, w: 992, h: 642 };
-/** Labels are separate from markers: every car keeps a marker, only prioritised cars get a label (see labels.ts). */
+
+/** Every visible car is an integrated identity badge. */
 export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion, motion = 'paused', checkpoint = 0, control = 'GREEN', skipping = false, latencyMs = 0, tiers }: {
     layout: CircuitMapLayout; rows: Rows; selected: string; onSelect: (id: string) => void;
     speed: number; reduceMotion: boolean; motion?: MotionMode; checkpoint?: number; control?: string; skipping?: boolean; latencyMs?: number;
@@ -30,24 +32,27 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     const systemReduced = useSyncExternalStore(subscribeMotion, getMotion, () => false);
     const path = useMemo(() => prepareCircuitPath(layout), [layout]);
     const project = useMemo(() => circuitProjection(layout.points), [layout]);
-    const [timeline] = useState(() => new RaceMotion(targets(rows), checkpoint));
+    const profiles = useMemo(() => ({ green: prepareVisualSpeed(path), neutral: prepareVisualSpeed(path, .3) }), [path]);
+    const timeline = useMemo(() => new RaceMotion(targets(rows), checkpoint, profiles), [profiles]); // eslint-disable-line react-hooks/exhaustive-deps
     // Stable React transform props prevent selection/locale/checkpoint renders overwriting RAF transforms.
     const [initial] = useState(() => new Map(rows.map(r => [r.id, project(path.sample(r.progress))])));
     const wake = useRef<() => void>(() => {});
-        const startSample = path.sample(0), start = project(startSample), angle = Math.atan2(startSample.tangentY, startSample.tangentX) * 180 / Math.PI;
+    const startSample = path.sample(0), start = project(startSample), angle = Math.atan2(startSample.tangentY, startSample.tangentX) * 180 / Math.PI;
     const startText = t('viewer.startFinish');
-    // START / FINISH line and text are a reserved region labels may not cover.
-    const reserved = useMemo<Rect[]>(() => startFinishReserve({ x: start.x, y: start.y }, startText), [start.x, start.y, startText]);
-    const labelTierMap = useMemo(() => new Map(rows.map(r => [r.id, tiers?.get(r.id) ?? (r.id === selected ? LABEL_TIER.SELECTED : LABEL_TIER.FIELD)])), [rows, tiers, selected]);
+    const reserved = useMemo(() => startFinishReserve(start, startText).slice(0,1), [start.x, start.y, startText]); // eslint-disable-line react-hooks/exhaustive-deps
+    const [badgeScale, setBadgeScale] = useState(1);
+    useEffect(() => {
+        const observer = new ResizeObserver(entries => { const width=entries[0]?.contentRect.width; if(width) setBadgeScale(Math.max(1, Math.min(1.8, 750/width))); });
+        observer.observe(svg.current!); return () => observer.disconnect();
+    }, []);
+    const labelTierMap = useMemo(() => new Map(rows.map(r => [r.id, r.id === selected ? LABEL_TIER.SELECTED : r.player ? LABEL_TIER.PLAYER : tiers?.get(r.id) ?? LABEL_TIER.FIELD])), [rows, tiers, selected]);
     const tierOf = (id: string) => labelTierMap.get(id) ?? LABEL_TIER.FIELD;
-    const scale = lookaheadScale(speed, skipping);
-    const placement = useRef({ tiers: labelTierMap, reserved, scale });
+    const placement = useRef({ tiers: labelTierMap, paused: motion === 'paused', reduced: reduceMotion || systemReduced, badgeScale, reserved });
     useEffect(() => {
         const root = svg.current!;
         const all = [...root.querySelectorAll<SVGGElement>('[data-car]')];
-        const drawn = new Map<string, { x: number; y: number }>();
-        const slots = new Map<string, SlotMemory>();
-        // Projected lap length converts the label lookahead (SVG units) into lap progress along the drawn path.
+        const packs = new MarkerPacks();
+        // Projected lap length supplies the along-track neighbourhood scale.
         const at = (progress: number) => project(path.sample(progress)), lapLength = pathLength(at);
         let frame = 0, disposed = false, previousTime: number | null = null;
         let frames = 0, workTotal = 0, workMax = 0, intervalTotal = 0, intervalMax = 0;
@@ -58,37 +63,19 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             timeline.frame(now);
             // Hidden (garage) cars take no part in lanes or label placement; the set is read per frame from React's attributes.
             const cars = all.filter(el => el.dataset.hidden !== '1');
-            const samples = cars.map(el => { const progress = timeline.progress(el.dataset.car!); const sample = path.sample(progress); return { progress, sample, ...project(sample) }; });
-            cars.forEach((el, i) => {
-                const p = samples[i];
-                // Fixed identity lanes separate close packs laterally, never by fake longitudinal progress.
-                const close = samples.some((q, j) => i !== j && Math.hypot(q.x - p.x, q.y - p.y) < 24);
-                const offset = close ? ((i % 5) - 2) * 5 : 0;
-                const stopped = el.classList.contains('retired') ? drawn.get(el.dataset.car!) : undefined;
-                const x = stopped?.x ?? p.x - p.sample.tangentY * offset, y = stopped?.y ?? p.y + p.sample.tangentX * offset;
-                drawn.set(el.dataset.car!, { x, y });
-                el.setAttribute('transform', `translate(${x} ${y})`);
-                el.dataset.visualProgress = String(p.progress);
-                el.dataset.lateralOffset = String(offset);
+            const samples = cars.map(el => { const progress = timeline.progress(el.dataset.car!); const sample = path.sample(progress), before = path.sample(progress-.0015), after = path.sample(progress+.0015);
+                const dx=after.x-before.x, dy=after.y-before.y, length=Math.hypot(dx,dy)||1;
+                return { progress, sample: {...sample,tangentX:dx/length,tangentY:dy/length}, ...project(sample) }; });
+            const offsets = packs.frame(cars.map((el,i) => ({ id: el.dataset.car!, progress: samples[i].progress,
+                x: samples[i].x, y: samples[i].y, nx: -samples[i].sample.tangentY, ny: samples[i].sample.tangentX,
+                tier: placement.current.tiers.get(el.dataset.car!) ?? LABEL_TIER.FIELD, retired: el.classList.contains('retired') })), lapLength,
+                placement.current.paused || previousTime === null ? 0 : Math.max(0, Math.min(50,now-previousTime)), placement.current.reduced && !placement.current.paused, placement.current.badgeScale, placement.current.reserved);
+            cars.forEach((el,i) => {
+                const p = offsets.get(el.dataset.car!)!;
+                el.setAttribute('transform', `translate(${p.x} ${p.y})`);
+                el.dataset.visualProgress = String(samples[i].progress);
+                el.dataset.lateralOffset = String(p.offset);
             });
-            // Deterministic sticky placement: previous slots persist through passing markers; low-priority labels hide when no slot is valid.
-            const { tiers: current, reserved: blocked, scale: horizon } = placement.current;
-            // Labelled, moving cars carry a short lookahead along the drawn path (keeping their current lane offset).
-            const ahead = (el: SVGGElement, i: number): Point[] | undefined => {
-                const car = drawn.get(el.dataset.car!)!, p = samples[i];
-                if ((current.get(el.dataset.car!) ?? LABEL_TIER.FIELD) >= LABEL_TIER.FIELD || el.classList.contains('retired')) return undefined;
-                return lookahead(at, p.progress, lapLength, { x: car.x - p.x, y: car.y - p.y }, horizon);
-            };
-            const placed = placeLabels(cars.map((el, i) => ({ id: el.dataset.car!, tier: current.get(el.dataset.car!) ?? LABEL_TIER.FIELD, ...drawn.get(el.dataset.car!)!, ahead: ahead(el, i) })), { bounds: MAP_BOUNDS, reserved: blocked, markers: [...drawn.values()], previous: slots });
-            // Label elements follow React's priority set, so they are looked up per frame (markers never change).
-            for (const label of root.querySelectorAll<SVGGElement>('[data-label]')) {
-                const id = label.dataset.label!, at = placed.get(id), car = drawn.get(id);
-                if (!at || !car) { slots.delete(id); label.setAttribute('visibility', 'hidden'); label.dataset.placed = '0'; continue; }
-                slots.set(id, at.memory);
-                label.setAttribute('visibility', 'visible'); label.dataset.placed = '1';
-                label.setAttribute('transform', `translate(${at.x} ${at.y})`);
-                label.querySelector('path.tag-connector')?.setAttribute('d', `M ${car.x - at.x} ${car.y - at.y} L 0 0`);
-            }
             // Read-only development instrumentation used by the real-browser verification harness.
             if (process.env.NODE_ENV !== 'production') {
                 const work = performance.now() - started;
@@ -98,7 +85,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
                 root.dataset.meanFrameIntervalMs = String(intervalTotal / Math.max(1, frames - 1)); root.dataset.maxFrameIntervalMs = String(intervalMax);
             }
             previousTime = now;
-            if (timeline.pending) frame = requestAnimationFrame(draw);
+            if (timeline.pending || (!placement.current.paused && !placement.current.reduced && packs.pending)) frame = requestAnimationFrame(draw);
             else previousTime = null;
         };
         wake.current = () => { if (!frame && !disposed) frame = requestAnimationFrame(draw); };
@@ -106,12 +93,12 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         return () => { disposed = true; cancelAnimationFrame(frame); wake.current = () => {}; };
     }, [timeline, path, project]);
     useEffect(() => {
-        timeline.reconcile(targets(rows), checkpoint);
+        timeline.reconcile(targets(rows), checkpoint, control);
         timeline.configure(motion, checkpointDuration(speed, control, skipping) + latencyMs, reduceMotion || systemReduced);
         wake.current();
     }, [timeline, rows, checkpoint, motion, speed, control, skipping, latencyMs, reduceMotion, systemReduced]);
-    // Selection/priority/locale changes re-place labels once, even while paused; they never move cars.
-    useEffect(() => { placement.current = { tiers: labelTierMap, reserved, scale }; wake.current(); }, [labelTierMap, reserved, scale]);
+    // Priority, locale and resize changes wake the shared renderer; paused longitudinal motion stays frozen.
+    useEffect(() => { placement.current = { tiers: labelTierMap, paused: motion === 'paused', reduced: reduceMotion || systemReduced, badgeScale, reserved }; wake.current(); }, [labelTierMap, motion, reduceMotion, systemReduced, badgeScale, reserved]);
     const d = layout.points.map((p, i) => { const q = project(p); return `${i ? 'L' : 'M'}${q.x},${q.y}`; }).join(' ') + ' Z';
     const byTier = [...rows].sort((a, b) => tierOf(b.id) - tierOf(a.id)); // Highest priority drawn last (on top).
     return <svg ref={svg} className="circuit-map" viewBox="0 0 1000 650" aria-label={t('viewer.map')} role="group" data-layout={layout.id} data-checkpoint={checkpoint} data-motion={motion}>
@@ -120,40 +107,18 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         <path d={d} fill="none" stroke="#070b0e" strokeWidth="30" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#53606c" strokeWidth="18" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#a6b4bf" strokeWidth="1.5" strokeDasharray="5 13" opacity=".4"/>
-        {rows.map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id), chosen = r.id === selected; return <g key={r.id} data-car={r.id} data-tier={tier} data-hidden={r.hidden ? '1' : '0'} visibility={r.hidden ? 'hidden' : undefined} aria-hidden={r.hidden || undefined} transform={`translate(${p.x} ${p.y})`} role="button" tabIndex={r.hidden ? -1 : 0} aria-label={`${r.name} · ${t('race.position')} ${r.entrant.position} · ${t(`incident.${r.status}`)}${r.player ? ` · ${t('viewer.player')}` : ''}`} aria-pressed={chosen} onClick={() => onSelect(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }} className={`map-car ${r.hidden ? 'in-garage' : ''} ${r.status === 'RETIRED' ? 'retired' : ''} ${r.player ? 'player' : ''} ${chosen ? 'selected' : ''}`}>
+        {byTier.map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id), chosen = r.id === selected; return <g key={r.id} data-car={r.id} data-tier={tier} data-hidden={r.hidden ? '1' : '0'} visibility={r.hidden ? 'hidden' : undefined} aria-hidden={r.hidden || undefined} transform={`translate(${p.x} ${p.y})`} role="button" tabIndex={r.hidden ? -1 : 0} aria-label={`${r.name} · ${t('race.position')} ${r.entrant.position} · ${t(`incident.${r.status}`)}${r.player ? ` · ${t('viewer.player')}` : ''}`} aria-pressed={chosen} onClick={() => onSelect(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }} className={`map-car ${r.hidden ? 'in-garage' : ''} ${r.status === 'RETIRED' ? 'retired' : ''} ${r.player ? 'player' : ''} ${chosen ? 'selected' : ''}`}>
             <title>{`${r.name} · ${r.team} · ${t('race.position')} ${r.entrant.position}`}</title>
-            <circle r="15" fill="transparent"/>
-            {chosen && <circle r="19" fill="none" stroke="white" strokeDasharray="4 4" strokeWidth="2.5"/>}
-            <circle r={chosen ? 12 : r.player ? 10 : 8} fill={r.color} stroke={chosen || r.player ? 'white' : '#0d1418'} strokeWidth={chosen ? 3 : r.player ? 2 : 2.5}/>
-            {r.player && !chosen && <circle r="3" fill="white"/>}
-            {r.status === 'RETIRED' && <path d="M -6 -6 L 6 6 M -6 6 L 6 -6" stroke="#111" strokeWidth="3"/>}
+            <g transform={`scale(${badgeScale})`}>
+            <rect x={-BADGE.w/2-4} y={-BADGE.h/2-4} width={BADGE.w+8} height={BADGE.h+8} rx="8" fill="transparent"/>
+            {chosen && <rect className="selected-ring" x={-BADGE.w/2-3} y={-BADGE.h/2-3} width={BADGE.w+6} height={BADGE.h+6} rx="7" fill="none" stroke="white" strokeWidth="2"/>}
+            <rect className="driver-badge" x={-BADGE.w/2} y={-BADGE.h/2} width={BADGE.w} height={BADGE.h} rx="5" fill={r.color} stroke={r.player ? '#ffffff' : '#101820'} strokeWidth={r.player ? 2 : 1.5}/>
+            <text textAnchor="middle" y="5" fill={badgeText(r.color)} fontSize="16" fontWeight="800">{r.abbreviation}</text>
+            {r.player && !chosen && <path className="teammate-mark" d="M -8 10 L 8 10" stroke={badgeText(r.color)} strokeWidth="2"/>}
+            {r.status === 'RETIRED' && <path className="retired-mark" d="M 18 -16 L 25 -9 M 18 -9 L 25 -16" stroke="#fff" strokeWidth="2"/>}
+            {r.pitting && <text className="pit-mark" x="0" y="-17" textAnchor="middle" fill="#e8c86b" fontSize="11" fontWeight="800" stroke="#0b1116" strokeWidth="3" paintOrder="stroke">{t('viewer.pit')}</text>}
+            </g>
         </g>; })}
         <g className="start-finish" transform={`translate(${start.x} ${start.y})`} pointerEvents="none"><path transform={`rotate(${angle})`} d="M 0 -14 L 0 14" stroke="white" strokeWidth="6"/><text x="-35" y="40" fill="#dfe8ee" fontSize="18" fontWeight="600" stroke="#0b1116" strokeWidth="4" paintOrder="stroke">{startText}</text></g>
-        {byTier.filter(r => tierOf(r.id) < LABEL_TIER.FIELD && !r.hidden).map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id); return <g key={r.id} data-label={r.id} data-tier={tier} className={`map-label tier-${tier}`} aria-hidden="true" pointerEvents="none" visibility="hidden" transform={`translate(${p.x} ${p.y})`} opacity={r.status === 'RETIRED' ? .5 : tier >= LABEL_TIER.LEADER ? .9 : 1}>
-            <LiveTag row={r} tier={tier} pit={t('viewer.pit')}/>
-        </g>; })}
     </svg>;
 }
-/** Left edge strip of a rounded tag, filled with the team colour (the tag's identity accent). */
-function edgePath(w: number, h: number, r: number, width: number) {
-    const x = -w / 2, y = -h / 2;
-    return `M ${x + r} ${y} H ${x + width} V ${y + h} H ${x + r} A ${r} ${r} 0 0 1 ${x} ${y + h - r} V ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;
-}
-/**
- * Live-timing style tag: compact abbreviation pill with a team-colour edge. Box size comes from LABEL_SIZE so the
- * placement engine's geometry is unchanged. Selected = light pill with dark text (strongest); other player car = dark
- * pill with a light outline; promoted AI cars = plain dark pill. Status text never uses the team colour.
- */
-function LiveTag({ row: r, tier, pit }: { row: Rows[number]; tier: number; pit: string }) {
-    const size = LABEL_SIZE[tier], chosen = tier === LABEL_TIER.SELECTED, player = tier === LABEL_TIER.PLAYER || (r.player && !chosen);
-    const edge = chosen ? 7 : player ? 6 : 5, radius = 4, font = chosen ? 18 : player ? 15 : 13;
-    return <>
-        <path className="tag-connector" d="M 0 0" stroke={chosen ? '#f5f7f8' : r.color} strokeWidth={chosen ? 1.6 : 1.1} opacity={chosen ? .85 : .65}/>
-        {chosen && <rect x={-size.w / 2 + 1} y={-size.h / 2 + 2} width={size.w} height={size.h} rx={radius} fill="#000" opacity=".35"/>}
-        <rect className="tag-body" x={-size.w / 2} y={-size.h / 2} width={size.w} height={size.h} rx={radius} fill={chosen ? '#f5f7f8' : '#0c1318'} fillOpacity={chosen || player ? 1 : .9} stroke={chosen ? '#0b1116' : player ? '#e6edf1' : '#2c3942'} strokeWidth={chosen ? 1.2 : player ? 1.3 : 1}/>
-        <path className="tag-edge" d={edgePath(size.w, size.h, radius, edge)} fill={r.color}/>
-        <text x={edge / 2} y={font * .36} textAnchor="middle" fill={chosen ? '#0b1116' : player ? '#ffffff' : '#dfe6ea'} fontSize={font} fontWeight={chosen || player ? 800 : 700} letterSpacing=".6">{r.abbreviation}</text>
-        {r.pitting && <text x={size.w / 2 - 6} y={-size.h / 2 - 4} textAnchor="middle" fill="#e8c86b" fontSize="13" fontWeight="800" stroke="#0b1116" strokeWidth="3" paintOrder="stroke">{pit}</text>}
-    </>;
-}
-

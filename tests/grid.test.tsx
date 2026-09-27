@@ -175,9 +175,8 @@ describe("22-car Race (real Career Race start, v7)", () => {
     const selected = rows.find(r => r.player)!.id, tiers = labelTiers(rows, selected, view.state!);
     const map = html(<TrackMap layout={layoutForCircuit(data.circuit.sourceCircuitId)} rows={rows} selected={selected} onSelect={() => {}} speed={1} reduceMotion tiers={tiers}/>);
     expect(map.match(/data-car=/g)).toHaveLength(22);
-    const labels = map.match(/data-label=/g)?.length ?? 0;
-    expect(labels).toBeGreaterThanOrEqual(2);
-    expect(labels).toBeLessThan(22);                 // ordinary AI cars are marker-only
+    expect(map.match(/class="driver-badge"/g)).toHaveLength(22);
+    expect(map).not.toContain("data-label=");
     for (const r of rows.filter(x => x.player)) expect(tiers.get(r.id)).toBeLessThanOrEqual(LABEL_TIER.PLAYER);
   });
   it("replays identically from the same Career snapshot and seed (determinism)", async () => {

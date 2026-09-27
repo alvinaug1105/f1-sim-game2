@@ -269,6 +269,7 @@ async function read(
       sourceCircuitId: circuit.sourceCircuitId,
       lengthMeters: circuit.lengthMeters,
       defaultLapCount: circuit.defaultLapCount,
+      climateProfile: circuit.climateProfile,
       raceProfile:
         circuit.overtakingDifficulty !== null && circuit.dirtyAirSensitivityPermille !== null && circuit.drsEffectivenessPermille !== null
           ? { overtakingDifficulty: circuit.overtakingDifficulty, dirtyAirSensitivityPermille: circuit.dirtyAirSensitivityPermille, drsEffectivenessPermille: circuit.drsEffectivenessPermille }

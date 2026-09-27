@@ -402,3 +402,7 @@ One RAF updates the entire SVG field through refs/transforms. Arc-length tables 
 The presentation interval is 2400 ms divided by selected speed, multiplied by 1.8 for SC or 1.4 for VSC. Both checkpoint scheduling and motion use that presentation tempo. Motion additionally includes measured persistence latency (bounded to 1500 ms) so ordinary network/database time does not cause a stop after every lap. Strategic advance uses the 8× cadence and its existing 20-checkpoint/event guard. Delays, local preferences and measured wall time never enter the frozen simulation input or RNG. A stalled tab's visual delta is capped at 50 ms, then subsequent checkpoints reconcile forward.
 
 See `phase-12a-report.md` for real-browser verification and exact full-state PostgreSQL equivalence. The v7 engine, schema, ten migrations, repositories and stable identity data are unchanged.
+
+## Content Expansion Pass B — climate occurrence and original 2026 calendar
+
+The built-in source is version 1.1.0 with 24 rounds/six Sprint weekends. schemaVersion stays 1: climate is an optional backward-compatible addition to the import contract, not a new required shape. Nullable CircuitClimateProfile on Circuit copies to CareerCircuit once at creation; legacy NULL retains the exact global story weights. Practice, Qualifying, Sprint Qualifying, Sprint/Race and pre-race projection consume only the CareerCircuit climate. Existing scenario stories, deterministic session seeds, forecast error and all weather/Race engines are unchanged. Source reseeding never expands or edits Career worlds.

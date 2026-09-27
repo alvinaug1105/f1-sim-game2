@@ -191,9 +191,9 @@ describe("Championship from persisted results", () => {
   }, 60000);
 });
 describe("Placeholder completion is not a result (B2)", () => {
-  it("all 8 Race sessions COMPLETED by development scaffolding: zero points, not season complete, no champion", async () => {
+  it("all 24 Race sessions COMPLETED by development scaffolding: zero points, not season complete, no champion", async () => {
     const career = await createCareer(new PrismaCareerRepository(client), { ...input, name: "Placeholders" });
-    for (let round = 1; round <= 8; round++) await w.developmentWeekend(career.id, await w.enter(career.id));
+    for (let round = 1; round <= 24; round++) await w.developmentWeekend(career.id, await w.enter(career.id));
     const progress = (await w.progression.getProgress(career.id))!;
     expect(progress.events.every((e) => e.status === "COMPLETED" && e.weekend!.sessions.some((x) => x.type === "RACE" && x.status === "COMPLETED"))).toBe(true);
     const s = (await w.championship.load(career.id))!;
@@ -206,9 +206,9 @@ describe("Placeholder completion is not a result (B2)", () => {
     expect(page.drivers.every((d) => d.units === 0)).toBe(true);
     expect(championshipSummary(s).seasonComplete).toBe(false);
   }, 120000);
-  it("mixed: rounds 1–2 real, 3–8 placeholders → real points stand, no champion", async () => {
+  it("mixed: rounds 1–2 real, 3–24 placeholders → real points stand, no champion", async () => {
     const career = await createCareer(new PrismaCareerRepository(client), { ...input, name: "Mixed" });
-    for (let round = 1; round <= 8; round++) {
+    for (let round = 1; round <= 24; round++) {
       const eventId = await w.enter(career.id);
       if (round <= 2) await w.play(career.id, eventId);
       else await w.developmentWeekend(career.id, eventId);
@@ -227,18 +227,26 @@ describe("Placeholder completion is not a result (B2)", () => {
     expect(total(computeStandings(championshipInput(s), { round: 2, stage: "RACE" }).drivers)).toBe(238);
   }, 180000);
 });
-describe("Full development season sanity (8 rounds, 3 Sprints)", () => {
-  it("8 Grands Prix + 3 Sprints: 22 WDC, 11 WCC, conserved points, a champion only at the end, deterministic", async () => {
+describe("Full original season sanity (24 rounds, 6 Sprints)", () => {
+  it("24 Grands Prix + 6 Sprints: 22 WDC, 11 WCC, conserved points, a champion only at the end, deterministic", async () => {
     const career = await createCareer(new PrismaCareerRepository(client), { ...input, name: "Full season" });
     const leaders: string[] = [];
-    for (let round = 1; round <= 8; round++) {
+    for (let round = 1; round <= 24; round++) {
       const eventId = await w.enter(career.id);
-      if (round === 8) {
-        // The last round (a Sprint weekend): Sprint Qualifying, Sprint and Qualifying done, no Grand Prix yet.
+      const active = (await w.progression.getProgress(career.id))!;
+      const event = active.events.find(e => e.id === eventId)!;
+      expect(event.round).toBe(round);
+      expect(active.career.currentDate).toBe(event.startDate);
+      expect(event.status).toBe("CURRENT");
+      expect(event.weekend!.sessions.map(s => s.type)).toEqual(event.weekendFormat === "SPRINT"
+        ? ["PRACTICE_1", "SPRINT_QUALIFYING", "SPRINT", "QUALIFYING", "RACE"]
+        : ["PRACTICE_1", "PRACTICE_2", "PRACTICE_3", "QUALIFYING", "RACE"]);
+      if (round === 24) {
+        // The last round (STANDARD): Practice and Qualifying done, no Grand Prix yet.
         await w.play(career.id, eventId, "RACE");
         const pending = (await w.championship.load(career.id))!;
-        expect(pending.events.find((e) => e.id === eventId)).toMatchObject({ format: "SPRINT", race: null });
-        expect(pending.events.find((e) => e.id === eventId)!.sprint).not.toBeNull();
+        expect(pending.events.find((e) => e.id === eventId)).toMatchObject({ format: "STANDARD", race: null });
+        expect(pending.events.find((e) => e.id === eventId)!.sprint).toBeNull();
         const page = standingsPage(pending, null);
         expect(page.seasonComplete).toBe(false);
         expect(page.champions).toBeNull();
@@ -248,18 +256,22 @@ describe("Full development season sanity (8 rounds, 3 Sprints)", () => {
       const s = (await w.championship.load(career.id))!;
       const page = standingsPage(s, null);
       leaders.push(page.drivers[0].driver.abbreviation);
-      expect(page.seasonComplete).toBe(round === 8);
-      expect(page.champions === null).toBe(round < 8);
+      const completed = (await w.progression.getProgress(career.id))!;
+      expect(completed.career.currentDate).toBe(event.endDate);
+      expect(completed.events.filter(e => e.status === "COMPLETED")).toHaveLength(round);
+      expect(completed.events.filter(e => e.status === "UPCOMING")).toHaveLength(24 - round);
+      expect(page.seasonComplete).toBe(round === 24);
+      expect(page.champions === null).toBe(round < 24);
     }
     const s = (await w.championship.load(career.id))!;
-    expect(s.events.filter((e) => e.race)).toHaveLength(8);
-    expect(s.events.filter((e) => e.sprint)).toHaveLength(3);
+    expect(s.events.filter((e) => e.race)).toHaveLength(24);
+    expect(s.events.filter((e) => e.sprint)).toHaveLength(6);
     expect(s.events.filter((e) => e.format === "SPRINT").map((e) => e.round)).toEqual(s.events.filter((e) => e.sprint).map((e) => e.round));
-    const input8 = championshipInput(s), standings = computeStandings(input8);
+    const seasonInput = championshipInput(s), standings = computeStandings(seasonInput);
     expect(standings.drivers).toHaveLength(22);
     expect(standings.constructors).toHaveLength(11);
-    expect(total(standings.drivers)).toBe(8 * 101 + 3 * 36);
-    expect(total(standings.constructors)).toBe(8 * 101 + 3 * 36);
+    expect(total(standings.drivers)).toBe(24 * 101 + 6 * 36);
+    expect(total(standings.constructors)).toBe(24 * 101 + 6 * 36);
     for (const d of standings.drivers) expect(d.units).toBe(d.rounds.reduce((a, r) => a + (r.sprint?.units ?? 0) + (r.race?.units ?? 0), 0));
     // Every real v7 Grand Prix is full distance with ≥ 2 green laps (eligible for full points); green laps are
     // the leader's laps minus the Safety Car / VSC laps in its persisted Race control log.
@@ -271,17 +283,17 @@ describe("Full development season sanity (8 rounds, 3 Sprints)", () => {
     expect(champions.drivers.map((d) => d.id)).toEqual(standings.drivers.filter((r) => r.position === 1).map((r) => r.id));
     expect(champions.constructors.map((t) => t.id)).toEqual(standings.constructors.filter((r) => r.position === 1).map((r) => r.id));
     console.info(`[season sanity] green laps by round: ${s.events.map((e) => `${e.race!.leaderGreenLaps}/${e.race!.scheduledLaps}`).join(" ")}`);
-    expect(standings.drivers.reduce((a, d) => a + d.wins, 0)).toBe(8);
+    expect(standings.drivers.reduce((a, d) => a + d.wins, 0)).toBe(24);
     for (let i = 1; i < standings.drivers.length; i++) expect(standings.drivers[i - 1].units).toBeGreaterThanOrEqual(standings.drivers[i].units);
     const page = standingsPage(s, null);
     expect(page.champions!.drivers.length).toBeGreaterThanOrEqual(1);
     expect(page.champions!.constructors.length).toBeGreaterThanOrEqual(1);
-    expect(page.history).toHaveLength(8);
-    expect(page.cutoffs).toHaveLength(11);
+    expect(page.history).toHaveLength(24);
+    expect(page.cutoffs).toHaveLength(30);
     // Deterministic: a fresh read derives the identical tables; every cutoff is reproducible.
     const again = (await w.championship.load(career.id))!;
     expect(standingsPage(again, null)).toEqual(page);
-    for (const c of page.cutoffs) expect(computeStandings(championshipInput(again), { round: c.round, stage: c.stage })).toEqual(computeStandings(input8, { round: c.round, stage: c.stage }));
+    for (const c of page.cutoffs) expect(computeStandings(championshipInput(again), { round: c.round, stage: c.stage })).toEqual(computeStandings(seasonInput, { round: c.round, stage: c.stage }));
     const summary = championshipSummary(s);
     expect(summary.seasonComplete).toBe(true);
     expect(summary.playerDrivers).toHaveLength(2);
@@ -331,7 +343,7 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
       await f.play(ids.legacy, await f.enter(ids.legacy));
       // An old Career whose whole calendar was completed by development scaffolding (no simulations at all).
       ids.placeholder = (await createCareer(careers, { ...input, name: "Old placeholders" })).id;
-      for (let round = 1; round <= 8; round++) await f.developmentWeekend(ids.placeholder, await f.enter(ids.placeholder));
+      for (let round = 1; round <= 24; round++) await f.developmentWeekend(ids.placeholder, await f.enter(ids.placeholder));
       for (const [k, id] of Object.entries(ids)) expected[k] = standingsPage((await f.championship.load(id))!, null);
     } finally {
       await fullClient.$disconnect();
@@ -353,7 +365,7 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
       await conn.query(`SET search_path TO "${old}"`);
       for (const m of migrations.filter((d) => d < phase16)) await conn.query(readFileSync(`prisma/migrations/${m}/migration.sql`, "utf8"));
       await conn.query(`CREATE TABLE "${old}"."_prisma_migrations" (LIKE "${full}"."_prisma_migrations" INCLUDING ALL)`);
-      await conn.query(`INSERT INTO "${old}"."_prisma_migrations" SELECT * FROM "${full}"."_prisma_migrations" WHERE migration_name <> $1`, [phase16]);
+      await conn.query(`INSERT INTO "${old}"."_prisma_migrations" SELECT * FROM "${full}"."_prisma_migrations" WHERE migration_name < $1`, [phase16]);
       const tables = (await conn.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE' AND table_name <> '_prisma_migrations'`, [old])).rows.map((r) => r.table_name as string);
       const edges = (await conn.query(`SELECT c.conrelid::regclass::text AS child, c.confrelid::regclass::text AS parent FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = $1 AND c.contype = 'f' AND NOT c.condeferrable`, [old])).rows as { child: string; parent: string }[];
       const name = (qualified: string) => qualified.replace(/^.*\./, "").replaceAll('"', "");
@@ -377,7 +389,7 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
       expect((await conn.query(`SELECT count(*)::int AS n FROM information_schema.columns WHERE table_schema = $1 AND column_name = 'scoringRulesVersion'`, [old])).rows[0].n).toBe(0);
       const hash = async () => {
         const out: Record<string, string> = {};
-        for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'scoringRulesVersion' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
+        for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'scoringRulesVersion' - 'climateProfile' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
         return out;
       };
       const before = await hash();

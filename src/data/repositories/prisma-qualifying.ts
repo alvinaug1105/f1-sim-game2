@@ -72,7 +72,7 @@ async function read(tx: Prisma.TransactionClient, careerId: string, eventId: str
     return {
         progress, eventId, weekendId: event.weekend.id, kind, sessionId: session.id, state,
         roster: roster.map(e => ({ driverId: e.careerDriverId, teamId: e.teamEntry.careerTeamId, driverName: `${e.driver.firstName} ${e.driver.lastName}`, teamName: e.teamEntry.team.name, teamOrder: e.teamEntry.entryOrder, abbreviation: e.driver.abbreviation, teamColor: e.teamEntry.team.color, carNumber: e.carNumber ?? e.driver.preferredNumber, balance: rosterBalance(e) })),
-        circuit: { sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters },
+        circuit: { climateProfile: circuit.climateProfile, sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters },
         preparations: preps.map(readPreparation), practiceOrder,
     };
 }

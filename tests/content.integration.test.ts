@@ -92,7 +92,7 @@ afterAll(async () => {
 const eventData = () => ({
   ...data.events[0],
   id: randomUUID(),
-  round: 10,
+  round: 30,
   startDate: new Date("2026-04-03T00:00:00Z"),
   endDate: new Date("2026-04-05T00:00:00Z"),
 });
@@ -104,7 +104,7 @@ describe("PostgreSQL migration, seed and relational constraints", () => {
       22,
     );
     expect(await client.circuit.count({ where: { gameDatabaseId: db } })).toBe(
-      8,
+      24,
     );
     expect(await client.season.count({ where: { gameDatabaseId: db } })).toBe(
       1,
@@ -117,7 +117,7 @@ describe("PostgreSQL migration, seed and relational constraints", () => {
     ).toBe(22);
     expect(
       await client.calendarEvent.count({ where: { gameDatabaseId: db } }),
-    ).toBe(8);
+    ).toBe(24);
   });
   it("upgrades a database seeded with the pre-Pass-A content in place, idempotently", async () => {
     // Recreate the old shape: the Japanese GP back at round 2 with its old dates, the new rows absent.
@@ -149,8 +149,8 @@ describe("PostgreSQL migration, seed and relational constraints", () => {
     const first = await snapshot();
     await seedDevelopmentContent(client);
     expect(await snapshot()).toEqual(first);
-    expect([first.teams.length, first.drivers.length, first.circuits.length, first.events.length]).toEqual([11, 22, 8, 8]);
-    expect(first.events.map((e) => e.round)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect([first.teams.length, first.drivers.length, first.circuits.length, first.events.length]).toEqual([11, 22, 24, 24]);
+    expect(first.events.map((e) => e.round)).toEqual(Array.from({ length: 24 }, (_, i) => i + 1));
     expect(first.events.find((e) => e.id === suzuka.id)!.round).toBe(3);
     expect(first.driverEntries.every((e) => e.pace !== null && e.consistency !== null)).toBe(true);
     expect(first.teamEntries.every((e) => e.carPerformance !== null)).toBe(true);

@@ -1,0 +1,166 @@
+{
+  "revision": "394d8fbe70ef2c0b0c8d23ff7bee61fa09606055",
+  "licence": "MIT",
+  "newLayouts": [
+    {
+      "id": 308,
+      "key": "jeddah",
+      "source": "sa-2021",
+      "direction": "COUNTER_CLOCKWISE",
+      "rotation": -84,
+      "reverse": false,
+      "points": 151,
+      "sha256": "4500c0f47b9329cc9359d75a397b39c00e4646a318d5c54edbf30d28d59b5df5"
+    },
+    {
+      "id": 309,
+      "key": "miami",
+      "source": "us-2022",
+      "direction": "COUNTER_CLOCKWISE",
+      "rotation": 4,
+      "reverse": false,
+      "points": 102,
+      "sha256": "6081f7e67221df77a20e3c9e1ed226b008ec06c1ce7501fc10bcaf9e3a11d0c7"
+    },
+    {
+      "id": 310,
+      "key": "montreal",
+      "source": "ca-1978",
+      "direction": "CLOCKWISE",
+      "rotation": -80,
+      "reverse": false,
+      "points": 101,
+      "sha256": "8ae58f4f6c32dc1b5f0df475bc3f6ef6441c63838e3ead4fd38299e2dc6cb5e6"
+    },
+    {
+      "id": 311,
+      "key": "barcelona",
+      "source": "es-1991",
+      "direction": "CLOCKWISE",
+      "rotation": 57,
+      "reverse": false,
+      "points": 149,
+      "sha256": "739784fa7fe51e38040b7a30a21fe5288564f8901a87fbb27c8cc22462a05c29"
+    },
+    {
+      "id": 312,
+      "key": "red-bull-ring",
+      "source": "at-1969",
+      "direction": "CLOCKWISE",
+      "rotation": -21,
+      "reverse": false,
+      "points": 80,
+      "sha256": "6d84ffac3a212aed8bedd6513535b1cffb1ff2586e055f4921b7f8cd4c334ec3"
+    },
+    {
+      "id": 313,
+      "key": "hungaroring",
+      "source": "hu-1986",
+      "direction": "CLOCKWISE",
+      "rotation": 79,
+      "reverse": false,
+      "points": 140,
+      "sha256": "f822ff317874776d37d15970723f6007b463ab04c25ef5ce8ecb651c5478ee0d"
+    },
+    {
+      "id": 314,
+      "key": "zandvoort",
+      "source": "nl-1948",
+      "direction": "CLOCKWISE",
+      "rotation": 7,
+      "reverse": false,
+      "points": 118,
+      "sha256": "4f639dad939d1fd87514695a91f3d0926feb0a72ec90af557a3b1209023c0215"
+    },
+    {
+      "id": 315,
+      "key": "monza",
+      "source": "it-1922",
+      "direction": "CLOCKWISE",
+      "rotation": 66,
+      "reverse": false,
+      "points": 124,
+      "sha256": "8b0758ef5a52bb9360c7673d45e0fbea6f29f7349486c5acbb2fe9aa340cb495"
+    },
+    {
+      "id": 316,
+      "key": "madrid",
+      "source": "es-2026",
+      "direction": "CLOCKWISE",
+      "rotation": -63,
+      "reverse": false,
+      "points": 115,
+      "sha256": "b362021622d76cd4600dd8d1e825224689ee7d9a98b0d07e39726b65c3b4def1"
+    },
+    {
+      "id": 317,
+      "key": "baku",
+      "source": "az-2016",
+      "direction": "COUNTER_CLOCKWISE",
+      "rotation": 31,
+      "reverse": false,
+      "points": 85,
+      "sha256": "778230a47bee57c5eebb9d5b48143eadceff92603fd6035551e57f165862fd4b"
+    },
+    {
+      "id": 318,
+      "key": "cota",
+      "source": "us-2012",
+      "direction": "COUNTER_CLOCKWISE",
+      "rotation": 21,
+      "reverse": false,
+      "points": 170,
+      "sha256": "199621d61cf0b50429fc9fcf1a8dabf016df453e33bf64299a651e1acad7e158"
+    },
+    {
+      "id": 319,
+      "key": "mexico-city",
+      "source": "mx-1962",
+      "direction": "CLOCKWISE",
+      "rotation": -25,
+      "reverse": false,
+      "points": 100,
+      "sha256": "c552fb24debdb6f8381b70da1eec02c6595d870a4abf9f87b582dbd3bac2eb06"
+    },
+    {
+      "id": 320,
+      "key": "interlagos",
+      "source": "br-1940",
+      "direction": "COUNTER_CLOCKWISE",
+      "rotation": -89,
+      "reverse": false,
+      "points": 170,
+      "sha256": "e650e59b876af7c455ec3222e0801b5aab008ed858c71bf6bc84e7af6d6f2bba"
+    },
+    {
+      "id": 321,
+      "key": "las-vegas",
+      "source": "us-2023",
+      "direction": "COUNTER_CLOCKWISE",
+      "rotation": 90,
+      "reverse": false,
+      "points": 99,
+      "sha256": "bebd86828c5016ede9d6b1133f3f8fbb8301e357018bb551d2514a621803d29d"
+    },
+    {
+      "id": 322,
+      "key": "lusail",
+      "source": "qa-2004",
+      "direction": "CLOCKWISE",
+      "rotation": -61,
+      "reverse": false,
+      "points": 106,
+      "sha256": "961a8c50ce500ed83446ce32e5947ce594706a7d8d7ae4fcffc60b78a38f822b"
+    },
+    {
+      "id": 323,
+      "key": "yas-marina",
+      "source": "ae-2009",
+      "direction": "COUNTER_CLOCKWISE",
+      "rotation": -82,
+      "reverse": false,
+      "points": 132,
+      "sha256": "91ea23fc8bdcdbc1e23b007f99910c84fc0ff595663b3bf5c9954f54f882caa3"
+    }
+  ]
+}

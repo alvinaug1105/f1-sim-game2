@@ -1,3 +1,4 @@
+import type { CircuitClimateProfile } from "./content";
 import type { CareerProgress } from "./progression";
 import type { RaceSimulationState } from "../../simulation/race/types";
 import type { CircuitRaceProfile } from "../../simulation/race/traffic/profiles";
@@ -58,6 +59,7 @@ export interface CareerRaceData {
     readonly sourceCircuitId?: string | null;
     readonly lengthMeters: number;
     readonly defaultLapCount: number;
+    readonly climateProfile?: CircuitClimateProfile | null;
     /** Snapshotted Career circuit Race interaction identity; null for Careers created before it existed (neutral). */
     readonly raceProfile?: CircuitRaceProfile | null;
   };

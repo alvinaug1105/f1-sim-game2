@@ -16,38 +16,39 @@ function withoutDisplayNames(value: unknown): unknown {
  */
 // The Post-Phase-14 Race Dynamics pass likewise adds only the circuit Race interaction balance columns, and Phase 15
 // the calendar weekend format, and Phase 16 the season scoring rules version.
-const PASS_A_ADDED = ["pace", "consistency", "carPerformance", "overtakingDifficulty", "dirtyAirSensitivityPermille", "drsEffectivenessPermille", "weekendFormat", "scoringRulesVersion"], CALENDAR_ORDER = ["round", "startDate", "endDate"];
+// Pass B adds climate and corrects circuit distance metadata; its exact values have dedicated tests.
+const PASS_A_ADDED = ["pace", "consistency", "carPerformance", "overtakingDifficulty", "dirtyAirSensitivityPermille", "drsEffectivenessPermille", "weekendFormat", "scoringRulesVersion", "climateProfile"], CALENDAR_ORDER = ["round", "startDate", "endDate"];
 function originalSubset(fixture: Record<string, unknown>) {
   const pick = (name: string, rows: readonly Record<string, unknown>[]) => {
     const ids = new Set((fixture[name] as { id: string }[]).map(row => row.id));
     return rows.filter(row => ids.has(row.id as string)).map(row => Object.fromEntries(Object.entries(row)
-      .filter(([key]) => !PASS_A_ADDED.includes(key) && !(name === "events" && CALENDAR_ORDER.includes(key)))));
+      .filter(([key]) => !PASS_A_ADDED.includes(key) && !(name === "circuits" && ["lengthMeters", "defaultLapCount"].includes(key)) && !(name === "events" && CALENDAR_ORDER.includes(key)))));
   };
   const strip = (name: string) => (fixture[name] as Record<string, unknown>[]).map(row => Object.fromEntries(Object.entries(row)
-    .filter(([key]) => !(name === "events" && CALENDAR_ORDER.includes(key)))));
+    .filter(([key]) => !(name === "events" && CALENDAR_ORDER.includes(key)) && !(name === "circuits" && ["lengthMeters", "defaultLapCount"].includes(key)))));
   const names = ["teams", "drivers", "circuits", "seasons", "teamEntries", "driverEntries", "events"];
   return {
-    current: withoutDisplayNames({ database: current.database, ...Object.fromEntries(names.map(n => [n, pick(n, current[n as keyof typeof current] as unknown as Record<string, unknown>[])])) }),
-    fixture: withoutDisplayNames({ database: fixture.database, ...Object.fromEntries(names.map(n => [n, strip(n)])) }),
+    current: withoutDisplayNames({ database: { ...current.database, version: undefined, description: undefined }, ...Object.fromEntries(names.map(n => [n, pick(n, current[n as keyof typeof current] as unknown as Record<string, unknown>[])])) }),
+    fixture: withoutDisplayNames({ database: { ...(fixture.database as typeof current.database), version: undefined, description: undefined }, ...Object.fromEntries(names.map(n => [n, strip(n)])) }),
   };
 }
 describe("content identity pass", () => {
   it("changes only identity metadata, preserving every original ID, key, relationship and simulation numeric value", () => {
     expect(current).not.toEqual(previous);
-    expect(current.database).toEqual(previous.database);
+    expect(current.database.key).toBe(previous.database.key);
     const { current: now, fixture } = originalSubset(previous as unknown as Record<string, unknown>);
     expect(now).toEqual(fixture);
   });
-  it("is a valid, unique 11-team, 22-driver, 8-circuit grid and calendar", () => {
+  it("is a valid, unique 11-team, 22-driver, 24-circuit grid and calendar", () => {
     expect(() => validateContentDataset(current)).not.toThrow();
     for (const names of [current.teams.map(e => e.name), current.drivers.map(e => `${e.firstName} ${e.lastName}`), current.circuits.map(e => e.name)])
       expect(new Set(names).size).toBe(names.length);
-    expect([current.teams.length, current.drivers.length, current.circuits.length, current.events.length]).toEqual([11, 22, 8, 8]);
+    expect([current.teams.length, current.drivers.length, current.circuits.length, current.events.length]).toEqual([11, 22, 24, 24]);
   });
 });
 
 import beforeReal from "./fixtures/development-content-before-real-names.json";
-it("private-use pass preserves pre-pass IDs, keys and simulation values (display colours are identity metadata)",()=>{const { current: now, fixture } = originalSubset(beforeReal as unknown as Record<string, unknown>);expect(now).toEqual(fixture);expect(current.database).toEqual(beforeReal.database);});
+it("private-use pass preserves pre-pass IDs, keys and simulation values (display colours are identity metadata)",()=>{const { current: now, fixture } = originalSubset(beforeReal as unknown as Record<string, unknown>);expect(now).toEqual(fixture);expect(current.database.key).toBe(beforeReal.database.key);});
 it("keeps real identity metadata coherent across drivers and season entries",()=>{expect(current.teams.slice(0, 2).map(t=>t.name)).toEqual(["Mercedes","Ferrari"]);expect(current.drivers.slice(0, 4).map(d=>[d.firstName,d.lastName,d.abbreviation,d.nationalityCode,d.dateOfBirth,d.preferredNumber])).toEqual([["George","Russell","RUS","GB","1998-02-15",63],["Kimi","Antonelli","ANT","IT","2006-08-25",12],["Charles","Leclerc","LEC","MC","1997-10-16",16],["Lewis","Hamilton","HAM","GB","1985-01-07",44]]);for(const d of current.drivers)expect(current.driverEntries.find(e=>e.driverId===d.id)!.carNumber).toBe(d.preferredNumber);expect(current.circuits.slice(0, 2).map(c=>[c.countryCode,c.city])).toEqual([["AU","Melbourne"],["JP","Suzuka"]]);});
 
 describe("team display colours (real-life-inspired identity, data only)", () => {

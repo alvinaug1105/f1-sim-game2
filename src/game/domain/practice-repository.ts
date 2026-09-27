@@ -1,3 +1,4 @@
+import type { CircuitClimateProfile } from "./content";
 import type { CareerProgress } from "./progression";
 import type { PracticeSessionType, PracticeState, Preparation, Setup } from "../../simulation/practice/model";
 import type { PracticeRuleCode } from "../../simulation/practice/engine";
@@ -26,7 +27,7 @@ export interface CareerPracticeData {
     readonly roster: readonly PracticeRosterEntry[];
     /** entrantId → driverId for an existing session. */
     readonly entrantDrivers: Readonly<Record<string, string>>;
-    readonly circuit: { readonly sourceCircuitId: string | null; readonly lengthMeters: number };
+    readonly circuit: { readonly climateProfile?: CircuitClimateProfile | null; readonly sourceCircuitId: string | null; readonly lengthMeters: number };
     readonly preparations: readonly WeekendPreparationRecord[];
 }
 export type PracticeErrorCode = "NOT_FOUND" | "INVALID_ACTION" | "INVALID_INPUT" | "PERSISTENCE_FAILED" | PracticeRuleCode;

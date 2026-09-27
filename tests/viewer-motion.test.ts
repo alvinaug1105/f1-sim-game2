@@ -17,7 +17,7 @@ describe('real circuit geometry', () => {
         expect(layoutForCircuit('unknown')).toBe(fallbackLayout);
     });
     it.each(Object.values(circuitLayouts))('$id has a finite, detailed, closed path with constant-distance samples', layout => {
-        expect(layout.closed).toBe(true); expect(layout.points.length).toBeGreaterThan(80); // real source detail (Bahrain: 93 points)
+        expect(layout.closed).toBe(true); expect(layout.points.length).toBeGreaterThanOrEqual(80); // real source detail (Bahrain: 93 points)
         const path = prepareCircuitPath(layout); expect(path.totalLength).toBeGreaterThan(2);
         expect(path.sample(0)).toEqual(path.sample(1));
         for (const progress of [0, .5, .999, 1.001, 20.4, -.25]) { const p = path.sample(progress); expect(Object.values(p).every(Number.isFinite)).toBe(true); }

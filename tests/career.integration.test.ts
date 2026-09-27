@@ -81,12 +81,12 @@ describe("Career world PostgreSQL integration", () => {
     ).toBe(22);
     expect(
       await client.careerCircuit.count({ where: { careerId: career.id } }),
-    ).toBe(8);
+    ).toBe(24);
     expect(
       await client.careerCalendarEvent.count({
         where: { careerId: career.id },
       }),
-    ).toBe(8);
+    ).toBe(24);
     // Game-balance data is snapshotted into the Career (never read from the source at play time).
     expect(
       await client.careerSeasonDriverEntry.count({
@@ -154,7 +154,7 @@ describe("Career world PostgreSQL integration", () => {
       where: { careerId: career.id, sourceCircuitId: source.circuits[0].id },
     });
     expect(row.name).toBe("Albert Park Grand Prix Circuit");
-    expect(row.lengthMeters).toBe(5200);
+    expect(row.lengthMeters).toBe(5278);
   });
   it("isolates source Calendar names and dates", async () => {
     await client.calendarEvent.update({
@@ -185,7 +185,7 @@ describe("Career world PostgreSQL integration", () => {
     });
     expect(
       (await repository.getCareerById(career.id))?.sourceGameDatabaseVersion,
-    ).toBe("1.0.0");
+    ).toBe("1.1.0");
     const row = await client.careerSeasonDriverEntry.findFirstOrThrow({
       where: {
         careerId: career.id,

@@ -87,18 +87,18 @@ describe("Content Expansion Pass A — source grid", () => {
     bad(d => ({ ...d, driverEntries: d.driverEntries.map((e, i) => i ? e : { ...e, pace: 1.5 }) }));
     bad(d => ({ ...d, driverEntries: d.driverEntries.map((e, i) => i ? e : { ...e, consistency: null }) }));
   });
-  it("is a data-driven 8-round development calendar in 2026 order (not the full calendar)", () => {
+  it("is a data-driven original 24-round 2026 calendar", () => {
     const events = [...source.events].sort((a, b) => a.round - b.round);
-    expect(events.map(e => e.round)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(events.map(e => source.circuits.find(c => c.id === e.circuitId)!.countryCode)).toEqual(["AU", "CN", "JP", "BH", "MC", "GB", "BE", "SG"]);
+    expect(events.map(e => e.round)).toEqual(Array.from({ length: 24 }, (_, i) => i + 1));
+    expect(events.map(e => source.circuits.find(c => c.id === e.circuitId)!.countryCode)).toEqual(["AU", "CN", "JP", "BH", "SA", "US", "CA", "MC", "ES", "AT", "GB", "BE", "HU", "NL", "IT", "ES", "AZ", "SG", "US", "MX", "BR", "US", "QA", "AE"]);
     for (let i = 1; i < events.length; i++) expect(events[i].startDate > events[i - 1].endDate).toBe(true);
-    expect(new Set(source.events.map(e => e.circuitId)).size).toBe(8);
+    expect(new Set(source.events.map(e => e.circuitId)).size).toBe(24);
   });
 });
 describe("Career snapshot: any of the 11 teams, 2 player / 20 AI drivers", () => {
   it.each(["team-aurora", "team-nova", "team-mclaren", "team-cadillac", "team-williams"])("%s", async key => {
     const g = await careerGrid(key);
-    expect([g.world.teams.length, g.world.drivers.length, g.world.circuits.length, g.world.events.length]).toEqual([11, 22, 8, 8]);
+    expect([g.world.teams.length, g.world.drivers.length, g.world.circuits.length, g.world.events.length]).toEqual([11, 22, 24, 24]);
     const chosen = g.world.teams.find(t => t.id === g.playerTeamId)!;
     expect(chosen.key).toBe(key);
     expect(g.roster).toHaveLength(22);

@@ -123,7 +123,7 @@ export function projectRaceState(s: RaceSimulationState, playerTeamId: string): 
 }
 function preparation(data: CareerRaceData): RacePreparationView {
   const laps = scheduledLaps(data), kind = data.kind ?? "RACE";
-  const weather = careerRaceWeather(data.progress.career.id, data.eventId, data.circuit.sourceCircuitId ?? "custom", laps, kind);
+  const weather = careerRaceWeather(data.progress.career.id, data.eventId, data.circuit.sourceCircuitId ?? "custom", laps, kind, data.circuit.climateProfile);
   const playerTeamId = data.progress.career.playerTeamId;
   return {
     laps,

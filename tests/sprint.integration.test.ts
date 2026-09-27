@@ -80,10 +80,10 @@ const gridOf = (s: RaceSimulationState) => [...s.input.entrants].sort((a, b) => 
 const resultOrder = (s: RaceSimulationState) => raceResult(s).map(r => r.driverId);
 
 describe("Phase 15 — weekend format snapshot (real PostgreSQL)", () => {
-    it("a new Career snapshots all 8 formats; later source edits never change it; a later Career sees the edit", async () => {
+    it("a new Career snapshots all 24 formats; later source edits never change it; a later Career sees the edit", async () => {
         const events = await client.careerCalendarEvent.findMany({ where: { careerId: career.id }, orderBy: { round: "asc" } });
         expect(events.map(e => [e.name, e.weekendFormat])).toEqual(source.events.slice().sort((a, b) => a.round - b.round).map(e => [e.name, e.weekendFormat]));
-        expect(events.filter(e => e.weekendFormat === "SPRINT").map(e => e.name)).toEqual(["Chinese Grand Prix", "British Grand Prix", "Singapore Grand Prix"]);
+        expect(events.filter(e => e.weekendFormat === "SPRINT").map(e => e.name)).toEqual(["Chinese Grand Prix", "Miami Grand Prix", "Canadian Grand Prix", "British Grand Prix", "Dutch Grand Prix", "Singapore Grand Prix"]);
         await client.calendarEvent.updateMany({ data: { weekendFormat: "STANDARD" } });
         expect((await client.careerCalendarEvent.findMany({ where: { careerId: career.id }, orderBy: { round: "asc" } })).map(e => e.weekendFormat)).toEqual(events.map(e => e.weekendFormat));
         const later = await createCareer(careers, input);
@@ -243,7 +243,7 @@ describe("Phase 15 migration — forward from a pre-Phase-15 database with an ac
             await conn.query(`SET search_path TO "${old}"`);
             for (const m of migrations.filter(d => d < phase15)) await conn.query(readFileSync(`prisma/migrations/${m}/migration.sql`, "utf8"));
             await conn.query(`CREATE TABLE "${old}"."_prisma_migrations" (LIKE "${schema}"."_prisma_migrations" INCLUDING ALL)`);
-            await conn.query(`INSERT INTO "${old}"."_prisma_migrations" SELECT * FROM "${schema}"."_prisma_migrations" WHERE migration_name <> $1`, [phase15]);
+            await conn.query(`INSERT INTO "${old}"."_prisma_migrations" SELECT * FROM "${schema}"."_prisma_migrations" WHERE migration_name < $1`, [phase15]);
             // Parent-first copy (deferrable cycles deferred), enum columns re-typed into the old schema.
             const tables = (await conn.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE' AND table_name <> '_prisma_migrations'`, [old])).rows.map(r => r.table_name as string);
             const edges = (await conn.query(`SELECT c.conrelid::regclass::text AS child, c.confrelid::regclass::text AS parent FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = $1 AND c.contype = 'f' AND NOT c.condeferrable`, [old])).rows as { child: string; parent: string }[];
@@ -263,11 +263,11 @@ describe("Phase 15 migration — forward from a pre-Phase-15 database with an ac
             // 3. Row hashes before the Phase-15 migration.
             const hash = async () => {
                 const out: Record<string, string> = {};
-                for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'weekendFormat' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
+                for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'weekendFormat' - 'climateProfile' - 'scoringRulesVersion' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
                 return out;
             };
             const before = await hash();
-            // 4. Apply ONLY the Phase-15 migration with Prisma, exactly as a deployment would.
+            // 4. Apply all pending migrations with Prisma, exactly as a deployment would.
             const oldUrl = new URL(value!); oldUrl.searchParams.set("schema", old);
             deploy(oldUrl);
             expect(await hash()).toEqual(before);

@@ -1,3 +1,4 @@
+import type { CircuitClimateProfile } from "./content";
 import type { CareerProgress } from "./progression";
 import type { PracticeRosterEntry, WeekendPreparationRecord } from "./practice-repository";
 import type { QualifyingKind, QualifyingState } from "../../simulation/qualifying/model";
@@ -14,7 +15,7 @@ export interface CareerQualifyingData {
     readonly state: QualifyingState | null;
     /** Career-snapshotted race drivers (entrants are created from it when Qualifying starts). */
     readonly roster: readonly PracticeRosterEntry[];
-    readonly circuit: { readonly sourceCircuitId: string | null; readonly lengthMeters: number };
+    readonly circuit: { readonly climateProfile?: CircuitClimateProfile | null; readonly sourceCircuitId: string | null; readonly lengthMeters: number };
     /** Weekend learning carried from Practice, incl. the hidden setup target. Server-side only. */
     readonly preparations: readonly WeekendPreparationRecord[];
     /** Driver IDs in the latest completed Practice classification (Q1 no-time fallback); empty when none. */

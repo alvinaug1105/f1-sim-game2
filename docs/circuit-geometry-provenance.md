@@ -37,7 +37,7 @@ The unit tests establish one non-adjacent centreline crossing for Suzuka and zer
 - `00000000-0000-4000-8000-000000000300` → Albert Park (`circuit-silver-coast` remains the content key).
 - `00000000-0000-4000-8000-000000000301` → Suzuka (`circuit-mountain-park` remains the content key).
 - Unknown/missing source IDs use the existing generic closed circuit. Display names never select geometry.
-- Static geometry is outside React and outside `src/simulation`. Source/career circuit lengths remain the accepted 5200/4800 metres; the display-map upgrade does not change balance or frozen races.
+- Static geometry is outside React and outside `src/simulation`. The Phase 12A display-map upgrade did not change lengths. Pass B later corrects source Albert Park/Suzuka lengths to 5278/5807 metres (Suzuka 53 laps); existing Career snapshots retain their original values.
 - This source provides the main layout, not reliable pit entry/exit/stall coordinates. Pit cars use the same deterministic main-path interpolation with a `PIT` label. No invented pit path is called accurate. The separate layout model can be extended with a verified pit path later without adding persistent race fields.
 
 ## Content Expansion Pass A (six additional circuits)
@@ -48,3 +48,7 @@ Same source, same pinned revision, same pipeline (no new map system). The six fi
 - **Racing direction.** Stored order is checked against each circuit's first corner (right-hand Turn 1 everywhere except Singapore). Seven files are already in racing order (clockwise). The Marina Bay `LineString` is ordered *against* the anti-clockwise racing direction, so the layout keeps the upstream first coordinate (start/finish sample) and reverses the rest of the ring at build time. The committed file is unchanged. `tests/circuits.test.ts` locks the first-corner direction for all eight layouts.
 - Bahrain's upstream line has 93 unique points (the others have 115–171). It is still real geometry; the "detailed path" test bound is 80 points.
 - The racing-direction and start-point checks use the upstream data only; they do not claim surveyed start-line positions.
+
+## Content Expansion Pass B
+
+All 24 active venues now resolve to real geometry at the same pinned revision, including Madrid (`es-2026.geojson`, MIT). The sixteen additional raw files are unmodified upstream copies. See [the Pass B inventory](content-expansion-pass-b.md) for source files, rotations, directions, metadata references and verification.

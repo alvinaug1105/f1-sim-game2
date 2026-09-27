@@ -30,12 +30,16 @@ export interface Driver extends DriverIdentity, ScopedContent, AuditedContent {
   readonly nationalityCode: string;
   readonly preferredNumber: number | null;
 }
+export const CIRCUIT_CLIMATE_PROFILES = ["ARID", "DRY", "TEMPERATE", "VARIABLE", "HUMID"] as const;
+export type CircuitClimateProfile = typeof CIRCUIT_CLIMATE_PROFILES[number];
 export interface Circuit extends ScopedContent, AuditedContent {
   readonly name: string;
   readonly countryCode: string;
   readonly city: string | null;
   readonly lengthMeters: number;
   readonly defaultLapCount: number;
+  /** NULL/absent preserves the accepted global occurrence distribution. */
+  readonly climateProfile?: CircuitClimateProfile | null;
   /** Race interaction game-balance data (all three or none). Absent on legacy content: neutral Race defaults. */
   readonly overtakingDifficulty?: number | null;
   readonly dirtyAirSensitivityPermille?: number | null;

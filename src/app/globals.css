@@ -1032,3 +1032,8 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .championship-summary .summary-line { display:block; }
 .championship-summary .eyebrow { margin-bottom:4px; }
 .championship-summary .career-facts { margin:12px 0 16px; }
+
+/* Post-Beta Race Experience: player-involved overtakes in the feed (tag text, not colour alone). */
+.events-panel li.feed-OVERTAKE .feed-tag { color:#c8f0a0;border-color:#5f7d3c; }
+.race-stale { margin:8px 0 0; padding:8px 12px; border:1px solid #b08a3a; background:#2c2413; color:#ffe2a8; border-radius:5px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.race-stale button { padding:6px 12px; }

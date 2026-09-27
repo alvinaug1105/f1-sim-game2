@@ -29,6 +29,8 @@ const FORBIDDEN_KEYS = [
     'reliability', 'mechanicalPenaltyMs', 'baseMechanicalPpm', 'scMajorPermille', 'vscMinorPermille', 'vscRetirementPermille', 'remainingLaps', 'startedLap',
     'potentialLapTimeMs', 'dirtyAirMs', 'trafficLossMs', 'drsBenefitMs', 'attempted', 'passed',
     'driver', 'car', 'pace', 'consistency', 'carPerformance', 'balance', 'overtaking', 'defending', 'parameters', 'fuelBurnPerLapKg', 'initialFuelKg',
+    // Racecraft (close-racing pressure and AI roles): tuning and per-attempt odds stay on the server.
+    'racecraft', 'pressureCapMs', 'pressurePermillePer10Ms', 'failedAttackLossMaxMs', 'aiHeldEdgeMs', 'aiOvertakeCharge', 'aiAttackGapMs', 'aiDefendGapMs', 'probabilityPermille', 'attempts',
 ];
 function keysOf(value: unknown, out = new Set<string>()): Set<string> {
     if (Array.isArray(value)) value.forEach(v => keysOf(v, out));
@@ -89,6 +91,25 @@ describe('Race view projection', () => {
         expect(() => expectPublic(data, data.state!)).toThrow();
         const keys = keysOf(data);
         for (const k of ['seed', 'rngState', 'timeline', 'reliability', 'strategy', 'remainingLaps']) expect(keys.has(k)).toBe(true);
+    });
+    it('overtake events: player passes carry only who, when and a safe cause; racecraft tuning never ships', async () => {
+        const g = await careerGrid('team-mclaren'), m = raceRepository(g, null, { kind: 'RACE', eventIndex: 0 });
+        await startIncidentCareerRace(m.repository, g.career.id, m.eventId, {});
+        await advanceCareerRace(m.repository, g.career.id, m.eventId, 0, 'finish');
+        const data = m.get(), s = data.state!;
+        expect(s.input.commands!.racecraft).toBeDefined();                 // new Career Races freeze racecraft in
+        const passes = s.incidents!.events.filter(e => e.type === 'OVERTAKE');
+        expect(passes.length).toBeGreaterThan(0);
+        const view = projectRaceView(data), json = expectPublic(view, s);
+        for (const e of view.state!.incidents!.events.filter(e => e.type === 'OVERTAKE')) {
+            expect(Object.keys(e).sort()).toEqual(['cause', 'entrantIds', 'kind', 'lap', 'sequence', 'severity', 'timeLossMs', 'type']);
+            expect(['TYRE', 'ERS', 'DRS', 'PACE']).toContain(e.cause);
+        }
+        expect(json).not.toContain('racecraft');
+        // Tyre suitability ships as the qualitative current-condition result only (no costs or model constants).
+        expect(Object.keys(view.state!.tyreFit!).sort()).toEqual(['best', 'levels']);
+        expect(Object.keys(view.state!.tyreFit!.levels).sort()).toEqual(['DRY', 'INTERMEDIATE', 'WET']);
+        for (const k of ['costMs', 'basePenaltyMs', 'curveMs', 'centre', 'wetTargetMilliC']) expect(json).not.toContain(k);
     });
     it('states that differ only in hidden data project to the identical view', () => {
         const s = advanceRace(createRace({ ...incidentInput(4), weather: scenarioWeather(7, 58, 'MIXED') }), 6), team = s.input.entrants[0].teamId;

@@ -107,17 +107,23 @@ describe('live timing and decision feedback', () => {
         const tower = renderToStaticMarkup(<I18nProvider><TimingTower state={d.state!} rows={rows} selected={rows[0].id} onSelect={() => {}} interval={false} onInterval={() => {}}/></I18nProvider>);
         for (const r of rows) expect(tower).toContain(formatRaceTime(r.entrant.lastLapTimeMs!, 'en'));
     });
-    it('tyre suitability reads only the current track water, never the weather timeline', () => {
-        const weather = { rainfallIntensity: 0, airTemperatureMilliC: 20000, trackTemperatureMilliC: 30000, trackWater: 0, drsState: 'DRS_ENABLED' as const };
-        expect(tyreSuitability('MEDIUM', weather)!.level).toBe('SUITABLE');
-        expect(tyreSuitability('INTERMEDIATE', weather)!.level).toBe('POOR');
-        expect(tyreSuitability('MEDIUM', { ...weather, trackWater: 200 })!.level).toBe('MARGINAL');
-        expect(tyreSuitability('INTERMEDIATE', { ...weather, trackWater: 200 })!.level).toBe('SUITABLE');
-        expect(tyreSuitability('WET', { ...weather, trackWater: 600 })!.level).toBe('SUITABLE');
-        expect(tyreSuitability('SOFT', { ...weather, trackWater: 600 })!.level).toBe('POOR');
-        expect(tyreSuitability('SOFT', undefined)).toBeNull();
-        // The function's only weather input is the current state; a changed future timeline cannot reach it.
-        expect(tyreSuitability.length).toBe(2);
+    it('tyre suitability is the server current-condition assessment from the Race tyre model, never the weather timeline', () => {
+        const base = viewerData().state!;
+        const at = (trackWater: number) => pub({ ...base, weather: { ...base.weather!, trackWater } });
+        expect(tyreSuitability('MEDIUM', at(0))).toMatchObject({ level: 'SUITABLE', note: 'BEST', best: 'DRY' });
+        expect(tyreSuitability('INTERMEDIATE', at(0))!.level).toBe('POOR');
+        // 200‰ is still slick weather in the engine (the old 100 / 350 display bands called it damp).
+        expect(tyreSuitability('MEDIUM', at(200))!.level).toBe('SUITABLE');
+        expect(tyreSuitability('INTERMEDIATE', at(200))).toMatchObject({ level: 'MARGINAL', note: 'SLOWER', best: 'DRY' });
+        expect(tyreSuitability('INTERMEDIATE', at(350))).toMatchObject({ level: 'SUITABLE', note: 'BEST' });
+        expect(tyreSuitability('WET', at(350))).toMatchObject({ level: 'POOR', note: 'FAR', best: 'INTERMEDIATE' });
+        expect(tyreSuitability('WET', at(800))!.level).toBe('SUITABLE');
+        expect(tyreSuitability('SOFT', at(800))!.level).toBe('POOR');
+        expect(tyreSuitability('SOFT', { tyreFit: null })).toBeNull();
+        // Only the qualitative result reaches the browser, and a changed future timeline cannot change it.
+        const future = { ...base, weather: { ...base.weather!, trackWater: 350 }, input: { ...base.input, weather: { ...base.input.weather!, timeline: [{ startLap: 2, rainfall: 1000, airTemperatureMilliC: 15000 }] } } };
+        expect(pub(future).tyreFit).toEqual(at(350).tyreFit);
+        expect(Object.keys(at(350).tyreFit!).sort()).toEqual(['best', 'levels']);
     });
     it('ERS outlook is a rounded management estimate for the current mode', () => {
         // Computed on the server from the ERS model; the browser receives only the outlook.

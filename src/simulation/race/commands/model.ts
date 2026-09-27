@@ -1,4 +1,5 @@
 import type { RaceEntrantState, RaceSimulationState } from "../types";
+import { validateRacecraftConfiguration, type RacecraftConfiguration } from "../traffic/racecraft";
 export const PACE_MODES = ["CONSERVE", "LIGHT", "STANDARD", "PUSH", "ATTACK"] as const;
 export const FUEL_MODES = ["CONSERVE", "BALANCED", "PUSH"] as const;
 export const ERS_MODES = ["HARVEST", "NEUTRAL", "DEPLOY", "OVERTAKE"] as const;
@@ -15,6 +16,8 @@ export interface CommandConfiguration {
   ersHarvestFactorPermille: number; ersDeploymentEffectivenessPermille: number;
   exhaustionPenaltyMs: number;
   ai: { lowCharge: number; battleGapMs: number; highWear: number; lateLaps: number; surplusGrams: number };
+  /** Close-racing pressure and selective AI aggression (new Career Races only; absent = previous behaviour). */
+  racecraft?: RacecraftConfiguration;
 }
 /** Provisional version-one tuning, copied into every v5 race. */
 export function defaultCommandConfiguration(): CommandConfiguration {
@@ -44,6 +47,7 @@ export function validateCommandConfiguration(c: CommandConfiguration) {
   integer(c.capacity, 1, 1000); integer(c.initialCharge, 0, c.capacity); integer(c.baseRecovery, 0, 1000);
   integer(c.ersHarvestFactorPermille, 0, 3000); integer(c.ersDeploymentEffectivenessPermille, 0, 3000); integer(c.exhaustionPenaltyMs, 60000, 600000);
   integer(c.ai.lowCharge, 0, c.capacity); integer(c.ai.battleGapMs, 0, 10000); integer(c.ai.highWear, 0, 1000); integer(c.ai.lateLaps, 1, 1000); integer(c.ai.surplusGrams, 0, 100000);
+  if (c.racecraft !== undefined) validateRacecraftConfiguration(c.racecraft);
 }
 export function validateCommandState(s: CommandState, c: CommandConfiguration) {
   if (!PACE_MODES.includes(s.paceMode) || !FUEL_MODES.includes(s.fuelMode) || !ERS_MODES.includes(s.ersMode)) throw new RangeError("Invalid command mode");
@@ -52,6 +56,15 @@ export function validateCommandState(s: CommandState, c: CommandConfiguration) {
 export function initialCommands(c: CommandConfiguration): CommandState { return { paceMode: "STANDARD", fuelMode: "BALANCED", ersMode: "NEUTRAL", ersCharge: c.initialCharge, commandRevision: 0 }; }
 export function fuelBurnGrams(baseKg: number, mode: FuelMode, c: CommandConfiguration) { return Math.round(Math.round(baseKg * 1000) * c.fuel[mode].burnMultiplierPermille / 1000); }
 export function projectedFuelGrams(s: RaceSimulationState, e: RaceEntrantState, mode = e.commands!.fuelMode) { return Math.round(e.fuelMassKg * 1000) - fuelBurnGrams(s.input.fuelBurnPerLapKg, mode, s.input.commands!) * (s.input.totalLaps - s.lap); }
+/** ERS lap effect of a mode with `used` charge actually deployed (an empty battery gives no boost). */
+function ersLapMs(mode: ErsMode, used: number, c: CommandConfiguration) {
+  const profile = c.ers[mode];
+  return profile.lapTimeDeltaMs >= 0 ? profile.lapTimeDeltaMs : Math.round(profile.lapTimeDeltaMs * (profile.consumption ? used / profile.consumption : 0) * c.ersDeploymentEffectivenessPermille / 1000);
+}
+/** Lap time the current modes are worth against neutral running (pace, fuel and ERS, with the charge actually available). */
+export function commandPaceMs(s: CommandState, c: CommandConfiguration) {
+  return c.pace[s.paceMode].lapTimeDeltaMs + c.fuel[s.fuelMode].lapTimeDeltaMs + ersLapMs(s.ersMode, Math.min(s.ersCharge, c.ers[s.ersMode].consumption), c);
+}
 /** Energy recovered this lap becomes available next lap; empty deployment earns no free boost. */
 export function commandLapEffects(e: RaceEntrantState, baseKg: number, c: CommandConfiguration, pitLap: boolean) {
   const s = e.commands!; validateCommandState(s, c);
@@ -60,9 +73,12 @@ export function commandLapEffects(e: RaceEntrantState, baseKg: number, c: Comman
   // Pit-route laps recover normally but suppress deployment/pace effect (saved mode remains).
   const used = pitLap ? 0 : Math.min(s.ersCharge, profile.consumption);
   const recovery = Math.round(c.baseRecovery * profile.recoveryPermille * c.ersHarvestFactorPermille / 1000000);
-  const ersMs = pitLap ? 0 : profile.lapTimeDeltaMs >= 0 ? profile.lapTimeDeltaMs : Math.round(profile.lapTimeDeltaMs * (profile.consumption ? used / profile.consumption : 0) * c.ersDeploymentEffectivenessPermille / 1000);
+  const ersMs = pitLap ? 0 : ersLapMs(s.ersMode, used, c);
+  // The part of this lap's pace that comes from the chosen modes alone (never the exhaustion penalty).
+  const commandMs = c.pace[s.paceMode].lapTimeDeltaMs + c.fuel[s.fuelMode].lapTimeDeltaMs + ersMs;
   return {
-    deltaMs: c.pace[s.paceMode].lapTimeDeltaMs + c.fuel[s.fuelMode].lapTimeDeltaMs + ersMs + (fuel < burn ? c.exhaustionPenaltyMs : 0),
+    deltaMs: commandMs + (fuel < burn ? c.exhaustionPenaltyMs : 0),
+    commandMs,
     fuelMassKg: Math.max(0, fuel - burn) / 1000,
     commands: { ...s, ersCharge: Math.max(0, Math.min(c.capacity, s.ersCharge - used + recovery)) },
   };

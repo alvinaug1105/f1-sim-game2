@@ -48,7 +48,7 @@ export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduce
         <div className="race-status-line">
             {alerts}
             <p className={`attention-line attention-${attention?.tone ?? 'none'}`} role="status" aria-live="polite">{attention && <><span aria-hidden="true">{attention.tone === 'info' ? 'ⓘ ' : attention.tone === 'finish' ? '■ ' : attention.tone === 'command' ? '✓ ' : '⚑ '}</span>{attention.text}</>}</p>
-            {playback.error && <p role="alert" className="attention-line attention-error">{t('viewer.error')}</p>}
+            {playback.error && playback.error !== 'STALE' && <p role="alert" className="attention-line attention-error">{t('viewer.error')}</p>}
         </div>
     </section>;
 }

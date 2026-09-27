@@ -1,6 +1,7 @@
 import type { RaceSimulationState, RaceEntrant, RaceEntrantState } from "../types";
 import type { PaceMode } from "../commands/model";
 import { waterPenaltyMs } from "../weather/model";
+import type { OvertakeCause } from "../traffic/model";
 export type RaceControlMode = "GREEN" | "VSC" | "SAFETY_CAR";
 export type IncidentKind = "DRIVER_MISTAKE" | "SPIN" | "LOCK_UP" | "CONTACT" | "MECHANICAL_PROBLEM" | "MECHANICAL_RETIREMENT";
 export interface ReliabilityProfile {
@@ -17,12 +18,15 @@ export interface EntrantIncidentState {
 }
 export interface RaceEvent {
     sequence: number;
-    type: "INCIDENT" | "RETIREMENT" | "VSC_START" | "VSC_END" | "SAFETY_CAR_START" | "SAFETY_CAR_END";
+    /** OVERTAKE (racecraft Races): a completed on-track pass, entrantIds [attacker, passed car]. */
+    type: "INCIDENT" | "RETIREMENT" | "VSC_START" | "VSC_END" | "SAFETY_CAR_START" | "SAFETY_CAR_END" | "OVERTAKE";
     lap: number;
     entrantIds: readonly string[];
     kind: IncidentKind | null;
     severity: "MINOR" | "MODERATE" | "MAJOR" | null;
     timeLossMs: number;
+    /** OVERTAKE only: the safe post-hoc cause (tyres, ERS in use, DRS or pace). */
+    cause?: OvertakeCause;
 }
 export interface IncidentRaceState {
     rngState: number;
@@ -172,9 +176,13 @@ export function validateIncidentState(state: RaceSimulationState) {
             throw new RangeError("Invalid incident kind");
         if (e.severity !== null && !["MINOR", "MODERATE", "MAJOR"].includes(e.severity))
             throw new RangeError("Invalid incident severity");
+        if (e.cause !== undefined && (e.type !== "OVERTAKE" || !["TYRE", "ERS", "DRS", "PACE"].includes(e.cause)))
+            throw new RangeError("Invalid overtake cause");
+        if (e.type === "OVERTAKE" && e.entrantIds.length !== 2)
+            throw new RangeError("Invalid overtake event");
         if (new Set(e.entrantIds).size !== e.entrantIds.length)
             throw new RangeError("Duplicate event participant");
-        if (!["INCIDENT", "RETIREMENT", "VSC_START", "VSC_END", "SAFETY_CAR_START", "SAFETY_CAR_END"].includes(e.type) || e.entrantIds.some(id => !ids.has(id)))
+        if (!["INCIDENT", "RETIREMENT", "VSC_START", "VSC_END", "SAFETY_CAR_START", "SAFETY_CAR_END", "OVERTAKE"].includes(e.type) || e.entrantIds.some(id => !ids.has(id)))
             throw new RangeError("Invalid event ownership/type");
     }
 }

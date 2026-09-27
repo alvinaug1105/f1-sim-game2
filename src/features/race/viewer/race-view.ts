@@ -1,6 +1,7 @@
 /** Presentation-only derived views over the public Race view. Never mutates state or re-runs simulation rules. */
 import type { RaceEvent } from "../../../simulation/race/incidents/model";
 import type { TyreCompound } from "../../../simulation/race/tyres/model";
+import { tyreFamily, type Suitability, type TyreFamily } from "../../../simulation/race/tyres/family";
 import type { ErsOutlook, RacePublicEntrant, RacePublicState } from "../public-view";
 import type { timingRows } from "./model";
 import { LABEL_TIER } from "./labels";
@@ -75,9 +76,9 @@ export function driverSnapshot(row: Row, s: RacePublicState) {
     };
 }
 export type { ErsOutlook };
-export type FeedCategory = "CONTROL" | "INCIDENT" | "RETIREMENT" | "PIT";
+export type FeedCategory = "CONTROL" | "INCIDENT" | "RETIREMENT" | "PIT" | "OVERTAKE";
 export interface FeedItem { key: string; lap: number; category: FeedCategory; important: boolean; player: boolean; entrantIds: readonly string[]; event?: RaceEvent; stop?: NonNullable<RacePublicEntrant["pit"]>["stops"][number] }
-const CATEGORY: Record<RaceEvent["type"], FeedCategory> = { INCIDENT: "INCIDENT", RETIREMENT: "RETIREMENT", VSC_START: "CONTROL", VSC_END: "CONTROL", SAFETY_CAR_START: "CONTROL", SAFETY_CAR_END: "CONTROL" };
+const CATEGORY: Record<RaceEvent["type"], FeedCategory> = { INCIDENT: "INCIDENT", RETIREMENT: "RETIREMENT", VSC_START: "CONTROL", VSC_END: "CONTROL", SAFETY_CAR_START: "CONTROL", SAFETY_CAR_END: "CONTROL", OVERTAKE: "OVERTAKE" };
 /**
  * Structured feed from persisted Race records only (Race Control events plus pit-stop history), newest first.
  * Translation happens at render time; nothing here is prose.
@@ -87,7 +88,9 @@ export function raceFeed(s: RacePublicState, playerTeamId: string): FeedItem[] {
     const items: (FeedItem & { order: number })[] = [];
     for (const event of s.incidents?.events ?? []) {
         const category = CATEGORY[event.type], player = event.entrantIds.some(id => players.has(id));
-        const important = event.type === "SAFETY_CAR_START" || event.type === "VSC_START" || category === "RETIREMENT" || (player && category === "INCIDENT") || event.severity === "MAJOR";
+        // On-track passes are shown only when a player car passes or is passed (no midfield spam).
+        if (category === "OVERTAKE" && !player) continue;
+        const important = event.type === "SAFETY_CAR_START" || event.type === "VSC_START" || category === "RETIREMENT" || (player && (category === "INCIDENT" || category === "OVERTAKE")) || event.severity === "MAJOR";
         items.push({ key: `e${event.sequence}`, lap: event.lap, category, important, player, entrantIds: event.entrantIds, event, order: 0 });
     }
     for (const e of s.entrants) for (const stop of e.pit?.stops ?? []) {
@@ -98,17 +101,17 @@ export function raceFeed(s: RacePublicState, playerTeamId: string): FeedItem[] {
     return items.sort((a, b) => b.lap - a.lap || b.order - a.order || (b.event?.sequence ?? 0) - (a.event?.sequence ?? 0) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)).map(item => { const { order, ...rest } = item; void order; return rest; });
 }
 /**
- * Qualitative tyre suitability for CURRENT public conditions (the same track-water bands the conditions strip shows).
- * Deliberately coarse: it never reveals the modelled crossover or reads future weather.
+ * Qualitative tyre suitability for CURRENT conditions. The server assesses every tyre family with the Race's own tyre
+ * model (`tyreFit`); this only reads that public result — no thresholds, costs or future weather in the browser.
  */
-export type Suitability = "SUITABLE" | "MARGINAL" | "POOR";
-export type SuitabilityNote = "SLICK_WET" | "SLICK_DAMP" | "INTER_DRY" | "INTER_OK" | "INTER_FLOODED" | "WET_DRY" | "WET_DAMP" | "WET_OK" | "SLICK_OK";
-export function tyreSuitability(compound: TyreCompound, weather: RacePublicState["weather"]): { level: Suitability; note: SuitabilityNote } | null {
-    if (!weather) return null;
-    const band = weather.trackWater < 100 ? 0 : weather.trackWater < 350 ? 1 : 2;
-    if (compound === "INTERMEDIATE") return band === 0 ? { level: "POOR", note: "INTER_DRY" } : band === 1 ? { level: "SUITABLE", note: "INTER_OK" } : { level: "MARGINAL", note: "INTER_FLOODED" };
-    if (compound === "WET") return band === 2 ? { level: "SUITABLE", note: "WET_OK" } : band === 1 ? { level: "MARGINAL", note: "WET_DAMP" } : { level: "POOR", note: "WET_DRY" };
-    return band === 0 ? { level: "SUITABLE", note: "SLICK_OK" } : band === 1 ? { level: "MARGINAL", note: "SLICK_DAMP" } : { level: "POOR", note: "SLICK_WET" };
+export type { Suitability, TyreFamily };
+/** How a tyre family relates to the fastest family now: the fastest, close to it, slower, or far off. */
+export type SuitabilityNote = "BEST" | "NEAR" | "SLOWER" | "FAR";
+export function tyreSuitability(compound: TyreCompound, s: Pick<RacePublicState, "tyreFit">): { level: Suitability; note: SuitabilityNote; best: TyreFamily } | null {
+    const fit = s.tyreFit;
+    if (!fit) return null;
+    const family = tyreFamily(compound), level = fit.levels[family];
+    return { level, best: fit.best, note: fit.best === family ? "BEST" : level === "SUITABLE" ? "NEAR" : level === "MARGINAL" ? "SLOWER" : "FAR" };
 }
 /** Management-level ERS outlook for the car's own current mode — computed on the server (it reads the ERS model). */
 export function ersOutlook(e: RacePublicEntrant): ErsOutlook | null { return e.insight?.ers ?? null; }

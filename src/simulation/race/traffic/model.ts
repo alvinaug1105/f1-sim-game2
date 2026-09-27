@@ -1,5 +1,7 @@
 import type { RandomSource } from "../../core/random";
 import type { RaceEntrantState, RaceSimulationInput } from "../types";
+import type { RacecraftConfiguration } from "./racecraft";
+import { TYRE_COMPOUNDS } from "../tyres/model";
 export interface DriverInteractionProfile {
   readonly overtaking: number;
   readonly defending: number;
@@ -34,6 +36,8 @@ export interface TrackState {
   readonly attempted: boolean;
   readonly passed: boolean;
 }
+/** Safe post-hoc explanation of a completed pass (public facts only: tyres, ERS mode in use, DRS, relative pace). */
+export type OvertakeCause = "TYRE" | "ERS" | "DRS" | "PACE";
 export interface OvertakeAttempt {
   readonly lap: number;
   readonly attackerId: string;
@@ -42,6 +46,8 @@ export interface OvertakeAttempt {
   readonly drs: boolean;
   readonly probabilityPermille: number;
   readonly success: boolean;
+  /** Racecraft Races only. */
+  readonly cause?: OvertakeCause;
 }
 function integer(n: number, min: number, max: number) {
   if (!Number.isSafeInteger(n) || n < min || n > max)
@@ -170,6 +176,131 @@ export function orderedClassification(
     };
   });
 }
+/** Tyre family advantage for the cause label: a fresher tyre of the same family, or a softer dry compound. */
+function tyreAdvantage(attacker: RaceEntrantState, defender: RaceEntrantState, racecraft: RacecraftConfiguration) {
+  const a = attacker.stint?.tyre, d = defender.stint?.tyre;
+  if (!a || !d) return false;
+  const dry = (c: string) => (TYRE_COMPOUNDS as readonly string[]).indexOf(c);
+  if (dry(a.compound) >= 0 && dry(d.compound) >= 0 && dry(a.compound) < dry(d.compound)) return true;
+  return a.compound === d.compound && d.ageLaps - a.ageLaps >= racecraft.aiTyreAgeEdgeLaps;
+}
+function overtakeCause(attacker: RaceEntrantState, defender: RaceEntrantState, drs: boolean, racecraft: RacecraftConfiguration): OvertakeCause {
+  if (tyreAdvantage(attacker, defender, racecraft)) return "TYRE";
+  if (attacker.commands && (attacker.commands.ersMode === "OVERTAKE" || attacker.commands.ersMode === "DEPLOY")) return "ERS";
+  return drs ? "DRS" : "PACE";
+}
+/**
+ * Attack edge from the full expected-pace edge: the attacker's net command advantage counts only up to
+ * `commandEdgePermille` of itself and never more than `commandEdgeCapMs` (Races frozen without these fields count it in
+ * full, as before). A defender's own commands and every non-command difference count in full. `excessMs` is the
+ * command pace that was not counted; it is also kept out of pressure, so it cannot re-enter through the floor.
+ */
+export function attackEdge(fullEdgeMs: number, commandEdgeMs: number, racecraft: RacecraftConfiguration) {
+  if (racecraft.commandEdgePermille === undefined || racecraft.commandEdgeCapMs === undefined || commandEdgeMs <= 0) return { edge: fullEdgeMs, excessMs: 0 };
+  const counted = Math.min(racecraft.commandEdgeCapMs, Math.round(commandEdgeMs * racecraft.commandEdgePermille / 1000));
+  return { edge: fullEdgeMs - (commandEdgeMs - counted), excessMs: commandEdgeMs - counted };
+}
+/**
+ * Racecraft traffic (new Career Races): close-racing pressure instead of a frozen queue.
+ * - Every lap is an opportunity; each car may attack once and be attacked once per lap, and a car that has just lost
+ *   a place cannot counter-attack in the same lap (no impossible multi-car swaps), so long trains are not starved.
+ * - Eligibility and probability read the LEGITIMATE pace edge: both cars' expected laps without this lap's random
+ *   variation (car, driver, tyres, fuel, commands, water), so a lucky lap or the defender's own dirty air never
+ *   creates an attack. Dirty air still makes following hard and the circuit profile still scales everything.
+ * - A held car that does not attack suffers the close-range turbulence it drove into (the extra dirty air of the
+ *   minimum gap over the gap it started the lap at, for about half a lap), so arrival speed shapes the gap.
+ * - Pressure: pace a held car could not use this lap, plus last lap's persisted traffic loss when it was already
+ *   close (and did not pit), capped. It resets by itself when the gap opens, after a pass, a stop or SC/VSC.
+ * - A failed attack costs the attacker time, scaled by how clearly it failed (the same single draw): no fixed
+ *   following gap, no cosmetic randomness, no extra RNG.
+ */
+function resolveRacecraftTraffic(
+  previous: readonly RaceEntrantState[],
+  potential: readonly RaceEntrantState[],
+  input: RaceSimulationInput,
+  lap: number,
+  random: RandomSource,
+  racecraft: RacecraftConfiguration,
+  expectedLapMs: ReadonlyMap<string, number> | undefined,
+  commandLapMs: ReadonlyMap<string, number> | undefined,
+) {
+  // Legitimate pace: each car's lap without this lap's random variation (car, driver, tyres, fuel, commands, water).
+  const pace = (e: RaceEntrantState) => expectedLapMs?.get(e.entrantId) ?? e.track!.potentialLapTimeMs;
+  const command = (e: RaceEntrantState) => commandLapMs?.get(e.entrantId) ?? 0;
+  const commandEdgeOf = (defender: RaceEntrantState, attacker: RaceEntrantState) => command(defender) - command(attacker);
+  const c = input.interaction!;
+  const order = [...previous].sort((a, b) => a.position - b.position);
+  if (order.some((e, i) => e.position !== i + 1 || !e.track))
+    throw new RangeError("Invalid persisted track order");
+  const oldById = new Map(order.map((e) => [e.entrantId, e]));
+  const source = new Map(input.entrants.map((e) => [e.entrantId, e]));
+  const raw = new Map(potential.map((e) => [e.entrantId, e]));
+  const cars = order.map((old, i) => {
+    const e = raw.get(old.entrantId)!;
+    const ahead = order[i - 1];
+    const effects = followingEffects(ahead && ahead.completedLaps === old.completedLaps ? old.elapsedTimeMs - ahead.elapsedTimeMs : null, lap, c);
+    const effective = Math.max(1, e.lastLapTimeMs! + effects.dirtyAirMs - effects.drsBenefitMs);
+    return {
+      ...e,
+      elapsedTimeMs: old.elapsedTimeMs + effective,
+      track: { ...old.track!, ...effects, potentialLapTimeMs: e.lastLapTimeMs!, trafficLossMs: 0, attempted: false, passed: false },
+    };
+  });
+  const attempts: OvertakeAttempt[] = [];
+  const attacked = new Set<string>(), attacking = new Set<string>(), lost = new Set<string>();
+  for (let i = 1; i < cars.length; i++) {
+    const defender = cars[i - 1], attacker = cars[i];
+    const oldA = oldById.get(attacker.entrantId)!, oldD = oldById.get(defender.entrantId)!;
+    // The car ahead is final at this point; a car is never allowed closer than the physical minimum.
+    if (i > 1) defender.elapsedTimeMs = Math.max(defender.elapsedTimeMs, cars[i - 2].elapsedTimeMs + c.minimumGapMs);
+    const floor = defender.elapsedTimeMs + c.minimumGapMs;
+    if (oldA.completedLaps === oldD.completedLaps && !attacked.has(defender.entrantId) && !attacking.has(attacker.entrantId) && !lost.has(attacker.entrantId)) {
+      const a = source.get(attacker.entrantId)!, d = source.get(defender.entrantId)!;
+      // Command-driven pace moves the car on track in full, but only a bounded share of the attacker's NET command
+      // advantage counts towards the pass itself: pressing buttons creates an attack, it does not buy a pass. The
+      // car's real performance edge (car, driver, tyres, fuel load, water) always counts in full.
+      const { edge, excessMs } = attackEdge(pace(defender) - pace(attacker), commandEdgeOf(defender, attacker), racecraft);
+      const projectedGap = attacker.elapsedTimeMs - defender.elapsedTimeMs;
+      const oldGap = oldA.elapsedTimeMs - oldD.elapsedTimeMs;
+      const pittedLastLap = oldA.pit?.stops.at(-1)?.lap === lap - 1;
+      const carried = oldGap <= c.attackThresholdMs && !pittedLastLap ? oldA.track!.trafficLossMs : 0;
+      const pressure = Math.min(racecraft.pressureCapMs, Math.max(0, Math.max(0, floor - attacker.elapsedTimeMs) + carried - excessMs));
+      if (projectedGap <= c.attackThresholdMs && edge >= c.minimumPaceAdvantageMs) {
+        const probabilityPermille = Math.min(950, passProbability(edge, a.interaction!, d.interaction!, a.car.performance - d.car.performance, attacker.track.drsEligible, c) + Math.floor((pressure * racecraft.pressurePermillePer10Ms) / 10));
+        const draw = random.next();
+        if (!Number.isFinite(draw) || draw < 0 || draw >= 1) throw new RangeError("Invalid interaction RNG");
+        const success = draw * 1000 < probabilityPermille;
+        attempts.push({ lap, attackerId: attacker.entrantId, defenderId: defender.entrantId, gapMs: Math.max(0, projectedGap), drs: attacker.track.drsEligible, probabilityPermille, success, ...(success ? { cause: overtakeCause(attacker, defender, attacker.track.drsEligible, racecraft) } : {}) });
+        attacker.track = { ...attacker.track, attempted: true, passed: success, overtakesCompleted: attacker.track.overtakesCompleted + (success ? 1 : 0) };
+        attacking.add(attacker.entrantId);
+        attacked.add(defender.entrantId);
+        if (success) {
+          lost.add(defender.entrantId);
+          cars[i - 1] = attacker;
+          cars[i] = defender;
+          if (i > 1) attacker.elapsedTimeMs = Math.max(attacker.elapsedTimeMs, cars[i - 2].elapsedTimeMs + c.minimumGapMs);
+        } else {
+          const clearly = probabilityPermille >= 1000 ? 0 : Math.min(1, (draw * 1000 - probabilityPermille) / (1000 - probabilityPermille));
+          attacker.elapsedTimeMs = Math.max(attacker.elapsedTimeMs, floor + Math.round(clearly * racecraft.failedAttackLossMaxMs));
+        }
+      }
+    }
+    const ahead = cars[i - 1], behind = cars[i];
+    const held = ahead.elapsedTimeMs + c.minimumGapMs;
+    if (behind.elapsedTimeMs < held && !behind.track.attempted) {
+      const closeRange = followingEffects(c.minimumGapMs, lap, c).dirtyAirMs;
+      behind.elapsedTimeMs = held + Math.max(0, Math.round((closeRange - behind.track.dirtyAirMs) / 2));
+    }
+    behind.elapsedTimeMs = Math.max(behind.elapsedTimeMs, held);
+  }
+  const result = cars.map((e) => {
+    const old = oldById.get(e.entrantId)!;
+    const actual = e.elapsedTimeMs - old.elapsedTimeMs;
+    const effective = Math.max(1, e.track.potentialLapTimeMs + e.track.dirtyAirMs - e.track.drsBenefitMs);
+    return { ...e, lastLapTimeMs: actual, bestLapTimeMs: Math.min(old.bestLapTimeMs ?? actual, actual), track: { ...e.track, trafficLossMs: Math.max(0, actual - effective) } };
+  });
+  return { entrants: orderedClassification(result, input), attempts };
+}
 /** One opportunity every configured N laps, front-to-back, disjoint adjacent pairs.
  * All potential-lap RNG draws have already occurred in fixed grid order.
  * Consume exactly one extra draw per eligible attempt, including probability zero.
@@ -180,7 +311,12 @@ export function resolveTraffic(
   input: RaceSimulationInput,
   lap: number,
   random: RandomSource,
+  /** Racecraft only: each car's expected lap without this lap's random variation (legitimate pace). */
+  expectedLapMs?: ReadonlyMap<string, number>,
+  /** Racecraft only: the part of each car's lap that comes from its command modes (pace, fuel, ERS). */
+  commandLapMs?: ReadonlyMap<string, number>,
 ) {
+  if (input.commands?.racecraft) return resolveRacecraftTraffic(previous, potential, input, lap, random, input.commands.racecraft, expectedLapMs, commandLapMs);
   const c = input.interaction!;
   const order = [...previous].sort((a, b) => a.position - b.position);
   if (order.some((e, i) => e.position !== i + 1 || !e.track))

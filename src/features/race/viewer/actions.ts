@@ -33,3 +33,18 @@ export async function sprintRemainderAction(careerId: string, eventId: string, l
         return { data: null, error: error instanceof RaceError ? error.code : "PERSISTENCE_FAILED" as const };
     }
 }
+
+/**
+ * Lightweight staleness check for a returning tab: only the saved checkpoint lap and status (no Race state). A tab
+ * whose view is behind this checkpoint was advanced elsewhere and should refresh.
+ */
+export async function raceCheckpointAction(careerId: string, eventId: string, kind: unknown = "RACE") {
+    try {
+        const data = await getRaceRepository(kindOf(kind)).getRace(careerId, eventId);
+        return data?.state ? { lap: data.state.lap, status: data.state.status } : null;
+    }
+    catch (error) {
+        console.error("Checkpoint check failed", error);
+        return null;
+    }
+}

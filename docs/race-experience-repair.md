@@ -127,3 +127,70 @@ The circuit hierarchy is preserved: Monaco and Singapore are hardest, Bahrain an
 - **Train persistence.** The longest-train measure barely moved: cars now visibly race inside the train and passes happen, but a long, evenly paced train can persist. Breaking it further would need tyre/strategy spread, which is out of scope here.
 - **Grid→finish correlation** rose at most circuits (more passes by genuinely faster cars). Spa fell in this small sample.
 - **Engine LCG seeding.** The engine's LCG gives nearly identical first draws for consecutive small seeds. Real Careers use 32-bit random seeds, and the new test helper spreads its seeds. This is noted for any future small-seed tests.
+
+---
+
+# Focused blocking repair (after formal QA of `8119a0a`)
+
+## B1 — ATTACK + OVERTAKE was near-universal
+**Root cause**
+1. The full command lap-time delta entered the pass edge. ATTACK + OVERTAKE is worth about 1400 ms, or about 560‰ of pass probability, plus pressure. That swamps circuit difficulty, including Monaco.
+2. `heldOnMerit` ignores closing pace created by PUSH / OVERTAKE, so the AI defender almost never saw a threat and stayed on STANDARD / NEUTRAL.
+
+**Repair** (new Career Races only; older racecraft Races keep the previous behaviour exactly)
+- **Command vs performance.** The engine now reports each car's command lap effect (pace, fuel and ERS modes; `commandLapEffects().commandMs`). On track the car still gains the full time. For the pass, only 35% of the attacker's *net* command advantage counts, capped at 300 ms (`commandEdgePermille`, `commandEdgeCapMs`). The uncounted part is also kept out of pressure. The car's real performance edge (car, driver, tyres, fuel load, water) and a defender's own commands count in full.
+- **AI threat detection.** A car directly behind within `aiDefendGapMs` whose current modes are worth at least `aiThreatEdgeMs` (400 ms) over neutral running, with the charge it actually has, is a closing threat. This comes from `commandPaceMs`, which reads Race state only and has no identity. The defender answers with PUSH plus DEPLOY while it has charge, using the same costs as everyone.
+- **Unchanged:** the existing tyre-edge and held-on-merit bases, the cooldown against immediate pass-backs, the high-wear override (LIGHT), and free-air command pace, tyre cost and ERS cost.
+
+Controlled check: equal pace and tyres, player car 0.6 s behind a real AI car, DRS from lap 1, 10 laps, 200 seeds per cell.
+
+| Circuit | Command | Before: pass / mean laps / defender response | After: pass / mean laps / defender response |
+|---|---|---|---|
+| Monaco | STANDARD | 0% / – / 0% | 0% / – / 0% |
+| Monaco | ATTACK | 0% / – / 0% | 0% / – / 20% |
+| Monaco | OVERTAKE | 14% / 1.7 / 0% | 0% / – / 20% |
+| Monaco | ATTACK+OVERTAKE | 80% / 1.8 / 0% | 0% / – / 70% |
+| Shanghai | STANDARD | 0% / – / 0% | 0% / – / 0% |
+| Shanghai | ATTACK | 62.5% / 4.1 / 22% | 0% / – / 40% |
+| Shanghai | OVERTAKE | 76% / 1.7 / 0% | 20% / 2.0 / 21% |
+| Shanghai | ATTACK+OVERTAKE | 100% / 1.5 / 0% | 34.5% / 2.5 / 93% |
+| Spa | STANDARD | 0% / – / 0% | 0% / – / 0% |
+| Spa | ATTACK | 73% / 3.7 / 25% | 21.5% / 9.0 / 49% |
+| Spa | OVERTAKE | 81% / 1.6 / 0% | 30% / 2.0 / 22% |
+| Spa | ATTACK+OVERTAKE | 100% / 1.4 / 0% | 38% / 1.7 / 98% |
+
+Other circuits, ATTACK+OVERTAKE, before → after: Singapore 94.5% → 9%, Bahrain 100% → 37.5%. ERS spent (640) and tyre wear (340‰ vs 220‰) are unchanged; commands cost the same.
+
+Genuine pace advantage amplified by commands still passes:
+- With a 0.4 s real edge, ATTACK+OVERTAKE passes 99.5% at Spa, 99% at Bahrain, 98.5% at Shanghai, 79% at Singapore and 37.5% at Monaco. STANDARD alone passes 46% at Spa and 0% at Monaco.
+- With a 0.8 s edge (for example, fresh tyres), ATTACK alone passes 100% at Spa and 89% at Monaco.
+
+## B2 — tyre suitability used 100/350 display bands
+**Root cause.** The UI badge and the Next Strategic Event (NSE) tyre crossover both used fixed water bands (100 / 350). These are presentation bands, not the engine's performance crossover. At 350‰, inters are about 5.5 s/lap faster than wets, yet inter-shod cars were told to switch to wets.
+
+**Repair: one source of truth**
+- **Helper.** `src/simulation/race/tyres/suitability.ts` is pure and server-only. It scores each family's fastest compound on a fresh tyre at the temperature it settles at in the CURRENT conditions, using the engine's own lap-time terms:
+  - compound grip;
+  - temperature penalty (from `weatherTyreTargetMilliC`, the formula `advanceWeatherTyre` already used);
+  - water penalty.
+- **Levels.** A family is SUITABLE within 250 ms of the fastest family, MARGINAL within 1.5 s, POOR beyond that.
+- **Crossovers** at the default circuit and 34 °C track: slick → inter at water 267, inter → wet at 719.
+- **Projection.** It adds `tyreFit: { best, levels }` to the public Race state. No costs, constants or future weather are sent.
+- **Badge.** `tyreSuitability` reads `tyreFit`: fastest / close to fastest / slower / much slower, naming the fastest family.
+- **NSE crossover.** It uses the same `tyreFit`. Alerts are armed while the car's family is SUITABLE. An alert fires once when the family stops being SUITABLE, meaning another family is genuinely at least 250 ms faster. The alert re-arms only when that family is the fastest again. The hysteresis is therefore centred on the real crossover. A stop to a new family re-baselines silently.
+
+| Water | Fastest | Slicks | Inters | Wets |
+|---|---|---|---|---|
+| 100 | DRY | Suitable | Poor | Poor |
+| 200 | DRY | Suitable | Marginal | Poor |
+| 250 | DRY | Suitable | Marginal | Poor |
+| 300 | INTER | Marginal (alert if armed) | Suitable | Poor |
+| 350 | INTER | Poor (alert if armed) | Suitable (**no** wet alert) | Poor |
+| 600 | INTER | Poor | Suitable | Poor |
+| 700 | INTER | Poor | Suitable | Suitable |
+| 750 | WET | Poor | Marginal (alert if armed) | Suitable |
+
+## Notes (non-blocking, unchanged scope)
+- **AI mode oscillation.** In a 20-car AI engine sample, the share of car-laps with a mode change moved from 29.8% to 34.7%. Defence now switches on and off as the car behind crosses the 0.6 s defend gap. Not tuned further.
+- **Circuit overtakes.** The Career sample overtake rate fell back towards the pre-racecraft level at Monaco (1.4 per 10 laps) and Singapore (2.7 per 10 laps). Exact-80 locking stays at 0.8–5.2%.
+- **Still open:** Spa correlation, Sprint swap-backs, rare SC/VSC-carried pressure, and the same-lap retire/overtake event ordering.

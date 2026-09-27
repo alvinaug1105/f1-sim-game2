@@ -21,7 +21,7 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
     state = neutral ? { ...state, entrants: state.entrants.map(e => state.input.entrants.find(s => s.entrantId === e.entrantId)!.strategyController === "PLAYER" ? e : { ...e, commands: { ...e.commands!, paceMode: "CONSERVE", fuelMode: "CONSERVE", ersMode: "HARVEST" } }) } : chooseAiCommands(state);
     const lap = state.lap + 1, weather = advanceWeather(state.weather!, state.input.weather!, lap), random = createSeededRandom(state.rngState), stops = committedStops(state);
     const input = { ...state.input, interaction: { ...state.input.interaction!, drsZoneCount: neutral || control.drsDelay > 0 || weather.drsState === "DRS_DISABLED_WET" ? 0 : state.input.interaction!.drsZoneCount } };
-    const expectedLapMs = new Map<string, number>();
+    const expectedLapMs = new Map<string, number>(), commandLapMs = new Map<string, number>();
     const potential = [...state.input.entrants].sort((a, b) => a.gridPosition - b.gridPosition).map(source => {
         const old = state.entrants.find(e => e.entrantId === source.entrantId)!;
         const effect = commandLapEffects(old, state.input.fuelBurnPerLapKg * (p ? p.fuelMultiplierPermille / 1000 : 1), state.input.commands!, neutral || stops.has(source.entrantId));
@@ -29,6 +29,7 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
         const result = calculateLapTime({ ...source, circuit: input.circuit, parameters: input.parameters, fuelMassKg: old.fuelMassKg, tyre: { state: old.stint!.tyre, profile: getTyreProfile(input.tyres!, old.stint!.tyre.compound) } }, random);
         const time = p ? Math.round(input.circuit.baseLapTimeMs * p.lapMultiplierPermille / 1000) : Math.max(1, result.lapTimeMs + effect.deltaMs + old.incident!.mechanicalPenaltyMs + waterPenaltyMs(old.stint!.tyre.compound, weather.trackWater, input.weather!));
         expectedLapMs.set(source.entrantId, Math.max(1, time - result.variationMs));
+        commandLapMs.set(source.entrantId, p ? 0 : effect.commandMs);
         return { ...old, commands: effect.commands, fuelMassKg: effect.fuelMassKg, stint: { ...old.stint!, tyre: advanceWeatherTyre(old.stint!.tyre, tyres, weather, p ? { ...input.weather!, waterProfiles: Object.fromEntries(Object.entries(input.weather!.waterProfiles).map(([key, value]) => [key, { ...value, dryTargetMilliC: Math.round(weather.trackTemperatureMilliC + (value.dryTargetMilliC - weather.trackTemperatureMilliC) * p.energyMultiplierPermille / 1000), wetTargetMilliC: Math.round(weather.trackTemperatureMilliC + (value.wetTargetMilliC - weather.trackTemperatureMilliC) * p.energyMultiplierPermille / 1000) }])) as NonNullable<typeof input.weather>["waterProfiles"] } : input.weather!) }, completedLaps: lap, elapsedTimeMs: old.elapsedTimeMs + time, lastLapTimeMs: time, bestLapTimeMs: Math.min(old.bestLapTimeMs ?? time, time) };
     });
     // Queue compression is applied before pit-route crossings; each interval shrinks gradually.
@@ -51,7 +52,7 @@ export function advanceIncidentLap(saved: RaceSimulationState): RaceSimulationSt
     }
     const previous = state.entrants.filter(e => !stops.has(e.entrantId)).map((e, i) => ({ ...e, position: i + 1 }));
     const onTrack = potential.filter(e => !stops.has(e.entrantId));
-    const traffic = neutral ? null : resolveTraffic(previous, onTrack, input, lap, random, expectedLapMs);
+    const traffic = neutral ? null : resolveTraffic(previous, onTrack, input, lap, random, expectedLapMs, commandLapMs);
     let entries = completePitLap(state, potential, traffic ? traffic.entrants : orderedClassification(onTrack.sort((a, b) => a.elapsedTimeMs - b.elapsedTimeMs), input), stops, random);
     const events: RaceEvent[] = [...control.events], incidentRandom = createSeededRandom(control.rngState), affected = new Set<string>();
     const emit = (event: Omit<RaceEvent, "sequence" | "lap">) => events.push({ ...event, sequence: events.length + 1, lap });

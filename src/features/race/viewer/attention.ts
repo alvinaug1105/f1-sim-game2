@@ -5,6 +5,8 @@
  * small memory of what was last announced, so an unchanged warning never fires twice.
  */
 import type { RacePublicEntrant, RacePublicState } from "../public-view";
+import type { TyreCompound } from "../../../simulation/race/tyres/model";
+import { tyreFamily, type TyreFamily } from "../../../simulation/race/tyres/family";
 import { controlMode, drsState, fuelShort, tyreCondition, BATTLE_GAP_MS, type DrsState, type WearLevel } from "./race-view";
 /** A battle ends only once the nearest neighbour gap opens beyond this (hysteresis against re-entry spam). */
 export const BATTLE_EXIT_MS = 1500;
@@ -40,30 +42,21 @@ export interface AttentionMemory {
     neighbours: Readonly<Record<string, Neighbours>>;
     /** Lap of the last announced field tyre wave (one pause per wave). */
     waveLap: number | null;
-    /** Debounced most suitable tyre family for current track water. */
-    best: TyreFamily;
+    /**
+     * Crossover state per player car: its tyre family and whether a crossover alert is armed. Armed while the family
+     * is SUITABLE; after an alert it re-arms only once that family is the fastest again (hysteresis on the real
+     * performance crossover, from the server's current-condition tyre assessment).
+     */
+    fit: Readonly<Record<string, { family: TyreFamily; armed: boolean }>>;
 }
-export type TyreFamily = "DRY" | "INTERMEDIATE" | "WET";
+export type { TyreFamily };
 export interface Neighbours { readonly ahead: string | null; readonly behind: string | null }
-const familyOf = (compound: string | undefined): TyreFamily | null => compound === undefined ? null : compound === "INTERMEDIATE" ? "INTERMEDIATE" : compound === "WET" ? "WET" : "DRY";
+const familyOf = (compound: TyreCompound | undefined): TyreFamily | null => compound === undefined ? null : tyreFamily(compound);
 /** Share of RUNNING cars that must switch tyre family within the window for a field wave. */
 export const WAVE_SHARE = 0.3;
 export const WAVE_WINDOW_LAPS = 2;
 /** Laps before another field wave can be announced. */
 export const WAVE_COOLDOWN_LAPS = 6;
-/** Track-water hysteresis (‰) around the current-conditions suitability bands (100 / 350). */
-export const CROSSOVER_HYSTERESIS = 25;
-/** Most suitable family for the CURRENT track water (the same bands as the tyre suitability model), debounced. */
-export function bestFamily(previous: TyreFamily, water: number): TyreFamily {
-    const band = (f: TyreFamily) => f === "DRY" ? 0 : f === "INTERMEDIATE" ? 1 : 2;
-    const raw = water < 100 ? 0 : water < 350 ? 1 : 2, was = band(previous);
-    if (raw === was) return previous;
-    // Leave the current band only once the water is clearly past the boundary.
-    const edge = raw > was ? (was === 0 ? 100 : 350) + CROSSOVER_HYSTERESIS : (was === 2 ? 350 : 100) - CROSSOVER_HYSTERESIS;
-    const moved = raw > was ? water >= edge : water < edge;
-    if (!moved) return previous;
-    return raw === 0 ? "DRY" : raw === 1 ? "INTERMEDIATE" : "WET";
-}
 /** The rival cars directly ahead of and behind each running player car (a team-mate is not a rival). */
 function neighboursOf(s: RacePublicState, playerIds: ReadonlySet<string>) {
     const order = s.entrants.filter(e => (e.incident?.status ?? "RUNNING") === "RUNNING").sort((a, b) => a.position - b.position);
@@ -72,7 +65,6 @@ function neighboursOf(s: RacePublicState, playerIds: ReadonlySet<string>) {
     order.forEach((e, i) => { if (playerIds.has(e.entrantId)) out[e.entrantId] = { ahead: rival(order[i - 1]), behind: rival(order[i + 1]) }; });
     return out;
 }
-function suitableFamily(water: number): TyreFamily { return water < 100 ? "DRY" : water < 350 ? "INTERMEDIATE" : "WET"; }
 function tyreFacts(s: RacePublicState) {
     return {
         stopsAll: Object.fromEntries(s.entrants.map(e => [e.entrantId, e.pit?.stops.length ?? 0])),
@@ -83,6 +75,20 @@ const WEAR_RANK: Record<WearLevel, number> = { OK: 0, HIGH: 1, CRITICAL: 2 };
 function rainBand(s: RacePublicState) { const r = s.weather?.rainfallIntensity ?? 0; return r === 0 ? 0 : r < 650 ? 1 : 2; }
 function waterBand(s: RacePublicState) { const w = s.weather?.trackWater ?? 0; return w < 100 ? 0 : w < 350 ? 1 : 2; }
 function playerIdSet(s: RacePublicState, teamId: string) { return new Set(s.input.entrants.filter(e => e.teamId === teamId).map(e => e.entrantId)); }
+/** Next crossover state per player car from the public tyre assessment (see `AttentionMemory.fit`). */
+function crossoverFit(s: RacePublicState, mine: readonly RacePublicEntrant[], previous: AttentionMemory["fit"]) {
+    const out: Record<string, { family: TyreFamily; armed: boolean }> = {};
+    for (const e of mine) {
+        const family = familyOf(e.stint?.tyre.compound), level = family && s.tyreFit ? s.tyreFit.levels[family] : null;
+        if (!family) continue;
+        const was = previous[e.entrantId];
+        if (!s.tyreFit || level === null) { out[e.entrantId] = { family, armed: false }; continue; }
+        // A new family (a stop) re-baselines silently; otherwise disarm when it stops being suitable, re-arm at best.
+        const armed = !was || was.family !== family ? level === "SUITABLE" : was.armed ? level === "SUITABLE" : s.tyreFit.best === family;
+        out[e.entrantId] = { family, armed };
+    }
+    return out;
+}
 function players(s: RacePublicState, teamId: string) {
     const ids = new Set(s.input.entrants.filter(e => e.teamId === teamId).map(e => e.entrantId));
     return s.entrants.filter(e => ids.has(e.entrantId));
@@ -108,7 +114,7 @@ export function initialAttention(s: RacePublicState, playerTeamId: string): Atte
         fuelDeficit: Object.fromEntries(mine.map(e => [e.entrantId, fuelDeficit(s, e)])),
         battle: Object.fromEntries(mine.map(e => { const g = neighbourGaps(s, e.entrantId), near = Math.min(g.ahead ?? Infinity, g.behind ?? Infinity); return [e.entrantId, near <= BATTLE_GAP_MS]; })),
         ...tyreFacts(s), switchLap: {}, neighbours: neighboursOf(s, playerIdSet(s, playerTeamId)), waveLap: null,
-        best: s.weather ? suitableFamily(s.weather.trackWater) : "DRY",
+        fit: crossoverFit(s, mine, {}),
     };
 }
 /** Compares one newly committed checkpoint with what was already announced. Returns items (priority order) and the next memory. */
@@ -152,9 +158,11 @@ export function assessCheckpoint(memory: AttentionMemory, s: RacePublicState, pl
     const recent = Object.entries(switchLap).filter(([id, l]) => lap - l < WAVE_WINDOW_LAPS && runningIds.has(id)).length;
     let waveLap = memory.waveLap;
     if (s.status === "RUNNING" && runningCount > 0 && recent / runningCount >= WAVE_SHARE && (waveLap === null || lap - waveLap > WAVE_COOLDOWN_LAPS)) { add("TYRE_WAVE"); waveLap = lap; }
-    const best = s.weather ? bestFamily(memory.best, s.weather.trackWater) : memory.best;
-    if (best !== memory.best && s.status === "RUNNING")
-        for (const e of mine) if (running(e) && facts.family[e.entrantId] && facts.family[e.entrantId] !== best) add("TYRE_CROSSOVER", e.entrantId);
+    // Suitability crossover: a player car's tyre family stops being suitable for current conditions (another family is
+    // now clearly faster in the Race's own tyre model). One alert, re-armed once that family is the fastest again.
+    const fit = crossoverFit(s, mine, memory.fit);
+    if (s.status === "RUNNING")
+        for (const e of mine) { const was = memory.fit[e.entrantId], now = fit[e.entrantId]; if (running(e) && was?.armed && now && now.family === was.family && !now.armed) add("TYRE_CROSSOVER", e.entrantId); }
     // Current, public weather bands only.
     const rain = rainBand(s), water = waterBand(s);
     if (rain !== memory.rain) add(memory.rain === 0 ? "RAIN_START" : rain === 0 ? "RAIN_STOP" : rain > memory.rain ? "RAIN_UP" : "RAIN_DOWN");
@@ -188,6 +196,6 @@ export function assessCheckpoint(memory: AttentionMemory, s: RacePublicState, pl
     items.sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind));
     return {
         items,
-        memory: { control, drs, rain, water, events: events.length, stops: Object.fromEntries(mine.map(e => [e.entrantId, e.pit?.stops.length ?? 0])), tyre, fuelDeficit: fuel, battle, ...facts, switchLap, neighbours: now, waveLap, best },
+        memory: { control, drs, rain, water, events: events.length, stops: Object.fromEntries(mine.map(e => [e.entrantId, e.pit?.stops.length ?? 0])), tyre, fuelDeficit: fuel, battle, ...facts, switchLap, neighbours: now, waveLap, fit },
     };
 }

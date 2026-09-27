@@ -103,9 +103,21 @@ describe('Next Strategic Event: public tyre facts', () => {
         expect(laps.map(l => l.filter(i => i === 'TYRE_WAVE').length)).toEqual([0, 1, 0, 0]);
         expect(WAVE_COOLDOWN_LAPS).toBeGreaterThan(2);
     });
-    it('tyre suitability crossover for the player family, with hysteresis (no flicker around the boundary)', () => {
-        const laps = run([{ lap: 10 }, { lap: 11, water: 115 }, { lap: 12, water: 140 }, { lap: 13, water: 110 }, { lap: 14, water: 130 }, { lap: 15, water: 60 }]);
-        expect(laps.map(l => l.filter(i => i.startsWith('TYRE_CROSSOVER')).sort())).toEqual([[], [`TYRE_CROSSOVER:${id(0)}`, `TYRE_CROSSOVER:${id(1)}`], [], [], []]);
+    // Crossovers follow the Race tyre model (≈267‰ slick→inter, ≈719‰ inter→wet at the default circuit), not display bands.
+    const both = (compound: TyreCompound) => ({ [id(0)]: compound, [id(1)]: compound });
+    const crossovers = (stages: Stage[]) => run(stages).map(l => l.filter(i => i.startsWith('TYRE_CROSSOVER')).length);
+    it('slicks: no alert while slicks are still fastest; one alert once inters are genuinely faster; no flicker; re-arms after drying', () => {
+        expect(crossovers([{ lap: 10 }, { lap: 11, water: 150 }, { lap: 12, water: 250 }, { lap: 13, water: 275 }, { lap: 14, water: 310 }, { lap: 15, water: 290 }, { lap: 16, water: 320 }, { lap: 17, water: 280 }, { lap: 18, water: 150 }, { lap: 19, water: 320 }]))
+            .toEqual([0, 0, 0, 2, 0, 0, 0, 0, 2]);
+    });
+    it('regression: inters at ~350‰ (inters clearly faster than wets) never get a "switch to wets" alert', () => {
+        const inter = both('INTERMEDIATE');
+        expect(crossovers([{ lap: 10, water: 300, tyre: inter }, { lap: 11, water: 350, tyre: inter }, { lap: 12, water: 360, tyre: inter }, { lap: 13, water: 340, tyre: inter }, { lap: 14, water: 500, tyre: inter }, { lap: 15, water: 700, tyre: inter }])).toEqual([0, 0, 0, 0, 0]);
+    });
+    it('inters → wets alerts near the real crossover, and wets → inters when drying', () => {
+        const inter = both('INTERMEDIATE'), wet = both('WET');
+        expect(crossovers([{ lap: 10, water: 650, tyre: inter }, { lap: 11, water: 710, tyre: inter }, { lap: 12, water: 760, tyre: inter }, { lap: 13, water: 740, tyre: inter }, { lap: 14, water: 780, tyre: inter }])).toEqual([0, 2, 0, 0]);
+        expect(crossovers([{ lap: 10, water: 900, tyre: wet }, { lap: 11, water: 720, tyre: wet }, { lap: 12, water: 640, tyre: wet }, { lap: 13, water: 600, tyre: wet }])).toEqual([0, 2, 0]);
     });
     it('reads only public facts: rival wear and hidden strategy never affect the result', () => {
         const a = stage({ lap: 11, stops: { [id(4)]: 1 }, tyre: { [id(4)]: 'HARD' } });

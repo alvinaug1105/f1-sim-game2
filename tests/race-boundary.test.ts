@@ -106,6 +106,10 @@ describe('Race view projection', () => {
             expect(['TYRE', 'ERS', 'DRS', 'PACE']).toContain(e.cause);
         }
         expect(json).not.toContain('racecraft');
+        // Tyre suitability ships as the qualitative current-condition result only (no costs or model constants).
+        expect(Object.keys(view.state!.tyreFit!).sort()).toEqual(['best', 'levels']);
+        expect(Object.keys(view.state!.tyreFit!.levels).sort()).toEqual(['DRY', 'INTERMEDIATE', 'WET']);
+        for (const k of ['costMs', 'basePenaltyMs', 'curveMs', 'centre', 'wetTargetMilliC']) expect(json).not.toContain(k);
     });
     it('states that differ only in hidden data project to the identical view', () => {
         const s = advanceRace(createRace({ ...incidentInput(4), weather: scenarioWeather(7, 58, 'MIXED') }), 6), team = s.input.entrants[0].teamId;

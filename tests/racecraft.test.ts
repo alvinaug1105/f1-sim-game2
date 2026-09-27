@@ -3,7 +3,9 @@ import { racecraftInput, laps, carModes, type RacecraftScenario } from "./helper
 import { modes } from "./helpers/commands";
 import { createRace, advanceRaceLap, simulateRace } from "../src/simulation/race/engine";
 import { chooseAiCommands } from "../src/simulation/race/commands/policy";
-import { defaultRacecraftConfiguration, validateRacecraftConfiguration } from "../src/simulation/race/traffic/racecraft";
+import { defaultRacecraftConfiguration, validateRacecraftConfiguration, type RacecraftConfiguration } from "../src/simulation/race/traffic/racecraft";
+import { attackEdge } from "../src/simulation/race/traffic/model";
+import { circuitInteractionConfiguration } from "../src/simulation/race/traffic/profiles";
 import { validateCommandConfiguration } from "../src/simulation/race/commands/model";
 import type { RaceSimulationState } from "../src/simulation/race/types";
 import type { CommandState } from "../src/simulation/race/commands/model";
@@ -129,6 +131,17 @@ describe("AI command policy", () => {
   });
 });
 describe("determinism", () => {
+  it("continuous run equals persist/reload every lap (JSON round trip), with AI defence and player commands", () => {
+    const i = racecraftInput({ count: 6, seed: 4, laps: 15, gapMs: 400, paceMs: [0, -100, 50, -200, 0, -50], drs: true, ai: true });
+    const player = { ...i, entrants: i.entrants.map((e, n) => n === 1 ? { ...e, strategyController: "PLAYER" as const } : e) };
+    const attack = (s: RaceSimulationState) => carModes(s, { paceMode: "ATTACK", ersMode: "OVERTAKE" }, 1);
+    let continuous = createRace(player), reloaded = createRace(player);
+    while (continuous.status === "RUNNING") {
+      continuous = advanceRaceLap(attack(continuous));
+      reloaded = JSON.parse(JSON.stringify(advanceRaceLap(attack(JSON.parse(JSON.stringify(reloaded)) as RaceSimulationState)))) as RaceSimulationState;
+    }
+    expect(reloaded).toEqual(JSON.parse(JSON.stringify(continuous)));
+  });
   it("the same racecraft input replays identically", () => {
     const i = racecraftInput({ count: 8, seed: 9, laps: 20, gapMs: 300, paceMs: [0, -250, -500, 100, -700, -200, -900, 0], drs: true, ai: true });
     expect(simulateRace(i)).toEqual(simulateRace(i));
@@ -146,4 +159,75 @@ describe("determinism", () => {
     expect(legacy.incidents!.events.some(e => e.type === "OVERTAKE")).toBe(false);
   });
 });
-void advanceRaceLap;
+
+describe("command exploit repair: bounded command edge and AI closing-threat defence", () => {
+  const r = defaultRacecraftConfiguration();
+  const CIRCUIT = { Monaco: [85, 1500, 350], Shanghai: [25, 950, 1150], Spa: [15, 900, 1350] } as const;
+  const COMMANDS: Record<string, Partial<CommandState>> = { STANDARD: {}, ATTACK: { paceMode: "ATTACK" }, OVERTAKE: { ersMode: "OVERTAKE" }, BOTH: { paceMode: "ATTACK", ersMode: "OVERTAKE" } };
+  /** A player car 0.6 s behind a real AI car (same car, driver and tyres unless `paceMs` says otherwise), 10 laps. */
+  function duel(circuit: keyof typeof CIRCUIT, modes: Partial<CommandState>, paceMs = 0, racecraft: RacecraftConfiguration = r) {
+    const [d, dirty, drs] = CIRCUIT[circuit];
+    let passed = 0, lapsToPass = 0, defended = 0, observed = 0;
+    for (let seed = 0; seed < 100; seed++) {
+      const base = racecraftInput({ seed, laps: 10, gapMs: 600, paceMs: [0, paceMs], drs: true });
+      const input = { ...base, commands: { ...base.commands!, racecraft },
+        interaction: { ...circuitInteractionConfiguration({ overtakingDifficulty: d, dirtyAirSensitivityPermille: dirty, drsEffectivenessPermille: drs }), drsActivationLap: 1 },
+        entrants: base.entrants.map((e, i) => ({ ...e, strategyController: i === 0 ? "DEVELOPMENT_AI" as const : "PLAYER" as const })) };
+      const states = laps(input, s => carModes(s, modes, 1)), attacker = input.entrants[1].entrantId, defender = input.entrants[0].entrantId;
+      const k = states.findIndex(s => s.entrants[0].entrantId === attacker);
+      if (k >= 0) { passed++; lapsToPass += k + 1; }
+      for (const s of states.slice(0, k >= 0 ? k + 1 : undefined)) { observed++; const c = s.entrants.find(e => e.entrantId === defender)!.commands!; if (c.paceMode === "PUSH" || c.ersMode === "DEPLOY") defended++; }
+    }
+    return { passed, meanLaps: passed ? lapsToPass / passed : null, defendShare: defended / observed };
+  }
+  it("only a bounded share of the attacker's net command advantage counts towards the pass; real pace counts in full", () => {
+    expect(attackEdge(1400, 1400, r)).toEqual({ edge: 300, excessMs: 1100 });                 // ATTACK+OVERTAKE, equal cars
+    expect(attackEdge(550, 550, r)).toEqual({ edge: Math.round(550 * 0.35), excessMs: 550 - Math.round(550 * 0.35) });
+    expect(attackEdge(900, 500, r).edge).toBe(400 + 175);                                        // 0.4 s real + commands
+    expect(attackEdge(-300, -300, r)).toEqual({ edge: -300, excessMs: 0 });                    // a defending car's commands count in full
+    // Racecraft frozen before the repair (no command fields) counts command pace in full, exactly as before.
+    const { commandEdgePermille: _p, commandEdgeCapMs: _c, aiThreatEdgeMs: _t, ...before } = r; void _p; void _c; void _t;
+    expect(attackEdge(1400, 1400, before)).toEqual({ edge: 1400, excessMs: 0 });
+    expect(() => validateRacecraftConfiguration({ ...r, commandEdgeCapMs: undefined })).toThrow(RangeError);
+  });
+  it("equal pace vs a real AI car: stronger commands help, ATTACK+OVERTAKE is not a universal pass, and circuits differ", () => {
+    const spa = Object.fromEntries(Object.entries(COMMANDS).map(([k, m]) => [k, duel("Spa", m)]));
+    expect(spa.STANDARD.passed).toBe(0);
+    expect(spa.ATTACK.passed).toBeGreaterThan(spa.STANDARD.passed);
+    expect(spa.OVERTAKE.passed).toBeGreaterThan(spa.STANDARD.passed);
+    expect(spa.BOTH.passed).toBeGreaterThan(Math.max(spa.ATTACK.passed, spa.OVERTAKE.passed));
+    expect(spa.BOTH.passed).toBeLessThan(75);
+    const monaco = duel("Monaco", COMMANDS.BOTH), shanghai = duel("Shanghai", COMMANDS.BOTH);
+    expect(monaco.passed).toBeLessThan(shanghai.passed);
+    expect(shanghai.passed).toBeLessThanOrEqual(spa.BOTH.passed + 10);
+    // The defending AI recognises the command-driven closing threat and answers with the normal (paid-for) modes.
+    expect(spa.BOTH.defendShare).toBeGreaterThan(0.5);
+    expect(spa.STANDARD.defendShare).toBe(0);
+    // Before the repair the same duel was a near-certain pass.
+    const { commandEdgePermille: _p, commandEdgeCapMs: _c, aiThreatEdgeMs: _t, ...before } = r; void _p; void _c; void _t;
+    expect(duel("Spa", COMMANDS.BOTH, 0, before).passed).toBeGreaterThan(95);
+  });
+  it("a genuine pace edge amplified by commands still passes, even at Monaco sometimes", () => {
+    expect(duel("Spa", COMMANDS.BOTH, -400).passed).toBeGreaterThan(90);
+    expect(duel("Spa", COMMANDS.ATTACK, -800).passed).toBeGreaterThan(95);
+    const monaco = duel("Monaco", COMMANDS.BOTH, -400).passed;
+    expect(monaco).toBeGreaterThan(10);
+    expect(monaco).toBeLessThan(duel("Spa", COMMANDS.BOTH, -400).passed);
+  });
+  it("AI threat detection reads Race state only: the same attack commands from any car behind trigger the same defence", () => {
+    const i = racecraftInput({ count: 3, laps: 10, gapMs: 400, paceMs: [0, 0, 0], ai: true });
+    let s = laps(i).at(2)!;
+    const order = [...s.entrants].sort((a, b) => a.position - b.position), leader = order[0], chaser = order[1];
+    s = { ...s, entrants: s.entrants.map(e => e.entrantId === chaser.entrantId ? { ...e, intervalToAheadMs: 400, commands: { ...e.commands!, paceMode: "ATTACK", ersMode: "OVERTAKE", ersCharge: 700 } } : e.entrantId === leader.entrantId ? { ...e, commands: { ...e.commands!, ersCharge: 700 } } : e) };
+    const modesOf = (x: RaceSimulationState) => { const e = chooseAiCommands(x).entrants.find(e => e.entrantId === leader.entrantId)!.commands!; return [e.paceMode, e.ersMode]; };
+    expect(modesOf(s)).toEqual(["PUSH", "DEPLOY"]);
+    const renamed: RaceSimulationState = { ...s, input: { ...s.input, entrants: s.input.entrants.map((e, n) => ({ ...e, driverId: `x-${n}`, teamId: `y-${n}` })) } };
+    expect(modesOf(renamed)).toEqual(modesOf(s));
+    // No threat (neutral commands behind) → the leader runs its normal race.
+    const calm = { ...s, entrants: s.entrants.map(e => e.entrantId === chaser.entrantId ? { ...e, commands: { ...e.commands!, paceMode: "STANDARD" as const, ersMode: "NEUTRAL" as const } } : e) };
+    expect(modesOf(calm)).toEqual(["STANDARD", "NEUTRAL"]);
+    // An empty battery is not a threat and cannot defend: the costs are the same for everyone.
+    const flat = { ...s, entrants: s.entrants.map(e => e.entrantId === chaser.entrantId ? { ...e, commands: { ...e.commands!, paceMode: "STANDARD" as const, ersCharge: 0 } } : e) };
+    expect(modesOf(flat)).toEqual(["STANDARD", "NEUTRAL"]);
+  });
+});

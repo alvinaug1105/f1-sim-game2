@@ -11,6 +11,7 @@ import type { TyreState } from "../../simulation/race/tyres/model";
 import { WEATHER_TYRE_COMPOUNDS, type TyreCompound } from "../../simulation/race/tyres/model";
 import { projectedFuelGrams } from "../../simulation/race/commands/model";
 import { forecastAt } from "../../simulation/race/weather/model";
+import { assessTyreFamilies } from "../../simulation/race/tyres/suitability";
 import { estimatePitWindow } from "./strategy-estimate";
 import { aiStartingCompound, careerRaceWeather } from "./weather-scenarios";
 import { scheduledLaps } from "./development-profiles";
@@ -103,6 +104,8 @@ export function projectRaceState(s: RaceSimulationState, playerTeamId: string): 
     // The approximate forecast windows still ahead — the same public forecast the AI weather policy reads; the
     // truth timeline and its generator never leave the server.
     forecast: s.input.weather && s.status === "RUNNING" ? forecastAt(s.input.weather, s.lap + 1) : s.input.weather ? [] : null,
+    // Current-condition tyre suitability (one shared source of truth for the badge and crossover alerts).
+    ...(s.weather && s.input.weather && s.input.tyres ? { tyreFit: assessTyreFamilies(s.weather, s.input.tyres, s.input.weather) } : {}),
     ...(control
       ? {
           incidents: {

@@ -190,6 +190,17 @@ function overtakeCause(attacker: RaceEntrantState, defender: RaceEntrantState, d
   return drs ? "DRS" : "PACE";
 }
 /**
+ * Attack edge from the full expected-pace edge: the attacker's net command advantage counts only up to
+ * `commandEdgePermille` of itself and never more than `commandEdgeCapMs` (Races frozen without these fields count it in
+ * full, as before). A defender's own commands and every non-command difference count in full. `excessMs` is the
+ * command pace that was not counted; it is also kept out of pressure, so it cannot re-enter through the floor.
+ */
+export function attackEdge(fullEdgeMs: number, commandEdgeMs: number, racecraft: RacecraftConfiguration) {
+  if (racecraft.commandEdgePermille === undefined || racecraft.commandEdgeCapMs === undefined || commandEdgeMs <= 0) return { edge: fullEdgeMs, excessMs: 0 };
+  const counted = Math.min(racecraft.commandEdgeCapMs, Math.round(commandEdgeMs * racecraft.commandEdgePermille / 1000));
+  return { edge: fullEdgeMs - (commandEdgeMs - counted), excessMs: commandEdgeMs - counted };
+}
+/**
  * Racecraft traffic (new Career Races): close-racing pressure instead of a frozen queue.
  * - Every lap is an opportunity; each car may attack once and be attacked once per lap, and a car that has just lost
  *   a place cannot counter-attack in the same lap (no impossible multi-car swaps), so long trains are not starved.
@@ -211,9 +222,12 @@ function resolveRacecraftTraffic(
   random: RandomSource,
   racecraft: RacecraftConfiguration,
   expectedLapMs: ReadonlyMap<string, number> | undefined,
+  commandLapMs: ReadonlyMap<string, number> | undefined,
 ) {
   // Legitimate pace: each car's lap without this lap's random variation (car, driver, tyres, fuel, commands, water).
   const pace = (e: RaceEntrantState) => expectedLapMs?.get(e.entrantId) ?? e.track!.potentialLapTimeMs;
+  const command = (e: RaceEntrantState) => commandLapMs?.get(e.entrantId) ?? 0;
+  const commandEdgeOf = (defender: RaceEntrantState, attacker: RaceEntrantState) => command(defender) - command(attacker);
   const c = input.interaction!;
   const order = [...previous].sort((a, b) => a.position - b.position);
   if (order.some((e, i) => e.position !== i + 1 || !e.track))
@@ -242,12 +256,15 @@ function resolveRacecraftTraffic(
     const floor = defender.elapsedTimeMs + c.minimumGapMs;
     if (oldA.completedLaps === oldD.completedLaps && !attacked.has(defender.entrantId) && !attacking.has(attacker.entrantId) && !lost.has(attacker.entrantId)) {
       const a = source.get(attacker.entrantId)!, d = source.get(defender.entrantId)!;
-      const edge = pace(defender) - pace(attacker);
+      // Command-driven pace moves the car on track in full, but only a bounded share of the attacker's NET command
+      // advantage counts towards the pass itself: pressing buttons creates an attack, it does not buy a pass. The
+      // car's real performance edge (car, driver, tyres, fuel load, water) always counts in full.
+      const { edge, excessMs } = attackEdge(pace(defender) - pace(attacker), commandEdgeOf(defender, attacker), racecraft);
       const projectedGap = attacker.elapsedTimeMs - defender.elapsedTimeMs;
       const oldGap = oldA.elapsedTimeMs - oldD.elapsedTimeMs;
       const pittedLastLap = oldA.pit?.stops.at(-1)?.lap === lap - 1;
       const carried = oldGap <= c.attackThresholdMs && !pittedLastLap ? oldA.track!.trafficLossMs : 0;
-      const pressure = Math.min(racecraft.pressureCapMs, Math.max(0, floor - attacker.elapsedTimeMs) + carried);
+      const pressure = Math.min(racecraft.pressureCapMs, Math.max(0, Math.max(0, floor - attacker.elapsedTimeMs) + carried - excessMs));
       if (projectedGap <= c.attackThresholdMs && edge >= c.minimumPaceAdvantageMs) {
         const probabilityPermille = Math.min(950, passProbability(edge, a.interaction!, d.interaction!, a.car.performance - d.car.performance, attacker.track.drsEligible, c) + Math.floor((pressure * racecraft.pressurePermillePer10Ms) / 10));
         const draw = random.next();
@@ -296,8 +313,10 @@ export function resolveTraffic(
   random: RandomSource,
   /** Racecraft only: each car's expected lap without this lap's random variation (legitimate pace). */
   expectedLapMs?: ReadonlyMap<string, number>,
+  /** Racecraft only: the part of each car's lap that comes from its command modes (pace, fuel, ERS). */
+  commandLapMs?: ReadonlyMap<string, number>,
 ) {
-  if (input.commands?.racecraft) return resolveRacecraftTraffic(previous, potential, input, lap, random, input.commands.racecraft, expectedLapMs);
+  if (input.commands?.racecraft) return resolveRacecraftTraffic(previous, potential, input, lap, random, input.commands.racecraft, expectedLapMs, commandLapMs);
   const c = input.interaction!;
   const order = [...previous].sort((a, b) => a.position - b.position);
   if (order.some((e, i) => e.position !== i + 1 || !e.track))

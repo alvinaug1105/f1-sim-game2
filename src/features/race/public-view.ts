@@ -13,6 +13,7 @@ import type { EntrantIncidentState, RaceControlMode, RaceEvent } from "../../sim
 import type { RacePitStop } from "../../simulation/race/pits/types";
 import type { TyreCompound } from "../../simulation/race/tyres/model";
 import type { ForecastWindow, WeatherState } from "../../simulation/race/weather/model";
+import type { TyreFamilyAssessment } from "../../simulation/race/tyres/family";
 /** Tyre as seen from the pit wall: compound and age for every car; wear and temperature only for the player's cars. */
 export interface PublicTyre {
   readonly compound: TyreCompound;
@@ -109,6 +110,11 @@ export interface RacePublicState {
   readonly weather?: WeatherState;
   /** The public approximate forecast from the next lap on (never the truth timeline); null without weather. */
   readonly forecast: readonly ForecastWindow[] | null;
+  /**
+   * Qualitative tyre suitability for CURRENT conditions, computed on the server from the Race's own tyre model: the
+   * fastest tyre family now and each family's level. No model constants, costs or future weather.
+   */
+  readonly tyreFit?: TyreFamilyAssessment | null;
   /** Race Control as already announced: current mode, DRS restart delay and past events only. */
   readonly incidents?: {
     readonly mode: RaceControlMode;

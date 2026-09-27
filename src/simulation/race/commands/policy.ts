@@ -1,13 +1,14 @@
 import type { RaceEntrantState, RaceSimulationState } from "../types";
 import type { RacecraftConfiguration } from "../traffic/racecraft";
-import { projectedFuelGrams, type CommandState } from "./model";
+import { commandPaceMs, projectedFuelGrams, type CommandConfiguration, type CommandState } from "./model";
 /**
  * Racecraft AI roles (new Career Races). A car in a train attacks only with a genuine basis — it was held back last
  * lap, or it has a clearly fresher tyre on the car ahead — and spends OVERTAKE only with the charge to do so. A car
  * under direct threat from such an attacker defends with DEPLOY. Everyone else runs its normal race (no mirroring of
  * maximum aggression). Reads only Race state; identical mechanics for every car; no RNG; no names or identity.
  */
-function racecraftModes(state: RaceSimulationState, e: RaceEntrantState, r: RacecraftConfiguration, lowCharge: number): Pick<CommandState, "paceMode" | "ersMode"> {
+function racecraftModes(state: RaceSimulationState, e: RaceEntrantState, r: RacecraftConfiguration, c: CommandConfiguration): Pick<CommandState, "paceMode" | "ersMode"> {
+  const lowCharge = c.ai.lowCharge;
   const byPosition = (p: number) => state.entrants.find((x) => x.position === p);
   // A car recently passed does not answer the passer with an all-out counter-attack on the "held" basis alone (the
   // passer had the better pace); a clearly fresher tyre remains a genuine basis.
@@ -24,7 +25,11 @@ function racecraftModes(state: RaceSimulationState, e: RaceEntrantState, r: Race
     (tyreEdge(car, ahead) || (heldOnMerit(car) && !justPassedBy(car, ahead)));
   const ahead = byPosition(e.position - 1), behind = byPosition(e.position + 1);
   const attacking = hasEdge(e, ahead);
-  const threatened = !!behind && behind.intervalToAheadMs !== null && behind.intervalToAheadMs <= r.aiDefendGapMs && hasEdge(behind, e);
+  // A genuine closing threat also comes from the car behind running attack commands (ATTACK / PUSH / DEPLOY /
+  // OVERTAKE worth at least aiThreatEdgeMs of lap time with the charge it actually has) — read from Race state for
+  // whichever car is behind, never from who drives it.
+  const closingThreat = (car: RaceEntrantState) => r.aiThreatEdgeMs !== undefined && !!car.commands && -commandPaceMs(car.commands, c) >= r.aiThreatEdgeMs;
+  const threatened = !!behind && behind.intervalToAheadMs !== null && behind.intervalToAheadMs <= r.aiDefendGapMs && (hasEdge(behind, e) || closingThreat(behind));
   const charge = e.commands!.ersCharge;
   // Heavy harvesting (a slow lap) is for clear air: in a fight, a low battery holds NEUTRAL instead.
   const pressed = !!behind && behind.intervalToAheadMs !== null && behind.intervalToAheadMs <= r.aiDefendGapMs;
@@ -41,7 +46,7 @@ export function chooseAiCommands(state: RaceSimulationState): RaceSimulationStat
     const fuel = projectedFuelGrams(state, e, "BALANCED");
     const fuelMode = fuel < 0 ? "CONSERVE" : state.input.totalLaps - state.lap <= c.ai.lateLaps && fuel > c.ai.surplusGrams ? "PUSH" : "BALANCED";
     if (c.racecraft) {
-      const modes = racecraftModes(state, e, c.racecraft, c.ai.lowCharge);
+      const modes = racecraftModes(state, e, c.racecraft, c);
       return { ...e, commands: { ...e.commands!, fuelMode, ersMode: modes.ersMode, paceMode: e.stint!.tyre.wearPermille >= c.ai.highWear ? "LIGHT" : modes.paceMode } };
     }
     const ahead = e.position > 1 && e.intervalToAheadMs !== null && e.intervalToAheadMs <= c.ai.battleGapMs;

@@ -8,6 +8,7 @@ import { PACE_MODES, FUEL_MODES, ERS_MODES, type PaceMode, type FuelMode, type E
 import { isTyreCompound, type TyreCompound } from '../../../simulation/race/tyres/model';
 import type { ViewerIntent } from './intents';
 import { battleContext, drsState, tyreCondition, tyreSuitability, ersOutlook } from './race-view';
+import { tyreFamily } from '../../../simulation/race/tyres/family';
 type Row = ReturnType<typeof timingRows>[number];
 /** Laps-to-cliff at or below this reads as "high wear risk soon". Presentation wording only. */
 const RISK_LAPS = 3;
@@ -41,7 +42,7 @@ export function DriverPanel({ data, row, busy, send, rows }: {
         return <div className={`neighbour ${fight ? 'fighting' : ''}`}><span>{t(side === 'ahead' ? 'viewer.ahead' : 'viewer.behind')}</span>{other ? <><strong style={{ borderColor: other.color }}>{other.abbreviation}</strong><em>{gap(ms)}</em><small className="neighbour-lap">{t('viewer.lastLap')} {lap(other.entrant.lastLapTimeMs)}</small></> : <strong>{t('race.noTime')}</strong>}</div>;
     };
     const lap = (ms: number | null) => ms === null ? t('race.noTime') : formatRaceTime(ms, locale);
-    const suitability = e.stint && row.status === 'RUNNING' ? tyreSuitability(e.stint.tyre.compound, s.weather) : null, ers = row.status === 'RUNNING' ? ersOutlook(e) : null;
+    const suitability = e.stint && row.status === 'RUNNING' ? tyreSuitability(e.stint.tyre.compound, s) : null, ers = row.status === 'RUNNING' ? ersOutlook(e) : null;
     const lastStop = e.pit?.stops.at(-1);
     return <section className="ops-panel driver-focus" aria-label={t('viewer.selectedDriver')}>
   <div className="ops-panel-title"><span>{t('viewer.selectedDriver')}</span><span className="status-pill">{t(row.player ? 'viewer.player' : 'viewer.readOnly')}</span></div>
@@ -61,7 +62,7 @@ export function DriverPanel({ data, row, busy, send, rows }: {
     <div className="tyre-stats"><Stat label={t('viewer.wear')} tone={condition?.wear !== 'OK' ? `warn-${condition?.wear}` : ''}>{e.stint.tyre.wearPermille === null ? t('race.noTime') : format.percentage(e.stint.tyre.wearPermille / 1000, { maximumFractionDigits: 0 })}</Stat><Stat label={t('viewer.temp')} tone={condition?.temperature !== 'OK' ? 'warn-HIGH' : ''}>{e.stint.tyre.temperatureMilliC === null ? t('race.noTime') : format.number(e.stint.tyre.temperatureMilliC / 1000, { style: 'unit', unit: 'celsius', maximumFractionDigits: 0 })}</Stat></div>
     {e.stint.tyre.wearPermille !== null && <progress max="1000" value={e.stint.tyre.wearPermille} aria-label={t('tyre.wear')}/>}
     {condition && (condition.wear !== 'OK' || condition.temperature !== 'OK') && <p className="tyre-warnings">{condition.wear !== 'OK' && <span className={`warn-${condition.wear}`}>⚠ {t(`viewer.warn.${condition.wear}`)}</span>}{condition.temperature !== 'OK' && <span className="warn-HIGH">⚠ {t(`viewer.warn.${condition.temperature}`)}</span>}</p>}
-    {suitability && <p className={`tyre-suitability suit-${suitability.level}`}><span aria-hidden="true">{suitability.level === 'SUITABLE' ? '● ' : suitability.level === 'MARGINAL' ? '◐ ' : '○ '}</span><strong>{t(`viewer.suit.${suitability.level}`)}</strong> · {t(`viewer.suitNote.${suitability.note}`)}</p>}
+    {suitability && <p className={`tyre-suitability suit-${suitability.level}`}><span aria-hidden="true">{suitability.level === 'SUITABLE' ? '● ' : suitability.level === 'MARGINAL' ? '◐ ' : '○ '}</span><strong>{t(`viewer.suit.${suitability.level}`)}</strong> · {t(`viewer.suitNote.${suitability.note}`, { family: t(`viewer.family.${tyreFamily(e.stint!.tyre.compound)}`), best: t(`viewer.family.${suitability.best}`) })}</p>}
     {estimate && row.status === 'RUNNING' && s.status === 'RUNNING' && condition?.wear !== 'CRITICAL' && <p className="tyre-estimate">{estimate.lapsToCliff <= RISK_LAPS ? t('viewer.tyreLifeRisk') : t('viewer.tyreLife', { count: format.number(estimate.lapsToCliff) })}<small>{t('viewer.estimateNote')}</small></p>}
    </div>}
   </div><div className="driver-resources">{c && s.input.commands ? <>

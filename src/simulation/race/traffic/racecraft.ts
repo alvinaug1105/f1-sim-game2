@@ -24,6 +24,18 @@ export interface RacecraftConfiguration {
   readonly aiOvertakeCharge: number;
   /** AI: laps after being passed before answering the passer on the "held" basis alone. */
   readonly aiCounterAttackCooldownLaps: number;
+  /**
+   * Command-driven attack edge (focused repair). Share (‰) of the attacker's NET command pace advantage (pace, fuel and
+   * ERS modes over the defender's) that counts towards the pass, and its ceiling (ms). The lap-time effect on track is
+   * unchanged. Absent in Races frozen before the repair, which count command pace in full.
+   */
+  readonly commandEdgePermille?: number;
+  readonly commandEdgeCapMs?: number;
+  /**
+   * AI: a car directly behind whose current commands are worth at least this much lap time (ms) over neutral running is
+   * a genuine closing threat, whoever drives it. Absent in Races frozen before the repair.
+   */
+  readonly aiThreatEdgeMs?: number;
 }
 export function defaultRacecraftConfiguration(): RacecraftConfiguration {
   return {
@@ -37,6 +49,9 @@ export function defaultRacecraftConfiguration(): RacecraftConfiguration {
     aiDefendGapMs: 600,
     aiOvertakeCharge: 400,
     aiCounterAttackCooldownLaps: 3,
+    commandEdgePermille: 350,
+    commandEdgeCapMs: 300,
+    aiThreatEdgeMs: 400,
   };
 }
 function integer(n: number, lo: number, hi: number) {
@@ -53,4 +68,8 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   integer(c.aiDefendGapMs, 0, 10000);
   integer(c.aiOvertakeCharge, 0, 1000);
   integer(c.aiCounterAttackCooldownLaps, 0, 20);
+  if ((c.commandEdgePermille === undefined) !== (c.commandEdgeCapMs === undefined)) throw new RangeError("Invalid racecraft configuration");
+  if (c.commandEdgePermille !== undefined) integer(c.commandEdgePermille, 0, 1000);
+  if (c.commandEdgeCapMs !== undefined) integer(c.commandEdgeCapMs, 0, 5000);
+  if (c.aiThreatEdgeMs !== undefined) integer(c.aiThreatEdgeMs, 0, 5000);
 }

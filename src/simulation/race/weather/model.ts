@@ -52,12 +52,16 @@ export function evolveWeather(previous:WeatherState,rainfall:number,air:number,c
 export function advanceWeather(previous:WeatherState,c:WeatherConfiguration,lap:number){validateWeatherState(previous);const segment=[...c.timeline].reverse().find(s=>s.startLap<=lap)!;return evolveWeather(previous,segment.rainfall,segment.airTemperatureMilliC,c);}
 export function waterPenaltyMs(compound:TyreCompound,water:number,c:Pick<WeatherConfiguration,"waterProfiles"|"circuit">){const p=c.waterProfiles[compound];return Math.round((p.basePenaltyMs+p.curveMs*((water-p.centre)/1000)**2)*c.circuit.wetGripSensitivityPermille/1000);}
 /** Existing thermal response and pace multipliers remain active; weather changes target and wear inputs. */
+/** Temperature a compound settles at in the CURRENT conditions (track water and track temperature). */
+export function weatherTyreTargetMilliC(compound:TyreCompound,weather:Pick<WeatherState,"trackWater"|"trackTemperatureMilliC">,c:Pick<WeatherConfiguration,"waterProfiles">){
+ const p=c.waterProfiles[compound],dryFraction=(1000-weather.trackWater)/1000;
+ return clamp(Math.round(p.wetTargetMilliC+(p.dryTargetMilliC-p.wetTargetMilliC)*dryFraction+(weather.trackTemperatureMilliC-30000)/4),0,160000);
+}
 export function advanceWeatherTyre(tyre:TyreState,tyres:TyreConfiguration,weather:WeatherState,c:Pick<WeatherConfiguration,"waterProfiles">){
  const p=c.waterProfiles[tyre.compound],dryFraction=(1000-weather.trackWater)/1000;
  const wear=Math.round(1000+(p.dryWearMultiplierPermille-1000)*dryFraction*dryFraction);
  const original=tyres.profiles[tyre.compound];
- const target=Math.round(p.wetTargetMilliC+(p.dryTargetMilliC-p.wetTargetMilliC)*dryFraction+(weather.trackTemperatureMilliC-30000)/4);
- return advanceTyre(tyre,{...tyres,tyreWearMultiplierPermille:Math.round(tyres.tyreWearMultiplierPermille*wear/1000),profiles:{...tyres.profiles,[tyre.compound]:{...original,targetTemperatureMilliC:clamp(target,0,160000)}}});
+ return advanceTyre(tyre,{...tyres,tyreWearMultiplierPermille:Math.round(tyres.tyreWearMultiplierPermille*wear/1000),profiles:{...tyres.profiles,[tyre.compound]:{...original,targetTemperatureMilliC:weatherTyreTargetMilliC(tyre.compound,weather,c)}}});
 }
 /** Shared approximate forecast; never returns or aliases truth segments. */
 export function forecastAt(c:Pick<WeatherConfiguration,"forecast">,lap:number):readonly ForecastWindow[]{return structuredClone(c.forecast.filter(f=>f.arrivalMaxLap>=lap));}

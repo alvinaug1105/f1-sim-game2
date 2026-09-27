@@ -148,7 +148,7 @@ describe('Race view projection', () => {
     it('the preparation view carries grid conditions, the public forecast and names only', async () => {
         const g = await careerGrid('team-mclaren'), m = raceRepository(g, null, { kind: 'SPRINT', eventIndex: 1 }), data = m.get();
         const view = projectRaceView(data), laps = scheduledLaps(data);
-        const truth = careerRaceWeather(g.career.id, data.eventId, data.circuit.sourceCircuitId!, laps, 'SPRINT');
+        const truth = careerRaceWeather(g.career.id, data.eventId, data.circuit.sourceCircuitId!, laps, 'SPRINT', data.circuit.climateProfile);
         expect(view.state).toBeNull();
         expect(view.preparation).toMatchObject({ laps, conditions: truth.initial, forecast: forecastAt(truth, 1).slice(1) });
         expect(view.preparation!.mine.map(r => r.driverId).sort()).toEqual(data.roster.filter(r => r.teamId === g.playerTeamId).map(r => r.driverId).sort());

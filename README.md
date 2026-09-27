@@ -1,6 +1,8 @@
 # Formula Operations
 
-A browser-based Formula racing team management game, currently in **Phase 12A: real circuit geometry and smooth race movement**. Persistent Careers support deterministic, resumable races with weather, dry/Intermediate/Wet tyres, traffic, DRS, pits, fuel, ERS and driver commands. New v7 races add occasional errors, mechanical problems, retirement, neutralisation and a localized event feed. Existing v1–v6 saves retain their historical behaviour.
+A browser-based Formula racing team management game, with **Race Gameplay Milestone 2 complete and Content Expansion Pass B: the original 2026 24-round calendar**. Persistent Careers support deterministic, resumable races with weather, dry/Intermediate/Wet tyres, traffic, DRS, pits, fuel, ERS and driver commands. New v7 races add occasional errors, mechanical problems, retirement, neutralisation and a localized event feed. Existing v1–v6 saves retain their historical behaviour.
+
+New Careers snapshot 24 circuits, six Sprint weekends, real circuit geometry and circuit-specific climate occurrence profiles. Existing Careers keep their saved calendars and legacy weather. See [Pass B content, provenance and Builder verification](docs/content-expansion-pass-b.md).
 
 ## Stack and local development
 

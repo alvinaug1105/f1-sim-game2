@@ -17,7 +17,7 @@ import { constantWeather } from "./helpers/weather";
 import { forceMechanical, neutralise } from "./helpers/incidents";
 import { pitAndRetireNextLap, stintProblems } from "./helpers/race-dynamics";
 
-const SPRINT_EVENTS = ["Chinese Grand Prix", "British Grand Prix", "Singapore Grand Prix"];
+const SPRINT_EVENTS = ["Miami Grand Prix", "Canadian Grand Prix", "Dutch Grand Prix", "Chinese Grand Prix", "British Grand Prix", "Singapore Grand Prix"];
 /** In-memory progress: complete round 1 with the domain transitions, then enter round 2 (a Sprint weekend). */
 function throughRound(progress: CareerProgress, rounds: number) {
     let p = progress;
@@ -42,10 +42,10 @@ async function sprintWeekend(teamKey = "team-aurora") {
 const without = (row: Record<string, unknown>, key: string) => { const copy = { ...row }; delete copy[key]; return copy; };
 
 describe("weekend format — data-driven, snapshotted", () => {
-    it("the development calendar marks exactly China, Great Britain and Singapore as Sprint weekends", () => {
+    it("the original calendar marks exactly the six assigned Sprint weekends", () => {
         const sprint = developmentContent.events.filter(e => e.weekendFormat === "SPRINT").map(e => e.name).sort();
         expect(sprint).toEqual([...SPRINT_EVENTS].sort());
-        expect(developmentContent.events.filter(e => e.weekendFormat === "STANDARD")).toHaveLength(5);
+        expect(developmentContent.events.filter(e => e.weekendFormat === "STANDARD")).toHaveLength(18);
     });
     it("a new Career snapshots every event's format; legacy content and old Career rows fall back to STANDARD", async () => {
         const g = await careerGrid("team-mclaren");

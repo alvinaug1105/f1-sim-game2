@@ -74,6 +74,7 @@ model Circuit {
   countryCode     String          @db.VarChar(2)
   city            String?
   lengthMeters    Int
+  climateProfile CircuitClimateProfile?
   defaultLapCount Int
   /// Race interaction game-balance data (all three or none; NULL = legacy content → neutral Race defaults).
   overtakingDifficulty        Int?
@@ -265,6 +266,7 @@ model CareerCircuit {
   countryCode     String                @db.VarChar(2)
   city            String?
   lengthMeters    Int
+  climateProfile CircuitClimateProfile?
   defaultLapCount Int
   /// Race interaction game-balance data (all three or none; NULL = Careers created before the Race Dynamics pass → neutral Race defaults).
   overtakingDifficulty        Int?
@@ -966,4 +968,13 @@ model CareerQualifyingEntrant {
   @@unique([careerQualifyingSimulationId, careerDriverId])
   @@unique([careerQualifyingSimulationId, entryOrder])
   @@unique([careerQualifyingSimulationId, finalPosition])
+}
+
+/// Circuit occurrence prior; NULL on a circuit retains legacy global weather.
+enum CircuitClimateProfile {
+  ARID
+  DRY
+  TEMPERATE
+  VARIABLE
+  HUMID
 }

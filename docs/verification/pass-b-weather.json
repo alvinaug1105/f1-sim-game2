@@ -1,0 +1,9669 @@
+{
+  "definitions": {
+    "dry": "No actual rain in the generated timeline.",
+    "forecastRain": "Existing player-public forecastItems announces rain; no truth used for visibility.",
+    "inter": "Idealized current-family gain over DRY during INTER-fastest laps repays one default green stop + margin.",
+    "wet": "Idealized current-family gain over INTER during WET-fastest laps repays one default green stop + margin.",
+    "mixed": "Multiple fastest families and a materially useful wet-family plan. Proxy, not an optimized tyre strategy or QA balance verdict."
+  },
+  "seasons": 40,
+  "overall": {
+    "count": 960,
+    "dryPercent": 64.27,
+    "forecastRainPercent": 35.73,
+    "interPercent": 13.13,
+    "wetPercent": 10.1,
+    "mixedPercent": 17.5
+  },
+  "seasonLevel": {
+    "meanRainVisible": 8.575,
+    "medianRainVisible": 8,
+    "minRainVisible": 2,
+    "maxRainVisible": 14,
+    "meanStrategicallyWet": 4.2
+  },
+  "profiles": {
+    "TEMPERATE": {
+      "count": 240,
+      "dryPercent": 64.58,
+      "forecastRainPercent": 35.42,
+      "interPercent": 11.25,
+      "wetPercent": 7.08,
+      "mixedPercent": 13.75
+    },
+    "VARIABLE": {
+      "count": 240,
+      "dryPercent": 43.75,
+      "forecastRainPercent": 56.25,
+      "interPercent": 22.5,
+      "wetPercent": 17.92,
+      "mixedPercent": 30.83
+    },
+    "ARID": {
+      "count": 200,
+      "dryPercent": 93,
+      "forecastRainPercent": 7,
+      "interPercent": 1.5,
+      "wetPercent": 1,
+      "mixedPercent": 1.5
+    },
+    "HUMID": {
+      "count": 120,
+      "dryPercent": 39.17,
+      "forecastRainPercent": 60.83,
+      "interPercent": 25,
+      "wetPercent": 20.83,
+      "mixedPercent": 35
+    },
+    "DRY": {
+      "count": 160,
+      "dryPercent": 77.5,
+      "forecastRainPercent": 22.5,
+      "interPercent": 7.5,
+      "wetPercent": 6.25,
+      "mixedPercent": 10
+    }
+  },
+  "rows": [
+    {
+      "season": 1,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 1,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 1,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 1,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 1,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 1,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 1,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 1,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 1,
+      "round": 22,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 1,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 2,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 2,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 2,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 2,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 2,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 2,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 2,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 3,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 3,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 3,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 3,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 3,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 4,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 4,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 4,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 22,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 4,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 5,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 5,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 5,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 5,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 6,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 6,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 6,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 7,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 7,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 7,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 5,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 8,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 8,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 8,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 8,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 8,
+      "round": 22,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 8,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 9,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 9,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 9,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 9,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 23,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 9,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 10,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 10,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 10,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 10,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 11,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 11,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 11,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 12,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 12,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 12,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 12,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 12,
+      "round": 20,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 12,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 12,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 13,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 13,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 13,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 13,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 13,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 4,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 17,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 14,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 15,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 15,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 17,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 15,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 15,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 15,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 16,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 16,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 16,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 16,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 16,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 17,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 17,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 17,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 17,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 17,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 18,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 18,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 18,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 18,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 18,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 18,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 18,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 18,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 18,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 19,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 19,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 19,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 19,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 20,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 20,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 20,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 20,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 20,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 20,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 23,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 20,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 21,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 21,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 5,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 22,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 22,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 22,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 22,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 22,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 22,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 23,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 23,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 23,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 23,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 23,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 23,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 24,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 24,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 24,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 25,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 25,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 25,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 22,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 25,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 26,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 26,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 17,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 26,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 26,
+      "round": 20,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 26,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 26,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 27,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 27,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 27,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 27,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 27,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 27,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 27,
+      "round": 22,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 27,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 5,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 28,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 28,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 28,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 28,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 28,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 20,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 28,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 28,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 29,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 29,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 17,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 29,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 30,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 30,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 30,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 30,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 30,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 31,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 31,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 31,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 31,
+      "round": 23,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 31,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 32,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 32,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 32,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 32,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 32,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 32,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 33,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 33,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 33,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 33,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 34,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 34,
+      "round": 4,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 34,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 34,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 34,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 34,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 35,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 35,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 20,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 35,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 35,
+      "round": 23,
+      "profile": "ARID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 35,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 17,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 36,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 36,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 37,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 37,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 37,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 37,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 37,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 37,
+      "round": 20,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 37,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 37,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 38,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 38,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 38,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 38,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 38,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 38,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 9,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 39,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 16,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 20,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 39,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 39,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 1,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 2,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 3,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 4,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 5,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 6,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 40,
+      "round": 7,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 8,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 9,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 10,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 11,
+      "profile": "VARIABLE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": true,
+      "mixed": true
+    },
+    {
+      "season": 40,
+      "round": 12,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 13,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 14,
+      "profile": "VARIABLE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 15,
+      "profile": "TEMPERATE",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 16,
+      "profile": "DRY",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 17,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 18,
+      "profile": "HUMID",
+      "dry": false,
+      "forecastRain": true,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 19,
+      "profile": "TEMPERATE",
+      "dry": false,
+      "forecastRain": true,
+      "inter": true,
+      "wet": false,
+      "mixed": true
+    },
+    {
+      "season": 40,
+      "round": 20,
+      "profile": "DRY",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 21,
+      "profile": "HUMID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 22,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 23,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    },
+    {
+      "season": 40,
+      "round": 24,
+      "profile": "ARID",
+      "dry": true,
+      "forecastRain": false,
+      "inter": false,
+      "wet": false,
+      "mixed": false
+    }
+  ]
+}

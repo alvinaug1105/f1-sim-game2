@@ -15,7 +15,7 @@ import { weatherTyreConfiguration } from "../../simulation/race/tyres/profiles";
 import { ProgressionError, transitionSession, type CareerProgress } from "../../game/domain/progression";
 import { QualifyingError, type CareerQualifyingData, type CareerQualifyingRepository, type QualifyingChange } from "../../game/domain/qualifying-repository";
 import { developmentBaseLapTimeMs, entrantPerformance } from "../race/development-profiles";
-import { raceWeatherSeed, scenarioWeather } from "../race/weather-scenarios";
+import { raceWeatherSeed, climateWeather } from "../race/weather-scenarios";
 import { hiddenIdeal } from "../practice/service";
 export type QualifyingCommand =
     | { kind: "send"; entrantId: string; revision: number; plan: RunPlan }
@@ -44,7 +44,7 @@ export function qualifyingInput(data: CareerQualifyingData, newId: () => string)
         version: QUALIFYING_VERSION, seed: raceWeatherSeed([careerId, data.eventId, data.sessionId, seedLabel]),
         stepMs: QUALIFYING_STEP_MS, weatherTickMs: QUALIFYING_WEATHER_TICK_MS, baseLapTimeMs: developmentBaseLapTimeMs(data.circuit.lengthMeters),
         format, tyres: weatherTyreConfiguration(),
-        weather: scenarioWeather(raceWeatherSeed([careerId, data.eventId, circuitKey(data), weatherLabel]), qualifyingWeatherTicks(format, QUALIFYING_WEATHER_TICK_MS)),
+        weather: climateWeather(raceWeatherSeed([careerId, data.eventId, circuitKey(data), weatherLabel]), qualifyingWeatherTicks(format, QUALIFYING_WEATHER_TICK_MS), data.circuit.climateProfile),
         entrants: data.roster.map((row, index) => {
             const practiceRank = data.practiceOrder.indexOf(row.driverId);
             return {

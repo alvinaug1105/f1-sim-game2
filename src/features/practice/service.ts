@@ -15,7 +15,7 @@ import { weatherTyreConfiguration } from "../../simulation/race/tyres/profiles";
 import { ProgressionError, isPractice, transitionSession, type CareerProgress } from "../../game/domain/progression";
 import { PracticeError, type CareerPracticeData, type CareerPracticeRepository, type PracticeChange } from "../../game/domain/practice-repository";
 import { developmentBaseLapTimeMs, entrantPerformance } from "../race/development-profiles";
-import { raceWeatherSeed, scenarioWeather } from "../race/weather-scenarios";
+import { raceWeatherSeed, climateWeather } from "../race/weather-scenarios";
 export type PracticeCommand =
     | { kind: "send"; entrantId: string; revision: number; plan: RunPlan }
     | { kind: "callIn"; entrantId: string; revision: number }
@@ -44,7 +44,7 @@ export function practiceInput(data: CareerPracticeData, newId: () => string): { 
         durationMs: PRACTICE_DURATION_MS[data.sessionType], stepMs: PRACTICE_STEP_MS, weatherTickMs: PRACTICE_WEATHER_TICK_MS,
         baseLapTimeMs: developmentBaseLapTimeMs(data.circuit.lengthMeters), tyres: weatherTyreConfiguration(),
         // Each session gets its own deterministic weather story (dry, showers, wet…), seeded by stable identity.
-        weather: scenarioWeather(raceWeatherSeed([careerId, data.eventId, circuitKey(data), data.sessionType]), ticks),
+        weather: climateWeather(raceWeatherSeed([careerId, data.eventId, circuitKey(data), data.sessionType]), ticks, data.circuit.climateProfile),
         entrants,
     };
     return { input, entrantDrivers: Object.fromEntries(entrants.map(e => [e.entrantId, e.driverId])) };

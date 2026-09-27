@@ -17,8 +17,8 @@ describe("Career creation and validation", () => {
     expect(career.status).toBe("ACTIVE");
     expect(world.teams).toHaveLength(11);
     expect(world.drivers).toHaveLength(22);
-    expect(world.circuits).toHaveLength(8);
-    expect(world.events).toHaveLength(8);
+    expect(world.circuits).toHaveLength(24);
+    expect(world.events).toHaveLength(24);
     expect(career.sourceGameDatabaseVersion).toBe(data.database.version);
   });
   it.each(["", "   ", "x".repeat(81)])(

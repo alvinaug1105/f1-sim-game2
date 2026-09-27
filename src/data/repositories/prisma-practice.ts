@@ -85,7 +85,7 @@ async function read(tx: Prisma.TransactionClient, careerId: string, eventId: str
         progress, eventId, weekendId: event.weekend.id, sessionId, sessionType: session.type as PracticeSessionType, state,
         roster: roster.map(e => ({ driverId: e.careerDriverId, teamId: e.teamEntry.careerTeamId, driverName: `${e.driver.firstName} ${e.driver.lastName}`, teamName: e.teamEntry.team.name, teamOrder: e.teamEntry.entryOrder, abbreviation: e.driver.abbreviation, teamColor: e.teamEntry.team.color, carNumber: e.carNumber ?? e.driver.preferredNumber, balance: rosterBalance(e) })),
         entrantDrivers: Object.fromEntries((row?.entrants ?? []).map(e => [e.id, e.careerDriverId])),
-        circuit: { sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters },
+        circuit: { climateProfile: circuit.climateProfile, sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters },
         preparations,
     };
 }

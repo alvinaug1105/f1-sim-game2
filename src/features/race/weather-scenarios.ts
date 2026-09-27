@@ -1,3 +1,4 @@
+import type { CircuitClimateProfile } from "../../game/domain/content";
 /**
  * Deterministic Race-weather scenarios (input generation only; the v7 weather engine is unchanged).
  *
@@ -13,15 +14,24 @@ export const WEATHER_SCENARIOS = ["DRY", "MOSTLY_DRY", "LIGHT_INTERMITTENT", "MI
 export type WeatherScenario = typeof WEATHER_SCENARIOS[number];
 /** Relative frequency (out of 100): not every race rains. */
 const WEIGHTS: Readonly<Record<WeatherScenario, number>> = { DRY: 32, MOSTLY_DRY: 18, LIGHT_INTERMITTENT: 14, MIXED: 14, LATE_SHOWER: 12, WET: 10 };
+/** Circuit content priors: weights only. Stories, physics and forecast error are untouched.
+ * HUMID includes tropical venues. A missing snapshot deliberately uses WEIGHTS exactly. */
+export const CLIMATE_WEIGHTS: Readonly<Record<CircuitClimateProfile, Readonly<Record<WeatherScenario, number>>>> = {
+    ARID: { DRY: 94, MOSTLY_DRY: 3, LIGHT_INTERMITTENT: 1, MIXED: 1, LATE_SHOWER: 1, WET: 0 },
+    DRY: { DRY: 78, MOSTLY_DRY: 9, LIGHT_INTERMITTENT: 5, MIXED: 3, LATE_SHOWER: 4, WET: 1 },
+    TEMPERATE: { DRY: 65, MOSTLY_DRY: 11, LIGHT_INTERMITTENT: 8, MIXED: 6, LATE_SHOWER: 7, WET: 3 },
+    VARIABLE: { DRY: 48, MOSTLY_DRY: 12, LIGHT_INTERMITTENT: 12, MIXED: 12, LATE_SHOWER: 10, WET: 6 },
+    HUMID: { DRY: 42, MOSTLY_DRY: 12, LIGHT_INTERMITTENT: 12, MIXED: 14, LATE_SHOWER: 12, WET: 8 },
+};
 /** FNV-1a (32-bit) over stable identity strings. */
 export function raceWeatherSeed(parts: readonly string[]) {
     let hash = 0x811c9dc5;
     for (const char of parts.join("␟")) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 0x01000193) >>> 0; }
     return hash >>> 0;
 }
-export function scenarioFor(seed: number): WeatherScenario {
+export function scenarioFor(seed: number, climate?: CircuitClimateProfile | null): WeatherScenario {
     let roll = seed % 100;
-    for (const scenario of WEATHER_SCENARIOS) { roll -= WEIGHTS[scenario]; if (roll < 0) return scenario; }
+    for (const scenario of WEATHER_SCENARIOS) { roll -= (climate == null ? WEIGHTS : CLIMATE_WEIGHTS[climate])[scenario]; if (roll < 0) return scenario; }
     return "DRY";
 }
 /** Rain segments as (fraction of race distance, rainfall) pairs; the first segment always starts on lap 1. */
@@ -62,10 +72,14 @@ export function scenarioWeather(seed: number, totalLaps: number, scenario: Weath
     };
     return { ...base, timeline, forecast, initial };
 }
+/** Session generation wrapper; the climate selects only the existing story. */
+export function climateWeather(seed: number, totalLaps: number, climate?: CircuitClimateProfile | null) {
+    return scenarioWeather(seed, totalLaps, scenarioFor(seed, climate));
+}
 /** Weather a Career Race will use: seeded only by stable identity, so the pre-Race screen can show its public forecast. */
-export function careerRaceWeather(careerId: string, eventId: string, circuitKey: string, totalLaps: number, kind: "RACE" | "SPRINT" = "RACE") {
+export function careerRaceWeather(careerId: string, eventId: string, circuitKey: string, totalLaps: number, kind: "RACE" | "SPRINT" = "RACE", climate?: CircuitClimateProfile | null) {
     // The Grand Prix keeps its original identity seed; the Sprint of the same weekend has its own weather.
-    return scenarioWeather(raceWeatherSeed(kind === "SPRINT" ? [careerId, eventId, circuitKey, "SPRINT"] : [careerId, eventId, circuitKey]), totalLaps);
+    return climateWeather(raceWeatherSeed(kind === "SPRINT" ? [careerId, eventId, circuitKey, "SPRINT"] : [careerId, eventId, circuitKey]), totalLaps, climate);
 }
 /** AI starting tyre from CURRENT public conditions only (same information the player sees on the grid). */
 export function aiStartingCompound(initial: WeatherState): TyreCompound {

@@ -9,7 +9,7 @@ import type {
   SeasonDriverEntry,
   CalendarEvent,
 } from "./content";
-import { SCORING_RULES_VERSIONS, WEEKEND_FORMATS } from "./content";
+import { CIRCUIT_CLIMATE_PROFILES, SCORING_RULES_VERSIONS, WEEKEND_FORMATS } from "./content";
 import { assertContentId } from "./content-repository";
 type Source<T> = Omit<T, keyof AuditedContent>;
 export interface ContentDataset {
@@ -143,6 +143,7 @@ export function validateContentDataset(data: ContentDataset): void {
     requireValid(Boolean(row.name.trim()), "Circuit name is required.");
     positive(row.lengthMeters, "Circuit length");
     positive(row.defaultLapCount, "Lap count");
+    requireValid(row.climateProfile == null || CIRCUIT_CLIMATE_PROFILES.includes(row.climateProfile), "Unknown circuit climate profile.");
     const profile = [row.overtakingDifficulty, row.dirtyAirSensitivityPermille, row.drsEffectivenessPermille];
     requireValid(profile.every(v => v == null) || profile.every(v => v != null), "Circuit race profile must be complete or absent.");
     if (row.overtakingDifficulty != null) {

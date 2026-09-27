@@ -84,7 +84,7 @@ export function startCareerRace(
       }
       const weather = withWeather
         ? requestedSeed === undefined
-          ? careerRaceWeather(data.progress.career.id, eventId, data.circuit.sourceCircuitId ?? "custom", snapshot.input.totalLaps, data.kind)
+          ? careerRaceWeather(data.progress.career.id, eventId, data.circuit.sourceCircuitId ?? "custom", snapshot.input.totalLaps, data.kind, data.circuit.climateProfile)
           : developmentWeather(seed, snapshot.input.totalLaps)
         : undefined;
       // AI teams pick starting tyres from current public grid conditions, never from player input or future weather.

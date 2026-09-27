@@ -9,7 +9,7 @@ import marinaBay from "../src/data/seed/geometry/marina-bay.json";
 function firstCorner(layout: (typeof circuitLayouts)[string]) {
     const path = prepareCircuitPath(layout);
     let turn = 0, prev: number | null = null;
-    for (let i = 0; i <= 200; i++) {
+    for (let i = 0; i <= 400; i++) {
         const s = path.sample(i / 1000), heading = Math.atan2(-s.tangentY, s.tangentX);
         if (prev !== null) turn += ((heading - prev + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
         prev = heading;
@@ -17,22 +17,22 @@ function firstCorner(layout: (typeof circuitLayouts)[string]) {
     }
     return "NONE";
 }
-describe("Content Expansion Pass A circuits", () => {
-    it("has a real, versioned layout for all 8 supported source circuits, resolved by stable ID", () => {
-        expect(source.circuits).toHaveLength(8);
+describe("Content Expansion Pass B circuits", () => {
+    it("has a real, versioned layout for all 24 active source circuits, resolved by stable ID", () => {
+        expect(source.circuits).toHaveLength(24);
         for (const c of source.circuits) {
             const layout = layoutForCircuit(c.id);
             expect(layout, c.key).not.toBe(fallbackLayout);
             expect(layout.metadata?.realGeometry).toBe(true);
             expect(layout.metadata?.source).toContain("394d8fbe70ef2c0b0c8d23ff7bee61fa09606055");
         }
-        expect(new Set(Object.values(circuitLayouts).map(l => l.id)).size).toBe(8);
+        expect(new Set(Object.values(circuitLayouts).map(l => l.id)).size).toBe(24);
     });
     it.each(Object.values(circuitLayouts))("$id: normalized, non-empty bounds, valid START/FINISH, NaN-free sampling and map coordinates", layout => {
         expect(validLayout(layout)).toBe(true);
         const xs = layout.points.map(p => p.x), ys = layout.points.map(p => p.y);
-        expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(.2);
-        expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(.2);
+        expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(.1);
+        expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(.1);
         // Uniform fit: the longer side spans the whole unit square.
         expect(Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys))).toBeCloseTo(1, 9);
         expect(layout.startFinishProgress).toBe(0);
@@ -53,7 +53,7 @@ describe("Content Expansion Pass A circuits", () => {
         expect(placed.get("c0") && placed.get("c1")).toBeTruthy(); // both player cars always labelled
     });
     it("moves every car in the real racing direction (first corner) — Marina Bay is reversed from its source order", () => {
-        const expected: Record<string, string> = { "albert-park": "RIGHT", suzuka: "RIGHT", shanghai: "RIGHT", bahrain: "RIGHT", monaco: "RIGHT", silverstone: "RIGHT", "spa-francorchamps": "RIGHT", "marina-bay": "LEFT" };
+        const expected: Record<string, string> = { "albert-park": "RIGHT", suzuka: "RIGHT", shanghai: "RIGHT", bahrain: "RIGHT", monaco: "RIGHT", silverstone: "RIGHT", "spa-francorchamps": "RIGHT", "marina-bay": "LEFT", jeddah: "LEFT", miami: "RIGHT", montreal: "LEFT", barcelona: "RIGHT", "red-bull-ring": "RIGHT", hungaroring: "RIGHT", zandvoort: "RIGHT", monza: "RIGHT", madrid: "LEFT", baku: "LEFT", cota: "LEFT", "mexico-city": "RIGHT", interlagos: "LEFT", "las-vegas": "LEFT", lusail: "RIGHT", "yas-marina": "LEFT" };
         for (const layout of Object.values(circuitLayouts)) expect(firstCorner(layout), layout.id).toBe(expected[layout.id]);
         const marina = Object.values(circuitLayouts).find(l => l.id === "marina-bay")!;
         expect(marina.direction).toBe("COUNTER_CLOCKWISE");

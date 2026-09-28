@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { prepareVisualSpeed } from '../src/features/race/viewer/speed-profile';
 import { RaceMotion } from '../src/features/race/viewer/motion';
-import { MarkerPacks, trackClose, badgeText, BADGE, type PackCar } from '../src/features/race/viewer/marker-packs';
+import { MarkerPacks, trackClose, badgeText, MAX_LATERAL_OFFSET, densityMode, badgeFootprint, responsiveBadgeScale, type PackCar } from '../src/features/race/viewer/marker-packs';
 import { prepareCircuitPath, circuitProjection } from '../src/game/domain/circuit-geometry';
 import { circuitLayouts } from '../src/data/seed/circuit-layouts';
 const layout = Object.values(circuitLayouts).find(l=>l.id==='monza')!;
@@ -43,10 +43,49 @@ describe('geometry visual time',()=>{
 });
 const cars=(n:number):PackCar[]=>Array.from({length:n},(_,i)=>({id:`c${String(i).padStart(2,'0')}`,progress:.5,x:500,y:325,nx:0,ny:1,tier:i}));
 describe('local marker packs',()=>{
-    it.each([2,3,5,8,22])('%i cars allocate unique stable lanes without changing progress',n=>{
-        const input=cars(n),before=structuredClone(input),m=new MarkerPacks(),a=m.frame(input,3000,16),b=m.frame([...input].reverse(),3000,16);
-        expect(new Set([...a.values()].map(v=>v.target)).size).toBe(n);expect([...a]).toEqual([...b]);expect(a.get('c00')!.target).toBe(0);expect(input).toEqual(before);
-        const v=[...a.values()];for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)expect(Math.abs(v[i].y-v[j].y)).toBeGreaterThanOrEqual(BADGE.h);
+    it.each([2,3,5,8,22])('%i cars stay within a compact envelope without changing progress',n=>{
+        const input=cars(n),before=structuredClone(input),m=new MarkerPacks();
+        const a=m.frame(input,3000,16),b=m.frame([...input].reverse(),3000,16);
+        expect([...a]).toEqual([...b]); expect(input).toEqual(before);
+        expect(a.size).toBe(n);
+        for(const [id,p] of a){
+            expect(Math.abs(p.offset)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
+            expect(Math.abs(p.target)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
+            expect(Math.hypot(p.x-500,p.y-325)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET+.001);
+            expect(id).toMatch(/^c/);
+        }
+        if(n===22){
+            expect(new Set([...a.values()].map(v=>v.target)).size).toBeLessThan(n); // controlled overlap, no 22-lane fan
+            expect(a.get('c00')!.footprint).toBe(1);
+            expect(a.get('c01')!.footprint).toBe(.96);
+            expect(a.get('c03')!.footprint).toBe(.74);
+            expect(a.get('c00')!.density).toBe('DENSE');
+        }
+    });
+    it('selected and teammate retain footprint priority while lower AI compact',()=>{
+        const input=cars(22); input[1].tier=1;input[2].tier=2;
+        const out=new MarkerPacks().frame(input,3000,16);
+        expect(out.get('c00')!.footprint).toBe(1);
+        expect(out.get('c01')!.footprint).toBe(.96);
+        expect(out.get('c02')!.footprint).toBe(.94);
+        expect(out.get('c03')!.footprint).toBe(.74);
+        expect([...out.values()].every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))).toBe(true);
+    });
+    it('legacy out-of-bound lane memory is clamped on the very next frame',()=>{
+        const m=new MarkerPacks();
+        (m as unknown as {memory:Map<string,unknown>}).memory.set('c00',{offset:180,target:180,quiet:0,x:500,y:505,footprint:1,density:'NORMAL'});
+        const p=m.frame(cars(2),3000,16).get('c00')!;
+        expect(Math.abs(p.offset)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
+        expect(Math.abs(p.target)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
+        expect(Math.hypot(p.x-500,p.y-325)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
+    });
+    it('responsive and density footprints avoid narrow-screen growth',()=>{
+        expect(responsiveBadgeScale(1366)).toBe(1);
+        expect(responsiveBadgeScale(768)).toBe(1);
+        expect(responsiveBadgeScale(576)).toBeLessThanOrEqual(1.08);
+        expect(densityMode(22)).toBe('DENSE');expect(densityMode(7)).toBe('COMPACT');expect(densityMode(2)).toBe('NORMAL');
+        expect(badgeFootprint('DENSE',5)).toBeLessThan(badgeFootprint('NORMAL',5));
+        expect(badgeFootprint('DENSE',0)).toBe(1);
     });
     it('hairpin and parallel branches never repel on XY alone; start/finish wrap and lapped cars work',()=>{
         const pair=cars(2);pair[1].progress=.7;const m=new MarkerPacks();expect([...m.frame(pair,3000,16).values()].map(v=>v.target)).toEqual([0,0]);
@@ -61,15 +100,23 @@ describe('local marker packs',()=>{
         expect([...new MarkerPacks().frame(pair,3000,16).values()].map(v=>v.target)).toEqual([0,0]);
     });
     it('offsets return smoothly, freeze while paused and retired positions remain fixed',()=>{
-        const m=new MarkerPacks(),pair=cars(2),a=m.frame(pair,3000,16);pair[1].progress=.7;
-        for(let i=0;i<24;i++)m.frame(pair,3000,16);
-        const b=m.frame(pair,3000,16);expect(Math.abs(b.get('c01')!.offset)).toBeLessThan(Math.abs(a.get('c01')!.offset));expect(b.get('c01')!.offset).not.toBe(0);
+        const m=new MarkerPacks(),pair=cars(2),a=m.frame(pair,3000,16);
+        expect(Math.abs(a.get('c01')!.offset)).toBeGreaterThan(0);
+        pair[1].progress=.7;
+        for(let i=0;i<22;i++)m.frame(pair,3000,16);
+        const b=m.frame(pair,3000,16);
+        expect(Math.abs(b.get('c01')!.offset)).toBeLessThan(Math.abs(a.get('c01')!.offset));
         expect(m.frame(pair,3000,0).get('c01')!.offset).toBe(b.get('c01')!.offset);
-        pair[1].retired=true;pair[1].x=800;expect(m.frame(pair,3000,16).get('c01')!.x).toBe(b.get('c01')!.x);
+        for(let i=0;i<60;i++)m.frame(pair,3000,16);
+        expect(m.frame(pair,3000,16).get('c01')!.offset).toBe(0);
+        pair[1].retired=true; const frozen=m.frame(pair,3000,16).get('c01')!;
+        pair[1].progress=.8; expect(m.frame(pair,3000,16).get('c01')!.x).toBe(frozen.x);
     });
-    it('reserved start text is respected without changing longitudinal position',()=>{
-        const car=cars(1), result=new MarkerPacks().frame(car,3000,16,false,1,[{x:470,y:310,w:80,h:30}]);
-        expect(Math.abs(result.get('c00')!.offset)).toBeGreaterThan(24);expect(car[0].progress).toBe(.5);
+    it('start/finish text remains secondary to bounded car locations',()=>{
+        const input=cars(22), reserved=[{x:470,y:310,w:80,h:30}];
+        const out=new MarkerPacks().frame(input,3000,16,false,1,reserved);
+        expect([...out.values()].every(p=>Math.abs(p.offset)<=MAX_LATERAL_OFFSET)).toBe(true);
+        expect(input.every(c=>c.progress===.5)).toBe(true);
     });
     it('contrasting text works on light and dark fills',()=>{expect(badgeText('#ffffff')).toBe('#101010');expect(badgeText('#000000')).toBe('#ffffff');});
 });

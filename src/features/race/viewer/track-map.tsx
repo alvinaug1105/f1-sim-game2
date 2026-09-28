@@ -7,7 +7,7 @@ import { RaceMotion, checkpointDuration, type MotionMode } from './motion';
 import { useI18n } from '../../../i18n/provider';
 import { pathLength, startFinishReserve, LABEL_TIER } from './labels';
 import { prepareVisualSpeed } from './speed-profile';
-import { MarkerPacks, BADGE, badgeText } from './marker-packs';
+import { MarkerPacks, BADGE, badgeText, responsiveBadgeScale } from './marker-packs';
 /**
  * What the map needs from a row (Race timing rows satisfy it structurally; Practice builds its own). `hidden` cars are
  * in the garage: kept in the motion model so they re-emerge smoothly, but not drawn, focusable or labelled.
@@ -42,7 +42,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     const reserved = useMemo(() => startFinishReserve(start, startText).slice(0,1), [start.x, start.y, startText]); // eslint-disable-line react-hooks/exhaustive-deps
     const [badgeScale, setBadgeScale] = useState(1);
     useEffect(() => {
-        const observer = new ResizeObserver(entries => { const width=entries[0]?.contentRect.width; if(width) setBadgeScale(Math.max(1, Math.min(1.8, 750/width))); });
+        const observer = new ResizeObserver(entries => { const width=entries[0]?.contentRect.width; if(width) setBadgeScale(responsiveBadgeScale(width)); });
         observer.observe(svg.current!); return () => observer.disconnect();
     }, []);
     const labelTierMap = useMemo(() => new Map(rows.map(r => [r.id, r.id === selected ? LABEL_TIER.SELECTED : r.player ? LABEL_TIER.PLAYER : tiers?.get(r.id) ?? LABEL_TIER.FIELD])), [rows, tiers, selected]);
@@ -52,6 +52,12 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         const root = svg.current!;
         const all = [...root.querySelectorAll<SVGGElement>('[data-car]')];
         const packs = new MarkerPacks();
+        const badges = new Map(all.map(el=>[el.dataset.car!,el.querySelector<SVGGElement>('.badge-content')!]));
+        const otherPath = Array.from({length:256},(_,i)=>({progress:i/256,...project(path.sample(i/256))}));
+        const otherTrack = (x:number,y:number,progress:number) => otherPath.some(p=>{
+            const gap=Math.abs(p.progress-progress)%1;
+            return Math.min(gap,1-gap)>.05 && Math.hypot(p.x-x,p.y-y)<10;
+        });
         // Projected lap length supplies the along-track neighbourhood scale.
         const at = (progress: number) => project(path.sample(progress)), lapLength = pathLength(at);
         let frame = 0, disposed = false, previousTime: number | null = null;
@@ -69,12 +75,14 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             const offsets = packs.frame(cars.map((el,i) => ({ id: el.dataset.car!, progress: samples[i].progress,
                 x: samples[i].x, y: samples[i].y, nx: -samples[i].sample.tangentY, ny: samples[i].sample.tangentX,
                 tier: placement.current.tiers.get(el.dataset.car!) ?? LABEL_TIER.FIELD, retired: el.classList.contains('retired') })), lapLength,
-                placement.current.paused || previousTime === null ? 0 : Math.max(0, Math.min(50,now-previousTime)), placement.current.reduced && !placement.current.paused, placement.current.badgeScale, placement.current.reserved);
+                placement.current.paused || previousTime === null ? 0 : Math.max(0, Math.min(50,now-previousTime)), placement.current.reduced && !placement.current.paused, placement.current.badgeScale, placement.current.reserved, otherTrack);
             cars.forEach((el,i) => {
                 const p = offsets.get(el.dataset.car!)!;
                 el.setAttribute('transform', `translate(${p.x} ${p.y})`);
                 el.dataset.visualProgress = String(samples[i].progress);
                 el.dataset.lateralOffset = String(p.offset);
+                el.dataset.density = p.density;
+                badges.get(el.dataset.car!)?.setAttribute('transform', `scale(${placement.current.badgeScale*p.footprint})`);
             });
             // Read-only development instrumentation used by the real-browser verification harness.
             if (process.env.NODE_ENV !== 'production') {
@@ -107,9 +115,10 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
         <path d={d} fill="none" stroke="#070b0e" strokeWidth="30" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#53606c" strokeWidth="18" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#a6b4bf" strokeWidth="1.5" strokeDasharray="5 13" opacity=".4"/>
+        <g className="start-finish" transform={`translate(${start.x} ${start.y})`} pointerEvents="none"><path transform={`rotate(${angle})`} d="M 0 -14 L 0 14" stroke="white" strokeWidth="6"/><text x="-35" y="40" fill="#dfe8ee" fontSize="18" fontWeight="600" stroke="#0b1116" strokeWidth="4" paintOrder="stroke">{startText}</text></g>
         {byTier.map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id), chosen = r.id === selected; return <g key={r.id} data-car={r.id} data-tier={tier} data-hidden={r.hidden ? '1' : '0'} visibility={r.hidden ? 'hidden' : undefined} aria-hidden={r.hidden || undefined} transform={`translate(${p.x} ${p.y})`} role="button" tabIndex={r.hidden ? -1 : 0} aria-label={`${r.name} · ${t('race.position')} ${r.entrant.position} · ${t(`incident.${r.status}`)}${r.player ? ` · ${t('viewer.player')}` : ''}`} aria-pressed={chosen} onClick={() => onSelect(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }} className={`map-car ${r.hidden ? 'in-garage' : ''} ${r.status === 'RETIRED' ? 'retired' : ''} ${r.player ? 'player' : ''} ${chosen ? 'selected' : ''}`}>
             <title>{`${r.name} · ${r.team} · ${t('race.position')} ${r.entrant.position}`}</title>
-            <g transform={`scale(${badgeScale})`}>
+            <g className="badge-content" transform={`scale(${badgeScale})`}>
             <rect x={-BADGE.w/2-4} y={-BADGE.h/2-4} width={BADGE.w+8} height={BADGE.h+8} rx="8" fill="transparent"/>
             {chosen && <rect className="selected-ring" x={-BADGE.w/2-3} y={-BADGE.h/2-3} width={BADGE.w+6} height={BADGE.h+6} rx="7" fill="none" stroke="white" strokeWidth="2"/>}
             <rect className="driver-badge" x={-BADGE.w/2} y={-BADGE.h/2} width={BADGE.w} height={BADGE.h} rx="5" fill={r.color} stroke={r.player ? '#ffffff' : '#101820'} strokeWidth={r.player ? 2 : 1.5}/>
@@ -119,6 +128,6 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             {r.pitting && <text className="pit-mark" x="0" y="-17" textAnchor="middle" fill="#e8c86b" fontSize="11" fontWeight="800" stroke="#0b1116" strokeWidth="3" paintOrder="stroke">{t('viewer.pit')}</text>}
             </g>
         </g>; })}
-        <g className="start-finish" transform={`translate(${start.x} ${start.y})`} pointerEvents="none"><path transform={`rotate(${angle})`} d="M 0 -14 L 0 14" stroke="white" strokeWidth="6"/><text x="-35" y="40" fill="#dfe8ee" fontSize="18" fontWeight="600" stroke="#0b1116" strokeWidth="4" paintOrder="stroke">{startText}</text></g>
+
     </svg>;
 }

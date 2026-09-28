@@ -39,6 +39,18 @@ describe('sequential checkpoint playback',()=>{
 vi.mock('../src/features/race/viewer/actions',()=>({viewerAction:vi.fn()}));
 import {RaceOperations} from '../src/features/race/viewer/operations';
 it('renders a complete 20-car timing tower and map without advancing simulation',()=>{const d=viewerView(20),before=structuredClone(d);const started=performance.now();const html=renderToStaticMarkup(<I18nProvider><RaceOperations initialData={d}/></I18nProvider>);expect(html.match(/scope="row"/g)).toHaveLength(20);expect(html.match(/data-car=/g)).toHaveLength(20);expect(d).toEqual(before);console.info(`20-car full viewer SSR: ${(performance.now()-started).toFixed(2)}ms, ${html.length} bytes`);});
+it('renders the selected and other player bubbles above the AI field at the saved grid',()=>{
+ const d=viewerView(22),rows=timingRows(d),selected=rows[1].id;
+ expect(rows.map(r=>r.gridPosition)).toEqual(d.state!.input.entrants.map(e=>e.gridPosition));
+ const html=renderToStaticMarkup(<I18nProvider><TrackMap layout={layoutForCircuit(d.circuit.sourceCircuitId)} rows={rows} selected={selected} onSelect={()=>{}} speed={1} reduceMotion={false} checkpoint={0} startingGrid/></I18nProvider>);
+ expect(html.indexOf(`data-car="${rows[2].id}"`)).toBeLessThan(html.indexOf(`data-car="${rows[0].id}"`));
+ expect(html.indexOf(`data-car="${rows[0].id}"`)).toBeLessThan(html.indexOf(`data-car="${selected}"`));
+ expect(html).toContain('class="selected-ring"');expect(html).toContain('class="driver-badge"');
+ expect(html.match(/role="button"/g)).toHaveLength(22);
+ const ordinary=renderToStaticMarkup(<I18nProvider><TrackMap layout={layoutForCircuit(d.circuit.sourceCircuitId)} rows={rows} selected={selected} onSelect={()=>{}} speed={1} reduceMotion={false} checkpoint={0}/></I18nProvider>);
+ const position=(markup:string,id:string)=>markup.match(new RegExp(`data-car="${id}"[^>]*transform="([^"]+)"`))?.[1];
+ expect(position(ordinary,rows[21].id)).not.toBe(position(html,rows[21].id));
+});
 it.each(['INCIDENT','RETIREMENT'] as const)('auto-pauses on player %s with no extra lap',async type=>{vi.useFakeTimers();const s=quietRace(),team=s.input.entrants[0].teamId;const advance=vi.fn(async()=>pub({...s,lap:1,incidents:{...s.incidents!,events:[{sequence:1,lap:1,type,entrantIds:[s.entrants[0].entrantId],kind:'SPIN' as const,severity:'MINOR' as const,timeLossMs:1000}]}}));const c=new PlaybackController(pub(s),team,advance);c.play();await vi.runAllTimersAsync();expect(advance).toHaveBeenCalledTimes(1);expect(c.getSnapshot().reason).toBe(type);});
 it('ignores AI incidents and detects actual player pit history growth',()=>{const s=quietRace(),id=s.entrants[0].entrantId,team=s.input.entrants[0].teamId;const ai=s.input.entrants.find(e=>e.teamId!==team)!;expect(strategicEvent(pub(s),pub({...s,incidents:{...s.incidents!,events:[{sequence:1,lap:1,type:'INCIDENT',entrantIds:[ai.entrantId],kind:'SPIN',severity:'MINOR',timeLossMs:1000}]}}),team)).toBeNull();const withRequest={...s,entrants:s.entrants.map(e=>e.entrantId===id?{...e,pit:{...e.pit!,pendingCompound:'HARD' as const}}:e)};expect(strategicEvent(pub(withRequest),pub(advanceRaceLap(withRequest)),team)).toBe('PIT');});
 it('retired map progress freezes across subsequent authoritative checkpoints',()=>{const retired=advanceRaceLap(forceMechanical(quietRace(),true)),later=advanceRace(retired,5);expect(later.entrants.map(e=>e.track!.progressMicrolaps)).toEqual(retired.entrants.map(e=>e.track!.progressMicrolaps));});

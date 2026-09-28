@@ -1,3 +1,4 @@
+import type { VisualTimeMap } from './speed-profile';
 /** Presentation only: no engine, persistence, RNG, locale or React dependencies. */
 export type MotionMode = 'paused' | 'playing' | 'settle';
 export interface MotionTarget { id: string; progress: number; retired: boolean }
@@ -14,12 +15,17 @@ export class RaceMotion {
     private mode: MotionMode = 'paused';
     private reduced = false;
     private lastTime: number | null = null;
-    constructor(targets: readonly MotionTarget[], revision = 0) {
+    private launch = false;
+    private profile?: VisualTimeMap;
+    constructor(targets: readonly MotionTarget[], revision = 0, private profiles?: { green: VisualTimeMap; neutral: VisualTimeMap }) {
         this.revision = revision;
         for (const t of targets) this.cars.set(t.id, { current: t.progress, from: t.progress, target: t.progress, retired: t.retired });
     }
-    reconcile(targets: readonly MotionTarget[], revision: number) {
+    reconcile(targets: readonly MotionTarget[], revision: number, control = 'GREEN') {
         if (revision <= this.revision) return; // Stale snapshots and preference/command renders cannot restart motion.
+        this.launch = !!this.profiles && [...this.cars.values()].every(c => c.current <= 0) && targets.some(t => t.progress > 0);
+        // One shared strictly increasing map preserves unchanged longitudinal order. Freeze the map per checkpoint.
+        this.profile = control === 'GREEN' ? this.profiles?.green : this.profiles?.neutral;
         this.revision = revision;
         this.elapsed = 0;
         this.lastTime = null; // A fresh target starts at the current drawn frame, not an old idle timestamp.
@@ -47,8 +53,14 @@ export class RaceMotion {
         const delta = this.lastTime === null ? 0 : Math.max(0, Math.min(50, now - this.lastTime));
         this.lastTime = Math.max(this.lastTime ?? now, now);
         this.elapsed = Math.min(this.duration, this.elapsed + delta);
-        const f = this.reduced ? 1 : this.elapsed / this.duration;
-        for (const car of this.cars.values()) if (!car.retired) car.current = car.from + (car.target - car.from) * f;
+        let f = this.reduced ? 1 : this.elapsed / this.duration;
+        // A one-off launch ramp, not per-lap easing. Ends at exactly one; speed never drops at interval end.
+        if (this.launch && !this.reduced) f = f < .12 ? f * f / (.24 * .94) : (f - .06) / .94;
+        for (const car of this.cars.values()) if (!car.retired) {
+            const a = this.profile?.time(car.from) ?? car.from, b = this.profile?.time(car.target) ?? car.target;
+            const next = this.profile?.progress(a + (b - a) * f) ?? (a + (b - a) * f);
+            car.current = f >= 1 ? car.target : Math.max(car.current, Math.min(car.target, next));
+        }
     }
     progress(id: string) { return this.cars.get(id)?.current ?? 0; }
     get pending() { return this.mode !== 'paused' && [...this.cars.values()].some(c => !c.retired && c.current < c.target - 1e-10); }

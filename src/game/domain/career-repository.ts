@@ -5,6 +5,7 @@ import type {
   CareerOverview,
   CareerSummary,
   CareerCreationOptions,
+  CareerPlayerCar,
 } from "./career";
 import type { EntityId } from "./identity";
 export interface CareerCreationTransaction {
@@ -18,6 +19,7 @@ export interface CareerRepository {
   ): Promise<Career>;
   getCareerById(id: EntityId): Promise<Career | null>;
   getCareerOverview(id: EntityId): Promise<CareerOverview | null>;
+  getPlayerCar(id: EntityId): Promise<CareerPlayerCar | null>;
   listCareers(): Promise<readonly CareerSummary[]>;
   getCreationOptions(): Promise<CareerCreationOptions>;
 }

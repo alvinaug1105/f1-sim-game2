@@ -8,6 +8,7 @@ import type {
   CareerOverview,
   CareerSummary,
 } from "../../src/game/domain/career";
+import { currentCarPerformance, legacyCarPerformance, storedPartDesign } from "../../src/game/domain/car-development";
 import type { ContentDataset } from "../../src/game/domain/content-dataset";
 import type { GameContentRepository } from "../../src/game/domain/content-repository";
 import { developmentContent } from "../../src/data/seed/content-development";
@@ -103,6 +104,16 @@ export class MemoryCareerRepository implements CareerRepository {
       season: world.season,
       nextEvent: event && circuit ? { event, circuit } : null,
     });
+  }
+  async getPlayerCar(id: string) {
+    const world = this.worlds.get(id);
+    if (!world) return null;
+    const entry = world.teamEntries.find(e => e.careerSeasonId === world.career.currentSeasonId && e.careerTeamId === world.career.playerTeamId);
+    const team = world.teams.find(t => t.id === world.career.playerTeamId);
+    if (!entry || !team) throw new Error("Broken world");
+    const designs = world.partDesigns.filter(p => p.careerTeamId === team.id && p.careerSeasonId === world.career.currentSeasonId && p.version === 1);
+    const current = currentCarPerformance(designs);
+    return { careerId: id, teamId: team.id, teamName: team.name, overallPerformance: current?.overall ?? entry.carPerformance ?? legacyCarPerformance(entry.entryOrder), stats: current?.stats ?? null, parts: designs.map(storedPartDesign) };
   }
   async listCareers(): Promise<readonly CareerSummary[]> {
     return Promise.all(

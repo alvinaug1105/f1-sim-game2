@@ -51,7 +51,7 @@ it('upgrades legacy columns without backfill; source reseeding preserves the 8-r
   expect((await client.career.findUniqueOrThrow({where:{id:old.id}})).sourceGameDatabaseVersion).toBe('1.0.0');
   for(const c of oldCircuits) expect(climateWeather(91,58,c.climateProfile)).toEqual(scenarioWeather(91,58));
   const fresh=await createCareer(new PrismaCareerRepository(client),input);
-  expect(fresh.sourceGameDatabaseVersion).toBe('1.1.0');
+  expect(fresh.sourceGameDatabaseVersion).toBe('1.2.0');
   expect(await client.careerCalendarEvent.count({where:{careerId:fresh.id}})).toBe(24);
   const frozen=await client.careerCircuit.findMany({where:{careerId:fresh.id},orderBy:{id:'asc'}});
   for(const c of frozen) {

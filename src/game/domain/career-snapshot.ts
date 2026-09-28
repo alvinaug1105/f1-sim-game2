@@ -6,6 +6,7 @@ import {
   type ScheduledEvent,
 } from "./content-repository";
 import { validateContentDataset } from "./content-dataset";
+import { CAR_PART_TYPES, sourceCarStats } from "./car-development";
 import {
   CareerError,
   type CreateCareerInput,
@@ -131,6 +132,22 @@ export function buildCareerWorld(
   )
     throw new CareerError("INVALID_SOURCE");
   const audit = { createdAt: now, updatedAt: now };
+  const teamEntries = teams.map(({ entry }) => {
+    const stats = sourceCarStats(entry);
+    return {
+      id: mapped(entryMap, entry.teamId),
+      careerId,
+      careerSeasonId,
+      careerTeamId: mapped(teamMap, entry.teamId),
+      entryOrder: entry.entryOrder,
+      carPerformance: entry.carPerformance ?? null,
+      lowSpeedPerformance: stats.lowSpeed,
+      mediumSpeedPerformance: stats.mediumSpeed,
+      highSpeedPerformance: stats.highSpeed,
+      dragReductionPerformance: stats.dragReduction,
+      drsEfficiencyPerformance: stats.drsEfficiency,
+    };
+  });
   return {
     career: {
       id: careerId,
@@ -196,14 +213,7 @@ export function buildCareerWorld(
       startDate: starts[0] ?? null,
       endDate: ends.at(-1) ?? null,
     },
-    teamEntries: teams.map(({ entry }) => ({
-      id: mapped(entryMap, entry.teamId),
-      careerId,
-      careerSeasonId,
-      careerTeamId: mapped(teamMap, entry.teamId),
-      entryOrder: entry.entryOrder,
-      carPerformance: entry.carPerformance ?? null,
-    })),
+    teamEntries,
     driverEntries: drivers.map(({ entry }) => ({
       id: allocate(),
       careerId,
@@ -228,5 +238,14 @@ export function buildCareerWorld(
       status: "UPCOMING",
       weekendFormat: event.weekendFormat ?? "STANDARD",
     })),
+    partDesigns: teamEntries.flatMap(entry => CAR_PART_TYPES.map(partType => ({
+      id: allocate(), careerId, careerSeasonId, careerTeamId: entry.careerTeamId,
+      partType, version: 1,
+      lowSpeed: entry.lowSpeedPerformance,
+      mediumSpeed: entry.mediumSpeedPerformance,
+      highSpeed: entry.highSpeedPerformance,
+      dragReduction: entry.dragReductionPerformance,
+      drsEfficiency: entry.drsEfficiencyPerformance,
+    }))),
   };
 }

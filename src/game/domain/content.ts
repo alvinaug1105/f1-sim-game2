@@ -62,6 +62,12 @@ export interface SeasonTeamEntry {
   readonly entryOrder: number;
   /** Game-balance data (development values, 0–100), separate from team identity. Absent on legacy content. */
   readonly carPerformance?: number | null;
+  /** Optional management ratings; each absent value inherits carPerformance or the accepted legacy fallback. */
+  readonly lowSpeedPerformance?: number | null;
+  readonly mediumSpeedPerformance?: number | null;
+  readonly highSpeedPerformance?: number | null;
+  readonly dragReductionPerformance?: number | null;
+  readonly drsEfficiencyPerformance?: number | null;
 }
 export type DriverRole = "RACE_DRIVER" | "RESERVE_DRIVER";
 export interface SeasonDriverEntry {

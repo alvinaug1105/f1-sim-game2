@@ -263,7 +263,7 @@ describe("Phase 15 migration — forward from a pre-Phase-15 database with an ac
             // 3. Row hashes before the Phase-15 migration.
             const hash = async () => {
                 const out: Record<string, string> = {};
-                for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'weekendFormat' - 'climateProfile' - 'scoringRulesVersion' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
+                for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'weekendFormat' - 'climateProfile' - 'scoringRulesVersion' - 'lowSpeedPerformance' - 'mediumSpeedPerformance' - 'highSpeedPerformance' - 'dragReductionPerformance' - 'drsEfficiencyPerformance' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
                 return out;
             };
             const before = await hash();

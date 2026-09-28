@@ -334,6 +334,7 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
       const dropEntries = { careerId: ids.legacy, careerSeasonTeamEntryId: { notIn: keep.map((t) => t.id) } };
       const dropDrivers = (await fullClient.careerSeasonDriverEntry.findMany({ where: dropEntries })).map((d) => d.careerDriverId);
       await fullClient.careerSeasonDriverEntry.deleteMany({ where: dropEntries });
+      await fullClient.careerCarPartDesign.deleteMany({ where: { careerId: ids.legacy } });
       await fullClient.careerSeasonTeamEntry.deleteMany({ where: { careerId: ids.legacy, careerTeamId: { notIn: keepTeams } } });
       await fullClient.careerDriver.deleteMany({ where: { careerId: ids.legacy, id: { in: dropDrivers } } });
       await fullClient.careerTeam.deleteMany({ where: { careerId: ids.legacy, id: { notIn: keepTeams } } });
@@ -389,7 +390,7 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
       expect((await conn.query(`SELECT count(*)::int AS n FROM information_schema.columns WHERE table_schema = $1 AND column_name = 'scoringRulesVersion'`, [old])).rows[0].n).toBe(0);
       const hash = async () => {
         const out: Record<string, string> = {};
-        for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'scoringRulesVersion' - 'climateProfile' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
+        for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'scoringRulesVersion' - 'climateProfile' - 'lowSpeedPerformance' - 'mediumSpeedPerformance' - 'highSpeedPerformance' - 'dragReductionPerformance' - 'drsEfficiencyPerformance' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
         return out;
       };
       const before = await hash();

@@ -98,7 +98,7 @@ async function read(
           careerSeasonId: event.careerSeasonId,
           role: "RACE_DRIVER",
         },
-        include: { driver: true, teamEntry: { include: { team: true } } },
+        include: { driver: true, teamEntry: { include: { team: true, partDesigns: { where: { version: 1 } } } } },
         orderBy: [
           { teamEntry: { entryOrder: "asc" } },
           { driver: { sourceDriverId: "asc" } },

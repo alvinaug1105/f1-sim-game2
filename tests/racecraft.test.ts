@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import { racecraftInput, laps, carModes, type RacecraftScenario } from "./helpers/racecraft";
 import { modes } from "./helpers/commands";
 import { createRace, advanceRaceLap, simulateRace } from "../src/simulation/race/engine";
@@ -10,6 +11,42 @@ import { validateCommandConfiguration } from "../src/simulation/race/commands/mo
 import type { RaceSimulationState } from "../src/simulation/race/types";
 import type { CommandState } from "../src/simulation/race/commands/model";
 const MIN_GAP = 80;
+const TRAIN_PACE_MS = [0, -120, -60, -200, -30, -150, -90, -10, -175, 25, -220, -50, -140, 10, -95, -245, -65, -185, 40, -130, -15, -210];
+const TRAIN_PROFILES = { Monza: [18, 850, 1300], Spa: [15, 900, 1350] } as const;
+function trainInput(count: number, seed: number, circuit: keyof typeof TRAIN_PROFILES, racecraft: RacecraftConfiguration = defaultRacecraftConfiguration()) {
+  const base = racecraftInput({ count, seed, laps: 15, gapMs: 400, paceMs: TRAIN_PACE_MS.slice(0, count), drs: true, ai: true });
+  const [overtakingDifficulty, dirtyAirSensitivityPermille, drsEffectivenessPermille] = TRAIN_PROFILES[circuit];
+  return { ...base,
+    interaction: { ...circuitInteractionConfiguration({ overtakingDifficulty, dirtyAirSensitivityPermille, drsEffectivenessPermille }), drsActivationLap: 1 },
+    commands: { ...base.commands!, racecraft },
+  };
+}
+function floorRuns(count: number, circuit: keyof typeof TRAIN_PROFILES) {
+  let exact = 0, near = 0, close = 0, repeated = 0, longest = 0, attempts = 0, failures = 0, passes = 0;
+  for (let seed = 0; seed < 50; seed++) {
+    let prior = new Map<string, number>();
+    for (const state of laps(trainInput(count, seed, circuit))) {
+      assertOrder(state);
+      const current = new Map<string, number>();
+      for (let i = 1; i < state.entrants.length; i++) {
+        const ahead = state.entrants[i - 1], behind = state.entrants[i];
+        const gap = behind.intervalToAheadMs;
+        if (gap === null) continue;
+        if (gap <= 1000) close++;
+        if (gap <= 100) near++;
+        const key = `${ahead.entrantId}:${behind.entrantId}`;
+        const length = gap === MIN_GAP ? (prior.get(key) ?? 0) + 1 : 0;
+        if (gap === MIN_GAP) exact++;
+        if (length > 1) repeated++;
+        longest = Math.max(longest, length);
+        current.set(key, length);
+      }
+      prior = current;
+      for (const e of state.entrants) if (e.track!.attempted) { attempts++; if (e.track!.passed) passes++; else failures++; }
+    }
+  }
+  return { exact, near, close, repeated, longest, attempts, failures, passes };
+}
 /** How many of 100 seeds see the car starting second pass the car starting first within the race. */
 function passRate(o: RacecraftScenario, prepare?: (s: RaceSimulationState) => RaceSimulationState) {
   let passed = 0;
@@ -31,8 +68,15 @@ function exactFloorShare(o: RacecraftScenario) {
 function assertOrder(s: RaceSimulationState) {
   expect(s.entrants.map(e => e.position)).toEqual(s.entrants.map((_, i) => i + 1));
   expect(new Set(s.entrants.map(e => e.entrantId)).size).toBe(s.entrants.length);
-  for (const e of s.entrants.slice(1)) if (e.intervalToAheadMs !== null) expect(e.intervalToAheadMs).toBeGreaterThanOrEqual(MIN_GAP);
-  for (const e of s.entrants) if (e.gapToLeaderMs !== null) expect(e.gapToLeaderMs).toBeGreaterThanOrEqual(0);
+  expect(s.entrants[0].gapToLeaderMs).toBe(0);
+  for (const e of s.entrants.slice(1)) if (e.intervalToAheadMs !== null) {
+    expect(Number.isFinite(e.intervalToAheadMs)).toBe(true);
+    expect(e.intervalToAheadMs).toBeGreaterThanOrEqual(MIN_GAP);
+  }
+  for (const e of s.entrants) if (e.gapToLeaderMs !== null) {
+    expect(Number.isFinite(e.gapToLeaderMs)).toBe(true);
+    expect(e.gapToLeaderMs).toBeGreaterThanOrEqual(0);
+  }
 }
 describe("racecraft configuration", () => {
   it("is frozen into the command profile JSON and validated (no schema change)", () => {
@@ -42,6 +86,43 @@ describe("racecraft configuration", () => {
     const commands = racecraftInput().commands!;
     expect(() => validateCommandConfiguration(commands)).not.toThrow();
     expect(() => validateCommandConfiguration({ ...commands, racecraft: { ...c, aiOvertakeCharge: 5000 } })).toThrow(RangeError);
+    expect(() => validateRacecraftConfiguration({ ...c, heldFollowingLossPermille: undefined })).toThrow(RangeError);
+    expect(() => validateRacecraftConfiguration({ ...c, heldFollowingLossMaxMs: -1 })).toThrow(RangeError);
+    expect(() => validateRacecraftConfiguration({ ...c, heldFollowingLossPermille: 1001 })).toThrow(RangeError);
+  });
+});
+describe("DRS train floor recurrence", () => {
+  it("lets eight-car and full-field trains breathe without moving the floor to 81–100 ms", () => {
+    for (const circuit of ["Monza", "Spa"] as const) for (const count of [8, 22]) {
+      const m = floorRuns(count, circuit);
+      expect(m.exact).toBeGreaterThan(0); // brief physical-floor contact is legal
+      expect(m.repeated).toBeLessThanOrEqual(2);
+      expect(m.longest).toBeLessThanOrEqual(3);
+      expect(m.near / m.close).toBeLessThan(count === 22 ? 0.09 : 0.04);
+      expect(m.attempts).toBeGreaterThan(0);
+      expect(m.failures).toBeGreaterThan(0);
+      expect(m.passes).toBeGreaterThan(0);
+    }
+  });
+  it("replays pre-repair saved Racecraft JSON exactly for multiple seeds and field sizes", () => {
+    const { heldFollowingLossPermille: _share, heldFollowingLossMaxMs: _cap, ...old } = defaultRacecraftConfiguration(); void _share; void _cap;
+    const expected: Record<string, string> = {
+      "2-1": "b5b071b9a8fde8dc3908e01929a50c8d16e957654a574578116d85b5752bef7f",
+      "2-9": "d440f753229718856ac2b96f295428ad5fd6bd2040988197ad07a464bfabe33c",
+      "2-42": "dd81abdff6079c3fdef61ddead786e8aafac15ed213b328a3cf73de63306eeac",
+      "8-1": "79c8d7a370aa12368e271761d13971764bcbe05897805c64d417f71f19a4c446",
+      "8-9": "09aee0c1864f446b53b234b72c6862d383ba88fcc7ac629af8e467d35a16ab06",
+      "8-42": "575b80610e861291dcf588f1945189cdffe645171b3cd43adf923ff642b5a1ba",
+      "22-1": "28ad163f4185f665eb0e326597959294944f7feda8978a11ed8345f1928ba031",
+      "22-9": "46e0d55903143d3c9f6b7e2544901795375acc12d524e23c8c0fcfcd9217fe76",
+      "22-42": "cba63d865bf6acf764ce82511065416e2b9c030b89949ec8c045c55eec6c3a37",
+    };
+    expect(() => validateRacecraftConfiguration(old)).not.toThrow();
+    for (const count of [2, 8, 22]) for (const seed of [1, 9, 42]) {
+      const base = racecraftInput({ count, seed, laps: 12, gapMs: 400, paceMs: TRAIN_PACE_MS.slice(0, count), drs: true, ai: true });
+      const state = simulateRace({ ...base, commands: { ...base.commands!, racecraft: old } }).state;
+      expect(createHash("sha256").update(JSON.stringify(state)).digest("hex")).toBe(expected[`${count}-${seed}`]);
+    }
   });
 });
 describe("controlled gap: soft following instead of the exact 80 ms floor", () => {

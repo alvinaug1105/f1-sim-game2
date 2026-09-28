@@ -42,6 +42,13 @@ export interface RacecraftConfiguration {
    * Races frozen before the repair, where a starved car keeps circulating with the exhaustion penalty.
    */
   readonly fuelStarvationRetirement?: boolean;
+  /**
+   * A non-attacking car held at the physical gap gives back this share (‰) of the pace it could not use, capped in ms.
+   * This creates real following loss when a faster car catches an 80 ms gap; absent in older saved Races, the original
+   * close-range dirty-air rule is used unchanged. The two following costs are alternatives, not cumulative.
+   */
+  readonly heldFollowingLossPermille?: number;
+  readonly heldFollowingLossMaxMs?: number;
 }
 export function defaultRacecraftConfiguration(): RacecraftConfiguration {
   return {
@@ -59,6 +66,8 @@ export function defaultRacecraftConfiguration(): RacecraftConfiguration {
     commandEdgeCapMs: 300,
     aiThreatEdgeMs: 400,
     fuelStarvationRetirement: true,
+    heldFollowingLossPermille: 500,
+    heldFollowingLossMaxMs: 250,
   };
 }
 function integer(n: number, lo: number, hi: number) {
@@ -80,4 +89,7 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   if (c.commandEdgeCapMs !== undefined) integer(c.commandEdgeCapMs, 0, 5000);
   if (c.aiThreatEdgeMs !== undefined) integer(c.aiThreatEdgeMs, 0, 5000);
   if (c.fuelStarvationRetirement !== undefined && typeof c.fuelStarvationRetirement !== "boolean") throw new RangeError("Invalid racecraft configuration");
+  if ((c.heldFollowingLossPermille === undefined) !== (c.heldFollowingLossMaxMs === undefined)) throw new RangeError("Invalid racecraft configuration");
+  if (c.heldFollowingLossPermille !== undefined) integer(c.heldFollowingLossPermille, 0, 1000);
+  if (c.heldFollowingLossMaxMs !== undefined) integer(c.heldFollowingLossMaxMs, 0, 1000);
 }

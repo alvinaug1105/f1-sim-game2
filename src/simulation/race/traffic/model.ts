@@ -207,8 +207,8 @@ export function attackEdge(fullEdgeMs: number, commandEdgeMs: number, racecraft:
  * - Eligibility and probability read the LEGITIMATE pace edge: both cars' expected laps without this lap's random
  *   variation (car, driver, tyres, fuel, commands, water), so a lucky lap or the defender's own dirty air never
  *   creates an attack. Dirty air still makes following hard and the circuit profile still scales everything.
- * - A held car that does not attack suffers the close-range turbulence it drove into (the extra dirty air of the
- *   minimum gap over the gap it started the lap at, for about half a lap), so arrival speed shapes the gap.
+ * - A held car that does not attack suffers close-range turbulence. New Races also account for the pace it had to
+ *   give back while following; the larger of these two costs opens a natural gap without counting both costs.
  * - Pressure: pace a held car could not use this lap, plus last lap's persisted traffic loss when it was already
  *   close (and did not pit), capped. It resets by itself when the gap opens, after a pass, a stop or SC/VSC.
  * - A failed attack costs the attacker time, scaled by how clearly it failed (the same single draw): no fixed
@@ -289,7 +289,14 @@ function resolveRacecraftTraffic(
     const held = ahead.elapsedTimeMs + c.minimumGapMs;
     if (behind.elapsedTimeMs < held && !behind.track.attempted) {
       const closeRange = followingEffects(c.minimumGapMs, lap, c).dirtyAirMs;
-      behind.elapsedTimeMs = held + Math.max(0, Math.round((closeRange - behind.track.dirtyAirMs) / 2));
+      const turbulenceMs = Math.max(0, Math.round((closeRange - behind.track.dirtyAirMs) / 2));
+      // The car had to give back `held - elapsed` of its projected pace to preserve order. In a new Race, a share of
+      // that real held pace is lost while following; old snapshots without both fields retain the exact old result.
+      // A completed pass uses the established pass separation, not this caught-car rule.
+      const heldPaceMs = !ahead.track.passed && racecraft.heldFollowingLossPermille !== undefined
+        ? Math.min(racecraft.heldFollowingLossMaxMs!, Math.round((held - behind.elapsedTimeMs) * racecraft.heldFollowingLossPermille / 1000))
+        : 0;
+      behind.elapsedTimeMs = held + Math.max(turbulenceMs, heldPaceMs);
     }
     behind.elapsedTimeMs = Math.max(behind.elapsedTimeMs, held);
   }

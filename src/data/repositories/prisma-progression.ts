@@ -1,4 +1,5 @@
 import type { PrismaClient, Prisma } from "../generated/prisma/client";
+import { settleDueDesignProjects } from "./prisma-car-design";
 import { assertContentId } from "../../game/domain/content-repository";
 import {
   ProgressionError,
@@ -177,4 +178,6 @@ export async function persistProgress(
     where: { id: after.career.id },
     data: { currentDate: date(after.career.currentDate) },
   });
+  if (after.career.currentDate !== before.career.currentDate)
+    await settleDueDesignProjects(tx, after.career.id, after.career.currentDate);
 }

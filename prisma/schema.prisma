@@ -21,6 +21,25 @@ enum CarPartType {
   SUSPENSION
 }
 
+enum CarDesignFocus {
+  BALANCED
+  LOW_SPEED
+  MEDIUM_SPEED
+  HIGH_SPEED
+  DRAG_REDUCTION
+  DRS_EFFICIENCY
+}
+
+enum CarDesignProgramme {
+  STANDARD
+  EXTENSIVE
+}
+
+enum CarDesignProjectStatus {
+  ACTIVE
+  COMPLETED
+}
+
 model GameDatabase {
   id            String    @id @default(uuid()) @db.Uuid
   key           String    @unique
@@ -331,6 +350,7 @@ model CareerSeasonTeamEntry {
   team           CareerTeam                @relation(fields: [careerId, careerTeamId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
   drivers        CareerSeasonDriverEntry[]
   partDesigns    CareerCarPartDesign[]
+  designProjects CareerCarDesignProject[]
 
   @@unique([careerId, careerSeasonId, id])
   @@unique([careerId, careerSeasonId, careerTeamId])
@@ -352,9 +372,39 @@ model CareerCarPartDesign {
   drsEfficiency  Int
   createdAt      DateTime              @default(now()) @db.Timestamptz(3)
   teamEntry      CareerSeasonTeamEntry @relation(fields: [careerId, careerSeasonId, careerTeamId], references: [careerId, careerSeasonId, careerTeamId], onDelete: Restrict, onUpdate: Restrict, map: "CareerCarPartDesign_teamEntry_fkey")
+  basedProjects  CareerCarDesignProject[] @relation("BaseCarPartDesign")
 
   @@unique([careerId, careerSeasonId, careerTeamId, partType, version], map: "CareerCarPartDesign_scope_type_version_key")
+  @@unique([careerId, careerSeasonId, careerTeamId, partType, id], map: "CareerCarPartDesign_scope_type_id_key")
   @@index([careerId, careerSeasonId, careerTeamId], map: "CareerCarPartDesign_scope_idx")
+}
+
+model CareerCarDesignProject {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  careerId              String                 @db.Uuid
+  careerSeasonId        String                 @db.Uuid
+  careerTeamId          String                 @db.Uuid
+  partType              CarPartType
+  newVersion            Int
+  focus                 CarDesignFocus
+  programme             CarDesignProgramme
+  status                CarDesignProjectStatus @default(ACTIVE)
+  startedAtCareerDate   DateTime               @db.Date
+  completesAtCareerDate DateTime               @db.Date
+  basePartDesignId      String                 @db.Uuid
+  plannedLowSpeed       Int
+  plannedMediumSpeed    Int
+  plannedHighSpeed      Int
+  plannedDragReduction  Int
+  plannedDrsEfficiency  Int
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  completedAt           DateTime?              @db.Timestamptz(3)
+  completedAtCareerDate DateTime?              @db.Date
+  teamEntry             CareerSeasonTeamEntry  @relation(fields: [careerId, careerSeasonId, careerTeamId], references: [careerId, careerSeasonId, careerTeamId], onDelete: Restrict, onUpdate: Restrict, map: "CareerCarDesignProject_teamEntry_fkey")
+  basePartDesign        CareerCarPartDesign    @relation("BaseCarPartDesign", fields: [careerId, careerSeasonId, careerTeamId, partType, basePartDesignId], references: [careerId, careerSeasonId, careerTeamId, partType, id], onDelete: Restrict, onUpdate: Restrict, map: "CareerCarDesignProject_basePart_fkey")
+
+  @@unique([careerId, careerSeasonId, careerTeamId, partType, newVersion], map: "CareerCarDesignProject_scope_type_version_key")
+  @@index([careerId, careerSeasonId, careerTeamId, status], map: "CareerCarDesignProject_scope_status_idx")
 }
 
 model CareerSeasonDriverEntry {

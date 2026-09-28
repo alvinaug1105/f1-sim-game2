@@ -93,6 +93,9 @@ function transactionDouble() {
     careerSeasonTeamEntry: {
       createMany: vi.fn().mockResolvedValue({ count: 2 }),
     },
+    careerCarPartDesign: {
+      createMany: vi.fn().mockResolvedValue({ count: 12 }),
+    },
     careerSeasonDriverEntry: {
       createMany: vi.fn().mockResolvedValue({ count: 4 }),
     },
@@ -142,6 +145,7 @@ describe("Career Prisma adapter contracts (mocked delegates, not SQL execution)"
     expect(tx.careerCircuit.createMany).toHaveBeenCalledOnce();
     expect(tx.careerSeason.create).toHaveBeenCalledOnce();
     expect(tx.careerSeasonTeamEntry.createMany).toHaveBeenCalledOnce();
+    expect(tx.careerCarPartDesign.createMany).toHaveBeenCalledOnce();
     expect(tx.careerSeasonDriverEntry.createMany).toHaveBeenCalledOnce();
     expect(tx.careerCalendarEvent.createMany).toHaveBeenCalledOnce();
   });

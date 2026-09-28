@@ -1,4 +1,5 @@
 import type { EntityId } from "./identity";
+import type { CarPartDesign, CarPerformanceStats, StoredCarPartDesign } from "./car-development";
 import type {
   Team,
   Driver,
@@ -56,6 +57,18 @@ export interface CareerSeasonTeamEntry {
   readonly entryOrder: number;
   /** Snapshotted game-balance value; null for Careers created before Content Expansion Pass A. */
   readonly carPerformance?: number | null;
+  /** Management ratings are absent on Careers created before Phase 17A. */
+  readonly lowSpeedPerformance?: number | null;
+  readonly mediumSpeedPerformance?: number | null;
+  readonly highSpeedPerformance?: number | null;
+  readonly dragReductionPerformance?: number | null;
+  readonly drsEfficiencyPerformance?: number | null;
+}
+export interface CareerCarPartDesign extends StoredCarPartDesign {
+  readonly id: EntityId;
+  readonly careerId: EntityId;
+  readonly careerSeasonId: EntityId;
+  readonly careerTeamId: EntityId;
 }
 export interface CareerSeasonDriverEntry {
   readonly id: EntityId;
@@ -90,6 +103,7 @@ export interface CareerWorld {
   readonly circuits: readonly CareerCircuit[];
   readonly season: CareerSeason;
   readonly teamEntries: readonly CareerSeasonTeamEntry[];
+  readonly partDesigns: readonly CareerCarPartDesign[];
   readonly driverEntries: readonly CareerSeasonDriverEntry[];
   readonly events: readonly CareerCalendarEvent[];
 }
@@ -103,6 +117,15 @@ export interface CareerOverview extends CareerSummary {
     readonly event: CareerCalendarEvent;
     readonly circuit: CareerCircuit;
   } | null;
+}
+/** Player-only management projection. Rival design rows never cross this repository boundary. */
+export interface CareerPlayerCar {
+  readonly careerId: EntityId;
+  readonly teamId: EntityId;
+  readonly teamName: string;
+  readonly overallPerformance: number;
+  readonly stats: CarPerformanceStats | null;
+  readonly parts: readonly CarPartDesign[];
 }
 export interface CreateCareerInput {
   readonly name: string;

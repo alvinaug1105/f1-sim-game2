@@ -1,11 +1,12 @@
 import type { CareerRaceData, RosterBalance } from "../../game/domain/race-repository";
 import { DEFAULT_RACE_PARAMETERS } from "../../simulation/race/engine";
 import type { RaceSimulationInput } from "../../simulation/race/types";
+import { legacyCarPerformance } from "../../game/domain/car-development";
 /** Temporary development performance, based on roster order and team entry order, never names or special IDs. Shared by Race and Practice. */
 export function developmentPerformance(index: number, teamOrder: number) {
   return {
     driver: { pace: 92 - (index % 6) * 1.5, consistency: 88 + (index % 4) * 2 },
-    car: { performance: 92 - ((teamOrder - 1) % 8) * 2 },
+    car: { performance: legacyCarPerformance(teamOrder) },
   };
 }
 /**

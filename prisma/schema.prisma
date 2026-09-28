@@ -12,6 +12,15 @@ enum DriverRole {
   RESERVE_DRIVER
 }
 
+enum CarPartType {
+  FRONT_WING
+  REAR_WING
+  UNDERFLOOR
+  SIDEPODS
+  CHASSIS
+  SUSPENSION
+}
+
 model GameDatabase {
   id            String    @id @default(uuid()) @db.Uuid
   key           String    @unique
@@ -115,6 +124,11 @@ model SeasonTeamEntry {
   entryOrder     Int
   /// Game-balance data (development values, 0–100); identity lives on Team.
   carPerformance Int?
+  lowSpeedPerformance Int?
+  mediumSpeedPerformance Int?
+  highSpeedPerformance Int?
+  dragReductionPerformance Int?
+  drsEfficiencyPerformance Int?
   season         Season              @relation(fields: [gameDatabaseId, seasonId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
   team           Team                @relation(fields: [gameDatabaseId, teamId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
   drivers        SeasonDriverEntry[]
@@ -307,14 +321,40 @@ model CareerSeasonTeamEntry {
   entryOrder     Int
   /// Snapshotted balance; null for Careers created before Content Expansion Pass A (legacy development profile).
   carPerformance Int?
+  /// Phase 17A management ratings; null on existing Careers.
+  lowSpeedPerformance Int?
+  mediumSpeedPerformance Int?
+  highSpeedPerformance Int?
+  dragReductionPerformance Int?
+  drsEfficiencyPerformance Int?
   season         CareerSeason              @relation(fields: [careerId, careerSeasonId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
   team           CareerTeam                @relation(fields: [careerId, careerTeamId], references: [careerId, id], onDelete: Restrict, onUpdate: Restrict)
   drivers        CareerSeasonDriverEntry[]
+  partDesigns    CareerCarPartDesign[]
 
   @@unique([careerId, careerSeasonId, id])
   @@unique([careerId, careerSeasonId, careerTeamId])
   @@unique([careerId, careerSeasonId, entryOrder])
   @@index([careerId, careerTeamId])
+}
+
+model CareerCarPartDesign {
+  id             String                @id @default(uuid()) @db.Uuid
+  careerId       String                @db.Uuid
+  careerSeasonId String                @db.Uuid
+  careerTeamId   String                @db.Uuid
+  partType       CarPartType
+  version        Int
+  lowSpeed       Int
+  mediumSpeed    Int
+  highSpeed      Int
+  dragReduction  Int
+  drsEfficiency  Int
+  createdAt      DateTime              @default(now()) @db.Timestamptz(3)
+  teamEntry      CareerSeasonTeamEntry @relation(fields: [careerId, careerSeasonId, careerTeamId], references: [careerId, careerSeasonId, careerTeamId], onDelete: Restrict, onUpdate: Restrict, map: "CareerCarPartDesign_teamEntry_fkey")
+
+  @@unique([careerId, careerSeasonId, careerTeamId, partType, version], map: "CareerCarPartDesign_scope_type_version_key")
+  @@index([careerId, careerSeasonId, careerTeamId], map: "CareerCarPartDesign_scope_idx")
 }
 
 model CareerSeasonDriverEntry {

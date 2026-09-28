@@ -305,6 +305,7 @@ export function CareerOverviewView({
           <div className="career-content">
             <h3>{playerTeam.name}</h3>
             <p>{playerTeam.shortName}</p>
+            <Link className="text-link" href={`/career/${career.id}/car`}>{t("car.heading")} →</Link>
             <dl className="career-facts">
               <div>
                 <dt>{t("dashboard.teamId")}</dt>

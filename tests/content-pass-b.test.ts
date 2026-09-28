@@ -23,7 +23,8 @@ describe('original 2026 calendar and stable content', () => {
     expect(JSON.stringify(source.events)).not.toMatch(/sepang/i);
   });
   it('retains all former source identities and the entire Pass A grid/balance', () => {
-    for (const key of ['teams','drivers','teamEntries','driverEntries'] as const) expect(source[key]).toEqual(before[key]);
+    for (const key of ['teams','drivers','driverEntries'] as const) expect(source[key]).toEqual(before[key]);
+    for (const entry of before.teamEntries) expect(source.teamEntries.find(candidate => candidate.id === entry.id)).toMatchObject(entry);
     for (const c of before.circuits) expect(source.circuits.find(x => x.id === c.id)).toMatchObject({ id: c.id, key: c.key, name: c.name, overtakingDifficulty: c.overtakingDifficulty, dirtyAirSensitivityPermille: c.dirtyAirSensitivityPermille, drsEffectivenessPermille: c.drsEffectivenessPermille });
     for (const e of before.events) expect(source.events.find(x => x.id === e.id)).toMatchObject({ name: e.name, circuitId: e.circuitId });
     expect(source.circuits.slice(0, 2).map(c => [c.lengthMeters,c.defaultLapCount])).toEqual([[5278,58],[5807,53]]);
@@ -63,7 +64,7 @@ describe('original 2026 calendar and stable content', () => {
     expect(old.world.circuits.every(c => c.climateProfile === null)).toBe(true);
     expect(old.career.sourceGameDatabaseVersion).toBe('1.0.0');
     expect(fresh.world.events).toHaveLength(24);
-    expect(fresh.career.sourceGameDatabaseVersion).toBe('1.1.0');
+    expect(fresh.career.sourceGameDatabaseVersion).toBe('1.2.0');
     for (const c of fresh.world.circuits) expect(c.climateProfile).toBe(source.circuits.find(x => x.id === c.sourceCircuitId)!.climateProfile);
   });
 });

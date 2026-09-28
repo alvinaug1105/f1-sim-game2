@@ -17,7 +17,9 @@ import {
   type CareerOverview,
   type CareerSummary,
   type CareerCreationOptions,
+  type CareerPlayerCar,
 } from "../../game/domain/career";
+import { currentCarPerformance, legacyCarPerformance, storedPartDesign } from "../../game/domain/car-development";
 import { assertContentId } from "../../game/domain/content-repository";
 import { PrismaGameContentRepository } from "./prisma-game-content";
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -85,6 +87,7 @@ async function saveWorld(tx: Prisma.TransactionClient, world: CareerWorld) {
     },
   });
   await tx.careerSeasonTeamEntry.createMany({ data: [...world.teamEntries] });
+  await tx.careerCarPartDesign.createMany({ data: [...world.partDesigns] });
   await tx.careerSeasonDriverEntry.createMany({
     data: [...world.driverEntries],
   });
@@ -159,6 +162,25 @@ export class PrismaCareerRepository implements CareerRepository {
         { isolationLevel: "RepeatableRead" },
       ),
     );
+  }
+  async getPlayerCar(id: string): Promise<CareerPlayerCar | null> {
+    validateId(id);
+    return protect(() => this.client.$transaction(async tx => {
+      const career = await tx.career.findUnique({ where: { id }, select: { playerTeamId: true, currentSeasonId: true } });
+      if (!career) return null;
+      const entry = await tx.careerSeasonTeamEntry.findFirst({
+        where: { careerId: id, careerSeasonId: career.currentSeasonId, careerTeamId: career.playerTeamId },
+        include: { team: true, partDesigns: { where: { version: 1 } } },
+      });
+      if (!entry) throw new CareerError("PERSISTENCE_FAILED");
+      const current = currentCarPerformance(entry.partDesigns);
+      return {
+        careerId: id, teamId: career.playerTeamId, teamName: entry.team.name,
+        overallPerformance: current?.overall ?? entry.carPerformance ?? legacyCarPerformance(entry.entryOrder),
+        stats: current?.stats ?? null,
+        parts: entry.partDesigns.map(storedPartDesign),
+      };
+    }, { isolationLevel: "RepeatableRead" }));
   }
   async getCreationOptions(): Promise<CareerCreationOptions> {
     // This is the only read path here that consults source content; Continue never calls it.

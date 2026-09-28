@@ -176,6 +176,11 @@ export function validateContentDataset(data: ContentDataset): void {
     );
     positive(row.entryOrder, "Entry order");
     balance(row.carPerformance, "Car performance");
+    balance(row.lowSpeedPerformance, "Low-speed performance");
+    balance(row.mediumSpeedPerformance, "Medium-speed performance");
+    balance(row.highSpeedPerformance, "High-speed performance");
+    balance(row.dragReductionPerformance, "Drag-reduction performance");
+    balance(row.drsEfficiencyPerformance, "DRS-efficiency performance");
   }
   const participatingTeams = new Set(
     teamEntries.map((row) => `${row.seasonId}/${row.teamId}`),

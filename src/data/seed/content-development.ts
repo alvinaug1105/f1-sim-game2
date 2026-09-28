@@ -188,7 +188,7 @@ export const developmentContent = {
     id: gameDatabaseId,
     key: "fictional-formula-development",
     name: "Fictional Formula Development",
-    version: "1.1.0",
+    version: "1.2.0",
     schemaVersion: 1,
     description:
       "Original 2026 24-round world with circuit climate snapshots. No active Career.",
@@ -217,6 +217,8 @@ export const developmentContent = {
   // Entry IDs 500+ / 600+ follow the team / driver order above (Mercedes 500, Ferrari 501; RUS 600 … HAM 603).
   teamEntries: TEAMS.map(([n], index) => ({
     id: id(400 + n), gameDatabaseId, seasonId, teamId: id(n), entryOrder: index + 1, carPerformance: CAR_PERFORMANCE[n],
+    lowSpeedPerformance: CAR_PERFORMANCE[n], mediumSpeedPerformance: CAR_PERFORMANCE[n], highSpeedPerformance: CAR_PERFORMANCE[n],
+    dragReductionPerformance: CAR_PERFORMANCE[n], drsEfficiencyPerformance: CAR_PERFORMANCE[n],
   })),
   driverEntries: DRIVERS.map(([n, , , , , , , carNumber, team]) => ({
     id: id(400 + n), gameDatabaseId, seasonId, teamId: id(team), driverId: id(n), carNumber, role: "RACE_DRIVER" as const,

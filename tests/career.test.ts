@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createCareer } from "../src/features/career/create-career";
 import { validateCareerInput } from "../src/game/domain/career-snapshot";
 import { developmentContent as data } from "../src/data/seed/content-development";
+import { CAR_PART_TYPES, currentCarPerformance, uniformCarStats } from "../src/game/domain/car-development";
 import {
   MemoryCareerRepository,
   runtime,
@@ -132,6 +133,40 @@ describe("Career creation and validation", () => {
   });
 });
 describe("Career snapshot and identity mapping", () => {
+  it("creates 66 version-1 designs and preserves all 11 accepted 2026 scalar ratings", async () => {
+    const repo = new MemoryCareerRepository();
+    const career = await createCareer(repo, input, runtime);
+    const world = repo.worlds.get(career.id)!;
+    expect(world.partDesigns).toHaveLength(66);
+    for (const sourceEntry of data.teamEntries) {
+      const team = world.teams.find(row => row.sourceTeamId === sourceEntry.teamId)!;
+      const entry = world.teamEntries.find(row => row.careerTeamId === team.id)!;
+      const designs = world.partDesigns.filter(row => row.careerTeamId === team.id);
+      expect(designs.map(row => row.partType)).toEqual(CAR_PART_TYPES);
+      expect(designs.every(row => row.version === 1 && row.careerSeasonId === career.currentSeasonId)).toBe(true);
+      expect(currentCarPerformance(designs)?.stats).toEqual(uniformCarStats(sourceEntry.carPerformance!));
+      expect(currentCarPerformance(designs)?.overall).toBe(sourceEntry.carPerformance);
+      expect(entry.carPerformance).toBe(sourceEntry.carPerformance);
+    }
+  });
+
+  it("isolates part designs from source edits while a later Career sees the revised source", async () => {
+    const repo = new MemoryCareerRepository();
+    const first = await createCareer(repo, input, runtime);
+    const firstWorld = structuredClone(repo.worlds.get(first.id)!);
+    const old = data.teamEntries[0];
+    repo.data = { ...data, teamEntries: [{ ...old, carPerformance: 73,
+      lowSpeedPerformance: 70, mediumSpeedPerformance: 71, highSpeedPerformance: 72,
+      dragReductionPerformance: 73, drsEfficiencyPerformance: 74,
+    }, ...data.teamEntries.slice(1)] };
+    const second = await createCareer(repo, input, runtime);
+    expect(repo.worlds.get(first.id)).toEqual(firstWorld);
+    const secondWorld = repo.worlds.get(second.id)!;
+    const entry = secondWorld.teamEntries.find(row => row.careerTeamId === second.playerTeamId)!;
+    expect([entry.lowSpeedPerformance, entry.mediumSpeedPerformance, entry.highSpeedPerformance, entry.dragReductionPerformance, entry.drsEfficiencyPerformance]).toEqual([70, 71, 72, 73, 74]);
+    expect(currentCarPerformance(secondWorld.partDesigns.filter(row => row.careerTeamId === second.playerTeamId))?.stats)
+      .toEqual({ lowSpeed: 70, mediumSpeed: 71, highSpeed: 72, dragReduction: 73, drsEfficiency: 74 });
+  });
   it.each(["teams", "drivers", "circuits", "events"] as const)(
     "isolates source %s edits",
     async (group) => {

@@ -26,7 +26,7 @@ async function read(tx: Prisma.TransactionClient, careerId: string, eventId: str
     const circuit = await tx.careerCircuit.findUniqueOrThrow({ where: { id: event.careerCircuitId } });
     const roster = await tx.careerSeasonDriverEntry.findMany({
         where: { careerId, careerSeasonId: event.careerSeasonId, role: "RACE_DRIVER" },
-        include: { driver: true, teamEntry: { include: { team: true } } },
+        include: { driver: true, teamEntry: { include: { team: true, partDesigns: { where: { version: 1 } } } } },
         orderBy: [{ teamEntry: { entryOrder: "asc" } }, { driver: { sourceDriverId: "asc" } }, { id: "asc" }],
     });
     const preps = await tx.careerWeekendPreparation.findMany({ where: { careerId, careerRaceWeekendId: event.weekend.id } });

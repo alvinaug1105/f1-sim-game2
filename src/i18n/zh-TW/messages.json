@@ -932,5 +932,6 @@
   "car.error.CAPACITY": "設計專案名額已滿。",
   "car.error.PART_ACTIVE": "此零件已有進行中的設計專案。",
   "car.error.INVALID_CHOICE": "請選擇有效的零件、研發重點與方案。",
+  "car.error.STALE_PREVIEW": "設計預覽已變更，請重新預覽後再開始。",
   "car.error.PERSISTENCE_FAILED": "無法儲存專案，請重試。"
 }

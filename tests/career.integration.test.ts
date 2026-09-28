@@ -132,6 +132,16 @@ describe("Career world PostgreSQL integration", () => {
     expect((await design.start(career.id, "CHASSIS", "BALANCED", "STANDARD")).partType).toBe("CHASSIS");
   });
 
+  it("rejects a stale preview after another Career-time transition", async () => {
+    const design = new PrismaCarDesignRepository(client);
+    const preview = await design.preview(career.id, "FRONT_WING", "LOW_SPEED", "STANDARD");
+    const progression = new PrismaProgressionRepository(client);
+    const eventId = (await progression.getProgress(career.id))!.events[0].id;
+    await advanceToNextEvent(progression, career.id, eventId);
+    await expect(design.start(career.id, "FRONT_WING", "LOW_SPEED", "STANDARD", preview)).rejects.toMatchObject({ code: "STALE_PREVIEW" });
+    expect(await client.careerCarDesignProject.count({ where: { careerId: career.id } })).toBe(0);
+  });
+
   it("enforces project scope, base part, version, dates and ratings in PostgreSQL", async () => {
     const design = new PrismaCarDesignRepository(client);
     const started = await design.start(career.id, "FRONT_WING", "BALANCED", "STANDARD");

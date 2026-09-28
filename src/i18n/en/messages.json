@@ -932,5 +932,6 @@
   "car.error.CAPACITY": "All design project slots are occupied.",
   "car.error.PART_ACTIVE": "A design project for this part is already active.",
   "car.error.INVALID_CHOICE": "Choose a valid part, focus and programme.",
+  "car.error.STALE_PREVIEW": "The design preview changed. Preview again before starting.",
   "car.error.PERSISTENCE_FAILED": "The project could not be saved. Please try again."
 }

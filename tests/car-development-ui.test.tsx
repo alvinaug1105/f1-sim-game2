@@ -68,7 +68,7 @@ describe("player car development presentation", () => {
       "car.availableDesigns", "car.designComplete", "car.notFitted", "car.projectCapacity",
       "car.focus.BALANCED", "car.focus.LOW_SPEED", "car.focus.MEDIUM_SPEED", "car.focus.HIGH_SPEED",
       "car.focus.DRAG_REDUCTION", "car.focus.DRS_EFFICIENCY", "car.programme.STANDARD", "car.programme.EXTENSIVE",
-      "car.error.CAPACITY"] as const) {
+      "car.error.CAPACITY", "car.error.STALE_PREVIEW"] as const) {
       expect(translate("en", key)).not.toBe(key);
       expect(translate("zh-TW", key)).not.toBe(key);
     }

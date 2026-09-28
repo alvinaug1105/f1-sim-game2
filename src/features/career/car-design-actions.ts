@@ -18,8 +18,9 @@ export async function carDesignAction(_previous: CarDesignActionState, form: For
       return { error: null, preview: await repository.preview(careerId, text("partType"), text("focus"), text("programme")), startedId: null };
     }
     if (text("intent") !== "start") throw new CarDesignError("INVALID_CHOICE");
+    if (!_previous.preview) throw new CarDesignError("STALE_PREVIEW");
     // Re-evaluate under the Career row lock; client preview and statistics are never trusted.
-    const started = await repository.start(careerId, text("partType"), text("focus"), text("programme"));
+    const started = await repository.start(careerId, text("partType"), text("focus"), text("programme"), _previous.preview);
     revalidatePath(`/career/${careerId}/car`);
     return { error: null, preview: null, startedId: started.id };
   } catch (error) {

@@ -25,6 +25,7 @@ const programmes: Record<DesignProgramme, TranslationKey> = { STANDARD: "car.pro
 const errors: Record<CarDesignErrorCode, TranslationKey> = {
   NOT_FOUND: "car.error.NOT_FOUND", UNAVAILABLE: "car.error.UNAVAILABLE", LEGACY: "car.error.LEGACY",
   CAPACITY: "car.error.CAPACITY", PART_ACTIVE: "car.error.PART_ACTIVE", INVALID_CHOICE: "car.error.INVALID_CHOICE",
+  STALE_PREVIEW: "car.error.STALE_PREVIEW",
   PERSISTENCE_FAILED: "car.error.PERSISTENCE_FAILED",
 };
 const displayDate = (value: string) => new Date(`${value}T00:00:00.000Z`);

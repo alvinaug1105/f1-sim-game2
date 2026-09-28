@@ -1,7 +1,7 @@
 import type { PrismaClient, Prisma } from "../generated/prisma/client";
 import { assertContentId } from "../../game/domain/content-repository";
-import { currentCarPerformance, legacyCarPerformance, storedPartDesign, type CarPartType } from "../../game/domain/car-development";
-import { MAX_ACTIVE_DESIGN_PROJECTS, isCarPartType, isDesignFocus, isDesignProgramme, planCarPartDesign, type DesignFocus, type DesignProgramme } from "../../game/domain/car-design-project";
+import { CAR_PERFORMANCE_DIMENSIONS, currentCarPerformance, legacyCarPerformance, storedPartDesign, type CarPartType } from "../../game/domain/car-development";
+import { MAX_ACTIVE_DESIGN_PROJECTS, isCarPartType, isDesignFocus, isDesignProgramme, planCarPartDesign, type DesignFocus, type DesignPlan, type DesignProgramme } from "../../game/domain/car-design-project";
 import { CarDesignError, type CarDesignProjectView, type CarDesignRepository } from "../../game/domain/car-design-repository";
 
 const iso = (date: Date) => date.toISOString().slice(0, 10);
@@ -39,6 +39,15 @@ async function baseForPlayer(tx: Client, careerId: string, partType: CarPartType
 }
 function plan(base: Awaited<ReturnType<typeof baseForPlayer>>["base"], focus: DesignFocus, programme: DesignProgramme, dateString: string) {
   return planCarPartDesign(storedPartDesign(base), focus, programme, dateString);
+}
+function samePreview(actual: DesignPlan, expected: DesignPlan): boolean {
+  return expected?.base?.partType === actual.base.partType && expected.base.version === actual.base.version &&
+    expected.planned?.partType === actual.planned.partType && expected.planned.version === actual.planned.version &&
+    expected.focus === actual.focus && expected.programme === actual.programme &&
+    expected.durationDays === actual.durationDays && expected.startedAtCareerDate === actual.startedAtCareerDate &&
+    expected.completesAtCareerDate === actual.completesAtCareerDate &&
+    CAR_PERFORMANCE_DIMENSIONS.every(dimension => expected.base?.stats?.[dimension] === actual.base.stats[dimension] &&
+      expected.planned?.stats?.[dimension] === actual.planned.stats[dimension]);
 }
 async function protect<T>(work: () => Promise<T>): Promise<T> {
   try { return await work(); } catch (error) {
@@ -98,7 +107,7 @@ export class PrismaCarDesignRepository implements CarDesignRepository {
       return plan(base, selected.focus, selected.programme, iso(career.currentDate));
     }, { isolationLevel: "ReadCommitted" }));
   }
-  async start(careerId: string, partType: unknown, focus: unknown, programme: unknown) {
+  async start(careerId: string, partType: unknown, focus: unknown, programme: unknown, expectedPreview?: DesignPlan) {
     id(careerId); const selected = choices(partType, focus, programme);
     return protect(() => this.client.$transaction(async tx => {
       const locked = await tx.career.updateMany({ where: { id: careerId }, data: { updatedAt: new Date() } });
@@ -108,6 +117,7 @@ export class PrismaCarDesignRepository implements CarDesignRepository {
       if (active.some(project => project.partType === selected.partType)) throw new CarDesignError("PART_ACTIVE");
       if (active.length >= MAX_ACTIVE_DESIGN_PROJECTS) throw new CarDesignError("CAPACITY");
       const result = plan(base, selected.focus, selected.programme, iso(career.currentDate));
+      if (expectedPreview && !samePreview(result, expectedPreview)) throw new CarDesignError("STALE_PREVIEW");
       const row = await tx.careerCarDesignProject.create({ data: {
         ...scope, partType: selected.partType, newVersion: result.planned.version,
         focus: selected.focus, programme: selected.programme, status: "ACTIVE",

@@ -2,7 +2,7 @@ import type { CareerPlayerCar } from "./career";
 import type { CarPartDesign, CarPartType } from "./car-development";
 import type { DesignFocus, DesignPlan, DesignProgramme } from "./car-design-project";
 
-export type CarDesignErrorCode = "NOT_FOUND" | "UNAVAILABLE" | "LEGACY" | "CAPACITY" | "PART_ACTIVE" | "INVALID_CHOICE" | "PERSISTENCE_FAILED";
+export type CarDesignErrorCode = "NOT_FOUND" | "UNAVAILABLE" | "LEGACY" | "CAPACITY" | "PART_ACTIVE" | "INVALID_CHOICE" | "STALE_PREVIEW" | "PERSISTENCE_FAILED";
 export class CarDesignError extends Error {
   constructor(readonly code: CarDesignErrorCode, options?: ErrorOptions) { super(code, options); }
 }
@@ -28,5 +28,5 @@ export interface CarDevelopmentOverview {
 export interface CarDesignRepository {
   getOverview(careerId: string): Promise<CarDevelopmentOverview | null>;
   preview(careerId: string, partType: unknown, focus: unknown, programme: unknown): Promise<DesignPlan>;
-  start(careerId: string, partType: unknown, focus: unknown, programme: unknown): Promise<CarDesignProjectView>;
+  start(careerId: string, partType: unknown, focus: unknown, programme: unknown, expectedPreview?: DesignPlan): Promise<CarDesignProjectView>;
 }

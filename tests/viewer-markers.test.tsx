@@ -14,7 +14,9 @@ it('integrated badges retain identity, PIT/retirement, selection and keyboard ac
   const badges=[...host.querySelectorAll<SVGGElement>('[data-car]')];expect(badges).toHaveLength(22);
   for(const badge of badges){expect(badge.getAttribute('tabindex')).toBe('0');expect(badge.getAttribute('aria-label')).toContain('Driver');expect(badge.querySelector('.driver-badge')).not.toBeNull();}
   expect(host.querySelector('[data-car="c0"]')?.getAttribute('aria-pressed')).toBe('true');
-  expect(host.querySelector('[data-car="c1"] .teammate-mark')).not.toBeNull();expect(host.querySelector('[data-car="c2"] .pit-mark')?.textContent).toBe('PIT');expect(host.querySelector('[data-car="c3"] .retired-mark')).not.toBeNull();
+  expect(host.querySelector('[data-car="c1"]')?.classList.contains('player')).toBe(true);
+  expect(host.querySelector('[data-car="c1"] .driver-badge')?.getAttribute('stroke')).toBe('#ffffff');
+  expect(host.querySelector('[data-car="c2"] .pit-mark')?.textContent).toBe('PIT');expect(host.querySelector('[data-car="c3"] .retired-mark')).not.toBeNull();
   const ai=host.querySelector('[data-car="c4"]')!;
   act(()=>{ai.dispatchEvent(new MouseEvent('click',{bubbles:true}));ai.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));ai.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));});
   expect(select.mock.calls).toEqual([['c4'],['c4'],['c4']]);expect(host.querySelector('[data-label],.tag-connector')).toBeNull();

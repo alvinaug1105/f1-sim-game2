@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { prepareVisualSpeed } from '../src/features/race/viewer/speed-profile';
 import { RaceMotion } from '../src/features/race/viewer/motion';
-import { MarkerPacks, trackClose, badgeText, MAX_LATERAL_OFFSET, densityMode, badgeFootprint, responsiveBadgeScale, type PackCar } from '../src/features/race/viewer/marker-packs';
+import { MarkerPacks, trackClose, badgeText, BADGE, MAX_LATERAL_OFFSET, type PackCar } from '../src/features/race/viewer/marker-packs';
+import { gridSlot, gridDisplay, GRID_SIDE, GRID_STEP } from '../src/features/race/viewer/grid-markers';
+import { pathLength } from '../src/features/race/viewer/labels';
 import { prepareCircuitPath, circuitProjection } from '../src/game/domain/circuit-geometry';
 import { circuitLayouts } from '../src/data/seed/circuit-layouts';
 const layout = Object.values(circuitLayouts).find(l=>l.id==='monza')!;
@@ -54,38 +56,20 @@ describe('local marker packs',()=>{
             expect(Math.hypot(p.x-500,p.y-325)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET+.001);
             expect(id).toMatch(/^c/);
         }
-        if(n===22){
-            expect(new Set([...a.values()].map(v=>v.target)).size).toBeLessThan(n); // controlled overlap, no 22-lane fan
-            expect(a.get('c00')!.footprint).toBe(1);
-            expect(a.get('c01')!.footprint).toBe(.96);
-            expect(a.get('c03')!.footprint).toBe(.74);
-            expect(a.get('c00')!.density).toBe('DENSE');
-        }
+        if(n===22) expect(new Set([...a.values()].map(v=>v.target)).size).toBe(3);
     });
-    it('selected and teammate retain footprint priority while lower AI compact',()=>{
-        const input=cars(22); input[1].tier=1;input[2].tier=2;
+    it('isolated and separated markers default to the track centre',()=>{
+        expect(new MarkerPacks().frame(cars(1),3000,16).get('c00')!.offset).toBe(0);
+        const pair=cars(2);pair[1].x=550;pair[1].progress=.52;
+        expect([...new MarkerPacks().frame(pair,3000,16).values()].map(p=>p.offset)).toEqual([0,0]);
+    });
+    it('selected and teammate take deterministic first positions in a dense overlap',()=>{
+        const input=cars(22);input[1].tier=1;input[2].tier=2;
         const out=new MarkerPacks().frame(input,3000,16);
-        expect(out.get('c00')!.footprint).toBe(1);
-        expect(out.get('c01')!.footprint).toBe(.96);
-        expect(out.get('c02')!.footprint).toBe(.94);
-        expect(out.get('c03')!.footprint).toBe(.74);
+        expect(out.get('c00')!.target).toBe(0);
+        expect(out.get('c01')!.target).toBe(-MAX_LATERAL_OFFSET);
+        expect(out.get('c02')!.target).toBe(MAX_LATERAL_OFFSET);
         expect([...out.values()].every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))).toBe(true);
-    });
-    it('legacy out-of-bound lane memory is clamped on the very next frame',()=>{
-        const m=new MarkerPacks();
-        (m as unknown as {memory:Map<string,unknown>}).memory.set('c00',{offset:180,target:180,quiet:0,x:500,y:505,footprint:1,density:'NORMAL'});
-        const p=m.frame(cars(2),3000,16).get('c00')!;
-        expect(Math.abs(p.offset)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
-        expect(Math.abs(p.target)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
-        expect(Math.hypot(p.x-500,p.y-325)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
-    });
-    it('responsive and density footprints avoid narrow-screen growth',()=>{
-        expect(responsiveBadgeScale(1366)).toBe(1);
-        expect(responsiveBadgeScale(768)).toBe(1);
-        expect(responsiveBadgeScale(576)).toBeLessThanOrEqual(1.08);
-        expect(densityMode(22)).toBe('DENSE');expect(densityMode(7)).toBe('COMPACT');expect(densityMode(2)).toBe('NORMAL');
-        expect(badgeFootprint('DENSE',5)).toBeLessThan(badgeFootprint('NORMAL',5));
-        expect(badgeFootprint('DENSE',0)).toBe(1);
     });
     it('hairpin and parallel branches never repel on XY alone; start/finish wrap and lapped cars work',()=>{
         const pair=cars(2);pair[1].progress=.7;const m=new MarkerPacks();expect([...m.frame(pair,3000,16).values()].map(v=>v.target)).toEqual([0,0]);
@@ -112,11 +96,50 @@ describe('local marker packs',()=>{
         pair[1].retired=true; const frozen=m.frame(pair,3000,16).get('c01')!;
         pair[1].progress=.8; expect(m.frame(pair,3000,16).get('c01')!.x).toBe(frozen.x);
     });
-    it('start/finish text remains secondary to bounded car locations',()=>{
-        const input=cars(22), reserved=[{x:470,y:310,w:80,h:30}];
-        const out=new MarkerPacks().frame(input,3000,16,false,1,reserved);
-        expect([...out.values()].every(p=>Math.abs(p.offset)<=MAX_LATERAL_OFFSET)).toBe(true);
-        expect(input.every(c=>c.progress===.5)).toBe(true);
+    it('separates only near-identical positions, never longitudinally shifting cars',()=>{
+        const input=cars(3),before=structuredClone(input);input[2].x=509;
+        const out=new MarkerPacks().frame(input,3000,16);
+        expect(out.get('c01')!.offset).toBe(-MAX_LATERAL_OFFSET);
+        expect(Math.abs(out.get('c02')!.offset)).toBeLessThanOrEqual(MAX_LATERAL_OFFSET);
+        expect(input[0]).toEqual(before[0]);expect(input[1]).toEqual(before[1]);
     });
     it('contrasting text works on light and dark fills',()=>{expect(badgeText('#ffffff')).toBe('#101010');expect(badgeText('#000000')).toBe('#ffffff');});
+});
+describe('presentation-only starting grid',()=>{
+    it.each(['albert-park','monza','monaco','suzuka','spa-francorchamps','baku','las-vegas','madrid'])('%s fits its circuit and all 22 grid badges inside the map',id=>{
+        const circuit=Object.values(circuitLayouts).find(l=>l.id===id)!,path=prepareCircuitPath(circuit),project=circuitProjection(circuit.points,900,650,40);
+        const length=pathLength(progress=>project(path.sample(progress)));
+        for(let i=0;i<1024;i++){
+            const p=project(path.sample(i/1024));
+            expect(p.x).toBeGreaterThanOrEqual(40-.001);expect(p.x).toBeLessThanOrEqual(860.001);
+            expect(p.y).toBeGreaterThanOrEqual(40-.001);expect(p.y).toBeLessThanOrEqual(610.001);
+        }
+        for(let i=0;i<22;i++){
+            const slot=gridSlot(i+1,-i*.002,length),sample=path.sample(slot.progress),p=project(sample);
+            const x=p.x-sample.tangentY*slot.lateral,y=p.y+sample.tangentX*slot.lateral;
+            expect(x).toBeGreaterThan(BADGE.w/2+3);expect(x).toBeLessThan(900-BADGE.w/2-3);
+            expect(y).toBeGreaterThan(BADGE.h/2+3);expect(y).toBeLessThan(650-BADGE.h/2-3);
+        }
+    });
+    it('orders and staggers 22 cars in a compact start region without touching source progress',()=>{
+        const source=Array.from({length:22},(_,i)=>({gridPosition:i+1,progress:-i*.002})),before=structuredClone(source);
+        const slots=source.map(s=>gridSlot(s.gridPosition,s.progress,3000));
+        expect(source).toEqual(before);
+        expect(slots[0].progress).toBeGreaterThan(slots[1].progress);
+        for(let i=1;i<slots.length;i++){
+            expect(slots[i-1].progress).toBeGreaterThan(slots[i].progress);
+            expect(slots[i].lateral).toBe(-slots[i-1].lateral);
+            expect((slots[i-1].progress-slots[i].progress)*3000).toBeCloseTo(GRID_STEP);
+        }
+        expect(Math.abs(slots.at(-1)!.progress)*3000).toBeLessThanOrEqual(22*GRID_STEP);
+        expect(slots.every(s=>Math.abs(s.lateral)===GRID_SIDE)).toBe(true);
+    });
+    it('converges smoothly and monotonically from grid slots to live progress',()=>{
+        const slot=gridSlot(22,-.042,3000),frames=[0,.05,.1,.2,.3,.5].map(delta=>gridDisplay(slot,slot.sourceProgress+delta,delta?1:0));
+        expect(frames[0].progress).toBe(slot.progress);
+        for(let i=1;i<frames.length;i++)expect(frames[i].progress).toBeGreaterThan(frames[i-1].progress);
+        expect(frames.at(-1)!.progress).toBeCloseTo(slot.sourceProgress+.5);
+        expect(frames.at(-1)!.lateral).toBe(0);
+        expect(frames[1].lateral).not.toBe(0);
+    });
 });

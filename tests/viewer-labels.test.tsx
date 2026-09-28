@@ -264,7 +264,9 @@ describe('refined race UI rendering', () => {
         const html = renderToStaticMarkup(<I18nProvider><TrackMap layout={layoutForCircuit()} rows={rows} selected={rows[0].id} onSelect={() => {}} speed={1} reduceMotion={true} tiers={tiers}/></I18nProvider>);
         expect(html.match(/data-car=/g)).toHaveLength(20);
         expect(html.match(/class="driver-badge"/g)).toHaveLength(20);
-        expect(html).toContain('selected-ring'); expect(html).toContain('teammate-mark');
+        expect(html).toContain('selected-ring');
+        expect(html.match(/class="map-car[^"]*player/g)).toHaveLength(2);
+        expect(html.match(/stroke="#ffffff" stroke-width="1.8"/g)).toHaveLength(2);
         expect(html).not.toContain('data-label='); expect(html).not.toContain('tag-connector');
         for (const r of rows) { expect(html).toContain(`fill="${r.color}"`); expect(html).toContain(r.abbreviation); }
     });

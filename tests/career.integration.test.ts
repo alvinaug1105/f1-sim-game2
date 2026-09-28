@@ -17,6 +17,7 @@ import { PrismaRaceRepository } from "../src/data/repositories/prisma-race";
 import { advanceToNextEvent } from "../src/features/career/progression";
 import { startPracticeSession } from "../src/features/practice/service";
 import { projectRaceView } from "../src/features/race/projection";
+import { PrismaCarDesignRepository, settleDueDesignProjects } from "../src/data/repositories/prisma-car-design";
 const value = process.env.TEST_DATABASE_URL;
 if (!value)
   throw new Error("TEST_DATABASE_URL required; SQL tests did not run.");
@@ -77,6 +78,97 @@ async function counts() {
   ]);
 }
 describe("Career world PostgreSQL integration", () => {
+  it("starts a snapshotted player project, settles on normal Career progression, preserves v1 session input, then allocates v3", async () => {
+    const design = new PrismaCarDesignRepository(client);
+    const progression = new PrismaProgressionRepository(client);
+    const before = (await repository.getPlayerCar(career.id))!;
+    const preview = await design.preview(career.id, "FRONT_WING", "LOW_SPEED", "STANDARD");
+    expect(preview.planned.version).toBe(2);
+    const started = await design.start(career.id, "FRONT_WING", "LOW_SPEED", "STANDARD");
+    expect(started.planned).toEqual(preview.planned);
+    expect(started.completesAtCareerDate).toBe("2026-03-06");
+    expect((await design.getOverview(career.id))!.availableDesigns).toEqual([]);
+    await client.seasonTeamEntry.update({ where: { id: source.teamEntries[0].id }, data: { carPerformance: 30 } });
+    const progress = (await progression.getProgress(career.id))!;
+    const eventId = progress.events[0].id;
+    const entered = await advanceToNextEvent(progression, career.id, eventId);
+    const completed = await client.careerCarDesignProject.findUniqueOrThrow({ where: { id: started.id } });
+    expect(completed.status).toBe("COMPLETED");
+    expect(completed.completedAtCareerDate?.toISOString().slice(0, 10)).toBe("2026-03-06");
+    const available = (await design.getOverview(career.id))!.availableDesigns;
+    expect(available).toContainEqual(preview.planned);
+    await client.$transaction(tx => settleDueDesignProjects(tx, career.id, "2026-03-06"));
+    expect(await client.careerCarPartDesign.count({ where: { careerId: career.id, careerTeamId: career.playerTeamId, partType: "FRONT_WING", version: 2 } })).toBe(1);
+    expect((await repository.getPlayerCar(career.id))!.overallPerformance).toBe(before.overallPerformance);
+    const practice = new PrismaPracticeRepository(client);
+    const qualifying = new PrismaQualifyingRepository(client);
+    const race = new PrismaRaceRepository(client);
+    const firstPractice = entered.events[0].weekend!.sessions[0].id;
+    expect((await practice.getPractice(career.id, eventId, firstPractice))!.roster.find(row => row.teamId === career.playerTeamId)!.balance?.carPerformance).toBe(before.overallPerformance);
+    expect((await qualifying.getQualifying(career.id, eventId))!.roster.find(row => row.teamId === career.playerTeamId)!.balance?.carPerformance).toBe(before.overallPerformance);
+    expect((await race.getRace(career.id, eventId))!.roster.find(row => row.teamId === career.playerTeamId)!.balance?.carPerformance).toBe(before.overallPerformance);
+    expect((await startPracticeSession(practice, career.id, eventId, firstPractice)).state!.input.entrants.find(row => row.teamId === career.playerTeamId)!.car.performance).toBe(before.overallPerformance);
+    const next = await design.start(career.id, "FRONT_WING", "BALANCED", "EXTENSIVE");
+    expect(next.newVersion).toBe(3);
+    const nextRow = await client.careerCarDesignProject.findUniqueOrThrow({ where: { id: next.id } });
+    expect(nextRow.basePartDesignId).toBe((await client.careerCarPartDesign.findFirstOrThrow({ where: { careerId: career.id, careerTeamId: career.playerTeamId, partType: "FRONT_WING", version: 2 } })).id);
+  });
+
+  it("enforces one active project per part and two team slots under concurrent requests", async () => {
+    const design = new PrismaCarDesignRepository(client);
+    await design.start(career.id, "FRONT_WING", "BALANCED", "STANDARD");
+    await expect(design.start(career.id, "FRONT_WING", "LOW_SPEED", "STANDARD")).rejects.toMatchObject({ code: "PART_ACTIVE" });
+    const results = await Promise.allSettled([
+      design.start(career.id, "REAR_WING", "BALANCED", "STANDARD"),
+      design.start(career.id, "UNDERFLOOR", "BALANCED", "STANDARD"),
+    ]);
+    expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter(result => result.status === "rejected")).toHaveLength(1);
+    expect(await client.careerCarDesignProject.count({ where: { careerId: career.id, careerTeamId: career.playerTeamId, status: "ACTIVE" } })).toBe(2);
+    await expect(design.start(career.id, "CHASSIS", "BALANCED", "STANDARD")).rejects.toMatchObject({ code: "CAPACITY" });
+    const progression = new PrismaProgressionRepository(client);
+    const eventId = (await progression.getProgress(career.id))!.events[0].id;
+    await advanceToNextEvent(progression, career.id, eventId);
+    expect((await design.start(career.id, "CHASSIS", "BALANCED", "STANDARD")).partType).toBe("CHASSIS");
+  });
+
+  it("rejects a stale preview after another Career-time transition", async () => {
+    const design = new PrismaCarDesignRepository(client);
+    const preview = await design.preview(career.id, "FRONT_WING", "LOW_SPEED", "STANDARD");
+    const progression = new PrismaProgressionRepository(client);
+    const eventId = (await progression.getProgress(career.id))!.events[0].id;
+    await advanceToNextEvent(progression, career.id, eventId);
+    await expect(design.start(career.id, "FRONT_WING", "LOW_SPEED", "STANDARD", preview)).rejects.toMatchObject({ code: "STALE_PREVIEW" });
+    expect(await client.careerCarDesignProject.count({ where: { careerId: career.id } })).toBe(0);
+  });
+
+  it("enforces project scope, base part, version, dates and ratings in PostgreSQL", async () => {
+    const design = new PrismaCarDesignRepository(client);
+    const started = await design.start(career.id, "FRONT_WING", "BALANCED", "STANDARD");
+    const row = await client.careerCarDesignProject.findUniqueOrThrow({ where: { id: started.id } });
+    const other = await createCareer(repository, input);
+    await expect(client.careerCarDesignProject.create({ data: { ...row, id: randomUUID(), newVersion: 3 } })).rejects.toMatchObject({ code: "P2002" });
+    const data = { ...row, id: randomUUID(), newVersion: 3, status: "COMPLETED" as const,
+      completedAt: new Date(), completedAtCareerDate: row.completesAtCareerDate };
+    await expect(client.careerCarDesignProject.create({ data: { ...data, careerId: other.id } })).rejects.toMatchObject({ code: "P2003" });
+    await expect(client.careerCarDesignProject.create({ data: { ...data, careerTeamId: other.playerTeamId } })).rejects.toMatchObject({ code: "P2003" });
+    await expect(client.careerCarDesignProject.create({ data: { ...data, careerSeasonId: other.currentSeasonId } })).rejects.toMatchObject({ code: "P2003" });
+    await expect(client.careerCarDesignProject.create({ data: { ...data, partType: "REAR_WING" } })).rejects.toMatchObject({ code: "P2003" });
+    await expect(client.careerCarDesignProject.create({ data: { ...data, newVersion: 1 } })).rejects.toThrow();
+    await expect(client.careerCarDesignProject.create({ data: { ...data, plannedLowSpeed: 101 } })).rejects.toThrow();
+    await expect(client.careerCarDesignProject.create({ data: { ...data, completesAtCareerDate: row.startedAtCareerDate } })).rejects.toThrow();
+  });
+
+  it("keeps legacy Careers playable while rejecting design creation", async () => {
+    const design = new PrismaCarDesignRepository(client);
+    await client.careerCarPartDesign.deleteMany({ where: { careerId: career.id } });
+    await expect(design.start(career.id, "FRONT_WING", "BALANCED", "STANDARD")).rejects.toMatchObject({ code: "LEGACY" });
+    expect((await design.getOverview(career.id))!.car.parts).toEqual([]);
+    const progression = new PrismaProgressionRepository(client);
+    const eventId = (await progression.getProgress(career.id))!.events[0].id;
+    await advanceToNextEvent(progression, career.id, eventId);
+    expect(await client.careerCarDesignProject.count({ where: { careerId: career.id } })).toBe(0);
+  });
   it("persists 66 scoped version-1 designs with exact 2026 scalar balance and player-only projection", async () => {
     const designs = await client.careerCarPartDesign.findMany({ where: { careerId: career.id } });
     expect(designs).toHaveLength(66);

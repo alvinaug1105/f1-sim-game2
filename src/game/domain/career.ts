@@ -1,5 +1,6 @@
 import type { EntityId } from "./identity";
-import type { CarPartDesign, CarPerformanceStats, StoredCarPartDesign } from "./car-development";
+import type { CarPartDesign, CarPartType, CarPerformanceStats, StoredCarPartDesign } from "./car-development";
+import type { CarSlot } from "./car-manufacturing";
 import type {
   Team,
   Driver,
@@ -78,9 +79,28 @@ export interface CareerSeasonDriverEntry {
   readonly careerSeasonTeamEntryId: EntityId;
   readonly carNumber: number | null;
   readonly role: DriverRole;
+  readonly carSlot?: CarSlot | null;
   /** Snapshotted game-balance values; null for Careers created before Content Expansion Pass A. */
   readonly pace?: number | null;
   readonly consistency?: number | null;
+}
+export interface CareerCarPartUnit {
+  readonly id: EntityId;
+  readonly careerId: EntityId;
+  readonly careerSeasonId: EntityId;
+  readonly careerTeamId: EntityId;
+  readonly partType: CarPartType;
+  readonly designId: EntityId;
+  readonly unitNumber: number;
+  readonly manufacturedAtCareerDate: IsoDate;
+}
+export interface CareerCarFitment {
+  readonly careerId: EntityId;
+  readonly careerSeasonId: EntityId;
+  readonly careerTeamId: EntityId;
+  readonly carSlot: CarSlot;
+  readonly partType: CarPartType;
+  readonly partUnitId: EntityId;
 }
 export interface CareerCalendarEvent {
   readonly id: EntityId;
@@ -104,6 +124,8 @@ export interface CareerWorld {
   readonly season: CareerSeason;
   readonly teamEntries: readonly CareerSeasonTeamEntry[];
   readonly partDesigns: readonly CareerCarPartDesign[];
+  readonly partUnits: readonly CareerCarPartUnit[];
+  readonly fitments: readonly CareerCarFitment[];
   readonly driverEntries: readonly CareerSeasonDriverEntry[];
   readonly events: readonly CareerCalendarEvent[];
 }

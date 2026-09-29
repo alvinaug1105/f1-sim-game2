@@ -1,6 +1,7 @@
 import type { CareerPlayerCar } from "./career";
 import type { CarPartDesign, CarPartType } from "./car-development";
 import type { DesignFocus, DesignPlan, DesignProgramme } from "./car-design-project";
+import type { PlayerPhysicalOverview } from "./car-physical-repository";
 
 export type CarDesignErrorCode = "NOT_FOUND" | "UNAVAILABLE" | "LEGACY" | "CAPACITY" | "PART_ACTIVE" | "INVALID_CHOICE" | "STALE_PREVIEW" | "PERSISTENCE_FAILED";
 export class CarDesignError extends Error {
@@ -24,6 +25,7 @@ export interface CarDevelopmentOverview {
   readonly careerStatus: string;
   readonly projects: readonly CarDesignProjectView[];
   readonly availableDesigns: readonly CarPartDesign[];
+  readonly physical?: PlayerPhysicalOverview | null;
 }
 export interface CarDesignRepository {
   getOverview(careerId: string): Promise<CarDevelopmentOverview | null>;

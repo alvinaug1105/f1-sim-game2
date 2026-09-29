@@ -1,5 +1,7 @@
 import "server-only";
 import { PrismaCarDesignRepository } from "../../data/repositories/prisma-car-design";
+import { PrismaCarPhysicalRepository } from "../../data/repositories/prisma-car-physical";
+import type { CarPhysicalRepository } from "../../game/domain/car-physical-repository";
 import type { CarDesignRepository } from "../../game/domain/car-design-repository";
 import { getPrisma } from "../../data/prisma/client";
 import { PrismaCareerRepository } from "../../data/repositories/prisma-career";
@@ -10,6 +12,9 @@ export function getCareerRepository(): CareerRepository {
 }
 export function getCarDesignRepository(): CarDesignRepository {
   return new PrismaCarDesignRepository(getPrisma());
+}
+export function getCarPhysicalRepository(): CarPhysicalRepository {
+  return new PrismaCarPhysicalRepository(getPrisma());
 }
 export type CareerLoadResult<T> =
   { ok: true; data: T } | { ok: false; code: CareerErrorCode };

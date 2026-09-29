@@ -14,10 +14,12 @@ import { PrismaProgressionRepository } from "../src/data/repositories/prisma-pro
 import { PrismaPracticeRepository } from "../src/data/repositories/prisma-practice";
 import { PrismaQualifyingRepository } from "../src/data/repositories/prisma-qualifying";
 import { PrismaRaceRepository } from "../src/data/repositories/prisma-race";
-import { advanceToNextEvent } from "../src/features/career/progression";
+import { advanceToNextEvent, runSessionAction } from "../src/features/career/progression";
 import { startPracticeSession } from "../src/features/practice/service";
+import { startIncidentCareerRace } from "../src/features/race/service";
 import { projectRaceView } from "../src/features/race/projection";
 import { PrismaCarDesignRepository, settleDueDesignProjects } from "../src/data/repositories/prisma-car-design";
+import { PrismaCarPhysicalRepository, settleDueManufacturingOrders } from "../src/data/repositories/prisma-car-physical";
 const value = process.env.TEST_DATABASE_URL;
 if (!value)
   throw new Error("TEST_DATABASE_URL required; SQL tests did not run.");
@@ -161,6 +163,9 @@ describe("Career world PostgreSQL integration", () => {
 
   it("keeps legacy Careers playable while rejecting design creation", async () => {
     const design = new PrismaCarDesignRepository(client);
+    await client.careerCarFitment.deleteMany({ where: { careerId: career.id } });
+    await client.careerCarPartUnit.deleteMany({ where: { careerId: career.id } });
+    await client.careerSeasonDriverEntry.updateMany({ where: { careerId: career.id }, data: { carSlot: null } });
     await client.careerCarPartDesign.deleteMany({ where: { careerId: career.id } });
     await expect(design.start(career.id, "FRONT_WING", "BALANCED", "STANDARD")).rejects.toMatchObject({ code: "LEGACY" });
     expect((await design.getOverview(career.id))!.car.parts).toEqual([]);
@@ -220,6 +225,9 @@ describe("Career world PostgreSQL integration", () => {
   });
 
   it("keeps legacy Careers on their stored scalar without synthesizing persistent designs", async () => {
+    await client.careerCarFitment.deleteMany({ where: { careerId: career.id } });
+    await client.careerCarPartUnit.deleteMany({ where: { careerId: career.id } });
+    await client.careerSeasonDriverEntry.updateMany({ where: { careerId: career.id }, data: { carSlot: null } });
     await client.careerCarPartDesign.deleteMany({ where: { careerId: career.id } });
     await client.careerSeasonTeamEntry.updateMany({ where: { careerId: career.id }, data: {
       lowSpeedPerformance: null, mediumSpeedPerformance: null, highSpeedPerformance: null,
@@ -513,6 +521,166 @@ describe("Career world PostgreSQL integration", () => {
     expect(
       await client.careerDriver.count({ where: { careerId: career.id } }),
     ).toBe(22);
+  });
+});
+
+describe("Phase 17C physical car PostgreSQL integration", () => {
+  const playerScope = () => ({ careerId: career.id, careerSeasonId: career.currentSeasonId, careerTeamId: career.playerTeamId });
+  async function improvedFrontWing() {
+    const base = await client.careerCarPartDesign.findFirstOrThrow({ where: { ...playerScope(), partType: "FRONT_WING", version: 1 } });
+    return client.careerCarPartDesign.create({ data: { ...base, id: randomUUID(), version: 2,
+      lowSpeed: 100, mediumSpeed: 100, highSpeed: 100, dragReduction: 100, drsEfficiency: 100 } });
+  }
+  it("creates 22 stable car slots, 132 v1 units and fitments, and no spare inventory", async () => {
+    const drivers = await client.careerSeasonDriverEntry.findMany({ where: { careerId: career.id, role: "RACE_DRIVER" }, include: { driver: true, teamEntry: true } });
+    expect(drivers).toHaveLength(22);
+    const teams = new Set(drivers.map(row => row.teamEntry.careerTeamId));
+    expect(teams.size).toBe(11);
+    for (const teamId of teams) expect(drivers.filter(row => row.teamEntry.careerTeamId === teamId).map(row => row.carSlot).sort()).toEqual(["CAR_1", "CAR_2"]);
+    expect(await client.careerCarPartUnit.count({ where: { careerId: career.id } })).toBe(132);
+    expect(await client.careerCarFitment.count({ where: { careerId: career.id } })).toBe(132);
+    expect(await client.careerCarPartUnit.count({ where: { careerId: career.id, fitment: null } })).toBe(0);
+    const designs = await client.careerCarPartUnit.findMany({ where: { careerId: career.id }, include: { design: true } });
+    expect(designs.every(row => row.design.version === 1)).toBe(true);
+    const physical = (await new PrismaCarDesignRepository(client).getOverview(career.id))!.physical!;
+    expect(physical.cars.map(row => row.overall)).toEqual([93, 93]);
+    expect(physical.cars.every(row => row.parts.length === 6)).toBe(true);
+    const second = await createCareer(repository, { ...input, name: "Same grid" });
+    const assignments = async (id: string) => (await client.careerSeasonDriverEntry.findMany({ where: { careerId: id, role: "RACE_DRIVER" }, include: { driver: true } }))
+      .map(row => [`${row.driver.firstName} ${row.driver.lastName}`, row.carSlot]).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    expect(await assignments(second.id)).toEqual(await assignments(career.id));
+  });
+  it("manufactures on Career time, then swaps physical units between cars and inventory", async () => {
+    const design = await improvedFrontWing();
+    const physical = new PrismaCarPhysicalRepository(client);
+    await expect(physical.startManufacturing(career.id, design.id, 2, "2026-02-25")).rejects.toMatchObject({ code: "STALE_PREVIEW" });
+    const order = await physical.startManufacturing(career.id, design.id, 2);
+    expect(order.status).toBe("ACTIVE");
+    expect(order.completesAtCareerDate).toBe("2026-02-26");
+    expect(await client.careerCarPartUnit.count({ where: { designId: design.id } })).toBe(0);
+    await expect(physical.startManufacturing(career.id, design.id, 1)).rejects.toMatchObject({ code: "DESIGN_ACTIVE" });
+    const rear = await client.careerCarPartDesign.findFirstOrThrow({ where: { ...playerScope(), partType: "REAR_WING", version: 1 } });
+    await physical.startManufacturing(career.id, rear.id, 1);
+    const floor = await client.careerCarPartDesign.findFirstOrThrow({ where: { ...playerScope(), partType: "UNDERFLOOR", version: 1 } });
+    await expect(physical.startManufacturing(career.id, floor.id, 1)).rejects.toMatchObject({ code: "CAPACITY" });
+    const progression = new PrismaProgressionRepository(client);
+    const eventId = (await progression.getProgress(career.id))!.events[0].id;
+    await advanceToNextEvent(progression, career.id, eventId);
+    expect((await client.careerCarManufacturingOrder.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("COMPLETED");
+    const units = await client.careerCarPartUnit.findMany({ where: { designId: design.id }, orderBy: { unitNumber: "asc" } });
+    expect(units.map(row => row.unitNumber)).toEqual([1, 2]);
+    await client.$transaction(tx => settleDueManufacturingOrders(tx, career.id, "2026-03-06"));
+    expect(await client.careerCarPartUnit.count({ where: { designId: design.id } })).toBe(2);
+    const view = () => new PrismaCarDesignRepository(client).getOverview(career.id);
+    const before = (await view())!.physical!;
+    expect(before.designs.find(row => row.id === design.id)?.availableUnits).toBe(2);
+    await physical.fit(career.id, "CAR_1", design.id, before.fitImpacts.find(row => row.slot === "CAR_1" && row.designId === design.id));
+    const one = (await view())!.physical!;
+    expect(one.cars.map(row => row.parts.find(part => part.partType === "FRONT_WING")?.version)).toEqual([2, 1]);
+    expect(one.cars[0].stats.lowSpeed).toBeGreaterThan(one.cars[1].stats.lowSpeed);
+    expect(one.cars[0].overall).toBeGreaterThan(one.cars[1].overall);
+    expect(one.designs.find(row => row.id === design.id)?.availableUnits).toBe(1);
+    expect(one.designs.find(row => row.design.partType === "FRONT_WING" && row.design.version === 1)?.availableUnits).toBe(1);
+    await physical.fit(career.id, "CAR_2", design.id);
+    const both = (await view())!.physical!;
+    expect(both.cars.map(row => row.parts.find(part => part.partType === "FRONT_WING")?.version)).toEqual([2, 2]);
+    expect(both.designs.find(row => row.id === design.id)?.availableUnits).toBe(0);
+    const old = both.designs.find(row => row.design.partType === "FRONT_WING" && row.design.version === 1)!;
+    expect(old.availableUnits).toBe(2);
+    await physical.fit(career.id, "CAR_1", old.id);
+    const reverted = (await view())!.physical!;
+    expect(reverted.cars[0].parts.find(part => part.partType === "FRONT_WING")?.version).toBe(1);
+    expect(reverted.designs.find(row => row.id === design.id)?.availableUnits).toBe(1);
+  });
+  it("feeds separate fitted scalars to every future session kind and freezes started Practice", async () => {
+    const design = await improvedFrontWing();
+    const physical = new PrismaCarPhysicalRepository(client);
+    await physical.startManufacturing(career.id, design.id, 1);
+    const progression = new PrismaProgressionRepository(client);
+    const eventId = (await progression.getProgress(career.id))!.events[0].id;
+    const entered = await advanceToNextEvent(progression, career.id, eventId);
+    await physical.fit(career.id, "CAR_1", design.id);
+    const drivers = await client.careerSeasonDriverEntry.findMany({ where: { careerId: career.id, careerSeasonId: career.currentSeasonId, teamEntry: { careerTeamId: career.playerTeamId } } });
+    const bySlot = Object.fromEntries(drivers.map(row => [row.carSlot!, row.careerDriverId]));
+    const car1 = (await new PrismaCarDesignRepository(client).getOverview(career.id))!.physical!.cars[0].overall;
+    const car2 = (await new PrismaCarDesignRepository(client).getOverview(career.id))!.physical!.cars[1].overall;
+    expect(car1).toBeGreaterThan(car2);
+    const check = (rows: readonly { driverId: string; balance?: { carPerformance: number } | null }[]) => {
+      expect(rows.find(row => row.driverId === bySlot.CAR_1)?.balance?.carPerformance).toBe(car1);
+      expect(rows.find(row => row.driverId === bySlot.CAR_2)?.balance?.carPerformance).toBe(car2);
+    };
+    const practice = new PrismaPracticeRepository(client), qualifying = new PrismaQualifyingRepository(client), race = new PrismaRaceRepository(client);
+    const sessionId = entered.events[0].weekend!.sessions[0].id;
+    check((await practice.getPractice(career.id, eventId, sessionId))!.roster);
+    check((await qualifying.getQualifying(career.id, eventId))!.roster);
+    check((await race.getRace(career.id, eventId))!.roster);
+    const started = await startPracticeSession(practice, career.id, eventId, sessionId);
+    const frozen = started.state!.input.entrants.find(row => row.driverId === bySlot.CAR_1)!.car.performance;
+    expect(frozen).toBe(car1);
+    const old = await client.careerCarPartDesign.findFirstOrThrow({ where: { ...playerScope(), partType: "FRONT_WING", version: 1 } });
+    await expect(physical.fit(career.id, "CAR_1", old.id)).rejects.toMatchObject({ code: "SESSION_IN_PROGRESS" });
+    expect((await practice.getPractice(career.id, eventId, sessionId))!.state!.input.entrants.find(row => row.driverId === bySlot.CAR_1)!.car.performance).toBe(frozen);
+  });
+  it("feeds the same per-car specification to Sprint Qualifying and Sprint", async () => {
+    const base = await client.careerCarPartDesign.findFirstOrThrow({ where: { ...playerScope(), partType: "FRONT_WING", version: 1 } });
+    const design = await improvedFrontWing();
+    await client.careerCarPartUnit.create({ data: { ...playerScope(), partType: "FRONT_WING", designId: design.id, unitNumber: 1,
+      manufacturedAtCareerDate: new Date(`${career.currentDate}T00:00:00.000Z`) } });
+    await new PrismaCarPhysicalRepository(client).fit(career.id, "CAR_1", design.id);
+    const sprintEvent = (await new PrismaProgressionRepository(client).getProgress(career.id))!.events.find(row => row.weekendFormat === "SPRINT")!;
+    const sprintWeekend = await client.careerRaceWeekend.create({ data: { careerId: career.id, careerSeasonId: career.currentSeasonId, careerCalendarEventId: sprintEvent.id } });
+    await client.careerSession.createMany({ data: [
+      { careerId: career.id, careerRaceWeekendId: sprintWeekend.id, type: "SPRINT_QUALIFYING", order: 1, status: "AVAILABLE" },
+      { careerId: career.id, careerRaceWeekendId: sprintWeekend.id, type: "SPRINT", order: 2, status: "LOCKED" },
+    ] });
+    const slot1 = await client.careerSeasonDriverEntry.findFirstOrThrow({ where: { careerId: career.id, carSlot: "CAR_1", teamEntry: { careerTeamId: career.playerTeamId } } });
+    const expected = (await new PrismaCarDesignRepository(client).getOverview(career.id))!.physical!.cars[0].overall;
+    expect(expected).toBeGreaterThan(base.lowSpeed);
+    for (const rows of [
+      (await new PrismaQualifyingRepository(client, "SPRINT_QUALIFYING").getQualifying(career.id, sprintEvent.id))!.roster,
+      (await new PrismaRaceRepository(client, "SPRINT").getRace(career.id, sprintEvent.id))!.roster,
+    ]) expect(rows.find(row => row.driverId === slot1.careerDriverId)?.balance?.carPerformance).toBe(expected);
+  });
+  it("freezes a started Race's fitted car scalar and blocks mid-Race refitting", async () => {
+    const design = await improvedFrontWing();
+    await client.careerCarPartUnit.create({ data: { ...playerScope(), partType: "FRONT_WING", designId: design.id, unitNumber: 1,
+      manufacturedAtCareerDate: new Date(`${career.currentDate}T00:00:00.000Z`) } });
+    const physical = new PrismaCarPhysicalRepository(client);
+    await physical.fit(career.id, "CAR_1", design.id);
+    const progression = new PrismaProgressionRepository(client);
+    const eventId = (await progression.getProgress(career.id))!.events[0].id;
+    const entered = await advanceToNextEvent(progression, career.id, eventId);
+    const sessions = entered.events[0].weekend!.sessions;
+    for (let index = 0; index < 3; index++)
+      await runSessionAction(progression, career.id, eventId, sessions[index].id, "simulatePractice");
+    await runSessionAction(progression, career.id, eventId, sessions[3].id, "start");
+    await runSessionAction(progression, career.id, eventId, sessions[3].id, "completeDevelopment");
+    const slot1 = await client.careerSeasonDriverEntry.findFirstOrThrow({ where: { careerId: career.id, carSlot: "CAR_1", teamEntry: { careerTeamId: career.playerTeamId } } });
+    const expected = (await new PrismaCarDesignRepository(client).getOverview(career.id))!.physical!.cars[0].overall;
+    await startIncidentCareerRace(new PrismaRaceRepository(client), career.id, eventId, {}, 17);
+    const frozen = (await new PrismaRaceRepository(client).getRace(career.id, eventId))!.state!.input.entrants.find(row => row.driverId === slot1.careerDriverId)!.car.performance;
+    expect(frozen).toBe(expected);
+    const v1 = await client.careerCarPartDesign.findFirstOrThrow({ where: { ...playerScope(), partType: "FRONT_WING", version: 1 } });
+    await expect(physical.fit(career.id, "CAR_1", v1.id)).rejects.toMatchObject({ code: "SESSION_IN_PROGRESS" });
+    expect((await new PrismaRaceRepository(client).getRace(career.id, eventId))!.state!.input.entrants.find(row => row.driverId === slot1.careerDriverId)!.car.performance).toBe(frozen);
+  });
+  it("enforces database fitment scope and player authorization", async () => {
+    const physical = new PrismaCarPhysicalRepository(client);
+    const fitments = await client.careerCarFitment.findMany({ where: playerScope(), orderBy: [{ carSlot: "asc" }, { partType: "asc" }] });
+    const front = fitments.find(row => row.carSlot === "CAR_1" && row.partType === "FRONT_WING")!;
+    const rear = fitments.find(row => row.carSlot === "CAR_1" && row.partType === "REAR_WING")!;
+    const rival = await client.careerCarPartUnit.findFirstOrThrow({ where: { careerId: career.id, careerTeamId: { not: career.playerTeamId }, partType: "FRONT_WING" } });
+    const rearUnit = await client.careerCarPartUnit.findUniqueOrThrow({ where: { id: rear.partUnitId } });
+    const spareRear = await client.careerCarPartUnit.create({ data: { ...rearUnit, id: randomUUID(), unitNumber: 3 } });
+    const spareRival = await client.careerCarPartUnit.create({ data: { ...rival, id: randomUUID(), unitNumber: 3 } });
+    const key = { careerId_careerSeasonId_careerTeamId_carSlot_partType: {
+      careerId: front.careerId, careerSeasonId: front.careerSeasonId, careerTeamId: front.careerTeamId, carSlot: front.carSlot, partType: front.partType } };
+    await expect(client.careerCarFitment.update({ where: key, data: { partUnitId: spareRear.id } })).rejects.toMatchObject({ code: "P2003" });
+    await expect(client.careerCarFitment.update({ where: key, data: { partUnitId: spareRival.id } })).rejects.toMatchObject({ code: "P2003" });
+    const otherFront = fitments.find(row => row.carSlot === "CAR_2" && row.partType === "FRONT_WING")!;
+    await expect(client.careerCarFitment.update({ where: key, data: { partUnitId: otherFront.partUnitId } })).rejects.toMatchObject({ code: "P2002" });
+    const rivalDesign = await client.careerCarPartDesign.findFirstOrThrow({ where: { careerId: career.id, careerTeamId: rival.careerTeamId } });
+    await expect(physical.startManufacturing(career.id, rivalDesign.id, 1)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
 

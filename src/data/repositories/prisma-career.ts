@@ -88,6 +88,10 @@ async function saveWorld(tx: Prisma.TransactionClient, world: CareerWorld) {
   });
   await tx.careerSeasonTeamEntry.createMany({ data: [...world.teamEntries] });
   await tx.careerCarPartDesign.createMany({ data: [...world.partDesigns] });
+  await tx.careerCarPartUnit.createMany({ data: world.partUnits.map(unit => ({
+    ...unit, manufacturedAtCareerDate: date(unit.manufacturedAtCareerDate),
+  })) });
+  await tx.careerCarFitment.createMany({ data: [...world.fitments] });
   await tx.careerSeasonDriverEntry.createMany({
     data: [...world.driverEntries],
   });

@@ -96,6 +96,8 @@ function transactionDouble() {
     careerCarPartDesign: {
       createMany: vi.fn().mockResolvedValue({ count: 12 }),
     },
+    careerCarPartUnit: { createMany: vi.fn().mockResolvedValue({ count: 24 }) },
+    careerCarFitment: { createMany: vi.fn().mockResolvedValue({ count: 24 }) },
     careerSeasonDriverEntry: {
       createMany: vi.fn().mockResolvedValue({ count: 4 }),
     },

@@ -3,6 +3,7 @@ import { assertContentId } from "../../game/domain/content-repository";
 import { CAR_PERFORMANCE_DIMENSIONS, currentCarPerformance, legacyCarPerformance, storedPartDesign, type CarPartType } from "../../game/domain/car-development";
 import { MAX_ACTIVE_DESIGN_PROJECTS, isCarPartType, isDesignFocus, isDesignProgramme, planCarPartDesign, type DesignFocus, type DesignPlan, type DesignProgramme } from "../../game/domain/car-design-project";
 import { CarDesignError, type CarDesignProjectView, type CarDesignRepository } from "../../game/domain/car-design-repository";
+import { readPlayerPhysical } from "./prisma-car-physical";
 
 const iso = (date: Date) => date.toISOString().slice(0, 10);
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -90,6 +91,7 @@ export class PrismaCarDesignRepository implements CarDesignRepository {
       if (!entry) throw new CarDesignError("UNAVAILABLE");
       const fitted = entry.partDesigns.filter(part => part.version === 1);
       const current = currentCarPerformance(fitted);
+      const physical = await readPlayerPhysical(tx, careerId, career.currentSeasonId, career.playerTeamId, iso(career.currentDate));
       return {
         car: { careerId, teamId: career.playerTeamId, teamName: entry.team.name,
           overallPerformance: current?.overall ?? entry.carPerformance ?? legacyCarPerformance(entry.entryOrder),
@@ -97,6 +99,7 @@ export class PrismaCarDesignRepository implements CarDesignRepository {
         careerDate: iso(career.currentDate), careerStatus: career.status,
         projects: entry.designProjects.map(projectView),
         availableDesigns: entry.partDesigns.filter(part => part.version > 1).map(storedPartDesign),
+        physical,
       };
     }, { isolationLevel: "RepeatableRead" }));
   }

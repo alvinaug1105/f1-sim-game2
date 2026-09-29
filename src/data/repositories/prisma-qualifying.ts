@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "../generated/prisma/client";
 import { assertContentId } from "../../game/domain/content-repository";
 import { rosterBalance } from "../../game/domain/race-repository";
+import { fittedForRoster, loadRosterFitments } from "./prisma-car-physical";
 import { QualifyingError, type CareerQualifyingData, type CareerQualifyingRepository, type QualifyingKind } from "../../game/domain/qualifying-repository";
 import { validateQualifyingInput } from "../../simulation/qualifying/engine";
 import type { QualifyingFormat, QualifyingPreparation, QualifyingState } from "../../simulation/qualifying/model";
@@ -29,6 +30,7 @@ async function read(tx: Prisma.TransactionClient, careerId: string, eventId: str
         include: { driver: true, teamEntry: { include: { team: true, partDesigns: { where: { version: 1 } } } } },
         orderBy: [{ teamEntry: { entryOrder: "asc" } }, { driver: { sourceDriverId: "asc" } }, { id: "asc" }],
     });
+    const fitted = roster.some(entry => entry.carSlot) ? await loadRosterFitments(tx, careerId, event.careerSeasonId) : new Map();
     const preps = await tx.careerWeekendPreparation.findMany({ where: { careerId, careerRaceWeekendId: event.weekend.id } });
     // Latest completed Practice classification (by best lap) for the Q1 no-time fallback.
     const practice = [...event.weekend.sessions].filter(s => s.type.startsWith("PRACTICE") && s.status === "COMPLETED").sort((a, b) => b.order - a.order);
@@ -71,7 +73,7 @@ async function read(tx: Prisma.TransactionClient, careerId: string, eventId: str
     }
     return {
         progress, eventId, weekendId: event.weekend.id, kind, sessionId: session.id, state,
-        roster: roster.map(e => ({ driverId: e.careerDriverId, teamId: e.teamEntry.careerTeamId, driverName: `${e.driver.firstName} ${e.driver.lastName}`, teamName: e.teamEntry.team.name, teamOrder: e.teamEntry.entryOrder, abbreviation: e.driver.abbreviation, teamColor: e.teamEntry.team.color, carNumber: e.carNumber ?? e.driver.preferredNumber, balance: rosterBalance(e) })),
+        roster: roster.map(e => ({ driverId: e.careerDriverId, teamId: e.teamEntry.careerTeamId, driverName: `${e.driver.firstName} ${e.driver.lastName}`, teamName: e.teamEntry.team.name, teamOrder: e.teamEntry.entryOrder, abbreviation: e.driver.abbreviation, teamColor: e.teamEntry.team.color, carNumber: e.carNumber ?? e.driver.preferredNumber, balance: rosterBalance({ ...e, fittedDesigns: fittedForRoster(fitted, e.teamEntry.careerTeamId, e.carSlot) }) })),
         circuit: { climateProfile: circuit.climateProfile, sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters },
         preparations: preps.map(readPreparation), practiceOrder,
     };

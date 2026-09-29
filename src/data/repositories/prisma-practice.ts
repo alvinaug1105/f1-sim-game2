@@ -8,6 +8,7 @@ import { validateTyreConfiguration, validateTyreState, type TyreCompound, type T
 import { validateWeatherState, type WeatherConfiguration } from "../../simulation/race/weather/model";
 import { loadProgress, persistProgress } from "./prisma-progression";
 import { rosterBalance } from "../../game/domain/race-repository";
+import { fittedForRoster, loadRosterFitments } from "./prisma-car-physical";
 const COLUMN: Readonly<Record<SetupDimension, string>> = { AERO: "Aero", MECHANICAL: "Mechanical", RIDE: "Ride", BRAKE: "Brake", TYRE: "Tyre" };
 const KNOWLEDGE: Readonly<Record<TyreCompound, string>> = { SOFT: "knowledgeSoft", MEDIUM: "knowledgeMedium", HARD: "knowledgeHard", INTERMEDIATE: "knowledgeIntermediate", WET: "knowledgeWet" };
 type PrepRow = Prisma.CareerWeekendPreparationGetPayload<object>;
@@ -50,6 +51,7 @@ async function read(tx: Prisma.TransactionClient, careerId: string, eventId: str
             include: { driver: true, teamEntry: { include: { team: true, partDesigns: { where: { version: 1 } } } } },
             orderBy: [{ teamEntry: { entryOrder: "asc" } }, { driver: { sourceDriverId: "asc" } }, { id: "asc" }],
         });
+    const fitted = roster.some(entry => entry.carSlot) ? await loadRosterFitments(tx, careerId, event.careerSeasonId) : new Map();
     const preps = await tx.careerWeekendPreparation.findMany({ where: { careerId, careerRaceWeekendId: event.weekend.id } });
     const preparations = preps.map(readPreparation);
     let state: PracticeState | null = null;
@@ -83,7 +85,7 @@ async function read(tx: Prisma.TransactionClient, careerId: string, eventId: str
     }
     return {
         progress, eventId, weekendId: event.weekend.id, sessionId, sessionType: session.type as PracticeSessionType, state,
-        roster: roster.map(e => ({ driverId: e.careerDriverId, teamId: e.teamEntry.careerTeamId, driverName: `${e.driver.firstName} ${e.driver.lastName}`, teamName: e.teamEntry.team.name, teamOrder: e.teamEntry.entryOrder, abbreviation: e.driver.abbreviation, teamColor: e.teamEntry.team.color, carNumber: e.carNumber ?? e.driver.preferredNumber, balance: rosterBalance(e) })),
+        roster: roster.map(e => ({ driverId: e.careerDriverId, teamId: e.teamEntry.careerTeamId, driverName: `${e.driver.firstName} ${e.driver.lastName}`, teamName: e.teamEntry.team.name, teamOrder: e.teamEntry.entryOrder, abbreviation: e.driver.abbreviation, teamColor: e.teamEntry.team.color, carNumber: e.carNumber ?? e.driver.preferredNumber, balance: rosterBalance({ ...e, fittedDesigns: fittedForRoster(fitted, e.teamEntry.careerTeamId, e.carSlot) }) })),
         entrantDrivers: Object.fromEntries((row?.entrants ?? []).map(e => [e.id, e.careerDriverId])),
         circuit: { climateProfile: circuit.climateProfile, sourceCircuitId: circuit.sourceCircuitId, lengthMeters: circuit.lengthMeters },
         preparations,

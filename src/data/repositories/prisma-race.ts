@@ -30,6 +30,7 @@ import {
 } from "../../game/domain/race-repository";
 import type { RaceSimulationState } from "../../simulation/race/types";
 import { loadProgress, persistProgress } from "./prisma-progression";
+import { fittedForRoster, loadRosterFitments } from "./prisma-car-physical";
 function validate(careerId: string, eventId: string) {
   try {
     assertContentId(careerId);
@@ -105,6 +106,7 @@ async function read(
           { id: "asc" },
         ],
       });
+  const fitted = roster.some(entry => entry.carSlot) ? await loadRosterFitments(tx, careerId, event.careerSeasonId) : new Map();
   let tyres: TyreConfiguration | undefined;
   if (
     row?.simulationVersion === 2 ||
@@ -293,7 +295,7 @@ async function read(
       teamName: e.teamEntry.team.name,
       teamOrder: e.teamEntry.entryOrder,
       carNumber: e.carNumber!,
-      balance: rosterBalance(e),
+      balance: rosterBalance({ ...e, fittedDesigns: fittedForRoster(fitted, e.teamEntry.careerTeamId, e.carSlot) }),
     })),
   };
 }

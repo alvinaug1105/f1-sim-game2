@@ -8,6 +8,7 @@ import { carDesignAction, type CarDesignActionState } from "./car-design-actions
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
 import type { TranslationKey } from "../../i18n/catalog";
 import { Panel, EmptyState } from "../../components/ui/panel";
+import { CarPhysicalView } from "./car-physical-view";
 
 const names: Record<CarPartType, TranslationKey> = {
   FRONT_WING: "car.part.frontWing", REAR_WING: "car.part.rearWing", UNDERFLOOR: "car.part.underfloor",
@@ -83,6 +84,8 @@ export function CarDevelopmentView({ overview }: { overview: CarDevelopmentOverv
       <div><p className="eyebrow accent">{t("car.heading")}</p><h1>{car.teamName}</h1><p>{t("car.currentNote")}</p></div>
       <Link className="text-link" href={`/career/${car.careerId}`}>{t("car.back")}</Link>
     </div>
+    {overview.physical ? <CarPhysicalView physical={overview.physical} careerId={car.careerId} careerDate={overview.careerDate} active={overview.careerStatus === "ACTIVE"} /> : <>
+    <Panel title={t("car.physical.unavailable")}><div className="career-content"><p>{t("car.physical.unavailableBody")}</p></div></Panel>
     <div className="dashboard-grid">
       <Panel title={t("car.current")}>
         <div className="career-content">
@@ -114,6 +117,7 @@ export function CarDevelopmentView({ overview }: { overview: CarDevelopmentOverv
         })}
       </div> : <EmptyState title={t("car.legacy")}>{t("car.legacyBody")}</EmptyState>}
     </Panel>
+    </>}
     <div className="dashboard-grid">
       <Panel title={t("car.activeProjects")}>
         {overview.projects.some(project => project.status === "ACTIVE") ? <div className="career-list">{overview.projects.filter(project => project.status === "ACTIVE").map(project => {
@@ -133,7 +137,7 @@ export function CarDevelopmentView({ overview }: { overview: CarDevelopmentOverv
     <Panel title={t("car.availableDesigns")}>
       {overview.availableDesigns.length ? <div className="career-list">{overview.availableDesigns.map(part => <div className="career-content" key={`${part.partType}-${part.version}`}>
         <h3>{t(names[part.partType])} {t("car.version", { version: format.number(part.version) })}</h3>
-        <p>{t("car.designComplete")} · {t("car.notFitted")}</p>
+        <p>{t("car.designComplete")}</p>
         <p>{t("car.partSummary", { low: format.number(part.stats.lowSpeed), mid: format.number(part.stats.mediumSpeed), high: format.number(part.stats.highSpeed), drag: format.number(part.stats.dragReduction), drs: format.number(part.stats.drsEfficiency) })}</p>
       </div>)}</div> : <EmptyState title={t("car.noAvailableDesigns")}>{t("car.noAvailableDesignsBody")}</EmptyState>}
     </Panel>

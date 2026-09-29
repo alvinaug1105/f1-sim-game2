@@ -7,6 +7,7 @@ import {
 } from "./content-repository";
 import { validateContentDataset } from "./content-dataset";
 import { CAR_PART_TYPES, sourceCarStats } from "./car-development";
+import { CAR_SLOTS } from "./car-manufacturing";
 import {
   CareerError,
   type CreateCareerInput,
@@ -148,6 +149,33 @@ export function buildCareerWorld(
       drsEfficiencyPerformance: stats.drsEfficiency,
     };
   });
+  // The source grid's car number, then source driver ID, fixes a structural slot order.
+  // Neither ratings nor the player's team affect the assignment.
+  const driverSlots = new Map<string, typeof CAR_SLOTS[number]>();
+  for (const team of teams) {
+    const raceDrivers = drivers.filter(row => row.entry.teamId === team.team.id && row.entry.role === "RACE_DRIVER")
+      .sort((a, b) => (a.entry.carNumber ?? Number.MAX_SAFE_INTEGER) - (b.entry.carNumber ?? Number.MAX_SAFE_INTEGER) || a.driver.id.localeCompare(b.driver.id));
+    if (raceDrivers.length !== CAR_SLOTS.length) throw new CareerError("INVALID_SOURCE");
+    raceDrivers.forEach((row, index) => driverSlots.set(row.entry.id, CAR_SLOTS[index]));
+  }
+  const partDesigns = teamEntries.flatMap(entry => CAR_PART_TYPES.map(partType => ({
+    id: allocate(), careerId, careerSeasonId, careerTeamId: entry.careerTeamId,
+    partType, version: 1,
+    lowSpeed: entry.lowSpeedPerformance,
+    mediumSpeed: entry.mediumSpeedPerformance,
+    highSpeed: entry.highSpeedPerformance,
+    dragReduction: entry.dragReductionPerformance,
+    drsEfficiency: entry.drsEfficiencyPerformance,
+  })));
+  const partUnits = partDesigns.flatMap(design => CAR_SLOTS.map((_, index) => ({
+    id: allocate(), careerId, careerSeasonId, careerTeamId: design.careerTeamId,
+    partType: design.partType, designId: design.id, unitNumber: index + 1,
+    manufacturedAtCareerDate: currentDate,
+  })));
+  const fitments = partUnits.map(unit => ({
+    careerId, careerSeasonId, careerTeamId: unit.careerTeamId,
+    carSlot: CAR_SLOTS[unit.unitNumber - 1], partType: unit.partType, partUnitId: unit.id,
+  }));
   return {
     career: {
       id: careerId,
@@ -222,6 +250,7 @@ export function buildCareerWorld(
       careerSeasonTeamEntryId: mapped(entryMap, entry.teamId),
       carNumber: entry.carNumber,
       role: entry.role,
+      carSlot: driverSlots.get(entry.id) ?? null,
       pace: entry.pace ?? null,
       consistency: entry.consistency ?? null,
     })),
@@ -238,14 +267,8 @@ export function buildCareerWorld(
       status: "UPCOMING",
       weekendFormat: event.weekendFormat ?? "STANDARD",
     })),
-    partDesigns: teamEntries.flatMap(entry => CAR_PART_TYPES.map(partType => ({
-      id: allocate(), careerId, careerSeasonId, careerTeamId: entry.careerTeamId,
-      partType, version: 1,
-      lowSpeed: entry.lowSpeedPerformance,
-      mediumSpeed: entry.mediumSpeedPerformance,
-      highSpeed: entry.highSpeedPerformance,
-      dragReduction: entry.dragReductionPerformance,
-      drsEfficiency: entry.drsEfficiencyPerformance,
-    }))),
+    partDesigns,
+    partUnits,
+    fitments,
   };
 }

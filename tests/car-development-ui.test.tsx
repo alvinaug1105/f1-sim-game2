@@ -6,8 +6,10 @@ import { CarDevelopmentView } from "../src/features/career/car-development-view"
 import { CAR_PART_TYPES, uniformCarStats } from "../src/game/domain/car-development";
 import type { CareerPlayerCar } from "../src/game/domain/career";
 import type { CarDevelopmentOverview } from "../src/game/domain/car-design-repository";
+import type { PlayerPhysicalOverview } from "../src/game/domain/car-physical-repository";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => undefined }) }));
 vi.mock("../src/features/career/car-design-actions", () => ({ carDesignAction: async () => ({ error: null, preview: null, startedId: null }) }));
+vi.mock("../src/features/career/car-physical-actions", () => ({ carPhysicalAction: async () => ({ error: null, success: null }) }));
 
 const car: CareerPlayerCar = {
   careerId: "11111111-1111-4111-8111-111111111111",
@@ -51,7 +53,7 @@ describe("player car development presentation", () => {
     const completedHtml = render({ ...overview, projects: [{ ...project, status: "COMPLETED", completedAtCareerDate: "2026-03-15" }], availableDesigns: [project.planned] });
     expect(completedHtml).toContain("Front Wing v1");
     expect(completedHtml).toContain("Front Wing v2");
-    expect(completedHtml).toContain("Not fitted");
+    expect(completedHtml).toContain("Design complete");
   });
 
   it("keeps older Careers readable and disables design action", () => {
@@ -73,5 +75,38 @@ describe("player car development presentation", () => {
       expect(translate("zh-TW", key)).not.toBe(key);
     }
     expect(translate("zh-TW", "car.part.frontWing")).toBe("前翼");
+  });
+  it("shows both physical cars, inventory, manufacturing preview and fitment impact", () => {
+    const parts = CAR_PART_TYPES.map(partType => ({ partType, version: 1, unitNumber: 1 }));
+    const physical: PlayerPhysicalOverview = {
+      cars: [
+        { slot: "CAR_1", driverName: "First Driver", stats: uniformCarStats(87), overall: 87, parts },
+        { slot: "CAR_2", driverName: "Second Driver", stats: uniformCarStats(87), overall: 87,
+          parts: parts.map(part => ({ ...part, unitNumber: 2 })) },
+      ],
+      designs: [{ id: "33333333-3333-4333-8333-333333333333", design: { partType: "FRONT_WING", version: 2, stats: uniformCarStats(92) },
+        availableUnits: 1, plans: [{ quantity: 1, durationDays: 3, completesAtCareerDate: "2026-03-04" },
+          { quantity: 2, durationDays: 6, completesAtCareerDate: "2026-03-07" }] }],
+      orders: [{ id: "44444444-4444-4444-8444-444444444444", partType: "REAR_WING", version: 1, quantity: 1,
+        status: "ACTIVE", startedAtCareerDate: "2026-03-01", completesAtCareerDate: "2026-03-04", completedAtCareerDate: null }],
+      fitImpacts: [{ slot: "CAR_1", designId: "33333333-3333-4333-8333-333333333333", partType: "FRONT_WING", version: 2,
+        before: uniformCarStats(87), after: { ...uniformCarStats(87), lowSpeed: 89 }, beforeOverall: 87, afterOverall: 87 }],
+    };
+    const html = render({ ...overview, physical });
+    for (const text of ["Car 1", "Car 2", "First Driver", "Second Driver", "Currently fitted", "Inventory", "Manufacturing",
+      "3 days", "Front Wing v2", "87 → 87", "Active manufacturing", "Started on Career date", "Available units: 1"]) expect(html).toContain(text);
+    expect(html).toContain('name="impact"');
+    expect(html).toContain('name="quantity"');
+    expect(html).not.toContain("Rival Racing");
+    expect(render({ ...overview, physical: null })).toContain("Physical parts unavailable");
+  });
+  it("provides English and Traditional Chinese physical-management messages", () => {
+    for (const key of ["car.physical.car1", "car.physical.car2", "car.physical.fittedUnit", "car.physical.inventory",
+      "car.physical.manufacture", "car.physical.quantity", "car.physical.manufacturingTime", "car.physical.startDate", "car.physical.completionDate",
+      "car.physical.activeManufacturing", "car.physical.fit", "car.physical.noUnitsAvailable", "car.physical.unavailable",
+      "car.physical.error.SESSION_IN_PROGRESS", "car.physical.error.STALE_PREVIEW"] as const) {
+      expect(translate("en", key)).not.toBe(key);
+      expect(translate("zh-TW", key)).not.toBe(key);
+    }
   });
 });

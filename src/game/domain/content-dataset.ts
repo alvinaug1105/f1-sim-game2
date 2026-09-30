@@ -11,6 +11,7 @@ import type {
 } from "./content";
 import { CIRCUIT_CLIMATE_PROFILES, SCORING_RULES_VERSIONS, WEEKEND_FORMATS } from "./content";
 import { assertContentId } from "./content-repository";
+import { CAR_DEVELOPMENT_STYLES } from "./car-ai-development";
 type Source<T> = Omit<T, keyof AuditedContent>;
 export interface ContentDataset {
   readonly database: Source<GameDatabase>;
@@ -176,6 +177,7 @@ export function validateContentDataset(data: ContentDataset): void {
     );
     positive(row.entryOrder, "Entry order");
     balance(row.carPerformance, "Car performance");
+    requireValid(row.developmentStyle == null || CAR_DEVELOPMENT_STYLES.includes(row.developmentStyle), "Unknown car development style.");
     balance(row.lowSpeedPerformance, "Low-speed performance");
     balance(row.mediumSpeedPerformance, "Medium-speed performance");
     balance(row.highSpeedPerformance, "High-speed performance");

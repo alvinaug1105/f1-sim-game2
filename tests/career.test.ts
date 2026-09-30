@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createCareer } from "../src/features/career/create-career";
 import { validateCareerInput } from "../src/game/domain/career-snapshot";
 import { developmentContent as data } from "../src/data/seed/content-development";
-import { CAR_PART_TYPES, currentCarPerformance, uniformCarStats } from "../src/game/domain/car-development";
+import { CAR_PART_TYPES, currentCarPerformance, sourceCarStats } from "../src/game/domain/car-development";
 import {
   MemoryCareerRepository,
   runtime,
@@ -144,7 +144,7 @@ describe("Career snapshot and identity mapping", () => {
       const designs = world.partDesigns.filter(row => row.careerTeamId === team.id);
       expect(designs.map(row => row.partType)).toEqual(CAR_PART_TYPES);
       expect(designs.every(row => row.version === 1 && row.careerSeasonId === career.currentSeasonId)).toBe(true);
-      expect(currentCarPerformance(designs)?.stats).toEqual(uniformCarStats(sourceEntry.carPerformance!));
+      expect(currentCarPerformance(designs)?.stats).toEqual(sourceCarStats(sourceEntry));
       expect(currentCarPerformance(designs)?.overall).toBe(sourceEntry.carPerformance);
       expect(entry.carPerformance).toBe(sourceEntry.carPerformance);
     }

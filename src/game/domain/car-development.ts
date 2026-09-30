@@ -53,6 +53,13 @@ export function deriveOverallCarPerformance(stats: CarPerformanceStats): number 
   validateCarPerformanceStats(stats);
   return Math.floor((CAR_PERFORMANCE_DIMENSIONS.reduce((sum, dimension) => sum + stats[dimension], 0) + 2) / 5);
 }
+/** Fixed fifth-point precision: integer management areas produce exact 0.2-point session increments.
+ * Only physically fitted cars use this bridge; legacy team-level saves retain their rounded scalar. */
+export function deriveSessionCarPerformance(stats: CarPerformanceStats): number {
+  validateCarPerformanceStats(stats);
+  const fifthPoints = CAR_PERFORMANCE_DIMENSIONS.reduce((sum, dimension) => sum + stats[dimension], 0);
+  return fifthPoints / CAR_PERFORMANCE_DIMENSIONS.length;
+}
 /** Accepted pre-content Career fallback, shared by snapshots and the existing session builder. */
 export function legacyCarPerformance(teamOrder: number): number {
   if (!Number.isSafeInteger(teamOrder) || teamOrder < 1) throw new RangeError("Invalid team order");

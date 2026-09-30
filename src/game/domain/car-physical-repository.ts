@@ -10,7 +10,7 @@ export interface PhysicalCarView {
   readonly slot: CarSlot;
   readonly driverName: string;
   readonly stats: CarPerformanceStats;
-  readonly overall: number;
+  readonly sessionPerformance: number;
   readonly parts: readonly { partType: CarPartType; version: number; unitNumber: number }[];
 }
 export interface ManufacturingPlanView {
@@ -41,8 +41,8 @@ export interface FitImpactView {
   readonly version: number;
   readonly before: CarPerformanceStats;
   readonly after: CarPerformanceStats;
-  readonly beforeOverall: number;
-  readonly afterOverall: number;
+  readonly beforeSessionPerformance: number;
+  readonly afterSessionPerformance: number;
 }
 export interface PlayerPhysicalOverview {
   readonly cars: readonly PhysicalCarView[];

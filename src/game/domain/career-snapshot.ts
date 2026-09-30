@@ -142,6 +142,7 @@ export function buildCareerWorld(
       careerTeamId: mapped(teamMap, entry.teamId),
       entryOrder: entry.entryOrder,
       carPerformance: entry.carPerformance ?? null,
+      developmentStyle: entry.developmentStyle ?? null,
       lowSpeedPerformance: stats.lowSpeed,
       mediumSpeedPerformance: stats.mediumSpeed,
       highSpeedPerformance: stats.highSpeed,

@@ -85,12 +85,13 @@ function transactionDouble() {
           })),
         ),
     },
-    career: { create: vi.fn().mockResolvedValue({}), findUnique: vi.fn() },
+    career: { create: vi.fn().mockResolvedValue({}), findUnique: vi.fn(), findUniqueOrThrow: vi.fn().mockImplementation(async () => tx.career.create.mock.calls[0][0].data) },
     careerTeam: { createMany: vi.fn().mockResolvedValue({ count: 2 }) },
     careerDriver: { createMany: vi.fn().mockResolvedValue({ count: 4 }) },
     careerCircuit: { createMany: vi.fn().mockResolvedValue({ count: 2 }) },
     careerSeason: { create: vi.fn().mockResolvedValue({}) },
     careerSeasonTeamEntry: {
+      findMany: vi.fn().mockResolvedValue([]),
       createMany: vi.fn().mockResolvedValue({ count: 2 }),
     },
     careerCarPartDesign: {

@@ -1,6 +1,7 @@
 import type { EntityId } from "./identity";
 import type { CarPartDesign, CarPartType, CarPerformanceStats, StoredCarPartDesign } from "./car-development";
 import type { CarSlot } from "./car-manufacturing";
+import type { CarDevelopmentStyle } from "./car-ai-development";
 import type {
   Team,
   Driver,
@@ -58,6 +59,7 @@ export interface CareerSeasonTeamEntry {
   readonly entryOrder: number;
   /** Snapshotted game-balance value; null for Careers created before Content Expansion Pass A. */
   readonly carPerformance?: number | null;
+  readonly developmentStyle?: CarDevelopmentStyle | null;
   /** Management ratings are absent on Careers created before Phase 17A. */
   readonly lowSpeedPerformance?: number | null;
   readonly mediumSpeedPerformance?: number | null;

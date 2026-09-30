@@ -22,6 +22,7 @@ import {
 import { currentCarPerformance, legacyCarPerformance, storedPartDesign } from "../../game/domain/car-development";
 import { assertContentId } from "../../game/domain/content-repository";
 import { PrismaGameContentRepository } from "./prisma-game-content";
+import { reconcileAiCarDevelopment } from "./prisma-car-ai";
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const iso = (value: Date) => value.toISOString().slice(0, 10);
 const audit = (row: { createdAt: Date; updatedAt: Date }) => ({
@@ -102,6 +103,7 @@ async function saveWorld(tx: Prisma.TransactionClient, world: CareerWorld) {
       endDate: date(row.endDate),
     })),
   });
+  await reconcileAiCarDevelopment(tx, world.career.id);
 }
 export class PrismaCareerRepository implements CareerRepository {
   constructor(private readonly client: PrismaClient) {}

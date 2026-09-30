@@ -1,6 +1,7 @@
 import type { PrismaClient, Prisma } from "../generated/prisma/client";
 import { settleDueDesignProjects } from "./prisma-car-design";
 import { settleDueManufacturingOrders } from "./prisma-car-physical";
+import { reconcileAiCarDevelopment } from "./prisma-car-ai";
 import { assertContentId } from "../../game/domain/content-repository";
 import {
   ProgressionError,
@@ -183,4 +184,8 @@ export async function persistProgress(
     await settleDueDesignProjects(tx, after.career.id, after.career.currentDate);
     await settleDueManufacturingOrders(tx, after.career.id, after.career.currentDate);
   }
+  const completedSession = after.events.some(event => event.weekend?.sessions.some(session => session.status === "COMPLETED" &&
+    before.events.find(previous => previous.id === event.id)?.weekend?.sessions.find(previous => previous.id === session.id)?.status === "IN_PROGRESS"));
+  if (after.career.currentDate !== before.career.currentDate || completedSession)
+    await reconcileAiCarDevelopment(tx, after.career.id);
 }

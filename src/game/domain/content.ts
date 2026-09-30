@@ -1,4 +1,5 @@
 import type { EntityId, TeamIdentity, DriverIdentity } from "./identity";
+import type { CarDevelopmentStyle } from "./car-ai-development";
 /** Source content only. ISO date-only strings are distinct from translated display text. */
 export type IsoDate = string;
 export interface AuditedContent {
@@ -62,6 +63,7 @@ export interface SeasonTeamEntry {
   readonly entryOrder: number;
   /** Game-balance data (development values, 0–100), separate from team identity. Absent on legacy content. */
   readonly carPerformance?: number | null;
+  readonly developmentStyle?: CarDevelopmentStyle | null;
   /** Optional management ratings; each absent value inherits carPerformance or the accepted legacy fallback. */
   readonly lowSpeedPerformance?: number | null;
   readonly mediumSpeedPerformance?: number | null;

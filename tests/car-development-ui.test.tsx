@@ -80,8 +80,8 @@ describe("player car development presentation", () => {
     const parts = CAR_PART_TYPES.map(partType => ({ partType, version: 1, unitNumber: 1 }));
     const physical: PlayerPhysicalOverview = {
       cars: [
-        { slot: "CAR_1", driverName: "First Driver", stats: uniformCarStats(87), overall: 87, parts },
-        { slot: "CAR_2", driverName: "Second Driver", stats: uniformCarStats(87), overall: 87,
+        { slot: "CAR_1", driverName: "First Driver", stats: uniformCarStats(87), sessionPerformance: 87, parts },
+        { slot: "CAR_2", driverName: "Second Driver", stats: uniformCarStats(87), sessionPerformance: 87,
           parts: parts.map(part => ({ ...part, unitNumber: 2 })) },
       ],
       designs: [{ id: "33333333-3333-4333-8333-333333333333", design: { partType: "FRONT_WING", version: 2, stats: uniformCarStats(92) },
@@ -90,11 +90,11 @@ describe("player car development presentation", () => {
       orders: [{ id: "44444444-4444-4444-8444-444444444444", partType: "REAR_WING", version: 1, quantity: 1,
         status: "ACTIVE", startedAtCareerDate: "2026-03-01", completesAtCareerDate: "2026-03-04", completedAtCareerDate: null }],
       fitImpacts: [{ slot: "CAR_1", designId: "33333333-3333-4333-8333-333333333333", partType: "FRONT_WING", version: 2,
-        before: uniformCarStats(87), after: { ...uniformCarStats(87), lowSpeed: 89 }, beforeOverall: 87, afterOverall: 87 }],
+        before: uniformCarStats(87), after: { ...uniformCarStats(87), lowSpeed: 89 }, beforeSessionPerformance: 87, afterSessionPerformance: 87.4 }],
     };
     const html = render({ ...overview, physical });
     for (const text of ["Car 1", "Car 2", "First Driver", "Second Driver", "Currently fitted", "Inventory", "Manufacturing",
-      "3 days", "Front Wing v2", "87 → 87", "Active manufacturing", "Started on Career date", "Available units: 1"]) expect(html).toContain(text);
+      "3 days", "Front Wing v2", "87.0 → 87.4", "Active manufacturing", "Started on Career date", "Available units: 1"]) expect(html).toContain(text);
     expect(html).toContain('name="impact"');
     expect(html).toContain('name="quantity"');
     expect(html).not.toContain("Rival Racing");

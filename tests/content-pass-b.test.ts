@@ -64,7 +64,7 @@ describe('original 2026 calendar and stable content', () => {
     expect(old.world.circuits.every(c => c.climateProfile === null)).toBe(true);
     expect(old.career.sourceGameDatabaseVersion).toBe('1.0.0');
     expect(fresh.world.events).toHaveLength(24);
-    expect(fresh.career.sourceGameDatabaseVersion).toBe('1.2.0');
+    expect(fresh.career.sourceGameDatabaseVersion).toBe('1.3.0');
     for (const c of fresh.world.circuits) expect(c.climateProfile).toBe(source.circuits.find(x => x.id === c.sourceCircuitId)!.climateProfile);
   });
 });

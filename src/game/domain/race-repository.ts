@@ -2,7 +2,7 @@ import type { CircuitClimateProfile } from "./content";
 import type { CareerProgress } from "./progression";
 import type { RaceSimulationState } from "../../simulation/race/types";
 import type { CircuitRaceProfile } from "../../simulation/race/traffic/profiles";
-import { currentCarPerformance, type StoredCarPartDesign } from "./car-development";
+import { currentCarPerformance, aggregateCarPerformance, storedPartDesign, deriveSessionCarPerformance, type StoredCarPartDesign } from "./car-development";
 import type { CarSlot } from "./car-manufacturing";
 /** Career-snapshotted game-balance values; null for Careers created before Content Expansion Pass A. */
 export interface RosterBalance {
@@ -30,7 +30,7 @@ export function rosterBalance(entry: {
   const { pace, consistency } = entry,
     // Existing Careers have no designs and continue to use their stored scalar (or legacy profile).
     carPerformance = entry.fittedDesigns
-      ? currentCarPerformance(entry.fittedDesigns)?.overall ?? null
+      ? deriveSessionCarPerformance(aggregateCarPerformance(entry.fittedDesigns.map(storedPartDesign)))
       : currentCarPerformance(entry.teamEntry.partDesigns ?? [])?.overall ?? entry.teamEntry.carPerformance ?? null;
   return pace != null && consistency != null && carPerformance != null
     ? { pace, consistency, carPerformance }

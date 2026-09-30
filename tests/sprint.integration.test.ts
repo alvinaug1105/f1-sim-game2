@@ -249,7 +249,14 @@ describe("Phase 15 migration — forward from a pre-Phase-15 database with an ac
             const edges = (await conn.query(`SELECT c.conrelid::regclass::text AS child, c.confrelid::regclass::text AS parent FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = $1 AND c.contype = 'f' AND NOT c.condeferrable`, [old])).rows as { child: string; parent: string }[];
             const name = (qualified: string) => qualified.replace(/^.*\./, "").replaceAll('"', "");
             const ordered: string[] = [];
-            const visit = (t: string, seen = new Set<string>()) => { if (ordered.includes(t) || seen.has(t)) return; seen.add(t); for (const e of edges.filter(x => name(x.child) === t && name(x.parent) !== t)) visit(name(e.parent), seen); ordered.push(t); };
+            const visit = (t: string, seen = new Set<string>()) => {
+                if (ordered.includes(t) || seen.has(t)) return;
+                seen.add(t);
+                for (const e of edges.filter(x => name(x.child) === t && name(x.parent) !== t)) visit(name(e.parent), seen);
+                // The incident ownership trigger also depends on entrant rows through JSON IDs, beyond declared FKs.
+                if (t === "CareerRaceIncidents") visit("CareerRaceEntrant", seen);
+                ordered.push(t);
+            };
             for (const t of tables) visit(t);
             await conn.query("BEGIN");
             await conn.query("SET CONSTRAINTS ALL DEFERRED");
@@ -263,7 +270,7 @@ describe("Phase 15 migration — forward from a pre-Phase-15 database with an ac
             // 3. Row hashes before the Phase-15 migration.
             const hash = async () => {
                 const out: Record<string, string> = {};
-                for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'weekendFormat' - 'climateProfile' - 'scoringRulesVersion' - 'lowSpeedPerformance' - 'mediumSpeedPerformance' - 'highSpeedPerformance' - 'dragReductionPerformance' - 'drsEfficiencyPerformance' - 'carSlot' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
+                for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'weekendFormat' - 'climateProfile' - 'scoringRulesVersion' - 'lowSpeedPerformance' - 'mediumSpeedPerformance' - 'highSpeedPerformance' - 'dragReductionPerformance' - 'drsEfficiencyPerformance' - 'carSlot' - 'developmentStyle' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
                 return out;
             };
             const before = await hash();
@@ -287,6 +294,7 @@ describe("Phase 15 migration — forward from a pre-Phase-15 database with an ac
                 await oldClient.$disconnect();
             }
         } finally {
+            await conn.query("ROLLBACK"); // Also recover the pooled connection if fixture copying failed.
             conn.release();
         }
     }, 120000);

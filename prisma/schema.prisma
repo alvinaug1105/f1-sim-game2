@@ -45,6 +45,12 @@ enum CarSlot {
   CAR_2
 }
 
+enum CarDevelopmentStyle {
+  BALANCED
+  FIX_WEAKNESS
+  BUILD_STRENGTH
+}
+
 enum CarManufacturingStatus {
   ACTIVE
   COMPLETED
@@ -146,20 +152,21 @@ model Season {
 }
 
 model SeasonTeamEntry {
-  id                       String              @id @default(uuid()) @db.Uuid
-  gameDatabaseId           String              @db.Uuid
-  seasonId                 String              @db.Uuid
-  teamId                   String              @db.Uuid
+  id                       String               @id @default(uuid()) @db.Uuid
+  gameDatabaseId           String               @db.Uuid
+  seasonId                 String               @db.Uuid
+  teamId                   String               @db.Uuid
   entryOrder               Int
   /// Game-balance data (development values, 0–100); identity lives on Team.
   carPerformance           Int?
+  developmentStyle         CarDevelopmentStyle?
   lowSpeedPerformance      Int?
   mediumSpeedPerformance   Int?
   highSpeedPerformance     Int?
   dragReductionPerformance Int?
   drsEfficiencyPerformance Int?
-  season                   Season              @relation(fields: [gameDatabaseId, seasonId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
-  team                     Team                @relation(fields: [gameDatabaseId, teamId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
+  season                   Season               @relation(fields: [gameDatabaseId, seasonId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
+  team                     Team                 @relation(fields: [gameDatabaseId, teamId], references: [gameDatabaseId, id], onDelete: Restrict, onUpdate: Restrict)
   drivers                  SeasonDriverEntry[]
 
   @@unique([gameDatabaseId, seasonId, teamId])
@@ -350,6 +357,7 @@ model CareerSeasonTeamEntry {
   entryOrder               Int
   /// Snapshotted balance; null for Careers created before Content Expansion Pass A (legacy development profile).
   carPerformance           Int?
+  developmentStyle         CarDevelopmentStyle?
   /// Phase 17A management ratings; null on existing Careers.
   lowSpeedPerformance      Int?
   mediumSpeedPerformance   Int?

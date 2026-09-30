@@ -77,7 +77,7 @@ function FitOptions({ physical, careerId, slot, active }: { physical: PlayerPhys
   return <div className="career-content"><h3>{t("car.physical.fit")}</h3>
     {options.length ? <div className="career-list">{options.map(impact => <div className="career-content" key={`${slot}-${impact.designId}`}>
       <p>{t(names[impact.partType])} {t("car.version", { version: format.number(impact.version) })}</p>
-      <p>{t("car.overall")}: {format.number(impact.beforeOverall)} → {format.number(impact.afterOverall)}</p>
+      <p>{t("car.overall")}: {format.number(impact.beforeSessionPerformance, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} → {format.number(impact.afterSessionPerformance, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</p>
       <dl className="career-facts">{CAR_PERFORMANCE_DIMENSIONS.map(dimension => <div key={dimension}><dt>{t(dimensions[dimension])}</dt><dd>{format.number(impact.before[dimension])} → {format.number(impact.after[dimension])}</dd></div>)}</dl>
       <form action={action} className="transition-form">
         <input type="hidden" name="careerId" value={careerId} /><input type="hidden" name="intent" value="fit" />
@@ -94,7 +94,7 @@ export function CarPhysicalView({ physical, careerId, careerDate, active }: { ph
   return <>
     <div className="dashboard-grid">{physical.cars.map(car => <Panel key={car.slot} title={t(slots[car.slot])}><div className="career-content">
       <p>{t("car.physical.assignedDriver")}: {car.driverName}</p>
-      <dl className="career-facts"><div><dt>{t("car.overall")}</dt><dd>{format.number(car.overall)}</dd></div>
+      <dl className="career-facts"><div><dt>{t("car.overall")}</dt><dd>{format.number(car.sessionPerformance, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</dd></div>
         {CAR_PERFORMANCE_DIMENSIONS.map(dimension => <div key={dimension}><dt>{t(dimensions[dimension])}</dt><dd>{format.number(car.stats[dimension])}</dd></div>)}</dl>
       <h3>{t("car.physical.currentlyFitted")}</h3>
       <ul>{CAR_PART_TYPES.map(type => { const part = car.parts.find(row => row.partType === type);

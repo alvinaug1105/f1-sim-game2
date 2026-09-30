@@ -61,6 +61,20 @@ const DRIVERS: readonly DriverRow[] = [
 const CAR_PERFORMANCE: Readonly<Record<number, number>> = {
   102: 94, 100: 93, 103: 92, 101: 92, 108: 88, 104: 87, 109: 86, 106: 86, 107: 85, 105: 84, 110: 82,
 };
+/** Phase 17D gameplay identities, not measurements of real cars. Each five-area mean preserves baseline balance. */
+const TECHNICAL_IDENTITY = {
+  100: [94, 94, 93, 92, 92, "BALANCED"],
+  101: [93, 94, 92, 91, 90, "FIX_WEAKNESS"],
+  102: [95, 95, 96, 92, 92, "BUILD_STRENGTH"],
+  103: [91, 92, 94, 92, 91, "BUILD_STRENGTH"],
+  104: [88, 87, 89, 86, 85, "FIX_WEAKNESS"],
+  105: [85, 85, 83, 84, 83, "FIX_WEAKNESS"],
+  106: [85, 87, 86, 87, 85, "BALANCED"],
+  107: [84, 85, 86, 85, 85, "BALANCED"],
+  108: [86, 87, 90, 90, 87, "BUILD_STRENGTH"],
+  109: [88, 87, 86, 84, 85, "FIX_WEAKNESS"],
+  110: [81, 82, 81, 83, 83, "BALANCED"],
+} as const;
 const DRIVER_BALANCE: Readonly<Record<number, readonly [pace: number, consistency: number]>> = {
   206: [96, 93], 204: [95, 91], 202: [95, 89], 205: [94, 92], 200: [94, 92], 203: [93, 91], 218: [93, 94],
   216: [92, 92], 201: [91, 85], 217: [91, 90], 207: [90, 86], 210: [90, 89], 220: [90, 88], 214: [89, 91],
@@ -188,10 +202,10 @@ export const developmentContent = {
     id: gameDatabaseId,
     key: "fictional-formula-development",
     name: "Fictional Formula Development",
-    version: "1.2.0",
+    version: "1.3.0",
     schemaVersion: 1,
     description:
-      "Original 2026 24-round world with circuit climate snapshots. No active Career.",
+      "Original 2026 24-round world with gameplay technical identities and development styles. No active Career.",
     isBuiltIn: true,
   },
   teams: TEAMS.map(([n, key, name, shortName, color, secondaryColor, countryCode, foundedYear]) => ({
@@ -217,8 +231,12 @@ export const developmentContent = {
   // Entry IDs 500+ / 600+ follow the team / driver order above (Mercedes 500, Ferrari 501; RUS 600 … HAM 603).
   teamEntries: TEAMS.map(([n], index) => ({
     id: id(400 + n), gameDatabaseId, seasonId, teamId: id(n), entryOrder: index + 1, carPerformance: CAR_PERFORMANCE[n],
-    lowSpeedPerformance: CAR_PERFORMANCE[n], mediumSpeedPerformance: CAR_PERFORMANCE[n], highSpeedPerformance: CAR_PERFORMANCE[n],
-    dragReductionPerformance: CAR_PERFORMANCE[n], drsEfficiencyPerformance: CAR_PERFORMANCE[n],
+    lowSpeedPerformance: TECHNICAL_IDENTITY[n as keyof typeof TECHNICAL_IDENTITY][0],
+    mediumSpeedPerformance: TECHNICAL_IDENTITY[n as keyof typeof TECHNICAL_IDENTITY][1],
+    highSpeedPerformance: TECHNICAL_IDENTITY[n as keyof typeof TECHNICAL_IDENTITY][2],
+    dragReductionPerformance: TECHNICAL_IDENTITY[n as keyof typeof TECHNICAL_IDENTITY][3],
+    drsEfficiencyPerformance: TECHNICAL_IDENTITY[n as keyof typeof TECHNICAL_IDENTITY][4],
+    developmentStyle: TECHNICAL_IDENTITY[n as keyof typeof TECHNICAL_IDENTITY][5],
   })),
   driverEntries: DRIVERS.map(([n, , , , , , , carNumber, team]) => ({
     id: id(400 + n), gameDatabaseId, seasonId, teamId: id(team), driverId: id(n), carNumber, role: "RACE_DRIVER" as const,

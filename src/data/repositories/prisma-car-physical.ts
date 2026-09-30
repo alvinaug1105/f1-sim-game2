@@ -1,8 +1,10 @@
 import type { Prisma, PrismaClient } from "../generated/prisma/client";
 import { assertContentId } from "../../game/domain/content-repository";
-import { CAR_PART_TYPES, aggregateCarPerformance, deriveOverallCarPerformance, storedPartDesign, type StoredCarPartDesign } from "../../game/domain/car-development";
-import { CAR_SLOTS, MAX_ACTIVE_MANUFACTURING_ORDERS, isCarSlot, planManufacturing, rosterFittedDesigns, type CarSlot } from "../../game/domain/car-manufacturing";
+import { CAR_PART_TYPES, aggregateCarPerformance, deriveSessionCarPerformance, storedPartDesign, type StoredCarPartDesign } from "../../game/domain/car-development";
+import { CAR_SLOTS, isCarSlot, planManufacturing, rosterFittedDesigns, type CarSlot } from "../../game/domain/car-manufacturing";
 import { CarPhysicalError, type CarPhysicalRepository, type FitImpactView, type PhysicalOrderView, type PlayerPhysicalOverview } from "../../game/domain/car-physical-repository";
+
+import { loadManagementTeams, startManufacturingForTeam, fitDesignForTeam } from "./prisma-car-management";
 
 const iso = (value: Date) => value.toISOString().slice(0, 10);
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -61,7 +63,7 @@ export async function readPlayerPhysical(tx: Client, careerId: string, seasonId:
     const fitted = fitments.filter(row => row.carSlot === slot);
     const stats = aggregateCarPerformance(fitted.map(row => storedPartDesign(row.unit.design)));
     return { slot, driverName: `${driver.driver.firstName} ${driver.driver.lastName}`, stats,
-      overall: deriveOverallCarPerformance(stats),
+      sessionPerformance: deriveSessionCarPerformance(stats),
       parts: fitted.map(row => ({ partType: row.partType, version: row.unit.design.version, unitNumber: row.unit.unitNumber })) };
   });
   const designViews = designs.map(row => ({ id: row.id, design: storedPartDesign(row),
@@ -76,7 +78,7 @@ export async function readPlayerPhysical(tx: Client, careerId: string, seasonId:
       row.partType === design.design.partType ? design.design : storedPartDesign(row.unit.design));
     const after = aggregateCarPerformance(installed);
     fitImpacts.push({ slot: car.slot, designId: design.id, partType: design.design.partType, version: design.design.version,
-      before: car.stats, after, beforeOverall: car.overall, afterOverall: deriveOverallCarPerformance(after) });
+      before: car.stats, after, beforeSessionPerformance: car.sessionPerformance, afterSessionPerformance: deriveSessionCarPerformance(after) });
   }
   return { cars, designs: designViews, orders: orders.map(orderView), fitImpacts };
 }
@@ -109,19 +111,9 @@ export class PrismaCarPhysicalRepository implements CarPhysicalRepository {
       const locked = await tx.career.updateMany({ where: { id: careerId }, data: { updatedAt: new Date() } });
       if (!locked.count) throw new CarPhysicalError("NOT_FOUND");
       const career = await tx.career.findUniqueOrThrow({ where: { id: careerId } });
-      if (career.status !== "ACTIVE") throw new CarPhysicalError("UNAVAILABLE");
-      const scope = { careerId, careerSeasonId: career.currentSeasonId, careerTeamId: career.playerTeamId };
-      if (await tx.careerCarFitment.count({ where: scope }) !== CAR_SLOTS.length * CAR_PART_TYPES.length) throw new CarPhysicalError("LEGACY");
-      const design = await tx.careerCarPartDesign.findFirst({ where: { ...scope, id: designId } });
-      if (!design) throw new CarPhysicalError("NOT_FOUND");
-      const active = await tx.careerCarManufacturingOrder.findMany({ where: { careerId, careerTeamId: career.playerTeamId, status: "ACTIVE" }, select: { designId: true } });
-      if (active.some(order => order.designId === designId)) throw new CarPhysicalError("DESIGN_ACTIVE");
-      if (active.length >= MAX_ACTIVE_MANUFACTURING_ORDERS) throw new CarPhysicalError("CAPACITY");
-      const plan = planManufacturing(design.partType, quantity, iso(career.currentDate));
-      if (expectedCompletionDate && expectedCompletionDate !== plan.completesAtCareerDate) throw new CarPhysicalError("STALE_PREVIEW");
-      const order = await tx.careerCarManufacturingOrder.create({ data: { ...scope, partType: design.partType,
-        designId, quantity, status: "ACTIVE", startedAtCareerDate: date(plan.startedAtCareerDate),
-        completesAtCareerDate: date(plan.completesAtCareerDate) }, include: { design: true } });
+      const team = (await loadManagementTeams(tx, career, [career.playerTeamId]))[0];
+      if (!team) throw new CarPhysicalError("UNAVAILABLE");
+      const order = await startManufacturingForTeam(tx, { career, team }, designId, quantity, expectedCompletionDate);
       return orderView(order);
     }, { isolationLevel: "ReadCommitted", timeout: 15000, maxWait: 5000 }));
   }
@@ -132,19 +124,10 @@ export class PrismaCarPhysicalRepository implements CarPhysicalRepository {
       const locked = await tx.career.updateMany({ where: { id: careerId }, data: { updatedAt: new Date() } });
       if (!locked.count) throw new CarPhysicalError("NOT_FOUND");
       const career = await tx.career.findUniqueOrThrow({ where: { id: careerId } });
-      if (career.status !== "ACTIVE") throw new CarPhysicalError("UNAVAILABLE");
-      const scope = { careerId, careerSeasonId: career.currentSeasonId, careerTeamId: career.playerTeamId };
-      const physical = await readPlayerPhysical(tx, careerId, career.currentSeasonId, career.playerTeamId, iso(career.currentDate));
-      if (!physical) throw new CarPhysicalError("LEGACY");
-      if (await tx.careerSession.count({ where: { careerId, status: "IN_PROGRESS" } })) throw new CarPhysicalError("SESSION_IN_PROGRESS");
-      const impact = physical.fitImpacts.find(value => value.slot === slot && value.designId === designId);
-      if (!impact) throw new CarPhysicalError("NO_UNIT");
-      if (expected && JSON.stringify(expected) !== JSON.stringify(impact)) throw new CarPhysicalError("STALE_PREVIEW");
-      const unit = await tx.careerCarPartUnit.findFirst({ where: { ...scope, designId, fitment: null }, orderBy: [{ unitNumber: "asc" }, { id: "asc" }] });
-      if (!unit) throw new CarPhysicalError("NO_UNIT");
-      await tx.careerCarFitment.update({ where: { careerId_careerSeasonId_careerTeamId_carSlot_partType: {
-        ...scope, carSlot: slot as CarSlot, partType: unit.partType,
-      } }, data: { partUnitId: unit.id } });
+      const team = (await loadManagementTeams(tx, career, [career.playerTeamId]))[0];
+      if (!team) throw new CarPhysicalError("UNAVAILABLE");
+      const running = await tx.careerSession.count({ where: { careerId, status: "IN_PROGRESS" } });
+      await fitDesignForTeam(tx, { career, team }, slot, designId, running > 0, expected);
     }, { isolationLevel: "ReadCommitted", timeout: 15000, maxWait: 5000 }));
   }
 }

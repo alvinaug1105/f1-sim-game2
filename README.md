@@ -29,7 +29,7 @@ npm start
 
 `src/app` composes a server-rendered dashboard. `components` holds the presentation shell. `features/dashboard` owns the application query and repository port. `game/domain` holds library-independent identity concepts. `simulation/core` contains a pure tick function and injectable seeded random source. `data` supplies centralized development fixtures and a replaceable repository adapter. The UI never calculates simulation outcomes.
 
-Routes: `/` is the standalone fixture preview; `/careers` lists saves, `/careers/new` creates one, `/career/[careerId]` displays its owned world/progression, and `/career/[careerId]/events/[eventId]` displays a persisted weekend, and its `/race` page starts/resumes the real simulation. Planned navigation is visibly unavailable, without fake routes. Missing records have explicit empty states, missing routes have a 404, and unexpected feature failures reach an error boundary. Dashboard development fixtures are static and may be prerendered; revisit caching when introducing persistence.
+Routes: `/` is the product landing page with Browse Careers and New Career actions; `/careers` lists saves, `/careers/new` creates one, `/career/[careerId]` displays its owned world/progression, and `/career/[careerId]/events/[eventId]` displays a persisted weekend, and its `/race` page starts/resumes the real simulation. The Career shell links to the playable Car Development and Standings pages; dedicated Team, Drivers and Calendar pages are omitted. Missing records have explicit empty states, missing routes have a 404, and unexpected feature failures reach an error boundary. The landing page does not load example team/event data.
 
 See [architecture](docs/architecture.md) for boundaries, extension rules and deferred work. Tests run outside React and verify tick purity, invalid inputs, deterministic randomness, ID relationships and repository behavior.
 
@@ -39,13 +39,13 @@ ESLint 9 is retained because the React/import/accessibility plugins supplied by 
 
 ## Languages
 
-Use the shell's **Language / 語言** selector to switch between **English** and **繁體中文** immediately. The browser saves the preference across refreshes and reopening; if storage is blocked, a translated warning explains that the setting lasts only for the visit. English is the server-rendered fallback until the saved preference is restored after hydration.
+Use the shell's **Language / 語言** selector to switch between **English** and **繁體中文** immediately. The browser saves the preference across refreshes and reopening; if storage is blocked, a translated warning explains that the setting lasts only for the visit. The `formula-operations-locale` cookie is the source of truth for both server rendering and browser selection. A missing cookie imports the old `formula-operations.locale` localStorage preference once; subsequent localStorage values are only a mirror for cross-tab notifications. Cookie preference takes precedence. If localStorage alone is blocked, cookies still persist the choice.
 
 Interface translations live in `src/i18n/{en,zh-TW}/messages.json`. Namespaced keys are type-checked. To add a language, create its catalog and register it in `src/i18n/catalog.ts`; the selector uses that registry automatically. Team names, event/circuit names and IDs stay in the game data, separate from UI translations. Formatting helpers use standard Intl APIs. The simulation and domain do not import i18n.
 
 ## PostgreSQL source-content database
 
-Prisma 7.10 and PostgreSQL are used for reusable datasets. Career-owned tables store independent snapshots of the selected starting season. The dashboard remains a standalone development preview, not a live Career or a database health check.
+Prisma 7.10 and PostgreSQL are used for reusable datasets. Career-owned tables store independent snapshots of the selected starting season. The root landing page links to saved Careers without querying source fixtures or choosing a recent Career.
 
 1. Provide an existing PostgreSQL database and user with migration privileges.
 2. Copy `.env.example` to `.env` and set `DATABASE_URL` to that database. Never commit credentials. No external database is provisioned by this project.

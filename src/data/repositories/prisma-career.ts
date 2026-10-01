@@ -19,7 +19,7 @@ import {
   type CareerCreationOptions,
   type CareerPlayerCar,
 } from "../../game/domain/career";
-import { currentCarPerformance, legacyCarPerformance, storedPartDesign } from "../../game/domain/car-development";
+import { currentCarPerformance, legacyCarPerformance, storedPartDesign, sourceCarStats, deriveOverallCarPerformance } from "../../game/domain/car-development";
 import { assertContentId } from "../../game/domain/content-repository";
 import { PrismaGameContentRepository } from "./prisma-game-content";
 import { reconcileAiCarDevelopment } from "./prisma-car-ai";
@@ -203,6 +203,9 @@ export class PrismaCareerRepository implements CareerRepository {
               year: true,
               teams: {
                 select: {
+                  entryOrder: true, carPerformance: true,
+                  lowSpeedPerformance: true, mediumSpeedPerformance: true, highSpeedPerformance: true,
+                  dragReductionPerformance: true, drsEfficiencyPerformance: true,
                   team: {
                     select: {
                       id: true,
@@ -241,6 +244,8 @@ export class PrismaCareerRepository implements CareerRepository {
             ...season,
             teams: season.teams.map((entry) => ({
               ...entry.team,
+              stats: sourceCarStats(entry),
+              overallPerformance: deriveOverallCarPerformance(sourceCarStats(entry)),
               drivers: entry.drivers.map(({ carNumber, driver }) => ({
                 name: `${driver.firstName} ${driver.lastName}`,
                 abbreviation: driver.abbreviation,

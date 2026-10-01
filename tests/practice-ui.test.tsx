@@ -49,7 +49,7 @@ describe('practice UI', () => {
         expect(text).toContain('Open session');
         expect(text).toContain('Simulate session (auto-manage)');
         expect(text).toContain('Simulate all remaining Practice');
-        expect(text).toContain('Practice, Qualifying and Sprint sessions are fully simulated');
+        expect(text).toContain('Grand Prix and Sprint races award championship points');
         expect(text).not.toContain('temporary development completion');
         // Qualifying has no development-placeholder controls (it is LOCKED here; see the Qualifying weekend test).
         expect(text).not.toContain('Complete Session — Development');

@@ -17,6 +17,7 @@ import {
 } from "./catalog";
 import { createFormatters } from "./format";
 import { createLocaleStore, LOCALE_STORAGE_KEY } from "./locale-store";
+import { createBrowserLocaleStorage } from "./browser-preference";
 interface I18nContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
@@ -28,8 +29,13 @@ interface I18nContextValue {
   format: ReturnType<typeof createFormatters>;
 }
 const I18nContext = createContext<I18nContextValue | null>(null);
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [store] = useState(() => createLocaleStore(() => window.localStorage));
+export function I18nProvider({ children, initialLocale = "en" }: { children: ReactNode; initialLocale?: Locale }) {
+  const [store] = useState(() => createLocaleStore(() => createBrowserLocaleStorage({
+    readCookie: () => document.cookie,
+    writeCookie: value => { document.cookie = value; },
+    legacyStorage: () => window.localStorage,
+    secure: window.location.protocol === "https:",
+  }), initialLocale));
   const { locale, persistenceAvailable } = useSyncExternalStore(
     store.subscribe,
     store.getSnapshot,

@@ -187,6 +187,9 @@ export interface CareerCreationOptions {
         readonly id: EntityId;
         readonly name: string;
         readonly shortName: string;
+        /** Public source car ratings for comparison before creating a Career. */
+        readonly overallPerformance: number;
+        readonly stats: CarPerformanceStats;
         /** Display identity for the team picker (entity data, never logic). */
         readonly color?: string;
         readonly drivers?: readonly {

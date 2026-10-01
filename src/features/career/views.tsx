@@ -4,6 +4,7 @@ import {
   progressSummary,
   type CareerProgress,
 } from "../../game/domain/progression";
+import { TeamSelection } from "./team-selection";
 import { ProgressPanel } from "./progression-views";
 import { useActionState, useState } from "react";
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
@@ -126,7 +127,7 @@ export function CareerListView({
   );
 }
 export function NewCareerView({ options }: { options: CareerCreationOptions }) {
-  const { t, format } = useI18n();
+  const { t } = useI18n();
   const [databaseId, setDatabaseId] = useState("");
   const [seasonId, setSeasonId] = useState("");
   const [teamId, setTeamId] = useState("");
@@ -194,47 +195,8 @@ export function NewCareerView({ options }: { options: CareerCreationOptions }) {
                   </option>
                 ))}
               </select>
-              {/* Native radio cards: keyboard/screen-reader friendly; each team is identified by name, a colour
-                  accent and its two race drivers (entity data, never logic), so colour is never the only cue. */}
-              <fieldset className="team-picker" disabled={!season || pending}>
-                <legend>{t("career.team")}</legend>
-                {season && season.teams.length > 0 && (
-                  <p className="team-picker-hint">
-                    {t("career.teamPickerHint", {
-                      count: format.number(season.teams.length - 1),
-                    })}
-                  </p>
-                )}
-                <div className="team-grid">
-                  {season?.teams.map((row) => (
-                    <label
-                      key={row.id}
-                      className={`team-card${teamId === row.id ? " selected" : ""}`}
-                      style={{ ["--team" as string]: row.color ?? "#a0a6af" }}
-                    >
-                      <input
-                        type="radio"
-                        name="playerTeamId"
-                        value={row.id}
-                        required
-                        checked={teamId === row.id}
-                        onChange={() => setTeamId(row.id)}
-                      />
-                      <span className="team-card-name">{row.name}</span>
-                      {row.drivers && row.drivers.length > 0 && (
-                        <span className="team-card-drivers">
-                          {row.drivers.map((driver) => (
-                            <span key={driver.abbreviation}>
-                              <strong>{driver.abbreviation}</strong>{" "}
-                              {driver.name}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+              <TeamSelection teams={season?.teams ?? []} selectedId={teamId} onSelect={setTeamId}
+                disabled={!season || pending} />
               {season?.teams.length === 0 && (
                 <p role="status">{t("career.noTeams")}</p>
               )}
@@ -306,14 +268,6 @@ export function CareerOverviewView({
             <h3>{playerTeam.name}</h3>
             <p>{playerTeam.shortName}</p>
             <Link className="text-link" href={`/career/${career.id}/car`}>{t("car.heading")} →</Link>
-            <dl className="career-facts">
-              <div>
-                <dt>{t("dashboard.teamId")}</dt>
-                <dd>
-                  <code>{playerTeam.id}</code>
-                </dd>
-              </div>
-            </dl>
           </div>
         </Panel>
         <Panel title={t("career.currentSeason")}>

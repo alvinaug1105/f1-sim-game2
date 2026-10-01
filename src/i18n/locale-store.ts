@@ -1,4 +1,5 @@
 import { resolveLocale, type Locale } from "./catalog";
+export const LOCALE_COOKIE_NAME = "formula-operations-locale";
 export const LOCALE_STORAGE_KEY = "formula-operations.locale";
 export interface PreferenceStorage {
   getItem(key: string): string | null;
@@ -13,8 +14,9 @@ export const DEFAULT_SNAPSHOT: LocaleSnapshot = {
   persistenceAvailable: true,
 };
 /** This store can only change a UI preference; it never accepts or imports game state. */
-export function createLocaleStore(getStorage: () => PreferenceStorage) {
-  let snapshot = DEFAULT_SNAPSHOT;
+export function createLocaleStore(getStorage: () => PreferenceStorage, initialLocale: Locale = "en") {
+  const serverSnapshot: LocaleSnapshot = { locale: initialLocale, persistenceAvailable: true };
+  let snapshot = serverSnapshot;
   let initialized = false;
   const listeners = new Set<() => void>();
   function update(locale: Locale, persistenceAvailable: boolean) {
@@ -35,7 +37,7 @@ export function createLocaleStore(getStorage: () => PreferenceStorage) {
   }
   return {
     getSnapshot: () => snapshot,
-    getServerSnapshot: () => DEFAULT_SNAPSHOT,
+    getServerSnapshot: () => serverSnapshot,
     subscribe(listener: () => void) {
       listeners.add(listener);
       if (!initialized) {

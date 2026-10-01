@@ -80,6 +80,23 @@ async function counts() {
   ]);
 }
 describe("Career world PostgreSQL integration", () => {
+  it("projects every team's source ratings and race drivers without AI decision policy", async () => {
+    const options = await repository.getCreationOptions();
+    const teams = options.databases.find(database => database.id === source.database.id)!.seasons[0].teams;
+    const expected = [
+      [93,94,94,93,92,92], [92,93,94,92,91,90], [94,95,95,96,92,92], [92,91,92,94,92,91],
+      [87,88,87,89,86,85], [84,85,85,83,84,83], [86,85,87,86,87,85], [85,84,85,86,85,85],
+      [88,86,87,90,90,87], [86,88,87,86,84,85], [82,81,82,81,83,83],
+    ];
+    expect(teams).toHaveLength(11);
+    teams.forEach((team, index) => {
+      expect([team.overallPerformance, team.stats.lowSpeed, team.stats.mediumSpeed, team.stats.highSpeed,
+        team.stats.dragReduction, team.stats.drsEfficiency]).toEqual(expected[index]);
+      expect(team.drivers).toHaveLength(2);
+      expect(Object.keys(team).sort()).toEqual(["id", "name", "shortName", "color", "stats", "overallPerformance", "drivers"].sort());
+    });
+    expect(JSON.stringify(options)).not.toMatch(/developmentStyle|FIX_WEAKNESS|BUILD_STRENGTH|BALANCED/);
+  });
   it("starts a snapshotted player project, settles on normal Career progression, preserves v1 session input, then allocates v3", async () => {
     const design = new PrismaCarDesignRepository(client);
     const progression = new PrismaProgressionRepository(client);

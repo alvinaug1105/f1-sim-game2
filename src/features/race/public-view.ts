@@ -34,6 +34,8 @@ export interface PublicPitStint {
   readonly endingTyre: PublicTyre | null;
 }
 export interface PublicPit {
+  /** v8 player car only: the already-issued pit request is committed and cannot be cancelled. */
+  readonly committed?: boolean;
   /** The player's own pending pit request; always null for rival cars (an AI's pending stop is a hidden decision). */
   readonly pendingCompound: TyreCompound | null;
   /** Player cars only (optimistic-concurrency token for pit commands); null for rivals. */
@@ -43,6 +45,8 @@ export interface PublicPit {
   readonly stops: readonly RacePitStop[];
 }
 export interface PublicTrack {
+  /** v8: current observable circuit position / route and completed lap deficit only. No integration plans. */
+  readonly local?: { readonly progressMicrolaps: number; readonly segmentId: string; readonly route: "TRACK" | "ENTRY" | "LANE" | "SERVICE" | "EXIT"; readonly lapsDown: number };
   readonly progressMicrolaps: number;
   readonly drsEligible: boolean;
   readonly overtakesCompleted: number;

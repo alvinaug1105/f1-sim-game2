@@ -1048,3 +1048,14 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .team-card-name, .team-card-drivers { overflow-wrap: anywhere; }
 .topbar > strong { min-width: 0; }
 @media (max-width: 540px) { .topbar > strong { font-size: 12px; } }
+
+/* Race v8A: map gets the former two right-hand columns; controls continue below. Geometry remains uniformly fit. */
+@media (min-width:1221px) {
+  .race-track-view .ops-grid { grid-template-columns:280px minmax(0,1fr); }
+  .race-track-view .ops-grid>.driver-focus { grid-column:1/-1; position:static; max-height:none; }
+  .race-track-view .driver-focus .mode-buttons button { flex:0 1 auto; min-width:85px; }
+  .race-track-view .driver-focus .tyre-focus { max-width:460px; }
+}
+.race-track-view .circuit-map { min-height:0; max-height:680px; }
+.race-track-view .map-car.lapped .driver-badge { stroke-dasharray:3 2; }
+@media (max-width:600px) { .race-track-view .circuit-map { max-height:460px; } }

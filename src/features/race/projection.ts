@@ -1,3 +1,4 @@
+import { localProgress, segmentAt, LAP_UNITS } from '../../simulation/race/progression/model';
 /**
  * Server-side projection: authoritative Race / Sprint state → the browser view (public-view.ts).
  *
@@ -62,6 +63,7 @@ function entrant(s: RaceSimulationState, e: RaceEntrantState, own: boolean): Rac
     ...(e.pit
       ? {
           pit: {
+            ...(own && s.simulationVersion === 8 ? { committed: Boolean(s.progression!.cars[e.entrantId].compound) } : {}),
             pendingCompound: own ? e.pit.pendingCompound : null,
             commandRevision: own ? e.pit.commandRevision : null,
             stints: e.pit.stints.map((x) => ({ number: x.number, startLap: x.startLap, endLap: x.endLap, startingTyre: publicTyre(x.startingTyre, own), endingTyre: x.endingTyre ? publicTyre(x.endingTyre, own) : null })),
@@ -69,7 +71,7 @@ function entrant(s: RaceSimulationState, e: RaceEntrantState, own: boolean): Rac
           },
         }
       : {}),
-    ...(e.track ? { track: { progressMicrolaps: e.track.progressMicrolaps, drsEligible: e.track.drsEligible, overtakesCompleted: e.track.overtakesCompleted } } : {}),
+    ...(e.track ? { track: { progressMicrolaps: e.track.progressMicrolaps, drsEligible: e.track.drsEligible, overtakesCompleted: e.track.overtakesCompleted, ...(s.simulationVersion === 8 ? { local: { progressMicrolaps: localProgress(e.track.progressMicrolaps), segmentId: segmentAt(s.input.progression!,e.track.progressMicrolaps,s.progression!.cars[e.entrantId].route).id, route: s.progression!.cars[e.entrantId].route, lapsDown: Math.max(0,Math.floor(((s.entrants.find(x=>x.incident?.status!=='RETIRED')?.track?.progressMicrolaps??0)-e.track.progressMicrolaps)/LAP_UNITS)) } } : {}) } } : {}),
     ...(own && e.commands ? { commands: { paceMode: e.commands.paceMode, fuelMode: e.commands.fuelMode, ersMode: e.commands.ersMode, ersCharge: e.commands.ersCharge, commandRevision: e.commands.commandRevision } } : {}),
     ...(own ? { insight: insight(s, e) } : {}),
   };

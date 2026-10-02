@@ -270,7 +270,7 @@ describe("Phase 15 migration — forward from a pre-Phase-15 database with an ac
             // 3. Row hashes before the Phase-15 migration.
             const hash = async () => {
                 const out: Record<string, string> = {};
-                for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'weekendFormat' - 'climateProfile' - 'scoringRulesVersion' - 'lowSpeedPerformance' - 'mediumSpeedPerformance' - 'highSpeedPerformance' - 'dragReductionPerformance' - 'drsEfficiencyPerformance' - 'carSlot' - 'developmentStyle' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
+                for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'weekendFormat' - 'climateProfile' - 'scoringRulesVersion' - 'lowSpeedPerformance' - 'mediumSpeedPerformance' - 'highSpeedPerformance' - 'dragReductionPerformance' - 'drsEfficiencyPerformance' - 'carSlot' - 'developmentStyle' - 'progression' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
                 return out;
             };
             const before = await hash();
@@ -278,6 +278,7 @@ describe("Phase 15 migration — forward from a pre-Phase-15 database with an ac
             const oldUrl = new URL(value!); oldUrl.searchParams.set("schema", old);
             deploy(oldUrl);
             expect(await hash()).toEqual(before);
+            expect((await conn.query(`SELECT count(*)::int AS n FROM "${old}"."CareerRaceSimulation" WHERE "progression" IS NOT NULL`)).rows[0].n).toBe(0);
             expect((await conn.query(`SELECT count(*)::int AS n FROM "${old}"."CareerCalendarEvent" WHERE "weekendFormat" IS NOT NULL`)).rows[0].n).toBe(0);
             expect((await conn.query(`SELECT count(*)::int AS n FROM "${old}"."CalendarEvent" WHERE "weekendFormat" IS NOT NULL`)).rows[0].n).toBe(0);
             // 5. The old Career continues exactly: same Race checkpoint, same finish, and its next weekend is STANDARD.

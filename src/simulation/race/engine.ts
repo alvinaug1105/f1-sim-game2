@@ -1,3 +1,5 @@
+import { advanceProgressionLap } from './progression/engine';
+import { validateProgressionConfiguration, initialCarProgression } from './progression/model';
 import { advanceIncidentLap } from "./incidents/engine";
 import { validateIncidentConfiguration, validateReliability, initialIncidentRace, initialEntrantIncident } from "./incidents/model";
 import { advanceWeather, validateWeatherConfiguration, advanceWeatherTyre, waterPenaltyMs } from "./weather/model";
@@ -37,9 +39,9 @@ import type {
   DriverPerformanceProfile,
   CarPerformanceProfile,
 } from "./types";
-export const SIMULATION_VERSION = 7;
+export const SIMULATION_VERSION = 8;
 export function isSupportedSimulationVersion(version: number) {
-  return version === 7 || version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6;
+  return version === 8 || version === 7 || version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6;
 }
 /** Versioned Phase 5 free-air tuning. Penalties are relative to a 100-rated baseline. */
 export const DEFAULT_RACE_PARAMETERS: RaceParameters = Object.freeze({
@@ -77,6 +79,7 @@ function validateProfiles(
   bounded(parameters.gridOffsetMs, 0, 10000, true);
 }
 export function validateRaceInput(input: RaceSimulationInput) {
+  if (input.progression) { validateProgressionConfiguration(input.progression); if (!input.incidents) throw new RangeError('v8 requires incident foundations'); }
   if (input.incidents) { validateIncidentConfiguration(input.incidents); if (!input.weather) throw new RangeError("Incidents require weather"); for (const e of input.entrants) { if (!e.reliability) throw new RangeError("Missing reliability"); validateReliability(e.reliability); } }
   if (input.weather) {
     validateWeatherConfiguration(input.weather,input.totalLaps);
@@ -243,7 +246,8 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   return {
     ...(snapshot.weather ? { weather: structuredClone(snapshot.weather.initial) } : {}),
     ...(input.incidents ? { incidents: initialIncidentRace(input.seed) } : {}),
-    simulationVersion: input.incidents ? 7 : input.weather ? 6 : input.commands ? 5 : input.pits
+    ...(input.progression ? { progression: { elapsedTimeMs: 0, cars: Object.fromEntries(snapshot.entrants.map(e => [e.entrantId,initialCarProgression(e.gridPosition,input.parameters.gridOffsetMs)])) } } : {}),
+    simulationVersion: input.progression ? 8 : input.incidents ? 7 : input.weather ? 6 : input.commands ? 5 : input.pits
       ? 4
       : input.interaction
         ? 3
@@ -254,7 +258,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
     rngState: input.seed,
     lap: 0,
     status: "RUNNING",
-    entrants: (input.interaction
+    entrants: (input.progression ? (entries: RaceEntrantState[]) => entries.map(e => ({ ...e, elapsedTimeMs: 0 })) : input.interaction
       ? (entries: RaceEntrantState[]) =>
           orderedClassification(
             entries.sort((a, b) => a.position - b.position),
@@ -291,6 +295,8 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
 export function advanceRaceLap(
   state: RaceSimulationState,
 ): RaceSimulationState {
+  if (state.simulationVersion === 8) return advanceProgressionLap(state);
+  if (state.progression || state.input.progression) throw new RangeError("Legacy Race cannot acquire v8 progression");
   if (state.simulationVersion === 7) return advanceIncidentLap(state);
   if (state.simulationVersion >= 3 !== Boolean(state.input.interaction))
     throw new RangeError("Interaction version mismatch");

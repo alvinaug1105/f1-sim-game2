@@ -609,6 +609,7 @@ model CareerRaceSimulation {
   careerSessionId          String               @unique @db.Uuid
   sessionType              CareerSessionType    @default(RACE)
   simulationVersion        Int
+  progression              Json?
   seed                     BigInt
   rngState                 BigInt
   currentLap               Int

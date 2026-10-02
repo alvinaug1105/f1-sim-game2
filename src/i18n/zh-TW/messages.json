@@ -286,7 +286,7 @@
   "incident.RUNNING": "比賽中",
   "incident.FINISHED": "已完賽",
   "incident.RETIRED": "已退賽",
-  "incident.notice": "目前不模擬紅旗與解除套圈。",
+  "incident.notice": "目前不模擬紅旗與安全車解除套圈。",
   "viewer.title": "賽事指揮",
   "viewer.lap": "圈數",
   "viewer.map": "賽道地圖",
@@ -305,7 +305,7 @@
   "viewer.positionNote": "名次變化相對於起跑位置，包含進站造成的變化。",
   "viewer.track": "賽道",
   "viewer.schematic": "原創示意圖",
-  "viewer.interpolation": "地圖位置依已儲存圈數平滑移動；計時與排名以賽事資料為準。",
+  "viewer.interpolation": "地圖位置依已儲存賽道位置平滑移動；計時與排名以賽事資料為準。",
   "viewer.playerCars": "己方兩部賽車",
   "viewer.recentEvents": "近期事件",
   "viewer.allEvents": "較早事件",
@@ -371,7 +371,7 @@
   "viewer.compare": "比較",
   "viewer.comparison": "己方車手比較",
   "viewer.fuelDelta": "完賽剩餘油量",
-  "viewer.labelNote": "地圖僅標示己方賽車、纏鬥對手與領先者；點選任一賽車即可查看。",
+  "viewer.labelNote": "車手標記顯示全體賽車；點選賽車即可查看詳情。",
   "viewer.cat.CONTROL": "賽事控制",
   "viewer.cat.INCIDENT": "事故",
   "viewer.cat.RETIREMENT": "退賽",
@@ -937,5 +937,8 @@
   "car.physical.error.NO_UNIT": "該賽車及設計沒有可用的實體零件。",
   "car.physical.error.SESSION_IN_PROGRESS": "請先完成目前的賽事階段，再更改賽車裝配。",
   "car.physical.error.STALE_PREVIEW": "裝配情況已變更，請查看目前預覽後重試。",
-  "car.physical.error.PERSISTENCE_FAILED": "無法儲存變更，請重試。"
+  "car.physical.error.PERSISTENCE_FAILED": "無法儲存變更，請重試。",
+  "viewer.lapsDown": "落後 {count} 圈",
+  "viewer.commandTiming": "指令將於此車手的下一圈生效。",
+  "pit.committed": "進站指令已確認"
 }

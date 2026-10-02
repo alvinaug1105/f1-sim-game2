@@ -44,7 +44,7 @@ export interface RaceLabel {
   readonly driverName: string;
   readonly teamName: string;
 }
-/** Race-type sessions sharing the Race v7 engine and persistence: the Grand Prix and the Sprint. */
+/** Race-type sessions sharing the versioned Race engine and persistence: the Grand Prix and the Sprint. */
 export type RaceKind = "RACE" | "SPRINT";
 export interface CareerRaceData {
   readonly progress: CareerProgress;

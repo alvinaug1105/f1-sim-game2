@@ -1,3 +1,4 @@
+import { validateProgressionState, type ProgressionConfiguration, type ProgressionState } from '../../simulation/race/progression/model';
 import { validateIncidentConfiguration, validateReliability, validateIncidentState, type IncidentConfiguration, type ReliabilityProfile, type EntrantIncidentState, type IncidentRaceState } from "../../simulation/race/incidents/model";
 import { validateWeatherConfiguration, validateWeatherState, type WeatherConfiguration, type WeatherState } from "../../simulation/race/weather/model";
 import { validateCommandConfiguration, validateCommandState, type CommandConfiguration, type CommandState } from "../../simulation/race/commands/model";
@@ -111,7 +112,7 @@ async function read(
   if (
     row?.simulationVersion === 2 ||
     row?.simulationVersion === 3 ||
-    (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)))
+    (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || (row?.simulationVersion === 7 || row?.simulationVersion === 8))))
   ) {
     tyres = {
       tyreWearMultiplierPermille: row.tyreWearMultiplierPermille!,
@@ -130,7 +131,7 @@ async function read(
     validateTyreConfiguration(tyres);
   }
   let interaction: InteractionConfiguration | undefined;
-  if (row?.simulationVersion === 3 || (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)))) {
+  if (row?.simulationVersion === 3 || (row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || (row?.simulationVersion === 7 || row?.simulationVersion === 8))))) {
     if (!row.interactionProfile) throw new RaceError("INVALID_INPUT");
     interaction = Object.fromEntries(
       Object.entries(row.interactionProfile).filter(
@@ -140,7 +141,7 @@ async function read(
     validateInteraction(interaction);
   }
   let pits: PitConfiguration | undefined;
-  if ((row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)))) {
+  if ((row?.simulationVersion === 4 || (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || (row?.simulationVersion === 7 || row?.simulationVersion === 8))))) {
     if (!row.pitProfile) throw new RaceError("INVALID_INPUT");
     // A NULL strategy (Race started before the Race Dynamics pass) is omitted: the legacy AI policy applies.
     pits = Object.fromEntries(
@@ -150,12 +151,12 @@ async function read(
     ) as unknown as PitConfiguration;
     validatePitConfiguration(pits);
   }
-  const commands = (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)) ? row.commandProfile?.profile as unknown as CommandConfiguration : undefined;
+  const commands = (row?.simulationVersion === 5 || (row?.simulationVersion === 6 || (row?.simulationVersion === 7 || row?.simulationVersion === 8))) ? row.commandProfile?.profile as unknown as CommandConfiguration : undefined;
   if (commands) validateCommandConfiguration(commands);
-  if ((row?.simulationVersion === 5 || (row?.simulationVersion === 6 || row?.simulationVersion === 7)) && !commands) throw new RaceError("INVALID_INPUT");
-  const weatherConfig = (row?.simulationVersion === 6 || row?.simulationVersion === 7) ? row.weatherProfile?.profile as unknown as WeatherConfiguration : undefined;
+  if ((row?.simulationVersion === 5 || (row?.simulationVersion === 6 || (row?.simulationVersion === 7 || row?.simulationVersion === 8))) && !commands) throw new RaceError("INVALID_INPUT");
+  const weatherConfig = (row?.simulationVersion === 6 || (row?.simulationVersion === 7 || row?.simulationVersion === 8)) ? row.weatherProfile?.profile as unknown as WeatherConfiguration : undefined;
   let weather: WeatherState | undefined;
-  if ((row?.simulationVersion === 6 || row?.simulationVersion === 7)) {
+  if ((row?.simulationVersion === 6 || (row?.simulationVersion === 7 || row?.simulationVersion === 8))) {
     if (!weatherConfig || !row.weatherProfile) throw new RaceError("INVALID_INPUT");
     validateWeatherConfiguration(weatherConfig,row.totalLaps);
     const w=row.weatherProfile;
@@ -163,14 +164,17 @@ async function read(
     validateWeatherState(weather);
   }
   const incidentRow = row?.incidentProfile;
-  const incidents = row?.simulationVersion === 7 ? incidentRow?.profile as unknown as IncidentConfiguration : undefined;
-  if (row?.simulationVersion === 7 && !incidents) throw new RaceError("INVALID_INPUT");
+  const incidents = (row?.simulationVersion === 7 || row?.simulationVersion === 8) ? incidentRow?.profile as unknown as IncidentConfiguration : undefined;
+  if ((row?.simulationVersion === 7 || row?.simulationVersion === 8) && !incidents) throw new RaceError("INVALID_INPUT");
   const reliability = incidentRow?.reliability as unknown as Record<string,ReliabilityProfile> | undefined;
   const incidentEntrants = incidentRow?.entrants as unknown as Record<string,EntrantIncidentState> | undefined;
   if (incidents) { if(Object.keys(reliability!).length!==row!.entrants.length||Object.keys(incidentEntrants!).length!==row!.entrants.length)throw new RaceError("INVALID_INPUT"); validateIncidentConfiguration(incidents); for (const e of row!.entrants) validateReliability(reliability![e.id]); }
+  const progression = row?.simulationVersion === 8 ? row.progression as unknown as { configuration: ProgressionConfiguration; state: ProgressionState } : undefined;
+  if (row && ((row.simulationVersion === 8) !== (row.progression !== null))) throw new RaceError('INVALID_INPUT');
   const state: RaceSimulationState | null = row
     ? {
         simulationVersion: row.simulationVersion,
+        ...(progression ? { progression: progression.state } : {}),
         ...(incidentRow ? { incidents: { rngState:Number(incidentRow.rngState),mode:incidentRow.mode,startedLap:incidentRow.startedLap,remainingLaps:incidentRow.remainingLaps,drsDelay:incidentRow.drsDelay,events:incidentRow.events } as unknown as IncidentRaceState } : {}),
         ...(weather ? { weather } : {}),
         rngState: Number(row.rngState),
@@ -178,6 +182,7 @@ async function read(
         status: row.status,
         input: {
           ...(incidents ? { incidents } : {}),
+          ...(progression ? { progression: progression.configuration } : {}),
           ...(weatherConfig ? { weather: weatherConfig } : {}),
           ...(commands ? { commands } : {}),
           ...(tyres ? { tyres } : {}),
@@ -260,7 +265,8 @@ async function read(
           })),
       }
     : null;
-  if (state?.simulationVersion === 7) validateIncidentState(state);
+  if (state && [7,8].includes(state.simulationVersion)) validateIncidentState(state);
+  if (state?.simulationVersion === 8) validateProgressionState(state);
   return {
     progress,
     eventId,
@@ -327,7 +333,8 @@ export class PrismaRaceRepository implements CareerRaceRepository {
           if (!before) throw new RaceError("NOT_FOUND");
           const after = change(before),
             s = after.state;
-          if (s.simulationVersion === 7) { validateIncidentConfiguration(s.input.incidents!); for(const source of s.input.entrants) validateReliability(source.reliability!); validateIncidentState(s); }
+          if ([7,8].includes(s.simulationVersion)) { validateIncidentConfiguration(s.input.incidents!); for(const source of s.input.entrants) validateReliability(source.reliability!); validateIncidentState(s); }
+          if (s.simulationVersion === 8) validateProgressionState(s);
           if (!before.state) {
             const row = await tx.careerRaceSimulation.create({
               data: {
@@ -335,6 +342,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                 careerSessionId: before.sessionId,
                 sessionType: this.kind,
                 simulationVersion: s.simulationVersion,
+                ...(s.progression ? { progression: JSON.parse(JSON.stringify({ configuration: s.input.progression, state: s.progression })) } : {}),
 
                 seed: BigInt(s.input.seed),
                 rngState: BigInt(s.rngState),
@@ -424,6 +432,7 @@ export class PrismaRaceRepository implements CareerRaceRepository {
                 rngState: BigInt(s.rngState),
                 currentLap: s.lap,
                 status: s.status,
+                ...(s.progression ? { progression: JSON.parse(JSON.stringify({ configuration: s.input.progression, state: s.progression })) } : {}),
               },
             });
             if (s.weather) { const row = await tx.careerRaceSimulation.findUniqueOrThrow({where:{careerSessionId:before.sessionId}}); await tx.careerRaceWeather.update({where:{careerRaceSimulationId:row.id},data:{...s.weather}}); }

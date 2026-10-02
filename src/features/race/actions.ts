@@ -12,11 +12,11 @@ import {
 } from "../../game/domain/race-repository";
 import { getRaceRepository } from "../career/server";
 import {
-  startIncidentCareerRace,
+  startProgressionCareerRace,
   setDriverPaceMode, setDriverFuelMode, setDriverErsMode,
   advanceCareerRace,
   changeCareerPitRequest,
-  simulateCareerRace,
+  simulateProgressionCareerRace,
   simulateCareerRaceRemainder,
 } from "./service";
 /** Untrusted session kind (a hidden form field): the Grand Prix unless it is exactly the Sprint. */
@@ -37,9 +37,9 @@ export async function raceAction(
   try {
     const kind = parseRaceKind(text("kind")), repository = getRaceRepository(kind);
     if (intent === "simulate" || intent === "remainder") {
-      // Sprint only: Simulate Sprint / Simulate Remainder auto-manage both player cars on the same v7 engine.
+      // Sprint only: Simulate Sprint / Simulate Remainder auto-manage both player cars on the version-dispatched engine.
       if (kind !== "SPRINT") throw new RaceError("INVALID_ACTION");
-      if (intent === "simulate") await simulateCareerRace(repository, careerId, eventId);
+      if (intent === "simulate") await simulateProgressionCareerRace(repository, careerId, eventId);
       else await simulateCareerRaceRemainder(repository, careerId, eventId);
     } else if (intent === "start") {
       const choices: Record<string, TyreCompound> = {};
@@ -48,7 +48,7 @@ export async function raceAction(
           if (!isTyreCompound(value)) throw new RaceError("INVALID_INPUT");
           choices[key.slice(5)] = value;
         }
-      await startIncidentCareerRace(repository, careerId, eventId, choices);
+      await startProgressionCareerRace(repository, careerId, eventId, choices);
     } else if (["paceMode", "fuelMode", "ersMode"].includes(intent)) {
       const args = [repository, careerId, eventId, text("entrantId"), Number(text("lap")), Number(text("revision"))] as const;
       const mode = text("mode");

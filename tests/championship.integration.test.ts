@@ -395,7 +395,7 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
       expect((await conn.query(`SELECT count(*)::int AS n FROM information_schema.columns WHERE table_schema = $1 AND column_name = 'scoringRulesVersion'`, [old])).rows[0].n).toBe(0);
       const hash = async () => {
         const out: Record<string, string> = {};
-        for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'scoringRulesVersion' - 'climateProfile' - 'lowSpeedPerformance' - 'mediumSpeedPerformance' - 'highSpeedPerformance' - 'dragReductionPerformance' - 'drsEfficiencyPerformance' - 'carSlot' - 'developmentStyle' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
+        for (const t of ordered) out[t] = (await conn.query(`SELECT count(*)::text || ':' || coalesce(md5(string_agg(j::text, ',' ORDER BY j::text)), '') AS h FROM (SELECT to_jsonb(t) - 'scoringRulesVersion' - 'climateProfile' - 'lowSpeedPerformance' - 'mediumSpeedPerformance' - 'highSpeedPerformance' - 'dragReductionPerformance' - 'drsEfficiencyPerformance' - 'carSlot' - 'developmentStyle' - 'progression' AS j FROM "${old}"."${t}" t) x`)).rows[0].h;
         return out;
       };
       const before = await hash();
@@ -403,6 +403,7 @@ describe("Phase 16 migration — forward from a pre-Phase-16 database", () => {
       oldUrl.searchParams.set("schema", old);
       deploy(oldUrl);
       expect(await hash()).toEqual(before);
+      expect((await conn.query(`SELECT count(*)::int AS n FROM "${old}"."CareerRaceSimulation" WHERE "progression" IS NOT NULL`)).rows[0].n).toBe(0);
       for (const table of ["Season", "CareerSeason"]) expect((await conn.query(`SELECT count(*)::int AS n FROM "${old}"."${table}" WHERE "scoringRulesVersion" IS NOT NULL`)).rows[0].n).toBe(0);
       const oldClient = createPrismaClient(oldUrl.toString());
       try {

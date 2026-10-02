@@ -10,7 +10,7 @@ import { useI18n } from '../../../i18n/provider';
 import { pathLength, LABEL_TIER } from './labels';
 import { prepareVisualSpeed } from './speed-profile';
 import { MarkerPacks, BADGE, RACE_BUBBLE, badgeText, raceBubbleScale } from './marker-packs';
-import { anchorRaceMarker, raceDrawOrder, raceMapPadding, raceTrackStyle, svgNumber, svgPath } from './race-map-style';
+import { anchorRaceMarker, effectiveSvgScale, nextScreenScale, raceDrawOrder, raceMapPadding, raceTrackStyle, svgNumber, svgPath } from './race-map-style';
 import { gridDisplay, gridSlot, type GridSlot } from './grid-markers';
 /**
  * What the map needs from a row (Race timing rows satisfy it structurally; Practice builds its own). `hidden` cars are
@@ -52,11 +52,14 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     const { t, format } = useI18n(), svg = useRef<SVGSVGElement>(null);
     const systemReduced = useSyncExternalStore(subscribeMotion, getMotion, () => false);
     const [screenScale,setScreenScale]=useState(1);
-    // Race bubbles keep a stable on-screen diameter (no tier-dependent growth; rings carry player/selected identity).
+    // Race bubbles keep a stable on-screen diameter (no tier-dependent growth; rings carry player/selected identity). The
+    // size class follows the drawn map width (effective scale × 1000 viewBox units).
     const packScale=raceViewer?raceBubbleScale(screenScale,1000):1;
     // Padding fits a selected bubble at the canvas edge, so no marker is ever clamped away from its route.
     const MAP = useMemo(() => raceViewer ? raceMapCanvas(layout, compact, pitRoute?.points, raceMapPadding(packScale)) : { width: 900, height: 650, padding: 40 },[layout, raceViewer, compact, pitRoute, packScale]);
-    useEffect(()=>{if(!raceViewer)return;const root=svg.current!;const update=()=>setScreenScale(root.getBoundingClientRect().width/MAP.width);update();const observer=new ResizeObserver(update);observer.observe(root);return()=>observer.disconnect();},[raceViewer,MAP.width]);
+    // Bubble size follows the ACTUAL rendered scale (uniform meet fit: the smaller of width and height ratio), so a portrait
+    // viewBox in a height-capped box keeps the intended on-screen size. Client-only state; the server renders scale 1.
+    useEffect(()=>{if(!raceViewer)return;const root=svg.current!;const update=()=>{const box=root.getBoundingClientRect();setScreenScale(previous=>nextScreenScale(previous,effectiveSvgScale(box,MAP)));};update();const observer=new ResizeObserver(update);observer.observe(root);return()=>observer.disconnect();},[raceViewer,MAP]);
     const style = raceTrackStyle(2 * RACE_BUBBLE.r * packScale);
     const path = useMemo(() => prepareCircuitPath(layout), [layout]);
     const project = useMemo(() => circuitProjection(pitRoute?[...layout.points,...pitRoute.points]:layout.points, MAP.width, MAP.height, MAP.padding), [layout, MAP,pitRoute]);

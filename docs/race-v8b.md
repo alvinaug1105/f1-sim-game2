@@ -165,3 +165,28 @@ Display-only. No simulation, timing, zone, pit-anchor or balance change. The v8A
 - **`tests/race-v8b-visual.test.tsx` / `tests/race-v8-map.test.tsx`:** circular markers, rings, lapped and pit cues; the
   pit-car transform uses canonical numbers.
 - **Aspect ratio and rigid rotation:** `tests/circuit-geometry.test.ts`.
+
+## Responsive marker repair (V8A-MED-001)
+- **Root cause.** Bubble size was derived from rendered width ÷ viewBox width. The map uses the default
+  `preserveAspectRatio` (xMidYMid meet), so the browser applies one uniform scale: the smaller of the width and height
+  ratios.
+  - Just below 600 px, the phone layout gives a portrait viewBox (Monza 1000 × 1217) inside a box capped at 460 px high
+    (565 × 460).
+  - That box is height-limited: the real scale is 0.378, while the width ratio is 0.565.
+  - Bubbles therefore rendered at 23 × 0.378 / 0.565 ≈ 15.4 px, with 6 px labels, against 22 px / 9 px at 601 px.
+  - `getScreenCTM().a` confirmed 0.378 in Chromium.
+- **Fix.**
+  - The map measures `effectiveSvgScale(box, viewBox) = min(width ratio, height ratio)`. The size class (26 / 23 /
+    22 px) follows the drawn map width, i.e. effective scale × 1000.
+  - `nextScreenScale` ignores re-measurements under 0.5 %. A bubble-size change moves the canvas padding, and so the
+    viewBox height, by a few units; this guard keeps that feedback from ever cycling.
+  - Canvas padding now covers the selected ring's outer stroke edge: ⌈(r + 7) × scale⌉.
+  - Screen scale stays client-only. The server still renders at scale 1 with canonical numbers, so hydration is
+    unaffected.
+- **Builder measurements (development inspection, not QA):** Monza at 599 px renders 21.99 px bubbles with 9 px labels
+  (before: 15.42 / 6). Widths of 390, 601, 768 and 1440 px are unchanged at 22 / 22 / 23 / 26 px.
+- **Tests:** `tests/race-marker-scale.test.ts`:
+  - cases A–D;
+  - no cliff across 600 px;
+  - ring vs padding;
+  - feedback convergence for all 24 circuits.

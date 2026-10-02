@@ -32,8 +32,27 @@ export function raceTrackStyle(bubbleDiameter: number) {
         corridor: casing / 2,
     };
 }
-/** Canvas padding that keeps a selected bubble (bubble + ring) inside the canvas without clamping it off its route. */
-export function raceMapPadding(bubbleScale: number) { return Math.max(16, Math.ceil((RACE_BUBBLE.r + 6) * bubbleScale)); }
+/**
+ * Rendered screen pixels per SVG unit. The map uses the default `preserveAspectRatio` (xMidYMid meet), so the browser
+ * fits the viewBox with ONE uniform scale: the smaller of the width and height ratios. A tall (portrait) viewBox in a
+ * height-capped box is therefore limited by height, not width. Returns null while the box has no size (not laid out).
+ */
+export function effectiveSvgScale(box: { width: number; height: number }, viewBox: { width: number; height: number }): number | null {
+    const scale = Math.min(box.width / viewBox.width, box.height / viewBox.height);
+    return Number.isFinite(scale) && scale > 0 ? scale : null;
+}
+/**
+ * Next screen scale to keep. Ignores changes under 0.5 % (≈ 0.1 px of bubble): a bubble-size change can move the
+ * canvas padding, and so the viewBox height, by a few units; this keeps that feedback from ever cycling on resize.
+ */
+export function nextScreenScale(previous: number, measured: number | null) {
+    return measured === null || Math.abs(measured - previous) <= previous * .005 ? previous : measured;
+}
+/**
+ * Canvas padding that keeps a selected bubble inside the canvas without clamping it off its route: the selected ring
+ * (radius r + 5) plus half its 2.6-unit stroke, plus a small margin, at the current bubble scale.
+ */
+export function raceMapPadding(bubbleScale: number) { return Math.max(16, Math.ceil((RACE_BUBBLE.r + 7) * bubbleScale)); }
 /**
  * Marker centre for a Race car: its projected route sample. The only lateral term is the lap-0 two-by-two grid
  * formation, clamped inside the track corridor; there is no collision displacement of any kind.

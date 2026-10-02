@@ -1,6 +1,7 @@
+import type { EnergyPolicy } from '../../../simulation/race/assistance/model';
 import type { PaceMode, FuelMode, ErsMode } from "../../../simulation/race/commands/model";
 import type { TyreCompound } from "../../../simulation/race/tyres/model";
-export type ViewerIntent = {
+export type ViewerIntent = { kind:'energyPolicy';entrantId:string;revision:number;mode:EnergyPolicy } | {
     kind: "advance";
 } | {
     kind: "paceMode";
@@ -27,7 +28,7 @@ export type ViewerIntent = {
 export function commandInfo(intent: ViewerIntent) {
     switch (intent.kind) {
         case "pit": return { entrantId: intent.entrantId, kind: "pit" as const, value: intent.compound };
-        case "paceMode": case "fuelMode": case "ersMode": return { entrantId: intent.entrantId, kind: intent.kind, value: intent.mode };
+        case "energyPolicy": case "paceMode": case "fuelMode": case "ersMode": return { entrantId: intent.entrantId, kind: intent.kind, value: intent.mode };
         default: return null;
     }
 }

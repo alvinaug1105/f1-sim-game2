@@ -1,4 +1,5 @@
-import { progressionForCircuit } from '../../data/seed/circuit-progression';
+import { ENERGY_POLICIES, type EnergyPolicy } from '../../simulation/race/assistance/model';
+import { progressionForCircuit, progressionBForCircuit } from '../../data/seed/circuit-progression';
 import { defaultRacecraftConfiguration } from "../../simulation/race/traffic/racecraft";
 import { defaultIncidentConfiguration, defaultReliability } from "../../simulation/race/incidents/model";
 import { developmentWeather } from "../../simulation/race/weather/model";
@@ -46,7 +47,7 @@ export function startCareerRace(
   withWeather = false,
   withIncidents = false,
   autoPlayer = false,
-  withProgression = false,
+  withProgression: boolean | 2 = false,
 ) {
   // An explicit seed (tests, development tooling) keeps the legacy development weather so historical fixtures stay
   // reproducible. Career play (no explicit seed) freezes a weather scenario seeded by stable Career/event/circuit identity.
@@ -114,7 +115,7 @@ export function startCareerRace(
             ? {
                 ...input,
                 ...(withIncidents ? { incidents: defaultIncidentConfiguration() } : {}),
-                ...(withProgression ? { progression: progressionForCircuit(data.circuit.sourceCircuitId) } : {}),
+                ...(withProgression ? { progression: withProgression===2?progressionBForCircuit(data.circuit.sourceCircuitId):progressionForCircuit(data.circuit.sourceCircuitId) } : {}),
                 ...(weather ? { weather } : {}),
                 // Career Races (v7) also freeze the racecraft tuning (close-racing pressure, selective AI aggression).
                 ...(withCommands ? { commands: withIncidents ? { ...defaultCommandConfiguration(), racecraft: defaultRacecraftConfiguration() } : defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
@@ -288,16 +289,17 @@ export function changeCareerPitRequest(
 export function startCommandCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
   return startCareerRace(repository, careerId, eventId, seed, choices, true, true, true);
 }
-type CommandIntent = { kind: "paceMode"; mode: PaceMode } | { kind: "fuelMode"; mode: FuelMode } | { kind: "ersMode"; mode: ErsMode };
+type CommandIntent = { kind: "paceMode"; mode: PaceMode } | { kind: "fuelMode"; mode: FuelMode } | { kind: "ersMode"; mode: ErsMode } | { kind:"energyPolicy";mode:EnergyPolicy };
 function setCommand(repository: CareerRaceRepository, careerId: string, eventId: string, entrantId: string, lap: number, revision: number, intent: CommandIntent) {
-  const modes: readonly string[] = intent.kind === "paceMode" ? PACE_MODES : intent.kind === "fuelMode" ? FUEL_MODES : ERS_MODES;
+  const modes: readonly string[] = intent.kind === "paceMode" ? PACE_MODES : intent.kind === "fuelMode" ? FUEL_MODES : intent.kind==="energyPolicy"?ENERGY_POLICIES:ERS_MODES;
   if (!modes.includes(intent.mode) || !Number.isSafeInteger(lap) || lap < 0 || !Number.isSafeInteger(revision) || revision < 0) throw new RaceError("INVALID_INPUT");
   return repository.changeRace(careerId, eventId, data => {
     const s = data.state, event = data.progress.events.find(e => e.id === eventId);
     const e = s?.entrants.find(e => e.entrantId === entrantId), source = s?.input.entrants.find(e => e.entrantId === entrantId);
     if (!s || ![5,6,7,8].includes(s.simulationVersion) || s.status !== "RUNNING" || data.progress.career.status !== "ACTIVE" || event?.status !== "CURRENT" || event.weekend?.sessions.find(x => x.id === data.sessionId)?.status !== "IN_PROGRESS" || !e?.commands || e.incident?.status === "RETIRED" || source?.strategyController !== "PLAYER" || source.teamId !== data.progress.career.playerTeamId) throw new RaceError("INVALID_ACTION");
+    if((intent.kind==='energyPolicy'&&s.input.progression?.version!==2)||(intent.kind==='ersMode'&&s.input.progression?.version===2))throw new RaceError('INVALID_ACTION');
     if (s.lap !== lap || e.commands.commandRevision !== revision) throw new RaceError("STALE");
-    return { state: { ...s, entrants: s.entrants.map(x => x.entrantId !== entrantId ? x : { ...x, commands: { ...x.commands!, [intent.kind]: intent.mode, commandRevision: revision + 1 } }) }, labels: data.labels, progress: data.progress };
+    return { state: { ...s,...(intent.kind==='energyPolicy'?{progression:{...s.progression!,cars:{...s.progression!.cars,[entrantId]:{...s.progression!.cars[entrantId],assistance:{...s.progression!.cars[entrantId].assistance!,policy:intent.mode}}}}}:{}), entrants: s.entrants.map(x => x.entrantId !== entrantId ? x : { ...x, commands: { ...x.commands!,...(intent.kind==='energyPolicy'?{}:{[intent.kind]:intent.mode}), commandRevision: revision + 1 } }) }, labels: data.labels, progress: data.progress };
   });
 }
 export function setDriverPaceMode(r: CareerRaceRepository, c: string, ev: string, e: string, lap: number, revision: number, mode: PaceMode) { return setCommand(r,c,ev,e,lap,revision,{kind:"paceMode",mode}); }
@@ -345,11 +347,13 @@ export function simulateCareerRaceRemainder(repository: CareerRaceRepository, ca
 /** Production creation entry point: new Race / Sprint sessions freeze v8 progression. Explicit v7 helpers remain
  * available for historical fixtures and compatibility tooling; an existing Race is never upgraded. */
 export function startProgressionCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
-  return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,true);
+  return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,2);
 }
 export async function simulateProgressionCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, seed?: number) {
-  await startCareerRace(repository,careerId,eventId,seed,{},true,true,true,true,true,true,true);
+  await startCareerRace(repository,careerId,eventId,seed,{},true,true,true,true,true,true,2);
   const data=await repository.getRace(careerId,eventId);
   if(!data?.state) throw new RaceError('NOT_FOUND');
   return advanceCareerRace(repository,careerId,eventId,data.state.lap,'finish');
 }
+
+export function setDriverEnergyPolicy(r:CareerRaceRepository,c:string,ev:string,e:string,lap:number,revision:number,mode:EnergyPolicy) { return setCommand(r,c,ev,e,lap,revision,{kind:'energyPolicy',mode}); }

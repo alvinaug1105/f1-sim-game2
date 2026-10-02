@@ -43,7 +43,7 @@ function insight(s: RaceSimulationState, e: RaceEntrantState): PlayerCarInsight 
   return {
     projectedFuelGrams: e.commands && s.input.commands ? projectedFuelGrams(s, e) : null,
     fuelLapsRemaining: e.commands && s.input.commands ? Math.floor(Math.round(e.fuelMassKg * 1000) / Math.max(1, fuelBurnGrams(s.input.fuelBurnPerLapKg, e.commands.fuelMode, s.input.commands))) : null,
-    ers: ersOutlook(s, e),
+    ers: s.input.progression?.version===2?null:ersOutlook(s, e),
     pitEstimate: est ? { lapsToCliff: est.lapsToCliff, minimumLossMs: est.minimumLossMs, maximumLossMs: est.maximumLossMs } : null,
   };
 }
@@ -71,8 +71,9 @@ function entrant(s: RaceSimulationState, e: RaceEntrantState, own: boolean): Rac
           },
         }
       : {}),
-    ...(e.track ? { track: { progressMicrolaps: e.track.progressMicrolaps, drsEligible: e.track.drsEligible, overtakesCompleted: e.track.overtakesCompleted, ...(s.simulationVersion === 8 ? { local: { progressMicrolaps: localProgress(e.track.progressMicrolaps), segmentId: segmentAt(s.input.progression!,e.track.progressMicrolaps,s.progression!.cars[e.entrantId].route).id, route: s.progression!.cars[e.entrantId].route, lapsDown: Math.max(0,Math.floor(((s.entrants.find(x=>x.incident?.status!=='RETIRED')?.track?.progressMicrolaps??0)-e.track.progressMicrolaps)/LAP_UNITS)) } } : {}) } } : {}),
+    ...(e.track ? { track: { progressMicrolaps: e.track.progressMicrolaps,...(s.input.progression?.version===2?{routeHistory:s.progression!.cars[e.entrantId].observations!.map(o=>({atMs:o.atMs,total:o.total,route:o.route}))}:{}), drsEligible: e.track.drsEligible, overtakesCompleted: e.track.overtakesCompleted, ...(s.simulationVersion === 8 ? { local: { progressMicrolaps: localProgress(e.track.progressMicrolaps), segmentId: segmentAt(s.input.progression!,e.track.progressMicrolaps,s.progression!.cars[e.entrantId].route).id, route: s.progression!.cars[e.entrantId].route, lapsDown: Math.max(0,Math.floor(((s.entrants.find(x=>x.incident?.status!=='RETIRED')?.track?.progressMicrolaps??0)-e.track.progressMicrolaps)/LAP_UNITS)) } } : {}) } } : {}),
     ...(own && e.commands ? { commands: { paceMode: e.commands.paceMode, fuelMode: e.commands.fuelMode, ersMode: e.commands.ersMode, ersCharge: e.commands.ersCharge, commandRevision: e.commands.commandRevision } } : {}),
+    ...(own && s.input.progression?.version===2?{assistance:{energy:s.progression!.cars[e.entrantId].assistance!.energy,capacity:s.input.progression.assistance!.capacity,policy:s.progression!.cars[e.entrantId].assistance!.policy,aero:s.progression!.cars[e.entrantId].assistance!.aero,overtake:s.progression!.cars[e.entrantId].assistance!.overtake}}:{}),
     ...(own ? { insight: insight(s, e) } : {}),
   };
 }
@@ -94,6 +95,8 @@ export function projectRaceState(s: RaceSimulationState, playerTeamId: string): 
     status: s.status,
     input: {
       totalLaps: s.input.totalLaps,
+      ...(s.input.progression?{modelRevision:s.input.progression.version}:{}),
+      ...(s.input.progression?.version===2?{pitRoute:{service:s.input.progression.pit.geometry!.service,points:s.input.progression.pit.geometry!.points.map(p=>({x:p.x,y:p.y,progress:p.progress}))}}:{}),
       circuit: { baseLapTimeMs: s.input.circuit.baseLapTimeMs },
       entrants: s.input.entrants.map((e) => ({ entrantId: e.entrantId, driverId: e.driverId, teamId: e.teamId, gridPosition: e.gridPosition })),
       commands: s.input.commands ? { capacity: s.input.commands.capacity } : null,

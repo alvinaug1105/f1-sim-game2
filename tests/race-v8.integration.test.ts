@@ -11,7 +11,7 @@ import { PrismaRaceRepository } from '../src/data/repositories/prisma-race';
 import { PrismaProgressionRepository } from '../src/data/repositories/prisma-progression';
 import { createCareer } from '../src/features/career/create-career';
 import { advanceToNextEvent,runSessionAction } from '../src/features/career/progression';
-import { startProgressionCareerRace,simulateProgressionCareerRace,startIncidentCareerRace,advanceCareerRace,changeCareerPitRequest,setDriverPaceMode,simulateCareerRaceRemainder } from '../src/features/race/service';
+import { startCareerRace,simulateProgressionCareerRace,startIncidentCareerRace,advanceCareerRace,changeCareerPitRequest,setDriverPaceMode,simulateCareerRaceRemainder } from '../src/features/race/service';
 import { advanceRace } from '../src/simulation/race/engine';
 import { neutralise,forceMechanical } from './helpers/incidents';
 import { projectRaceView } from '../src/features/race/projection';
@@ -37,11 +37,11 @@ beforeEach(async()=>{
 });
 afterAll(async()=>{await client.$disconnect();await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);await admin.end();});
 const get=async()=>(await races.getRace(career.id,eventId))!;
-async function start(){await startProgressionCareerRace(races,career.id,eventId,{},42);return (await get()).state!;}
+async function start(){await startCareerRace(races,career.id,eventId,42,{},true,true,true,true,true,false,true);return (await get()).state!;}
 async function edit(fn:(s:RaceSimulationState)=>RaceSimulationState){await races.changeRace(career.id,eventId,d=>({state:fn(d.state!),labels:d.labels,progress:d.progress}));return (await get()).state!;}
 const own=(s:RaceSimulationState)=>s.input.entrants.find(e=>e.teamId===career.playerTeamId)!.entrantId;
 describe('PostgreSQL v8 progression / compatibility',()=>{
- it('freezes the production circuit catalogue and creates all 22 cars with a private progression snapshot',async()=>{
+ it('reloads the historical v8A circuit catalogue and creates all 22 cars with a private progression snapshot',async()=>{
   const s=await start();expect(s.simulationVersion).toBe(8);expect(s.entrants).toHaveLength(22);expect(s.progression!.elapsedTimeMs).toBe(0);expect(s.input.progression!.segments.at(-1)!.end).toBe(1000000);
   const row=await client.careerRaceSimulation.findFirstOrThrow({where:{careerId:career.id}});expect(row.progression).toEqual({configuration:s.input.progression,state:s.progression});
   const publicState=projectRaceView(await get()).state!;expect(publicState.entrants.every(e=>e.track!.local)).toBe(true);expect(JSON.stringify(publicState)).not.toContain('expectedLapMs');expect(publicState).not.toHaveProperty('progression');

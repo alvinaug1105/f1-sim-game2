@@ -1,3 +1,5 @@
+import { validateAssistance, validateAssistanceConfiguration, type AssistanceConfiguration, type AssistanceState } from '../assistance/model';
+import { validatePitGeometry, type PitRouteGeometry } from '../../../game/domain/pit-geometry';
 import { validateCommandState, type CommandState } from '../commands/model';
 import type { RaceEntrantState, RaceSimulationState } from '../types';
 /** One microlap = 1 / 1,000,000 lap. Integer total distance is canonical (track.progressMicrolaps). */
@@ -7,15 +9,19 @@ export type ZoneKind = 'PASSING' | 'DIRTY_AIR' | 'ASSISTANCE' | 'BRAKING' | 'BLU
 export interface LocalSegment { id: string; kind: SegmentKind; start: number; end: number }
 export interface InteractionZone { id: string; kind: ZoneKind; start: number; end: number }
 export interface ProgressionConfiguration {
-    version: 1;
+    version: 1 | 2;
+    assistance?: AssistanceConfiguration;
     resolution: typeof LAP_UNITS;
     segments: readonly LocalSegment[];
     zones: readonly InteractionZone[];
-    pit: { entry: number; service: number; exit: number; segments: readonly LocalSegment[] };
+    pit: { geometry?: PitRouteGeometry; entry: number; service: number; exit: number; segments: readonly LocalSegment[] };
     lapping: { thresholdMs: number; resistancePermille: number; passingCostMs: number; failedCostMs: number };
 }
 /** Hidden current-lap integration state, not a browser payload. All future-affecting integers are persisted. */
+export interface RouteObservation { atMs:number; total:number; route:CarProgression['route'] }
 export interface CarProgression {
+    assistance?: AssistanceState;
+    observations?: RouteObservation[];
     remainder: number;
     launchDelayMs: number;
     lapStartedAtMs: number;
@@ -68,7 +74,9 @@ export function initialCarProgression(gridPosition: number, gridOffsetMs: number
 }
 function integer(n: number, lo: number, hi: number) { if (!Number.isSafeInteger(n) || n < lo || n > hi) throw new RangeError('Invalid v8 progression integer'); }
 export function validateProgressionConfiguration(c: ProgressionConfiguration) {
-    if (!c || c.version !== 1 || c.resolution !== LAP_UNITS || !Array.isArray(c.segments) || !c.segments.length || !Array.isArray(c.zones)) throw new RangeError('Missing v8 circuit progression');
+    if (!c || ![1,2].includes(c.version) || c.resolution !== LAP_UNITS || !Array.isArray(c.segments) || !c.segments.length || !Array.isArray(c.zones)) throw new RangeError('Missing v8 circuit progression');
+    if(c.version===2) { validateAssistanceConfiguration(c.assistance!);validatePitGeometry(c.pit.geometry!,c.pit.entry,c.pit.service,c.pit.exit); }
+    else if(c.assistance||c.pit.geometry) throw new RangeError('v8A cannot acquire v8B content');
     let end = 0;
     const ids = new Set<string>();
     for (const s of c.segments) {
@@ -98,6 +106,18 @@ export function validateProgressionState(s: RaceSimulationState) {
         const c = p.cars[e.entrantId]; if (!c || !e.track) throw new RangeError('Missing v8 car progression');
         integer(e.track.progressMicrolaps, 0, s.input.totalLaps * LAP_UNITS);
         if (e.completedLaps !== Math.floor(e.track.progressMicrolaps / LAP_UNITS)) throw new RangeError('Contradictory v8 lap distance');
+        if(s.input.progression!.version===2) {
+            validateAssistance(c.assistance!,s.input.progression!.assistance!,s.input.totalLaps);
+            if(e.commands?.ersMode!=='NEUTRAL'||e.commands.ersCharge!==0||(c.lapCommands&&(c.lapCommands.ersMode!=='NEUTRAL'||c.lapCommands.ersCharge!==0))) throw new RangeError('v8B cannot acquire legacy ERS');
+            if(!Array.isArray(c.observations)||!c.observations.length||c.observations.length>32) throw new RangeError('Missing observed v8B route');
+            const last=c.observations.at(-1)!;if(last.total!==e.track.progressMicrolaps||last.route!==c.route||last.atMs!==p.elapsedTimeMs)throw new RangeError('Contradictory current route observation');
+            if(c.route!=='TRACK') {const local=localProgress(e.track.progressMicrolaps),entryLap=c.pitEntryLap;
+                if(entryLap===null||(c.route==='EXIT'?e.completedLaps!==entryLap+1||local>s.input.progression!.pit.exit:e.completedLaps!==entryLap))throw new RangeError('Contradictory pit lap');
+                const pit=s.input.progression!.pit;
+                if((c.route==='ENTRY'&&(local<pit.entry||local>=pit.segments[0].end))||(c.route==='LANE'&&local<pit.segments[0].end)||(c.route==='SERVICE'&&local!==pit.service))throw new RangeError('Contradictory pit phase distance');
+            }
+            for(const [i,o] of c.observations.entries()) { integer(o.atMs,0,p.elapsedTimeMs);integer(o.total,0,e.track.progressMicrolaps);if(!['TRACK','ENTRY','LANE','SERVICE','EXIT'].includes(o.route)||(i>0&&(o.atMs<c.observations[i-1].atMs||o.total<c.observations[i-1].total))) throw new RangeError('Invalid route observation'); }
+        } else if(c.assistance||c.observations) throw new RangeError('v8A cannot acquire v8B state');
         integer(c.remainder, 0, 999); integer(c.launchDelayMs, 0, 1_000_000); integer(c.lapStartedAtMs, 0, p.elapsedTimeMs);
         integer(c.freeLapMs, 0, 1_000_000); integer(c.expectedLapMs, 0, 1_000_000); integer(c.commandMs, -15000, 15000); integer(c.variationMs, -500, 500);
         if (c.lapCommands !== null) validateCommandState(c.lapCommands,s.input.commands!);

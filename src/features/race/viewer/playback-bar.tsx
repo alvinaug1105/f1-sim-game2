@@ -22,7 +22,7 @@ export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduce
     const { t, format } = useI18n(), describe = useAttentionText(rows), done = playback.phase === 'finished';
     // Command confirmations always name the driver the command targeted (from the command itself, not the selection).
     const confirm = playback.confirmation, confirmDriver = confirm ? rows.find(r => r.id === confirm.entrantId)?.abbreviation ?? '' : '';
-    const confirmText = confirm ? `${confirmDriver} — ${confirm.kind === 'pit' ? (confirm.value ? t('viewer.confirm.pit', { compound: t(`tyre.${confirm.value as TyreCompound}`) }) : t('viewer.confirm.pitCancel')) : t(`viewer.confirm.${confirm.kind}`, { mode: confirm.kind === 'fuelMode' ? t(`command.fuel.${confirm.value as FuelMode}`) : t(`command.${confirm.value as PaceMode | ErsMode}`) })}` : '';
+    const confirmText = confirm ? `${confirmDriver} — ${confirm.kind === 'pit' ? (confirm.value ? t('viewer.confirm.pit', { compound: t(`tyre.${confirm.value as TyreCompound}`) }) : t('viewer.confirm.pitCancel')) : t(`viewer.confirm.${confirm.kind}`, { mode: confirm.kind==='energyPolicy'?t(`command.${confirm.value as 'RECHARGE'|'BALANCED'|'BOOST'}`):confirm.kind === 'fuelMode' ? t(`command.fuel.${confirm.value as FuelMode}`) : t(`command.${confirm.value as PaceMode | ErsMode}`) })}` : '';
     const status = playback.busy && playback.phase !== 'finished' ? t('viewer.saving') : t(`viewer.phase.${playback.phase}`, { speed: format.number(playback.speed), limit: format.number(SEEK_LIMIT) });
     let attention: { tone: string; text: string } | null = null;
     if (playback.error) attention = null;

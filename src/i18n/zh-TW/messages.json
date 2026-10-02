@@ -940,5 +940,21 @@
   "car.physical.error.PERSISTENCE_FAILED": "無法儲存變更，請重試。",
   "viewer.lapsDown": "落後 {count} 圈",
   "viewer.commandTiming": "指令將於此車手的下一圈生效。",
-  "pit.committed": "進站指令已確認"
+  "pit.committed": "進站指令已確認",
+  "command.RECHARGE": "回充",
+  "command.BOOST": "加速",
+  "assistance.aero": "主動式空氣動力",
+  "assistance.aero.CORNER": "彎道模式",
+  "assistance.aero.STRAIGHT": "直路模式",
+  "assistance.aero.SAFE": "受限制",
+  "assistance.overtake": "超車模式",
+  "assistance.overtake.NOT_ELIGIBLE": "未符合資格",
+  "assistance.overtake.AVAILABLE": "可使用",
+  "assistance.overtake.ACTIVE": "啟用中",
+  "assistance.policy": "加速／回充",
+  "assistance.note": "加速獨立使用儲存的電量；回充可恢復電量。超車模式須符合偵測間距及局部部署區間。",
+  "viewer.confirm.energyPolicy": "能源策略：{mode}",
+  "viewer.overtakeCause.BOOST": "加速",
+  "viewer.overtakeCause.OVERTAKE_MODE": "超車模式",
+  "assistance.commandTiming": "恢復比賽後會套用能源策略；步速及燃油模式由車手的下一圈開始套用。"
 }

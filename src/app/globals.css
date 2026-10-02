@@ -1059,3 +1059,6 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .race-track-view .circuit-map { min-height:0; max-height:680px; }
 .race-track-view .map-car.lapped .driver-badge { stroke-dasharray:3 2; }
 @media (max-width:600px) { .race-track-view .circuit-map { max-height:460px; } }
+/* Race commands below the map must not be covered by the timing panel while scrolling. */
+@media(min-width:1221px) { .race-track-view .ops-grid>.timing-panel { position:static; } }
+.race-track-view .assistance-status { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0; }

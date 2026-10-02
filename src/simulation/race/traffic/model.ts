@@ -37,7 +37,7 @@ export interface TrackState {
   readonly passed: boolean;
 }
 /** Safe post-hoc explanation of a completed pass (public facts only: tyres, ERS mode in use, DRS, relative pace). */
-export type OvertakeCause = "TYRE" | "ERS" | "DRS" | "PACE";
+export type OvertakeCause = "TYRE" | "ERS" | "DRS" | "PACE" | "OVERTAKE_MODE" | "BOOST";
 export interface OvertakeAttempt {
   readonly lap: number;
   readonly attackerId: string;

@@ -1,9 +1,7 @@
 import type { RaceEntrantState, RaceSimulationState } from '../types';
 import { calculateLapTime } from '../engine';
 import { createSeededRandom } from '../../core/random';
-import { advanceLegacyProgressionLap } from './legacy';
-import { chooseAssistanceAi } from '../assistance/policy';
-import { energyStep, qualify, clearEntitlement, refreshAssistance } from '../assistance/model';
+import { chooseAiCommands } from '../commands/policy';
 import { commandLapEffects } from '../commands/model';
 import { committedStops } from '../pits/model';
 import { getTyreProfile, type TyreState } from '../tyres/model';
@@ -17,31 +15,22 @@ const QUANTUM_MS = 100;
 const emptyTrack = (e: RaceEntrantState) => ({ ...e.track!, drsEligible: false, drsBenefitMs: 0, dirtyAirMs: 0, trafficLossMs: 0, attempted: false, passed: false });
 function passCause(e: RaceEntrantState, d: RaceEntrantState): OvertakeCause {
     if (e.stint!.tyre.compound === d.stint!.tyre.compound && d.stint!.tyre.ageLaps - e.stint!.tyre.ageLaps >= 8) return 'TYRE';
-    return 'PACE';
+    return ['OVERTAKE','DEPLOY'].includes(e.commands!.ersMode) ? 'ERS' : e.track!.drsEligible ? 'DRS' : 'PACE';
 }
 /**
  * v8 only. One public checkpoint is the next leader lap crossing. Each car moves on the SAME integer race clock,
  * completes its own laps, burns its own lap resources and can remain in a pit phase across checkpoints. The final
  * flag lets each still-running car reach its next crossing (lapped finishers retain their shorter race distance).
  */
-export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulationState {
+export function advanceLegacyProgressionLap(saved: RaceSimulationState): RaceSimulationState {
     validateProgressionState(saved); validateIncidentState(saved);
-    if(saved.input.progression!.version===1)return advanceLegacyProgressionLap(saved);
     if (saved.status !== 'RUNNING' || saved.lap >= saved.input.totalLaps) throw new RangeError('Race finished');
-    const lap = saved.lap + 1, input = saved.input, config = input.progression!, assistance=config.assistance!, control = saved.incidents!, neutral = control.mode !== 'GREEN';
-    const boundaries=[...new Set([0,LAP_UNITS,assistance.detection,assistance.deploymentStart,assistance.deploymentEnd,...config.segments.map(s=>s.end),...config.zones.flatMap(z=>[z.start,z.end])])].sort((a,b)=>a-b);
-    const zoneTable=boundaries.slice(0,-1).map(p=>zonesAt(config,p));
-    const interval=(total:number)=>{const local=localProgress(total);let lo=0,hi=boundaries.length-2;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(boundaries[mid]<=local)lo=mid;else hi=mid-1;}return lo;};
-    const localZones=(total:number)=>zoneTable[interval(total)];
+    const lap = saved.lap + 1, input = saved.input, config = input.progression!, control = saved.incidents!, neutral = control.mode !== 'GREEN';
     const weather = advanceWeather(saved.weather!, input.weather!, lap), random = createSeededRandom(saved.rngState);
-    let state = chooseAssistanceAi({ ...saved, weather });
-    if (neutral) state = { ...state, entrants: state.entrants.map(e => input.entrants.find(s => s.entrantId === e.entrantId)!.strategyController === 'PLAYER' ? e : { ...e, commands: { ...e.commands!, paceMode: 'CONSERVE', fuelMode: 'CONSERVE', ersMode: 'NEUTRAL' } }) };
+    let state = chooseAiCommands({ ...saved, weather });
+    if (neutral) state = { ...state, entrants: state.entrants.map(e => input.entrants.find(s => s.entrantId === e.entrantId)!.strategyController === 'PLAYER' ? e : { ...e, commands: { ...e.commands!, paceMode: 'CONSERVE', fuelMode: 'CONSERVE', ersMode: 'HARVEST' } }) };
     let entries: RaceEntrantState[] = state.entrants.map(e => ({ ...e, track: emptyTrack(e) }));
-    const cars = structuredClone(state.progression!.cars) as Record<string, CarProgression>;
-    for(const e of entries) cars[e.entrantId].observations=[{atMs:saved.progression!.elapsedTimeMs,total:e.track!.progressMicrolaps,route:cars[e.entrantId].route}];
-    const observe=(id:string)=>{const p=cars[id],e=entries.find(x=>x.entrantId===id)!;p.observations!.push({atMs:clock,total:e.track!.progressMicrolaps,route:p.route});};
-    // Fuel and pace retain their shared mechanics; legacy ERS slots are inert in revision 2.
-    const commands={...input.commands!,baseRecovery:0,ers:{...input.commands!.ers,NEUTRAL:{...input.commands!.ers.NEUTRAL,deltaMs:0,consumption:0,recoveryPermille:0}}};
+    const cars = structuredClone(saved.progression!.cars) as Record<string, CarProgression>;
     const grid = [...input.entrants].sort((a,b) => a.gridPosition - b.gridPosition);
     const events: RaceEvent[] = [...control.events];
     const emit = (event: Omit<RaceEvent,'sequence'|'lap'>) => events.push({ ...event, sequence: events.length+1, lap });
@@ -62,7 +51,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         const source = sourceOf(id);
         const r = calculateLapTime({ ...source, circuit: input.circuit, parameters: input.parameters, fuelMassKg: e.fuelMassKg, tyre: { state: e.stint!.tyre, profile: getTyreProfile(input.tyres!, e.stint!.tyre.compound) } }, fresh ? random : { next: () => .5 });
         if (fresh) { p.variationMs = r.variationMs; p.lapCommands = { ...e.commands! }; }
-        const effects = commandLapEffects({ ...e, commands: p.lapCommands! }, input.fuelBurnPerLapKg * (neutralProfile ? neutralProfile.fuelMultiplierPermille/1000 : 1), commands, neutral || p.route !== 'TRACK' || Boolean(p.compound));
+        const effects = commandLapEffects({ ...e, commands: p.lapCommands! }, input.fuelBurnPerLapKg * (neutralProfile ? neutralProfile.fuelMultiplierPermille/1000 : 1), input.commands!, neutral || p.route !== 'TRACK' || Boolean(p.compound));
         if (effects.starved && input.commands!.racecraft?.fuelStarvationRetirement === true) { retire(id,'FUEL_STARVATION'); return; }
         p.commandMs = neutral ? 0 : effects.commandMs;
         p.freeLapMs = neutralProfile ? Math.round(input.circuit.baseLapTimeMs*neutralProfile.lapMultiplierPermille/1000) : Math.max(1000,r.lapTimeMs-r.variationMs+p.variationMs+effects.deltaMs+e.incident!.mechanicalPenaltyMs+waterPenaltyMs(e.stint!.tyre.compound,weather.trackWater,input.weather!));
@@ -89,7 +78,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
     const completeLap = (id: string) => {
         const i = indexOf(id), e = entries[i], p = cars[id];
         const actual = Math.max(1,clock-p.lapStartedAtMs), completedLaps = Math.floor(e.track!.progressMicrolaps/LAP_UNITS);
-        const effects = commandLapEffects({...e,commands:p.lapCommands!},input.fuelBurnPerLapKg*(neutralProfile ? neutralProfile.fuelMultiplierPermille/1000 : 1),commands,neutral || p.route !== 'TRACK' || Boolean(p.compound));
+        const effects = commandLapEffects({...e,commands:p.lapCommands!},input.fuelBurnPerLapKg*(neutralProfile ? neutralProfile.fuelMultiplierPermille/1000 : 1),input.commands!,neutral || p.route !== 'TRACK' || Boolean(p.compound));
         const pace = input.commands!.pace[p.lapCommands!.paceMode];
         const tyreConfig = { ...input.tyres!, tyreWearMultiplierPermille: Math.round(input.tyres!.tyreWearMultiplierPermille*(neutralProfile ? neutralProfile.wearMultiplierPermille : pace.tyreWearMultiplierPermille)/1000), tyreEnergyMultiplierPermille: Math.round(input.tyres!.tyreEnergyMultiplierPermille*(neutralProfile ? neutralProfile.energyMultiplierPermille : pace.tyreEnergyMultiplierPermille)/1000) };
         const oldTyre = advanceWeatherTyre(e.stint!.tyre,tyreConfig,weather,input.weather!);
@@ -101,7 +90,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             p.route = 'EXIT';
         }
         if (flagged && completedLaps >= finishTargets.get(id)!) next = { ...next,incident: { ...next.incident!,status: 'FINISHED' } };
-        entries[i] = next; observe(id); p.lapStartedAtMs = clock; p.remainder = 0;
+        entries[i] = next; p.lapStartedAtMs = clock; p.remainder = 0;
         if (active(next)) plan(id,true);
     };
     while (true) {
@@ -112,16 +101,12 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         let dt = QUANTUM_MS;
         const movement = new Map<string,{ rate: number; ahead: RaceEntrantState | null; distance: number; gapMs: number; effects: ReturnType<typeof followingEffects> }>();
         for (const e of running) {
-            const p = cars[e.entrantId];let near:{entrant:RaceEntrantState;distance:number}|null=null;
-            if(p.route==='TRACK')for(const peer of entries) {if(peer.entrantId===e.entrantId||peer.incident!.status!=='RUNNING'||cars[peer.entrantId].route!=='TRACK')continue;const distance=(localProgress(peer.track!.progressMicrolaps)-localProgress(e.track!.progressMicrolaps)+LAP_UNITS)%LAP_UNITS;if((distance>0||peer.position<e.position)&&(!near||distance<near.distance||(distance===near.distance&&peer.entrantId.localeCompare(near.entrant.entrantId)<0)))near={entrant:peer,distance};}
+            const p = cars[e.entrantId], near = p.route === 'TRACK' ? physicalAhead(entries,e,cars) : null;
             const gapMs = near ? Math.round(near.distance*input.circuit.baseLapTimeMs/LAP_UNITS) : Infinity;
-            const zone = localZones(e.track!.progressMicrolaps);
-            const interaction = { ...input.interaction!, drsZoneCount: 0 };
+            const zone = zonesAt(config,e.track!.progressMicrolaps);
+            const interaction = { ...input.interaction!, drsZoneCount: neutral || control.drsDelay>0 || weather.drsState==='DRS_DISABLED_WET' || !zone.some(z=>z.kind==='ASSISTANCE') ? 0 : input.interaction!.drsZoneCount };
             const effects = !neutral && p.route === 'TRACK' && zone.some(z=>z.kind==='DIRTY_AIR') ? followingEffects(Number.isFinite(gapMs) ? gapMs : null,lap,interaction) : { drsEligible:false,dirtyAirMs:0,drsBenefitMs:0 };
-            const straight=zone.some(z=>z.kind==='ASSISTANCE'),safe=!neutral&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater&&!p.launchDelayMs&&!p.delayMs;
-            const electrical=energyStep({...p.assistance!},assistance,{dt:QUANTUM_MS,lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight,safe});
-            let duration = p.freeLapMs+effects.dirtyAirMs-electrical;
-            if(p.route!=='TRACK')duration+=Math.round((p.pitLossMs-p.stationaryMs)*LAP_UNITS/(LAP_UNITS+config.pit.exit-config.pit.entry));
+            let duration = p.freeLapMs+effects.dirtyAirMs-effects.drsBenefitMs;
             if (control.mode==='SAFETY_CAR' && near && gapMs>input.incidents!.queueIntervalMs && gapMs<input.circuit.baseLapTimeMs/3) duration -= Math.min(input.incidents!.maxCompressionMs,Math.round((gapMs-input.incidents!.queueIntervalMs)*input.incidents!.compressionPermille/1000));
             const rate = Math.max(1,Math.round(LAP_UNITS*1000/Math.max(1000,duration)));
             movement.set(e.entrantId,{rate,ahead:near?.entrant??null,distance:near?.distance??LAP_UNITS,gapMs,effects});
@@ -129,9 +114,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             else {
                 const local = localProgress(e.track!.progressMicrolaps);
                 let boundary = LAP_UNITS-local;
-                if(p.route==='TRACK')boundary=Math.min(boundary,boundaries[interval(e.track!.progressMicrolaps)+1]-local);
                 if (p.compound && p.route==='TRACK' && e.completedLaps===p.pitEntryLap && local<config.pit.entry) boundary = Math.min(boundary,config.pit.entry-local);
-                if(p.route==='ENTRY'&&local<config.pit.segments[0].end)boundary=Math.min(boundary,config.pit.segments[0].end-local);
                 if ((p.route==='ENTRY'||p.route==='LANE') && local<config.pit.service) boundary = Math.min(boundary,config.pit.service-local);
                 if (p.route==='EXIT' && local<config.pit.exit) boundary = Math.min(boundary,config.pit.exit-local);
                 dt = Math.min(dt,Math.max(1,Math.ceil((boundary*1000-p.remainder)/rate)));
@@ -140,12 +123,12 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         // Attempt ordering is original grid order; no draw is consumed for distant / pit / retired cars.
         for (const source of grid) {
             const i = indexOf(source.entrantId), e = entries[i], p = cars[source.entrantId], m = movement.get(e.entrantId);
-            if (!m || neutral || p.route!=='TRACK' || p.launchDelayMs || p.delayMs || p.attemptedLap===lap || p.passedByLap===lap || !m.ahead || !localZones(e.track!.progressMicrolaps).some(z=>z.kind==='PASSING'||z.kind==='BRAKING')) continue;
+            if (!m || neutral || p.route!=='TRACK' || p.launchDelayMs || p.delayMs || p.attemptedLap===lap || p.passedByLap===lap || !m.ahead || !zonesAt(config,e.track!.progressMicrolaps).some(z=>z.kind==='PASSING'||z.kind==='BRAKING')) continue;
             const d = m.ahead, defender = cars[d.entrantId];
             if (defender.launchDelayMs || defender.delayMs || defender.passedByLap===lap) continue;
             const lapping = e.track!.progressMicrolaps-d.track!.progressMicrolaps>LAP_UNITS/2;
-            const blueFlag = lapping && localZones(e.track!.progressMicrolaps).some(z=>z.kind==='BLUE_FLAG');
-            const { edge } = input.commands!.racecraft ? attackEdge(defender.expectedLapMs-p.expectedLapMs+p.assistance!.electricalDeltaMs-defender.assistance!.electricalDeltaMs,defender.commandMs-p.commandMs,input.commands!.racecraft) : { edge: defender.expectedLapMs-p.expectedLapMs };
+            const blueFlag = lapping && zonesAt(config,e.track!.progressMicrolaps).some(z=>z.kind==='BLUE_FLAG');
+            const { edge } = input.commands!.racecraft ? attackEdge(defender.expectedLapMs-p.expectedLapMs,defender.commandMs-p.commandMs,input.commands!.racecraft) : { edge: defender.expectedLapMs-p.expectedLapMs };
             const threshold = lapping ? config.lapping.thresholdMs : input.interaction!.attackThresholdMs;
             if (blueFlag && m.gapMs<=threshold) p.lappedAheadId = d.entrantId;
             if (m.gapMs>threshold || edge<input.interaction!.minimumPaceAdvantageMs) continue;
@@ -159,11 +142,8 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         const deltas = new Map<string,number>();
         for (const e of running) {
             const p = cars[e.entrantId], m = movement.get(e.entrantId)!;
-            if(p.launchDelayMs||p.delayMs) { p.assistance!.aero='SAFE';p.assistance!.electricalDeltaMs=0;clearEntitlement(p.assistance!); }
             if (p.launchDelayMs) { p.launchDelayMs=Math.max(0,p.launchDelayMs-dt); deltas.set(e.entrantId,0); continue; }
             if (p.delayMs) { p.delayMs=Math.max(0,p.delayMs-dt); deltas.set(e.entrantId,0); continue; }
-            const zone=localZones(e.track!.progressMicrolaps);
-            energyStep(p.assistance!,assistance,{dt,lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight:zone.some(z=>z.kind==='ASSISTANCE'),safe:!neutral&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater});
             const units = dt*m.rate+p.remainder;
             deltas.set(e.entrantId,Math.floor(units/1000)); p.remainder=units%1000;
         }
@@ -185,28 +165,20 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             const i = indexOf(source.entrantId), e = entries[i], p = cars[source.entrantId], m = movement.get(e.entrantId);
             if (!m) continue;
             const oldTotal = e.track!.progressMicrolaps, oldLocal = localProgress(oldTotal), delta = deltas.get(e.entrantId)!;
-            let total = oldTotal+delta; const oldRoute=p.route;
-            // Detection is a shared-clock boundary, including millisecond rounding.
-            if(p.route==='TRACK'&&oldLocal<assistance.detection&&total>=e.completedLaps*LAP_UNITS+assistance.detection) total=Math.min(total,e.completedLaps*LAP_UNITS+assistance.detection);
+            let total = oldTotal+delta;
             // Exact boundaries discard only the last sub-microlap rounding overshoot; never backwards movement.
             if (Math.floor(total/LAP_UNITS)>Math.floor(oldTotal/LAP_UNITS)) total=(Math.floor(oldTotal/LAP_UNITS)+1)*LAP_UNITS;
-            if (p.compound && p.route==='TRACK' && e.completedLaps===p.pitEntryLap && oldLocal<=config.pit.entry && localProgress(total)>=config.pit.entry) { total=e.completedLaps*LAP_UNITS+config.pit.entry; p.route='ENTRY'; p.remainder=0;p.stationaryMs=0;p.pitLossMs=effectivePitLaneLoss(state);clearEntitlement(p.assistance!);p.assistance!.aero='SAFE';p.assistance!.electricalDeltaMs=0; }
+            if (p.compound && p.route==='TRACK' && e.completedLaps===p.pitEntryLap && oldLocal<=config.pit.entry && localProgress(total)>=config.pit.entry) { total=e.completedLaps*LAP_UNITS+config.pit.entry; p.route='ENTRY'; p.remainder=0; }
             if (p.route==='ENTRY' && localProgress(total)>=config.pit.segments[0].end) p.route='LANE';
             if (p.route==='LANE' && oldLocal<config.pit.service && localProgress(total)>=config.pit.service) {
                 total=e.completedLaps*LAP_UNITS+config.pit.service; p.route='SERVICE'; p.remainder=0;
                 p.stationaryMs=input.pits!.stationaryBaseMs+Math.round((2*random.next()-1)*input.pits!.stationaryVariationMs);
-                p.pitLossMs=effectivePitLaneLoss(state)+p.stationaryMs; p.delayMs+=p.stationaryMs;
+                p.pitLossMs=effectivePitLaneLoss(state)+p.stationaryMs; p.delayMs+=p.pitLossMs;
             }
             if (p.route==='SERVICE' && p.delayMs===0) p.route='LANE';
             if (p.route==='EXIT' && localProgress(total)>=config.pit.exit) { p.route='TRACK'; p.compound=null; p.pitEntryLap=null; p.remainder=0; }
             entries[i] = { ...e,track:{ ...e.track!,...m.effects,progressMicrolaps:total } };
-            if(oldRoute!==p.route)observe(e.entrantId);
 
-        }
-        for(const e of entries.filter(active)) {
-            const old=running.find(x=>x.entrantId===e.entrantId),p=cars[e.entrantId];if(!old)continue;
-            const before=old.track!.progressMicrolaps,after=e.track!.progressMicrolaps,line=(Math.floor(before/LAP_UNITS)+(assistance.detection===0?1:0))*LAP_UNITS+assistance.detection;
-            if(before<line&&after>=line) { const near=p.route==='TRACK'?physicalAhead(entries,e,cars):null;qualify(p.assistance!,assistance,Math.floor(line/LAP_UNITS),near?Math.round(near.distance*input.circuit.baseLapTimeMs/LAP_UNITS):null,near?after-near.entrant.track!.progressMicrolaps:LAP_UNITS,!neutral&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater); }
         }
         // Record passes only after actual movement of BOTH cars; boundary clamping must not invent a pass.
         for (const source of grid) {
@@ -215,7 +187,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             if (p.passingId && m.ahead?.entrantId===p.passingId && e.track!.progressMicrolaps-running.find(x=>x.entrantId===e.entrantId)!.track!.progressMicrolaps>m.distance+(entries[indexOf(p.passingId)].track!.progressMicrolaps-running.find(x=>x.entrantId===p.passingId)!.track!.progressMicrolaps)) {
                 const d = entries[indexOf(p.passingId)];
                 if (p.lappingPass) p.completedLappingPasses++;
-                else { emit({type:'OVERTAKE',entrantIds:[e.entrantId,p.passingId],kind:null,severity:null,timeLossMs:0,cause:p.assistance!.electricalDeltaMs>0?(p.assistance!.overtake==='ACTIVE'?'OVERTAKE_MODE':'BOOST'):passCause(e,d)}); entries[i]={...entries[i],track:{...entries[i].track!,overtakesCompleted:e.track!.overtakesCompleted+1,passed:true,attempted:true}}; }
+                else { emit({type:'OVERTAKE',entrantIds:[e.entrantId,p.passingId],kind:null,severity:null,timeLossMs:0,cause:passCause(e,d)}); entries[i]={...entries[i],track:{...entries[i].track!,overtakesCompleted:e.track!.overtakesCompleted+1,passed:true,attempted:true}}; }
                 cars[p.passingId].passedByLap=lap; p.passingId=null; p.lappedAheadId=null;
             }
         }
@@ -267,10 +239,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
     }
     const finished=lap===input.totalLaps;
     if(finished) entries=entries.map(e=>e.incident!.status==='RETIRED'?e:{...e,incident:{...e.incident!,status:'FINISHED'},pit:{...e.pit!,pendingCompound:null,stints:e.pit!.stints.map(s=>s.endLap===null&&s.startLap<e.completedLaps?{...s,endLap:e.completedLaps,endingTyre:e.stint!.tyre}:s)}});
-    for (const e of entries) { const p=cars[e.entrantId];
-        if(nextControl.mode!=='GREEN'||e.incident!.status!=='RUNNING'||p.route!=='TRACK') { clearEntitlement(p.assistance!);p.assistance!.aero='SAFE';p.assistance!.electricalDeltaMs=0; }
-        refreshAssistance(p.assistance!,assistance,{lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight:localZones(e.track!.progressMicrolaps).some(z=>z.kind==='ASSISTANCE'),safe:nextControl.mode==='GREEN'&&e.incident!.status==='RUNNING'&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater});
-        observe(e.entrantId); if (p.passingId && !entries.some(x=>x.entrantId===p.passingId&&x.incident!.status==='RUNNING')) p.passingId=null; }
+    for (const e of entries) { const p=cars[e.entrantId]; if (p.passingId && !entries.some(x=>x.entrantId===p.passingId&&x.incident!.status==='RUNNING')) p.passingId=null; }
     const next:RaceSimulationState={...saved,lap,status:finished?'FINISHED':'RUNNING',weather,rngState:random.getState(),incidents:nextControl,progression:{elapsedTimeMs:clock,cars},entrants:classifyProgress(entries,input.circuit.baseLapTimeMs,finished)};
     validateProgressionState(next); validateIncidentState(next);
     return next;

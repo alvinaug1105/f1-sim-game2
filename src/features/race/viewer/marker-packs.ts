@@ -32,6 +32,7 @@ export class MarkerPacks {
 /** Compact Race badges stay beside their real track anchor. Five bounded lanes
  * spread a train without moving cars longitudinally or mixing crossing branches. */
 export class RaceMarkerPacks {
+    constructor(private scale=1) {}
     private memory = new Map<string, Memory>();
     get pending() { return [...this.memory.values()].some(m => Math.abs(m.offset - m.target) > .1); }
     frame(cars: readonly PackCar[], lapLength: number, deltaMs: number, settle = false) {
@@ -40,12 +41,12 @@ export class RaceMarkerPacks {
         for (let i=0;i<ordered.length;i++) {
             const car=ordered[i],old=this.memory.get(car.id);
             const peers=ordered.slice(0,i).filter(peer=>trackClose(car.progress,peer.progress,lapLength));
-            const choices=[0,-18,18,-36,36];
+            const choices=[0,-18,18,-36,36].map(n=>n*this.scale);
             const score=(offset:number)=>{
                 const x=car.x+car.nx*offset,y=car.y+car.ny*offset;
                 const overlap=peers.reduce((sum,peer)=>{
                     const p=result.get(peer.id)!;
-                    return sum+Math.max(0,RACE_BADGE.w+2-Math.abs(x-p.x))*Math.max(0,RACE_BADGE.h+2-Math.abs(y-p.y));
+                    return sum+Math.max(0,RACE_BADGE.w*this.scale+2-Math.abs(x-p.x))*Math.max(0,RACE_BADGE.h*this.scale+2-Math.abs(y-p.y));
                 },0);
                 return overlap*100+Math.abs(offset)+(old ? Math.abs(offset-old.target)*.5 : 0);
             };
@@ -63,4 +64,14 @@ export function badgeText(color: string) {
     const channels = [1,3,5].map(i => parseInt(color.slice(i,i+2),16)/255).map(c => c <= .04045 ? c/12.92 : ((c+.055)/1.055)**2.4);
     const l = channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
     return (l+.05)/.055 > 1.05/(l+.05) ? '#101010' : '#ffffff';
+}
+
+/** SVG content grows inversely on narrow maps; identity glyphs retain screen-pixel floors. Race only. */
+export function responsiveBadgeScale(svgScale:number,tier:'FIELD'|'PLAYER'|'SELECTED') {
+    const scale=Number.isFinite(svgScale)&&svgScale>0?svgScale:1;
+    const minimum=tier==='SELECTED'?11:tier==='PLAYER'?10:9;
+    return Math.max(1,minimum/(11*scale));
+}
+export function clampBadgeCenter(x:number,y:number,width:number,height:number,scale:number) {
+    const pad=24*scale;return {x:Math.max(pad,Math.min(width-pad,x)),y:Math.max(pad,Math.min(height-pad,y))};
 }

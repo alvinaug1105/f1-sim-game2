@@ -113,7 +113,8 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         const movement = new Map<string,{ rate: number; ahead: RaceEntrantState | null; distance: number; gapMs: number; effects: ReturnType<typeof followingEffects> }>();
         for (const e of running) {
             const p = cars[e.entrantId];let near:{entrant:RaceEntrantState;distance:number}|null=null;
-            if(p.route==='TRACK')for(const peer of entries) {if(peer.entrantId===e.entrantId||peer.incident!.status!=='RUNNING'||cars[peer.entrantId].route!=='TRACK')continue;const distance=(localProgress(peer.track!.progressMicrolaps)-localProgress(e.track!.progressMicrolaps)+LAP_UNITS)%LAP_UNITS;if((distance>0||peer.position<e.position)&&(!near||distance<near.distance||(distance===near.distance&&peer.entrantId.localeCompare(near.entrant.entrantId)<0)))near={entrant:peer,distance};}
+            // Nearest car ahead on track; an exact distance tie resolves to the car higher in the classification (never ID text).
+            if(p.route==='TRACK')for(const peer of entries) {if(peer.entrantId===e.entrantId||peer.incident!.status!=='RUNNING'||cars[peer.entrantId].route!=='TRACK')continue;const distance=(localProgress(peer.track!.progressMicrolaps)-localProgress(e.track!.progressMicrolaps)+LAP_UNITS)%LAP_UNITS;if((distance>0||peer.position<e.position)&&(!near||distance<near.distance||(distance===near.distance&&peer.position<near.entrant.position)))near={entrant:peer,distance};}
             const gapMs = near ? Math.round(near.distance*input.circuit.baseLapTimeMs/LAP_UNITS) : Infinity;
             const zone = localZones(e.track!.progressMicrolaps);
             const interaction = { ...input.interaction!, drsZoneCount: 0 };

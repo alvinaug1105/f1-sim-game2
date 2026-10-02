@@ -41,6 +41,8 @@ const get=async()=>(await races.getRace(career.id,eventId))!;
 async function start(){await startProgressionCareerRace(races,career.id,eventId,{},42);return (await get()).state!;}
 async function edit(fn:(s:RaceSimulationState)=>RaceSimulationState){await races.changeRace(career.id,eventId,d=>({state:fn(d.state!),labels:d.labels,progress:d.progress}));return (await get()).state!;}
 const own=(s:RaceSimulationState)=>s.input.entrants.find(e=>e.teamId===career.playerTeamId)!.entrantId;
+/** Canonical finished-state digest of the real main v8A save after the v8B-R tie-break repair (see the round-trip test). */
+const V8A_FIXTURE_FINISHED_SHA256='198812df733f623a37f2554a361d8b920be57dff2ca85219e857ea8ac51cc8b5';
 
 describe('PostgreSQL v8B revision persistence and server commands',()=>{
  it('creates revision 2 using existing JSON, saves independent energy policy and rejects legacy/rival/stale/invalid commands',async()=>{
@@ -74,12 +76,16 @@ describe('PostgreSQL v8B revision persistence and server commands',()=>{
   const canonical=(s:RaceSimulationState)=>{let text=JSON.stringify(s);for(const e of historical.input.entrants)text=text.replaceAll(e.entrantId,`slot-${e.gridPosition}`).replaceAll(e.driverId,`driver-${e.gridPosition}`);for(const [n,id]of [...new Set(historical.input.entrants.map(e=>e.teamId))].entries())text=text.replaceAll(id,`team-${n}`);return text;};
   const originalExpected=advanceRace(original,original.input.totalLaps);
   const canonicalOriginal=(s:RaceSimulationState)=>{let text=JSON.stringify(s);for(const e of original.input.entrants)text=text.replaceAll(e.entrantId,`slot-${e.gridPosition}`).replaceAll(e.driverId,`driver-${e.gridPosition}`);for(const [n,id]of [...new Set(original.input.entrants.map(e=>e.teamId))].entries())text=text.replaceAll(id,`team-${n}`);return text;};
-  expect(createHash('sha256').update(canonicalOriginal(originalExpected)).digest('hex')).toBe(fixture.finishedSha256);
+  // Determinism repair (v8B-R): exact distance ties between cars side by side now resolve by classification, not by
+  // entrant-ID text, so this save's continuation differs from the one recorded on main (fixture.finishedSha256) — it
+  // is now the same for any IDs the save is persisted under. The post-repair digest is pinned here.
+  expect(createHash('sha256').update(canonicalOriginal(originalExpected)).digest('hex')).toBe(V8A_FIXTURE_FINISHED_SHA256);
+  expect(fixture.finishedSha256).not.toBe(V8A_FIXTURE_FINISHED_SHA256);
   // PostgreSQL JSONB reorders record keys; compare normalised object structure, not serialisation key order.
   expect(JSON.parse(canonical(expected))).toEqual(JSON.parse(canonicalOriginal(originalExpected)));
   const id=own(historical);await expect(setDriverEnergyPolicy(races,career.id,eventId,id,historical.lap,historical.entrants.find(e=>e.entrantId===id)!.commands!.commandRevision,'BOOST')).rejects.toThrow();await setDriverErsMode(races,career.id,eventId,id,historical.lap,historical.entrants.find(e=>e.entrantId===id)!.commands!.commandRevision,'DEPLOY');const commanded=(await get()).state!;
   const done=advanceRace(commanded,commanded.input.totalLaps);await advanceCareerRace(races,career.id,eventId,commanded.lap,'finish');expect((await get()).state).toEqual(done);
- },30000);
+ },180000); // three full 57-lap continuations; not a determinism allowance
  it('rolls back invalid/mixed revision state and keeps hidden entitlement and rival energy off the browser',async()=>{
   const s=await start(),id=own(s);await expect(edit(x=>{x.progression!.cars[id].assistance!.energy=-1;return x;})).rejects.toThrow();expect((await get()).state).toEqual(s);
   const v=projectRaceView(await get()),text=JSON.stringify(v);for(const hidden of ['qualifiedLap','validUseLap','expiresAfterLap','deploymentRemainder','recoveryRemainder','rngState','"seed"'])expect(text).not.toContain(hidden);

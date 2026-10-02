@@ -56,7 +56,7 @@ Observed at a 390×844 viewport on Suzuka: map 341×187.2px, field badge 24.54×
 
 ## Builder verification and limits
 
-Permanent tests cover revision rejection, all 24 geometries, joins/service/wrap, actual pit transitions, same-clock detection, entitlement lifetime, restricted modes, integer/partial/zero energy, repeated Boost depletion, combined envelopes, AI fairness, public projection, responsive helpers and PostgreSQL command/reload boundaries. `race-v8a-postgres-main-save.json` was captured using exact starting-main source and a real disposable PostgreSQL career. Its original completion digest is checked, and its IDs are mapped to the integration career for repository round-trip/continuation. PostgreSQL JSONB key ordering is compared structurally after ID normalisation.
+Permanent tests cover revision rejection, all 24 geometries, joins/service/wrap, actual pit transitions, same-clock detection, entitlement lifetime, restricted modes, integer/partial/zero energy, repeated Boost depletion, combined envelopes, AI fairness, public projection, responsive helpers and PostgreSQL command/reload boundaries. `race-v8a-postgres-main-save.json` was captured using exact starting-main source and a real disposable PostgreSQL career. Its completion digest is pinned (re-pinned by the v8B-R tie-break repair, see `race-v8b-r-determinism.md`), and its IDs are mapped to the integration career for repository round-trip/continuation. PostgreSQL JSONB key ordering is compared structurally after ID normalisation.
 
 Seven targeted full-race executions, all 22 cars: Suzuka dry (53 laps), Monaco dry (78), Monza dry (53), Spa changing wet (44), Suzuka VSC (53), Suzuka SC (53), and a Monaco performance recheck (78). The first dry samples were 6.4–10.0 seconds. Precomputed zone intervals and allocation-free local-neighbour lookup reduced subsequent samples to 2.8–4.4 seconds, without touching the historical engine. The wet fixture initially lacked its matching forecast windows; it was corrected before execution. No Monte Carlo or acceptance campaign was run.
 
@@ -78,3 +78,9 @@ Deferred: v8C dry specification/regulatory expansion and deep energy campaigns; 
   - retired cars: still removed from the authoritative map.
 - **Dense packs.** Bubbles use five bounded lateral lanes (within 1.5 diameters). Partial overlap is accepted rather than moving cars away from their track position, and crossing branches stay separate (track progress, not screen distance). The anchor line appears only for an outer-lane bubble.
 - **Layout.** From 1221 px the Race page is a three-column dashboard: timing tower | track map | selected-driver management (240/1fr/310, and 290/1fr/360 from 1600 px). This replaces the v8A two-column grid that pushed the driver panel full-width under the map and stretched resource bars across the page. Resource bars and Active Aero / Overtake / Boost controls stay inside the management column, and mode buttons wrap within it. Tablet and phone widths keep the existing stacked layout.
+
+## v8B-R
+- **Persisted determinism:** an exact on-track distance tie now resolves by classification instead of entrant-ID text.
+  The root cause, the compatibility impact and the PostgreSQL round-trip coverage are in `race-v8b-r-determinism.md`.
+- **Circuit and pit-lane fidelity:** audited in `circuit-geometry-sources.md`. Pit lanes are still the generic
+  placeholder: authoring them is blocked on reference access and a licence decision recorded there.

@@ -62,7 +62,9 @@ export function forwardDistance(from: number, to: number) { return (localProgres
 export function physicalAhead(entrants: readonly RaceEntrantState[], car: RaceEntrantState, cars?: ProgressionState['cars']) {
     return entrants.filter(e => e.entrantId !== car.entrantId && e.incident?.status === 'RUNNING' && (forwardDistance(car.track!.progressMicrolaps,e.track!.progressMicrolaps)>0 || e.position<car.position) && (!cars || cars[e.entrantId].route === 'TRACK'))
         .map(e => ({ entrant: e, distance: forwardDistance(car.track!.progressMicrolaps, e.track!.progressMicrolaps) }))
-        .sort((a, b) => a.distance - b.distance || a.entrant.entrantId.localeCompare(b.entrant.entrantId))[0] ?? null;
+        // Exact distance ties (cars side by side, e.g. a leader lapping a backmarker) resolve by race-domain order — the
+        // car higher in the classification — never by entrant ID text, which must not influence the simulation.
+        .sort((a, b) => a.distance - b.distance || a.entrant.position - b.entrant.position)[0] ?? null;
 }
 export function physicalBehind(entrants: readonly RaceEntrantState[], car: RaceEntrantState, cars?: ProgressionState['cars']) {
     return entrants.filter(e => e.entrantId !== car.entrantId && e.incident?.status === 'RUNNING' && (!cars || cars[e.entrantId].route === 'TRACK'))
@@ -135,8 +137,8 @@ export function validateProgressionState(s: RaceSimulationState) {
 /** Classification is total race distance; local neighbour order is a separate circular query. */
 export function classifyProgress(entrants: readonly RaceEntrantState[], baseLapMs: number, finished = false): RaceEntrantState[] {
     const active = entrants.filter(e => e.incident!.status !== 'RETIRED').sort((a,b) => finished
-        ? b.completedLaps - a.completedLaps || a.elapsedTimeMs - b.elapsedTimeMs || a.entrantId.localeCompare(b.entrantId)
-        : b.track!.progressMicrolaps - a.track!.progressMicrolaps || a.position - b.position || a.entrantId.localeCompare(b.entrantId));
+        ? b.completedLaps - a.completedLaps || a.elapsedTimeMs - b.elapsedTimeMs || a.position - b.position
+        : b.track!.progressMicrolaps - a.track!.progressMicrolaps || a.position - b.position);
     const retired = entrants.filter(e => e.incident!.status === 'RETIRED').sort((a,b) => b.track!.progressMicrolaps - a.track!.progressMicrolaps || a.incident!.retirementOrder! - b.incident!.retirementOrder!);
     return [...active, ...retired].map((e,i) => {
         const leader = active[0], ahead = active[i-1];

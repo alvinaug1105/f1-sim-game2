@@ -1,7 +1,7 @@
 "use client";
 import { samplePitRoute,type PitRouteGeometry } from '../../../game/domain/pit-geometry';
 import type { RouteFrame } from './motion';
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { CircuitMapLayout, MapPoint } from '../../../game/domain/circuit-layout';
 import { prepareCircuitPath, circuitProjection } from '../../../game/domain/circuit-geometry';
 import type { timingRows } from './model';
@@ -65,10 +65,14 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     const project = useMemo(() => circuitProjection(pitRoute?[...layout.points,...pitRoute.points]:layout.points, MAP.width, MAP.height, MAP.padding), [layout, MAP,pitRoute]);
     const lapLength = useMemo(() => pathLength(progress => project(path.sample(progress))), [path, project]);
     const profiles = useMemo(() => ({ green: prepareVisualSpeed(path), neutral: prepareVisualSpeed(path, .3) }), [path]);
-    const timeline = useMemo(() => new RaceMotion(targets(rows), checkpoint, authoritative ? undefined : profiles), [profiles, authoritative]); // eslint-disable-line react-hooks/exhaustive-deps
-    const [grid] = useState(() => startingGrid && checkpoint === 0
-        ? new Map(rows.map(r => [r.id, gridSlot(r.gridPosition ?? r.entrant.position, r.progress, lapLength)] as const))
-        : new Map<string, GridSlot>());
+    // Motion state is separate from presentation geometry. The authoritative (v8) timeline is created once per map and
+    // never depends on the drawn path, so a responsive re-orientation / re-fit re-projects the SAME live progress instead
+    // of rebuilding motion from the checkpoint. Practice / Qualifying keep their path-derived visual speed profiles.
+    const [authoritativeTimeline] = useState(() => authoritative ? new RaceMotion(targets(rows), checkpoint) : null);
+    const timeline = useMemo(() => authoritativeTimeline ?? new RaceMotion(targets(rows), checkpoint, profiles), [authoritativeTimeline, profiles]); // eslint-disable-line react-hooks/exhaustive-deps
+    // The starting-grid decision and grid order are frozen at mount; slot spacing follows the current screen lap length.
+    const [gridSeed] = useState(() => startingGrid && checkpoint === 0 ? rows.map(r => ({ id: r.id, position: r.gridPosition ?? r.entrant.position, progress: r.progress })) : []);
+    const grid = useMemo(() => new Map<string, GridSlot>(gridSeed.map(g => [g.id, gridSlot(g.position, g.progress, lapLength)] as const)), [gridSeed, lapLength]);
     // Stable React transform props prevent selection/locale/checkpoint renders overwriting RAF transforms.
     const [initial] = useState(() => new Map(rows.map(r => {
         const slot = grid.get(r.id), sample = pitRoute&&r.route&&r.route!=='TRACK'?samplePitRoute(pitRoute,(slot?.progress??r.progress)%1*1e6):path.sample(slot?.progress ?? r.progress), point = project(sample);
@@ -82,7 +86,9 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     const labelTierMap = useMemo(() => new Map(rows.map(r => [r.id, r.id === selected ? LABEL_TIER.SELECTED : r.player ? LABEL_TIER.PLAYER : tiers?.get(r.id) ?? LABEL_TIER.FIELD])), [rows, tiers, selected]);
     const tierOf = (id: string) => labelTierMap.get(id) ?? LABEL_TIER.FIELD;
     const placement = useRef({ tiers: labelTierMap, paused: motion === 'paused', reduced: reduceMotion || systemReduced, checkpoint });
-    useEffect(() => {
+    // Layout effect: when geometry changes (resize, re-orientation, re-fit) the current live progress is re-projected before
+    // the browser paints, so no frame shows markers at the previous projection.
+    useLayoutEffect(() => {
         const root = svg.current!;
         const all = [...root.querySelectorAll<SVGGElement>('[data-car]')];
         // Race viewer: no collision packing at all (markers sit on their route sample; overlap is allowed).
@@ -131,7 +137,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             else previousTime = null;
         };
         wake.current = () => { if (!frame && !disposed) frame = requestAnimationFrame(draw); };
-        wake.current();
+        draw(performance.now());
         return () => { disposed = true; cancelAnimationFrame(frame); wake.current = () => {}; };
     }, [timeline, path, project, grid, lapLength, raceViewer,pitRoute,style.corridor,MAP]);
     useEffect(() => {

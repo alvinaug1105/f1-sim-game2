@@ -190,3 +190,26 @@ Display-only. No simulation, timing, zone, pit-anchor or balance change. The v8A
   - no cliff across 600 px;
   - ring vs padding;
   - feedback convergence for all 24 circuits.
+
+## Playback continuity across the phone breakpoint
+- **Root cause.** Crossing 600 px flips the phone orientation and changed the TrackMap React key
+  (`layout.id:degrees`), so the map remounted.
+  - The new `RaceMotion` was built from the rows, i.e. the current checkpoint's targets.
+  - That checkpoint's `reconcile` was then ignored as stale, so the field snapped to the checkpoint end and waited for
+    the next lap.
+  - Even without the key, the timeline was memoised on path-derived profiles. Any re-oriented layout object would have
+    rebuilt it.
+- **Fix: motion state is separate from presentation geometry.**
+  - The key is the circuit only.
+  - The authoritative v8 `RaceMotion` is created once per map and does not depend on geometry. Practice and Qualifying
+    keep their profile timeline.
+  - The draw loop is set up in a layout effect and draws immediately, so on a geometry change the current live progress
+    (track or pit route) is re-projected before the browser paints, and animation continues from it.
+  - Grid slots are recomputed from the frozen lap-0 seed with the current screen lap length.
+- **Tests:** `tests/race-map-continuity.test.tsx` (happy-dom, controlled frame clock), covering:
+  - TRACK and PIT cars mid-checkpoint;
+  - re-orientation plus a selection change;
+  - same DOM nodes and the same live progress;
+  - drawn point = new projection(new path / pit-route sample);
+  - monotonic continuation to the checkpoint end;
+  - selection alone never moves a marker.

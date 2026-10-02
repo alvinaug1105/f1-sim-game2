@@ -286,7 +286,7 @@
   "incident.RUNNING": "Running",
   "incident.FINISHED": "Finished",
   "incident.RETIRED": "Retired",
-  "incident.notice": "Red flags and unlapping are not currently simulated.",
+  "incident.notice": "Red flags and Safety Car unlapping are not currently simulated.",
   "viewer.title": "Race operations",
   "viewer.lap": "Lap",
   "viewer.map": "Circuit map",
@@ -305,7 +305,7 @@
   "viewer.positionNote": "Position change is relative to the grid, including pit cycles.",
   "viewer.track": "Track",
   "viewer.schematic": "Original schematic",
-  "viewer.interpolation": "Visual positions interpolate saved laps. Timing and classification remain authoritative.",
+  "viewer.interpolation": "Visual positions interpolate saved track positions. Timing and classification remain authoritative.",
   "viewer.playerCars": "Your two cars",
   "viewer.recentEvents": "Recent events",
   "viewer.allEvents": "Earlier events",
@@ -371,7 +371,7 @@
   "viewer.compare": "Compare",
   "viewer.comparison": "Your drivers compared",
   "viewer.fuelDelta": "Fuel at finish",
-  "viewer.labelNote": "Map labels show your cars, their battles and the leader; select any car to identify it.",
+  "viewer.labelNote": "Driver badges show the field; select a car for details.",
   "viewer.cat.CONTROL": "Race Control",
   "viewer.cat.INCIDENT": "Incident",
   "viewer.cat.RETIREMENT": "Retirement",
@@ -937,5 +937,8 @@
   "car.physical.error.NO_UNIT": "No physical unit is available for that car and design.",
   "car.physical.error.SESSION_IN_PROGRESS": "Finish the current session before changing car fitment.",
   "car.physical.error.STALE_PREVIEW": "The fitment changed. Review the current impact and try again.",
-  "car.physical.error.PERSISTENCE_FAILED": "The change could not be saved. Please try again."
+  "car.physical.error.PERSISTENCE_FAILED": "The change could not be saved. Please try again.",
+  "viewer.lapsDown": "{count} lap(s) down",
+  "viewer.commandTiming": "Commands apply from the driver's next lap.",
+  "pit.committed": "Pit stop committed"
 }

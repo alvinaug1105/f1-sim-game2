@@ -54,7 +54,7 @@ export function RaceOperations({ initialData }: {
     // Sprint Simulate Remainder goes through the controller's single mutation queue like every other command.
     const remainder = () => { void controller.command(async (state) => { const result = await sprintRemainderAction(data.progress.career.id, data.eventId, state.lap); if (!result.data)
         throw new Error(result.error!); setData(result.data); return result.data.state!; }, null); };
-    return <div className="race-ops">
+    return <div className="race-ops race-track-view">
   <LocalizedPageTitle titleKey={sprint ? 'sprint.title' : 'viewer.title'}/>
   <RaceHeader data={data}/>
   {/* Sticky Race bar: conditions, playback and a fixed-height status line keep Race context visible while commanding. */}
@@ -67,7 +67,7 @@ export function RaceOperations({ initialData }: {
   {sprint && s.status === 'FINISHED' && <SprintSummary data={data} rows={rows}/>}
   <div className="ops-grid">
    <TimingTower state={s} rows={rows} selected={row.id} onSelect={setSelected} interval={interval} onInterval={setIntervalView} attentionId={attentionId}/>
-   <div className="map-column"><section className="ops-panel track-panel"><div className="ops-panel-title"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId}/><TrackMap key={layout.id} layout={layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers}/><p className="map-notice">{t('viewer.interpolation')} {t('viewer.labelNote')}</p></section>
+   <div className="map-column"><section className="ops-panel track-panel"><div className="ops-panel-title"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId}/><TrackMap key={layout.id} layout={layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers} authoritative={s.simulationVersion === 8} raceViewer/><p className="map-notice">{t('viewer.interpolation')} {t('viewer.labelNote')}</p></section>
    {weather && <details className="ops-panel forecast-drawer"><summary>{t('weather.forecast')}</summary><WeatherPanel state={s}/></details>}
    <EventFeed data={data}/>
    </div>

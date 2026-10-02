@@ -1,3 +1,4 @@
+import { physicalAhead, physicalBehind, LAP_UNITS } from '../progression/model';
 import type { RaceEntrantState, RaceSimulationState } from "../types";
 import type { RacecraftConfiguration } from "../traffic/racecraft";
 import { commandPaceMs, projectedFuelGrams, type CommandConfiguration, type CommandState } from "./model";
@@ -23,7 +24,16 @@ function racecraftModes(state: RaceSimulationState, e: RaceEntrantState, r: Race
   const hasEdge = (car: RaceEntrantState, ahead: RaceEntrantState | undefined) =>
     !!ahead && car.intervalToAheadMs !== null && car.intervalToAheadMs <= r.aiAttackGapMs &&
     (tyreEdge(car, ahead) || (heldOnMerit(car) && !justPassedBy(car, ahead)));
-  const ahead = byPosition(e.position - 1), behind = byPosition(e.position + 1);
+  let ahead = byPosition(e.position - 1), behind = byPosition(e.position + 1);
+  if (state.simulationVersion === 8) {
+    const nearAhead = physicalAhead(state.entrants,e,state.progression!.cars), nearBehind = physicalBehind(state.entrants,e,state.progression!.cars);
+    const ms = (distance: number) => Math.round(distance*state.input.circuit.baseLapTimeMs/LAP_UNITS);
+    ahead = nearAhead?.entrant;
+    e = { ...e, intervalToAheadMs: nearAhead ? ms(nearAhead.distance) : null };
+    // A lap-down car yields to the faster lead-lap car rather than spending a championship defence against it.
+    behind = nearBehind && nearBehind.entrant.track!.progressMicrolaps-e.track!.progressMicrolaps<LAP_UNITS/2
+      ? { ...nearBehind.entrant, intervalToAheadMs: ms(nearBehind.distance) } : undefined;
+  }
   const attacking = hasEdge(e, ahead);
   // A genuine closing threat also comes from the car behind running attack commands (ATTACK / PUSH / DEPLOY /
   // OVERTAKE worth at least aiThreatEdgeMs of lap time with the charge it actually has) — read from Race state for

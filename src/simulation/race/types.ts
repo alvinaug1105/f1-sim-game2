@@ -1,3 +1,4 @@
+import type { ProgressionConfiguration, ProgressionState } from './progression/model';
 import type { IncidentConfiguration, IncidentRaceState, ReliabilityProfile, EntrantIncidentState } from "./incidents/model";
 import type { WeatherConfiguration, WeatherState } from "./weather/model";
 import type { CommandConfiguration, CommandState } from "./commands/model";
@@ -43,6 +44,7 @@ export interface RaceEntrant {
   readonly startingTyre?: TyreState;
 }
 export interface RaceSimulationInput {
+  readonly progression?: ProgressionConfiguration;
   readonly incidents?: IncidentConfiguration;
   readonly weather?: WeatherConfiguration;
   readonly commands?: CommandConfiguration;
@@ -74,6 +76,7 @@ export interface RaceEntrantState {
   readonly intervalToAheadMs: number | null;
 }
 export interface RaceSimulationState {
+  readonly progression?: ProgressionState;
   readonly incidents?: IncidentRaceState;
   readonly weather?: WeatherState;
   readonly simulationVersion: number;

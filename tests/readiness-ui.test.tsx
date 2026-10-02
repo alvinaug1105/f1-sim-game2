@@ -68,8 +68,8 @@ it("keeps obsolete capability and prototype claims out of both player catalogs",
   for (const catalog of [en, zh]) {
     expect(Object.values(catalog).join("\n")).not.toMatch(/No championship points are awarded|Championship points are not awarded yet|Championship and racing systems are not implemented|Foundation build|Foundation phase|Phase 01|Build 01|Development (?:environment|build|workspace|free-air|race model|weather model)|No tyres, traffic|no tyre changes are available|No pits,|remain deferred|錦標賽與賽事系統尚未實作|目前尚未計算錦標積分|基礎建置階段|開發環境|開發版賽事|仍待開發/);
   }
-  expect(en["incident.notice"]).toBe("Red flags and unlapping are not currently simulated.");
-  expect(zh["incident.notice"]).toBe("目前不模擬紅旗與解除套圈。");
+  expect(en["incident.notice"]).toBe("Red flags and Safety Car unlapping are not currently simulated.");
+  expect(zh["incident.notice"]).toBe("目前不模擬紅旗與安全車解除套圈。");
   // Real car-design terminology and non-scoring distance limitations remain truthful.
   expect(en["car.developmentProgramme"]).toBe("Development programme");
   expect(en["championship.noScore"]).toContain("scoring distance");

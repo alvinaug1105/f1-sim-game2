@@ -166,11 +166,11 @@ export function validateIncidentState(state: RaceSimulationState) {
             if (x.retiredLap === null || x.retirementOrder === null)
                 throw new RangeError("Missing retirement metadata");
             integer(x.retiredLap, 1, state.lap);
-            if (e.completedLaps !== x.retiredLap || e.pit?.pendingCompound)
+            if ((state.simulationVersion === 7 ? e.completedLaps !== x.retiredLap : e.completedLaps > x.retiredLap) || e.pit?.pendingCompound)
                 throw new RangeError("Invalid retired checkpoint");
             integer(x.retirementOrder, 1, 100000);
         }
-        else if (e.completedLaps !== state.lap || x.status !== (state.status === "FINISHED" ? "FINISHED" : "RUNNING") || x.retiredLap !== null || x.retirementOrder !== null)
+        else if ((state.simulationVersion === 7 ? e.completedLaps !== state.lap : e.completedLaps > state.lap) || x.status !== (state.status === "FINISHED" ? "FINISHED" : "RUNNING") || x.retiredLap !== null || x.retirementOrder !== null)
             throw new RangeError("Unexpected retirement metadata");
     }
     for (const [n, e] of s.events.entries()) {

@@ -206,7 +206,7 @@ describe("real PostgreSQL Race persistence", () => {
     });
     await expect(
       client.careerRaceSimulation.create({
-        data: { ...row, id: randomUUID() },
+        data: { ...row, progression: undefined, id: randomUUID() },
       }),
     ).rejects.toMatchObject({ code: "P2002" });
   });
@@ -218,13 +218,14 @@ describe("real PostgreSQL Race persistence", () => {
     const practice = data.progress.events[0].weekend!.sessions[0];
     await expect(
       client.careerRaceSimulation.create({
-        data: { ...row, id: randomUUID(), careerSessionId: practice.id },
+        data: { ...row, progression: undefined, id: randomUUID(), careerSessionId: practice.id },
       }),
     ).rejects.toMatchObject({ code: "P2003" });
     await expect(
       client.careerRaceSimulation.create({
         data: {
           ...row,
+          progression: undefined,
           id: randomUUID(),
           careerSessionId: practice.id,
           sessionType: "PRACTICE_1",

@@ -11,7 +11,7 @@ import {neutralise} from './helpers/incidents';
 import {requestPitStop} from '../src/simulation/race/pits/model';
 import {projectRaceState} from '../src/features/race/projection';
 import {chooseAssistanceAi} from '../src/simulation/race/assistance/policy';
-import {responsiveBadgeScale,clampBadgeCenter,RaceMarkerPacks} from '../src/features/race/viewer/marker-packs';
+import {raceBubbleScale,clampBadgeCenter,RaceMarkerPacks,RACE_BUBBLE} from '../src/features/race/viewer/marker-packs';
 import {RaceMotion} from '../src/features/race/viewer/motion';
 import {translate} from '../src/i18n/catalog';
 const suzuka='00000000-0000-4000-8000-000000000301';
@@ -113,8 +113,12 @@ describe('v8B integration and observable presentation',()=>{
   const pitId=s.input.entrants[1].entrantId;s.progression!.cars[pitId].route='LANE';expect(physicalAhead(s.entrants,s.entrants[0],s.progression!.cars)?.entrant.entrantId).not.toBe(pitId);
  });
  it('keeps 390px field/player/selected glyph floors, bounded targets and priority drawing without altering progress',()=>{
-  const scale=.341;expect(11*scale*responsiveBadgeScale(scale,'FIELD')).toBeCloseTo(9);expect(11*scale*responsiveBadgeScale(scale,'PLAYER')).toBeCloseTo(10);expect(11*scale*responsiveBadgeScale(scale,'SELECTED')).toBeCloseTo(11);
-  const center=clampBadgeCenter(-100,9999,1000,650,3);expect(center).toEqual({x:72,y:578});
+  // Circular bubbles keep a stable on-screen size: 22 px on a 341 px phone map, 23 px on a tablet-width map, 26 px on
+  // a desktop map; the abbreviation stays at least 8 px.
+  const diameter=(scale:number)=>2*RACE_BUBBLE.r*scale*raceBubbleScale(scale);
+  expect(diameter(.341)).toBeCloseTo(22);expect(diameter(.5)).toBeCloseTo(23);expect(diameter(1.4)).toBeCloseTo(26);expect(diameter(.7)).toBeCloseTo(26);
+  expect(8.8*.341*raceBubbleScale(.341)).toBeGreaterThanOrEqual(8);
+  const center=clampBadgeCenter(-100,9999,1000,650,3);expect(center).toEqual({x:51,y:599});
   const cars=Array.from({length:22},(_,n)=>({id:String(n),progress:n*.001,x:100+n*2,y:100,nx:0,ny:1,tier:n<2?n:3}));const p=new RaceMarkerPacks(3).frame(cars,2000,16,true);for(const c of cars){expect(p.get(c.id)!.x).toBe(c.x);expect(Math.abs(p.get(c.id)!.offset)).toBeLessThanOrEqual(108);}
   expect(translate('zh-TW','assistance.overtake.ACTIVE')).toBe('啟用中');expect(translate('en','viewer.overtakeCause.BOOST')).toBe('Boost');
  });

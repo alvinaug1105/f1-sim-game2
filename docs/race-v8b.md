@@ -65,3 +65,16 @@ Production-build browser sanity used disposable PostgreSQL careers at Suzuka, Mo
 Independent QA should prioritise late/wrapping detection windows, partial-energy boundaries, control transitions during a pit visit, replay from a partially drawn checkpoint, approximate pit geometry on crossing/compact circuits, dense mobile identity selection and older editable-database saves. Pit geometry remains approximate, Active Aero baseline tuning is conservative, and browser observations are focused sanity checks rather than acceptance.
 
 Deferred: v8C dry specification/regulatory expansion and deep energy campaigns; v8D wet AI diversity, late-stop/tyre-cliff strategy and circuit pit-loss calibration; v8E and Phases 18/29/31; dynamic 2027/multi-season regulation work. No migration, balance campaign or final acceptance is included.
+
+## Visual correction (Race viewer only)
+- **Markers.** Race map cars are circular team-colour bubbles with the three-letter abbreviation inside.
+  - The rectangular `driver-badge` remains only in the Practice / Qualifying maps.
+  - The bubble holds a stable on-screen diameter whatever the map width: 26 px on desktop maps, 23 px tablet-width, 22 px phone-width (`raceBubbleScale`).
+- **State cues** (not colour alone):
+  - player cars: a white outer ring;
+  - selected car: a heavier glowing ring;
+  - lapped car: a dashed border, with the deficit in the accessible name;
+  - pitting car: the same bubble on the pit route plus a small PIT tag;
+  - retired cars: still removed from the authoritative map.
+- **Dense packs.** Bubbles use five bounded lateral lanes (within 1.5 diameters). Partial overlap is accepted rather than moving cars away from their track position, and crossing branches stay separate (track progress, not screen distance). The anchor line appears only for an outer-lane bubble.
+- **Layout.** From 1221 px the Race page is a three-column dashboard: timing tower | track map | selected-driver management (240/1fr/310, and 290/1fr/360 from 1600 px). This replaces the v8A two-column grid that pushed the driver panel full-width under the map and stretched resource bars across the page. Resource bars and Active Aero / Overtake / Boost controls stay inside the management column, and mode buttons wrap within it. Tablet and phone widths keep the existing stacked layout.

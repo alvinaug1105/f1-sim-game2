@@ -9,7 +9,8 @@ import { RaceMotion, checkpointDuration, type MotionMode } from './motion';
 import { useI18n } from '../../../i18n/provider';
 import { pathLength, LABEL_TIER } from './labels';
 import { prepareVisualSpeed } from './speed-profile';
-import { MarkerPacks, RaceMarkerPacks, BADGE, RACE_BUBBLE, badgeText, raceBubbleScale, clampBadgeCenter } from './marker-packs';
+import { MarkerPacks, BADGE, RACE_BUBBLE, badgeText, raceBubbleScale } from './marker-packs';
+import { anchorRaceMarker, raceDrawOrder, raceMapPadding, raceTrackStyle, svgNumber, svgPath } from './race-map-style';
 import { gridDisplay, gridSlot, type GridSlot } from './grid-markers';
 /**
  * What the map needs from a row (Race timing rows satisfy it structurally; Practice builds its own). `hidden` cars are
@@ -29,10 +30,10 @@ export const COMPACT_MAP_MAX_HEIGHT = 1290;
  * Aspect-aware canvas fitting the circuit and its pit lane; the projection still uses one scale on both axes. Phone-width
  * maps (`compact`) may grow taller so a portrait-oriented circuit is not squeezed into a strip.
  */
-export function raceMapCanvas(layout: CircuitMapLayout, compact = false, extra: readonly MapPoint[] = []) {
+export function raceMapCanvas(layout: CircuitMapLayout, compact = false, extra: readonly MapPoint[] = [], padding = 16) {
     const points=[...layout.points,...extra],xs=points.map(p=>p.x),ys=points.map(p=>p.y);
     const ratio=(Math.max(...ys)-Math.min(...ys))/(Math.max(...xs)-Math.min(...xs)||1);
-    return { width: 1000, height: Math.round(Math.max(340,Math.min(compact ? COMPACT_MAP_MAX_HEIGHT : 760,968*ratio+32))), padding: 16 };
+    return { width: 1000, height: Math.round(Math.max(340,Math.min(compact ? COMPACT_MAP_MAX_HEIGHT : 760,(1000-2*padding)*ratio+2*padding))), padding };
 }
 /** One loop for the entire field. React handles checkpoints/selection, never individual frames. */
 
@@ -50,11 +51,13 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
 }) {
     const { t, format } = useI18n(), svg = useRef<SVGSVGElement>(null);
     const systemReduced = useSyncExternalStore(subscribeMotion, getMotion, () => false);
-    const MAP = useMemo(() => raceViewer ? raceMapCanvas(layout, compact, pitRoute?.points) : { width: 900, height: 650, padding: 40 },[layout, raceViewer, compact, pitRoute]);
     const [screenScale,setScreenScale]=useState(1);
-    useEffect(()=>{if(!raceViewer)return;const root=svg.current!;const update=()=>setScreenScale(root.getBoundingClientRect().width/MAP.width);update();const observer=new ResizeObserver(update);observer.observe(root);return()=>observer.disconnect();},[raceViewer,MAP.width]);
     // Race bubbles keep a stable on-screen diameter (no tier-dependent growth; rings carry player/selected identity).
-    const packScale=raceViewer?raceBubbleScale(screenScale,MAP.width):1;
+    const packScale=raceViewer?raceBubbleScale(screenScale,1000):1;
+    // Padding fits a selected bubble at the canvas edge, so no marker is ever clamped away from its route.
+    const MAP = useMemo(() => raceViewer ? raceMapCanvas(layout, compact, pitRoute?.points, raceMapPadding(packScale)) : { width: 900, height: 650, padding: 40 },[layout, raceViewer, compact, pitRoute, packScale]);
+    useEffect(()=>{if(!raceViewer)return;const root=svg.current!;const update=()=>setScreenScale(root.getBoundingClientRect().width/MAP.width);update();const observer=new ResizeObserver(update);observer.observe(root);return()=>observer.disconnect();},[raceViewer,MAP.width]);
+    const style = raceTrackStyle(2 * RACE_BUBBLE.r * packScale);
     const path = useMemo(() => prepareCircuitPath(layout), [layout]);
     const project = useMemo(() => circuitProjection(pitRoute?[...layout.points,...pitRoute.points]:layout.points, MAP.width, MAP.height, MAP.padding), [layout, MAP,pitRoute]);
     const lapLength = useMemo(() => pathLength(progress => project(path.sample(progress))), [path, project]);
@@ -66,7 +69,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     // Stable React transform props prevent selection/locale/checkpoint renders overwriting RAF transforms.
     const [initial] = useState(() => new Map(rows.map(r => {
         const slot = grid.get(r.id), sample = pitRoute&&r.route&&r.route!=='TRACK'?samplePitRoute(pitRoute,(slot?.progress??r.progress)%1*1e6):path.sample(slot?.progress ?? r.progress), point = project(sample);
-        return [r.id, { x: point.x - sample.tangentY * (slot?.lateral ?? 0), y: point.y + sample.tangentX * (slot?.lateral ?? 0) }] as const;
+        return [r.id, raceViewer ? anchorRaceMarker({ ...sample, ...point }, slot?.lateral ?? 0, style.corridor) : { x: point.x - sample.tangentY * (slot?.lateral ?? 0), y: point.y + sample.tangentX * (slot?.lateral ?? 0) }] as const;
     })));
     const wake = useRef<() => void>(() => {});
     const startSample = path.sample(0), start = project(startSample), angle = Math.atan2(startSample.tangentY, startSample.tangentX) * 180 / Math.PI;
@@ -79,7 +82,8 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     useEffect(() => {
         const root = svg.current!;
         const all = [...root.querySelectorAll<SVGGElement>('[data-car]')];
-        const packs = raceViewer ? new RaceMarkerPacks(packScale) : new MarkerPacks();
+        // Race viewer: no collision packing at all (markers sit on their route sample; overlap is allowed).
+        const packs = raceViewer ? null : new MarkerPacks();
         let frame = 0, disposed = false, previousTime: number | null = null;
         let frames = 0, workTotal = 0, workMax = 0, intervalTotal = 0, intervalMax = 0;
         const draw = (now: number) => {
@@ -96,7 +100,7 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
                 const before = path.sample(progress-.0015), after = path.sample(progress+.0015);
                 const dx=after.x-before.x, dy=after.y-before.y, length=Math.hypot(dx,dy)||1;
                 return { progress, lateral: display.lateral, sample: route!=='TRACK'?sample:{...sample,tangentX:dx/length,tangentY:dy/length}, ...project(sample) }; });
-            const offsets = packs.frame(cars.map((el,i) => ({ id: el.dataset.car!, progress: samples[i].progress,
+            const offsets = !packs ? new Map(cars.map((el,i) => [el.dataset.car!, { ...anchorRaceMarker({ ...samples[i].sample, x: samples[i].x, y: samples[i].y }, samples[i].lateral, style.corridor), offset: 0 }])) : packs.frame(cars.map((el,i) => ({ id: el.dataset.car!, progress: samples[i].progress,
                 x: samples[i].x - samples[i].sample.tangentY * samples[i].lateral,
                 y: samples[i].y + samples[i].sample.tangentX * samples[i].lateral,
                 nx: -samples[i].sample.tangentY, ny: samples[i].sample.tangentX,
@@ -104,15 +108,12 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
                 placement.current.paused || previousTime === null ? 0 : Math.max(0, Math.min(50,now-previousTime)), placement.current.reduced && !placement.current.paused);
             cars.forEach((el,i) => {
                 const offset = offsets.get(el.dataset.car!)!;
-                const p = raceViewer?{...offset,...clampBadgeCenter(offset.x,offset.y,MAP.width,MAP.height,packScale)}:offset;
+                const p = offset;
                 el.dataset.visualRoute=timeline.route(el.dataset.car!);
                 el.setAttribute('transform', `translate(${p.x} ${p.y})`);
                 el.dataset.visualProgress = String(samples[i].progress);
                 el.dataset.lateralOffset = String(samples[i].lateral + p.offset);
                 el.dataset.grid = grid.has(el.dataset.car!) && placement.current.checkpoint === 0 ? '1' : '0';
-                const tether=el.querySelector('.track-anchor');
-                // A short anchor line only for a bubble pushed out to an outer lane (well clear of its track position).
-                if(tether){tether.setAttribute('x2',String(samples[i].x-p.x));tether.setAttribute('y2',String(samples[i].y-p.y));tether.setAttribute('opacity',Math.hypot(samples[i].x-p.x,samples[i].y-p.y)>2*RACE_BUBBLE.r*packScale*1.1?'.55':'0');}
             });
             // Read-only development instrumentation used by the real-browser verification harness.
             if (process.env.NODE_ENV !== 'production') {
@@ -123,13 +124,13 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
                 root.dataset.meanFrameIntervalMs = String(intervalTotal / Math.max(1, frames - 1)); root.dataset.maxFrameIntervalMs = String(intervalMax);
             }
             previousTime = now;
-            if (timeline.pending || (!placement.current.paused && !placement.current.reduced && packs.pending)) frame = requestAnimationFrame(draw);
+            if (timeline.pending || (packs && !placement.current.paused && !placement.current.reduced && packs.pending)) frame = requestAnimationFrame(draw);
             else previousTime = null;
         };
         wake.current = () => { if (!frame && !disposed) frame = requestAnimationFrame(draw); };
         wake.current();
         return () => { disposed = true; cancelAnimationFrame(frame); wake.current = () => {}; };
-    }, [timeline, path, project, grid, lapLength, raceViewer,pitRoute,packScale,MAP]);
+    }, [timeline, path, project, grid, lapLength, raceViewer,pitRoute,style.corridor,MAP]);
     useEffect(() => {
         timeline.reconcile(targets(rows), checkpoint, control);
         timeline.configure(motion, checkpointDuration(speed, control, skipping) + latencyMs, reduceMotion || systemReduced);
@@ -137,26 +138,38 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
     }, [timeline, rows, checkpoint, motion, speed, control, skipping, latencyMs, reduceMotion, systemReduced]);
     // Priority, locale and resize changes wake the shared renderer; paused longitudinal motion stays frozen.
     useEffect(() => { placement.current = { tiers: labelTierMap, paused: motion === 'paused', reduced: reduceMotion || systemReduced, checkpoint }; wake.current(); }, [labelTierMap, motion, reduceMotion, systemReduced, checkpoint]);
-    const d = layout.points.map((p, i) => { const q = project(p); return `${i ? 'L' : 'M'}${q.x},${q.y}`; }).join(' ') + ' Z';
-    const byTier = rows.filter(r => !authoritative || r.status !== 'RETIRED').sort((a, b) => tierOf(b.id) - tierOf(a.id) || a.id.localeCompare(b.id)); // Highest priority drawn last.
-    return <svg ref={svg} className="circuit-map" viewBox={`0 0 ${MAP.width} ${MAP.height}`} aria-label={t('viewer.map')} role="group" data-layout={layout.id} data-checkpoint={checkpoint} data-motion={motion}>
+    // Canonical display numbers: identical server and client attribute strings (see race-map-style.ts).
+    const d = svgPath(layout.points.map(project), true);
+    const byTier = raceViewer
+        ? raceDrawOrder(rows.filter(r => !authoritative || r.status !== 'RETIRED').map(r => ({ id: r.id, position: r.entrant.position, player: r.player, retired: r.status === 'RETIRED' })), selected).map(id => rows.find(r => r.id === id)!)
+        : rows.filter(r => !authoritative || r.status !== 'RETIRED').sort((a, b) => tierOf(b.id) - tierOf(a.id) || a.id.localeCompare(b.id)); // Highest priority drawn last.
+    const neutralised = control === 'SAFETY_CAR' || control === 'VSC';
+    return <svg ref={svg} className="circuit-map" viewBox={`0 0 ${MAP.width} ${MAP.height}`} aria-label={t('viewer.map')} role="group" data-layout={layout.id} data-checkpoint={checkpoint} data-motion={motion} data-control={raceViewer ? control : undefined}>
+        {raceViewer ? <>
+            {/* Pit lane first: the racing line overlays its joins, so entry and exit read as branches of the circuit. */}
+            {pitRoute && (() => { const pd = svgPath(pitRoute.points.map(project)), g = project(samplePitRoute(pitRoute, pitRoute.service));
+                return <g className="pit-lane" pointerEvents="none"><path d={pd} fill="none" stroke="#04070a" strokeWidth={svgNumber(style.pitCasing)} strokeLinejoin="round" strokeLinecap="round"/><path className="pit-route" d={pd} fill="none" stroke="#76848f" strokeWidth={svgNumber(style.pitSurface)} strokeLinejoin="round" strokeLinecap="round"/><circle className="pit-garage" cx={svgNumber(g.x)} cy={svgNumber(g.y)} r={svgNumber(style.pitCasing * .55)} fill="#0b1116" stroke="#c9d3db" strokeWidth={svgNumber(style.edge)}><title>{t('viewer.pit')}</title></circle></g>; })()}
+            {/* Racing line: dark casing, light kerb edge, darker surface (amber edge under Safety Car / VSC as a supplementary cue). */}
+            <g className="race-track" pointerEvents="none">
+                <path d={d} fill="none" stroke="#04070a" strokeWidth={svgNumber(style.casing)} strokeLinejoin="round"/>
+                <path className="track-edge" d={d} fill="none" stroke={neutralised ? '#c9a227' : '#6d7b87'} strokeWidth={svgNumber(style.surface)} strokeLinejoin="round"/>
+                <path className="track-surface" d={d} fill="none" stroke="#2f3a44" strokeWidth={svgNumber(style.surface - 2 * style.edge)} strokeLinejoin="round"/>
+            </g>
+            {/* Compact chequered line across the track; no text label over the field. */}
+            <g className="start-finish compact" transform={`translate(${svgNumber(start.x)} ${svgNumber(start.y)}) rotate(${svgNumber(angle)})`} pointerEvents="none" role="img" aria-label={startText}><title>{startText}</title>
+                {(() => { const cell = style.startWidth / 2, n = Math.max(4, Math.round(style.startLength / cell)), top = -n * cell / 2;
+                    return <><rect x={svgNumber(-cell - .75)} y={svgNumber(top - .75)} width={svgNumber(2 * cell + 1.5)} height={svgNumber(n * cell + 1.5)} fill="#04070a"/>{Array.from({ length: n }, (_, i) => <g key={i}><rect x={svgNumber(-cell)} y={svgNumber(top + i * cell)} width={svgNumber(cell)} height={svgNumber(cell)} fill={i % 2 ? '#04070a' : '#f2f5f7'}/><rect x="0" y={svgNumber(top + i * cell)} width={svgNumber(cell)} height={svgNumber(cell)} fill={i % 2 ? '#f2f5f7' : '#04070a'}/></g>)}</>; })()}</g>
+        </> : <>
         <defs><pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#242c32" strokeWidth="1"/></pattern></defs>
         <rect width={MAP.width} height={MAP.height} fill="url(#map-grid)" opacity=".55"/>
         <path d={d} fill="none" stroke="#070b0e" strokeWidth="30" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#53606c" strokeWidth="18" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#a6b4bf" strokeWidth="1.5" strokeDasharray="5 13" opacity=".4"/>
-        {pitRoute&&(()=>{const pd=pitRoute.points.map((p,i)=>{const q=project(p);return `${i?'L':'M'}${q.x},${q.y}`;}).join(' '),g=project(samplePitRoute(pitRoute,pitRoute.service));
-            // Secondary to the racing line: a slim muted lane with a dark casing and a small garage tick (no colour-only meaning).
-            return <g className="pit-lane" pointerEvents="none"><path d={pd} fill="none" stroke="#070b0e" strokeWidth="9" strokeLinejoin="round" strokeLinecap="round"/><path className="pit-route" d={pd} fill="none" stroke="#8a98a4" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round"/><circle className="pit-garage" cx={g.x} cy={g.y} r="4.5" fill="#0b1116" stroke="#c9d3db" strokeWidth="1.5"><title>{t('viewer.pit')}</title></circle></g>;})()}
-        {raceViewer
-            // Race map: a compact chequered line across the track (no text label that could cover nearby bubbles).
-            ? <g className="start-finish compact" transform={`translate(${start.x} ${start.y}) rotate(${angle})`} pointerEvents="none" role="img" aria-label={startText}><title>{startText}</title>
-                <rect x="-3.5" y="-15" width="7" height="30" fill="#0b1116"/>{[-15,-9,-3,3,9].map((y,i)=><g key={y}><rect x="-3.5" y={y} width="3.5" height="6" fill={i%2?'#0b1116':'#f2f5f7'}/><rect x="0" y={y} width="3.5" height="6" fill={i%2?'#f2f5f7':'#0b1116'}/></g>)}</g>
-            : <g className="start-finish" transform={`translate(${start.x} ${start.y})`} pointerEvents="none"><path transform={`rotate(${angle})`} d="M 0 -12 L 0 12" stroke="white" strokeWidth="4"/><text x={startTextX} y={startTextY} textAnchor="middle" fill="#dfe8ee" fontSize="13" fontWeight="700" stroke="#0b1116" strokeWidth="3" paintOrder="stroke">{startText}</text></g>}
-        {byTier.map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id), chosen = r.id === selected; return <g key={r.id} data-car={r.id} data-tier={tier} data-hidden={r.hidden ? '1' : '0'} visibility={r.hidden ? 'hidden' : undefined} aria-hidden={r.hidden || undefined} transform={`translate(${p.x} ${p.y})`} role="button" tabIndex={r.hidden ? -1 : 0} aria-label={`${r.name} · ${t('race.position')} ${r.entrant.position} · ${t(`incident.${r.status}`)}${r.player ? ` · ${t('viewer.player')}` : ''}${r.lapsDown ? ` · ${t('viewer.lapsDown', { count: format.number(r.lapsDown) })}` : ''}`} aria-pressed={chosen} onClick={() => onSelect(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }} className={`map-car ${r.hidden ? 'in-garage' : ''} ${r.status === 'RETIRED' ? 'retired' : ''} ${r.player ? 'player' : ''} ${chosen ? 'selected' : ''} ${r.lapsDown ? 'lapped' : ''}`}>
+        <g className="start-finish" transform={`translate(${svgNumber(start.x)} ${svgNumber(start.y)})`} pointerEvents="none"><path transform={`rotate(${svgNumber(angle)})`} d="M 0 -12 L 0 12" stroke="white" strokeWidth="4"/><text x={svgNumber(startTextX)} y={startTextY} textAnchor="middle" fill="#dfe8ee" fontSize="13" fontWeight="700" stroke="#0b1116" strokeWidth="3" paintOrder="stroke">{startText}</text></g>
+        </>}
+        {byTier.map(r => { const p = initial.get(r.id) ?? start, tier = tierOf(r.id), chosen = r.id === selected; return <g key={r.id} data-car={r.id} data-tier={tier} data-hidden={r.hidden ? '1' : '0'} visibility={r.hidden ? 'hidden' : undefined} aria-hidden={r.hidden || undefined} transform={`translate(${svgNumber(p.x)} ${svgNumber(p.y)})`} role="button" tabIndex={r.hidden ? -1 : 0} aria-label={`${r.name} · ${t('race.position')} ${r.entrant.position} · ${t(`incident.${r.status}`)}${r.player ? ` · ${t('viewer.player')}` : ''}${r.lapsDown ? ` · ${t('viewer.lapsDown', { count: format.number(r.lapsDown) })}` : ''}`} aria-pressed={chosen} onClick={() => onSelect(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }} className={`map-car ${r.hidden ? 'in-garage' : ''} ${r.status === 'RETIRED' ? 'retired' : ''} ${r.player ? 'player' : ''} ${chosen ? 'selected' : ''} ${r.lapsDown ? 'lapped' : ''}`}>
             <title>{`${r.name} · ${r.team} · ${t('race.position')} ${r.entrant.position}`}</title>
-            {raceViewer && <line className="track-anchor" x1="0" y1="0" x2="0" y2="0" stroke={r.color} strokeWidth="1" opacity="0" pointerEvents="none"/>}
-            {raceViewer ? <g className="badge-content bubble" transform={`scale(${packScale})`}>
+            {raceViewer ? <g className="badge-content bubble" transform={`scale(${svgNumber(packScale)})`}>
             <circle className="hit-area" r={RACE_BUBBLE.r+5} fill="transparent"/>
             {chosen && <circle className="selected-ring" r={RACE_BUBBLE.r+5} fill="none" stroke="#ffffff" strokeWidth="2.6"/>}
             {r.player && <circle className="player-ring" r={RACE_BUBBLE.r+2.3} fill="#0b1116" stroke="#ffffff" strokeWidth="1.5"/>}

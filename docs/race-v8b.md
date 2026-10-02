@@ -76,7 +76,7 @@ Deferred: v8C dry specification/regulatory expansion and deep energy campaigns; 
   - lapped car: a dashed border, with the deficit in the accessible name;
   - pitting car: the same bubble on the pit route plus a small PIT tag;
   - retired cars: still removed from the authoritative map.
-- **Dense packs.** Bubbles use five bounded lateral lanes (within 1.5 diameters). Partial overlap is accepted rather than moving cars away from their track position, and crossing branches stay separate (track progress, not screen distance). The anchor line appears only for an outer-lane bubble.
+- **Dense packs.** Superseded by the final repair below: markers are no longer fanned out into lateral lanes and there is no anchor line.
 - **Layout.** From 1221 px the Race page is a three-column dashboard: timing tower | track map | selected-driver management (240/1fr/310, and 290/1fr/360 from 1600 px). This replaces the v8A two-column grid that pushed the driver panel full-width under the map and stretched resource bars across the page. Resource bars and Active Aero / Overtake / Boost controls stay inside the management column, and mode buttons wrap within it. Tablet and phone widths keep the existing stacked layout.
 
 ## v8B-R and final fidelity repair
@@ -95,3 +95,73 @@ Deferred: v8C dry specification/regulatory expansion and deep energy campaigns; 
   - slim muted pit lane with a garage tick;
   - phone-width maps rotate strip-like circuits rigidly (data-driven, at most ±90°) and may grow to a portrait canvas.
     Monza at 390 px goes from 356×155 to about 356×436.
+
+## Final repair: Codex findings and Race map polish
+Display-only. No simulation, timing, zone, pit-anchor or balance change. The v8A digest `b9f931f9…` is unchanged.
+
+### Codex findings
+- **V8B-MED-001 (Miami pit-lane clearance):** presentation route only; see `circuit-geometry-sources.md`. Minimum
+  full-lane clearance went from 0.0119 to 0.0259 of the map; the 0.5-lane-unit (0.013) threshold is unchanged.
+- **V8B-MED-002 (pit-phase fixtures):** `tests/helpers/pit-phase.ts` derives ENTRY / LANE / SERVICE / EXIT distances
+  from the Race's own frozen anchors (midpoint of the entry road, midpoint of lane-start → service, exactly service,
+  midpoint of lap line → exit on the following lap). The PostgreSQL reload test uses it instead of fixed distances, and a
+  pure test checks all four phases on every circuit against unchanged authoritative validation.
+- **V8B-LOW-001 (hydration mismatch):**
+  - **Root cause:** Node 22 (server) and Chromium (client) V8 builds can return different last-ulp results for
+    `Math.sin` / `Math.cos` (measured: about 3 % of sampled inputs). `normalizeCircuitPoints` rotates layout points
+    with them, so the server and the browser can compute coordinates that differ in their final digits. The SVG
+    attributes were printed at full precision, so React saw different strings. Measured on the production layouts, only
+    Madrid differed (20 of 624 strings).
+  - **Fix:** a display-only boundary, `race-map-style.ts`. `svgNumber` / `svgPath` print every server-rendered map
+    number rounded to 0.01 viewBox units (far below one screen pixel), so both sides print the same string. No
+    `suppressHydrationWarning`; the simulation and stored geometry are untouched.
+
+### Race map presentation
+- **Markers sit on the track.** Each bubble is drawn exactly at its authoritative route sample: the main-track sample
+  or, for a car in the pit, the pit-route sample.
+  - Bubbles may overlap. No car is pushed off the track to avoid another.
+  - There is no lateral fan-out, no tether line and no cluster counter.
+  - The only lateral term is the lap-0 two-by-two grid, clamped to 0.6 of the drawn track half-width.
+  - Crossing branches cannot repel each other, because nothing is repelled.
+  - The Practice / Qualifying `MarkerPacks` are unchanged.
+- **Priority by draw order** (`raceDrawOrder`), bottom to top:
+  1. retired cars;
+  2. the field, back of the classification first, so the car leading a pack is on top;
+  3. the player's cars;
+  4. the selected car.
+- **Track** (sized from the bubble diameter D, `raceTrackStyle`):
+  - dark casing 0.66 D;
+  - light edge band 0.46 D, with a darker surface inside it (the edge turns amber under Safety Car / VSC as a
+    supplementary cue, and `data-control` carries the state);
+  - the background grid and dashed centre line are removed from the Race map.
+  A centred bubble therefore reads as a car on a road at every map size.
+- **Pit lane:** drawn first, so the racing line overlays its joins. Casing 0.30 D, surface 0.16 D, plus a garage
+  circle: secondary, but visibly connected.
+- **Start/finish:** a compact chequered strip across the track (1.25 × the casing long), with no text label.
+- **Fitting:**
+  - one uniform scale over the circuit plus the pit lane;
+  - the canvas padding fits a selected bubble plus its ring (`raceMapPadding`), so no marker is clamped away from its
+    route;
+  - rigid compact rotation (Monza) is unchanged.
+- **Motion:** the single RAF loop and authoritative interpolation are unchanged. The Race loop no longer runs a packing
+  pass, so it stops as soon as interpolation settles.
+- **References:** see `race-v8b-map-reference-study.md`. Only principles were taken; no code, assets or coordinates.
+
+### Permanent tests (for independent QA)
+- **`tests/circuit-geometry.test.ts`:** Miami clearance, with the anchors pinned; all 24 lanes keep the existing
+  threshold.
+- **`tests/race-v8b.test.ts`:** phase fixtures derived from the anchors, on every circuit.
+- **`tests/race-v8b.integration.test.ts`:** the PostgreSQL reload per phase uses the derived fixtures.
+- **`tests/race-map-presentation.test.tsx`:**
+  - canonical numbers and ulp invariance;
+  - identical SSR markup for a layout perturbed by one ulp;
+  - at most two decimals in every geometry attribute;
+  - in a lap-1 pack and a Safety Car train, every marker is exactly on its route sample (overlap present; no tether,
+    badge or cluster);
+  - the grid lateral is clamped inside the corridor;
+  - Suzuka crossover branches do not repel;
+  - TRACK vs PIT route separation;
+  - the draw order.
+- **`tests/race-v8b-visual.test.tsx` / `tests/race-v8-map.test.tsx`:** circular markers, rings, lapped and pit cues; the
+  pit-car transform uses canonical numbers.
+- **Aspect ratio and rigid rotation:** `tests/circuit-geometry.test.ts`.

@@ -4,7 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { I18nProvider } from '../src/i18n/provider';
 import { TrackMap,raceMapCanvas } from '../src/features/race/viewer/track-map';
 import { RaceMotion } from '../src/features/race/viewer/motion';
-import { RACE_BUBBLE,BADGE,MarkerPacks,RaceMarkerPacks } from '../src/features/race/viewer/marker-packs';
+import { RACE_BUBBLE,BADGE,MarkerPacks } from '../src/features/race/viewer/marker-packs';
+import { anchorRaceMarker,raceTrackStyle } from '../src/features/race/viewer/race-map-style';
 import { timingRows,entrantProgress } from '../src/features/race/viewer/model';
 import { viewerData } from './helpers/viewer';
 import { projectRaceView } from '../src/features/race/projection';
@@ -33,14 +34,12 @@ describe('v8 Race map presentation',()=>{
  it('keeps label staggering track-local across unrelated crossing geometry and provides both locales',()=>{
   const pack=new MarkerPacks(),positions=pack.frame([{id:'a',progress:.1,x:10,y:10,nx:0,ny:1,tier:0},{id:'b',progress:.6,x:10,y:10,nx:0,ny:1,tier:1}],1500,16,true);expect(positions.get('b')!.offset).toBe(0);expect(translate('en','viewer.lapsDown',{count:'2'})).toBe('2 lap(s) down');expect(translate('zh-TW','viewer.lapsDown',{count:'2'})).toBe('落後 2 圈');
  });
- it('spreads a 22-car train in bounded lateral lanes without changing track progress or mixing crossing branches',()=>{
-  const cars=Array.from({length:22},(_,n)=>({id:`car-${String(n).padStart(2,'0')}`,progress:n*6/2000,x:n*6,y:100,nx:0,ny:1,tier:n}));
-  const pack=new RaceMarkerPacks(),positions=pack.frame(cars,2000,16,true);
-  const d=2*RACE_BUBBLE.r;
-  for(const car of cars){const p=positions.get(car.id)!;expect(p.x).toBe(car.x);expect(Math.abs(p.offset)).toBeLessThanOrEqual(1.5*d);}
-  // Bubbles may overlap partially (up to ~30%) but never stack on top of each other.
-  for(let i=0;i<cars.length;i++)for(let j=i+1;j<cars.length;j++){const a=positions.get(cars[i].id)!,b=positions.get(cars[j].id)!;expect(Math.hypot(a.x-b.x,a.y-b.y)).toBeGreaterThanOrEqual(.7*d);}
-  const crossing=new RaceMarkerPacks().frame([cars[0],{...cars[0],id:'crossing',progress:.6,tier:1}],2000,16,true);expect(crossing.get('crossing')!.offset).toBe(0);
+ it('keeps a 22-car train exactly on the racing line: overlap allowed, no lateral lanes, no crossing-branch repulsion',()=>{
+  const style=raceTrackStyle(2*RACE_BUBBLE.r);
+  const cars=Array.from({length:22},(_,n)=>({x:n*6,y:100,tangentX:1,tangentY:0}));
+  for(const c of cars)expect(anchorRaceMarker(c,0,style.corridor)).toEqual({x:c.x,y:c.y});
+  // A car on a crossing branch at the same screen point is placed at its own sample, untouched by the other.
+  const crossing={x:cars[0].x,y:cars[0].y,tangentX:0,tangentY:1};expect(anchorRaceMarker(crossing,0,style.corridor)).toEqual({x:crossing.x,y:crossing.y});
  });
  it('projects current local segments / pit route / lap deficit without exposing integration plans',()=>{
   const d=viewerData(),s=advanceRace(createRace({...d.state!.input,progression:progressionForCircuit(d.circuit.sourceCircuitId)}),4),v=projectRaceView({...d,state:s});expect(v.state!.entrants.every(e=>e.track?.local?.segmentId)).toBe(true);const text=JSON.stringify(v);for(const hidden of ['lapCommands','freeLapMs','launchDelayMs','passingId','remainder','rngState','"seed"'])expect(text).not.toContain(hidden);

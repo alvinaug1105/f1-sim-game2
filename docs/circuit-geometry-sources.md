@@ -57,9 +57,15 @@ Map, Pit Lane Drawing, Emergency Exits Map …".
      authoritative service point is placed just before the line.
 4. **Drawn pit lane (presentation only):**
    - **Lateral separation is exaggerated:** 0.026 of the map per lane unit, much wider than true scale, so the lane reads
-     beside a 30-unit track casing.
+     beside the Race track casing (sized from the driver bubble; see `race-v8b.md`).
    - **Shape:** entry and exit roads that cut inside a corner are drawn as straight chords.
    - **Garage tick:** sits at the representative middle of the FIA garage run. The bubble pauses there during SERVICE.
+   - **Clearance:** every full-lane section stays more than 0.5 lane units from the racing line (permanent test).
+     **Miami (final repair, V8B-MED-001):** the followed lane formerly continued into T1, where the normal offset swung
+     toward the line (minimum 0.0119 of the map). The followed section now ends before T1 turns in (1.030), and the exit
+     road is a straight chord through the inside of T1, rejoining after T2 (1.068). Minimum clearance is now 0.0259.
+     The authoritative anchors (entry 0.915, lane start 0.945, service 0.990, exit 0.068) are unchanged, so Race timing
+     is unchanged.
    - **Pit timing:** loss is never derived from the drawn length.
 
 Statuses:
@@ -79,7 +85,7 @@ the lap line). "Ctrl" is the FIA control line in our progress.
 | 3 | Suzuka (…301) | FIA 2026 Japanese GP | OSM way 120917578 (0.911→0.066, right) | VERIFIED | none | 0.915, after the T16–T18 chicane | right (outside) | main straight; garages after ctrl (≈0.963), drawn at 1.008, auth. 0.990 | 0.060, before T1 | VERIFIED WITH APPROXIMATION (progress 0 is at the start line, 0.037 after ctrl) |
 | 4 | Bahrain / Sakhir (…303) | FIA 2025 Bahrain GP (2026 doc is Sepang) | — | VERIFIED | none | 0.918, after T15 | right (inside) | main straight; garages after ctrl (≈0.973), drawn 1.008, auth. 0.990 | 0.060, merge lane before the SC2 line | VERIFIED WITH APPROXIMATION |
 | 5 | Jeddah (…308) | FIA 2025 Saudi Arabian GP | — | VERIFIED (was SOURCE BLOCKED) | none | 0.912, just after T27, inside | left | main straight; garages after ctrl, drawn 1.020, auth. 0.990 | 0.050, before the T1 chicane | VERIFIED WITH APPROXIMATION |
-| 6 | Miami (…309) | FIA 2026 Miami GP | — | VERIFIED (was SOURCE BLOCKED) | none | 0.915, after T18, cutting inside T19 | right | main straight; garages after ctrl (0.990) | 0.068, inside T1, rejoining after T2 | VERIFIED WITH APPROXIMATION |
+| 6 | Miami (…309) | FIA 2026 Miami GP | — | VERIFIED (was SOURCE BLOCKED) | none | 0.915, after T18, cutting inside T19 | right | main straight; garages after ctrl (0.990) | 0.068, exit road chorded through the inside of T1, rejoining after T2 | VERIFIED WITH APPROXIMATION |
 | 7 | Montréal (…310) | FIA 2026 Canadian GP | OSM way 413000959 (0.938→0.136, left) | VERIFIED | none | 0.938, before the final T13/T14 chicane | left | main straight; garages (1.000 drawn, auth. 0.985) | 0.136, after the T2 hairpin | VERIFIED WITH APPROXIMATION |
 | 8 | Monaco (…304) | FIA 2026 Monaco GP | OSM way 850261588 (Rascasse→Ste Dévote, right; the earlier "conflict" was caused by the wrong source start point) | VERIFIED | **lap line re-anchored** +46/64 to Boulevard Albert Ier | 0.906, at Rascasse, inside | right (harbour side) | along the S/F straight, between it and the Piscine section; narrower offset (0.9 lane units) | 0.066, at Sainte Dévote | VERIFIED WITH APPROXIMATION |
 | 9 | Barcelona-Catalunya (…311) | FIA 2026 Barcelona-Catalunya GP | — | VERIFIED (current layout, no final chicane) | none | 0.912, in the final corner T14, inside | right | main straight; garages after ctrl, drawn 1.020, auth. 0.990 | 0.075, merge before T1 | VERIFIED WITH APPROXIMATION |

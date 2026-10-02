@@ -4,6 +4,9 @@ import { useI18n, LocalizedPageTitle } from '../../../i18n/provider';
 import type { RaceViewData } from '../public-view';
 import { formatRaceTime } from '../../../i18n/race-time';
 import { layoutForCircuit } from '../../../data/seed/circuit-layouts';
+import { drawnPitLane } from '../../../data/seed/circuit-pit-lanes';
+import { racePitRoute } from '../../../game/domain/pit-geometry';
+import { compactRotation, orientLayout } from '../../../game/domain/circuit-geometry';
 import { timingRows } from './model';
 import { PlaybackController } from './playback';
 import { PlaybackBar } from './playback-bar';
@@ -17,6 +20,8 @@ import { RaceHeader, RaceClock, ConditionsStrip, RaceAlerts } from './race-heade
 import { TimingTower } from './timing-tower';
 import { PlayerSwitch } from './player-switch';
 import { EventFeed } from './event-feed';
+const PHONE = '(max-width: 599px)';
+const subscribePhone = (notify: () => void) => { const media = window.matchMedia(PHONE); media.addEventListener('change', notify); return () => media.removeEventListener('change', notify); };
 import { controlMode, labelTiers } from './race-view';
 export function RaceOperations({ initialData }: {
     initialData: RaceViewData;
@@ -31,6 +36,15 @@ export function RaceOperations({ initialData }: {
     const rows = useMemo(() => timingRows(data), [data]), [selected, setSelected] = useState(() => timingRows(initialData).find(r => r.player)?.id ?? initialData.state!.entrants[0].entrantId), [interval, setIntervalView] = useState(false), [reduceMotion, setReduceMotion] = useState(false);
     const s = data.state!, row = rows.find(r => r.id === selected) ?? rows[0], layout = layoutForCircuit(data.circuit.sourceCircuitId), control = controlMode(s), weather = s.weather;
     const tiers = useMemo(() => labelTiers(rows, row.id, s), [rows, row.id, s]);
+    // Drawn pit lane: authored per-circuit presentation, re-parameterised by this Race's frozen authoritative anchors.
+    const anchors = s.input.pitAnchors, sourceCircuitId = data.circuit.sourceCircuitId;
+    const pitRoute = useMemo(() => { const lane = anchors ? drawnPitLane(sourceCircuitId) : null; return lane && anchors ? racePitRoute(lane, anchors) : undefined; }, [anchors?.entry, anchors?.service, anchors?.exit, sourceCircuitId]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Phone-width maps: a data-driven rigid presentation rotation when it materially enlarges the drawing (never a stretch).
+    const phone = useSyncExternalStore(subscribePhone, () => window.matchMedia(PHONE).matches, () => false);
+    const map = useMemo(() => {
+        const degrees = phone ? compactRotation([...layout.points, ...(pitRoute?.points ?? [])]) : 0, oriented = orientLayout(layout, degrees);
+        return { degrees, layout: oriented.layout, pitRoute: pitRoute && { ...pitRoute, points: oriented.transform(pitRoute.points) } };
+    }, [phone, layout, pitRoute]);
     const send = (intent: ViewerIntent) => { void controller.command(async (state) => { const result = await viewerAction(data.progress.career.id, data.eventId, state.lap, intent, data.kind ?? 'RACE'); if (!result.data)
         throw new Error(result.error!); setData(result.data); return result.data.state!; }, commandInfo(intent)); };
     const attentionId = playback.reason && playback.reason !== 'FINISH' ? playback.attention?.entrantId ?? null : null;
@@ -67,7 +81,7 @@ export function RaceOperations({ initialData }: {
   {sprint && s.status === 'FINISHED' && <SprintSummary data={data} rows={rows}/>}
   <div className="ops-grid">
    <TimingTower state={s} rows={rows} selected={row.id} onSelect={setSelected} interval={interval} onInterval={setIntervalView} attentionId={attentionId}/>
-   <div className="map-column"><section className="ops-panel track-panel"><div className="ops-panel-title"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId}/><TrackMap key={layout.id} layout={layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers} authoritative={s.simulationVersion === 8} pitRoute={s.input.pitRoute} raceViewer/><p className="map-notice">{t('viewer.interpolation')} {t('viewer.labelNote')}</p></section>
+   <div className="map-column"><section className="ops-panel track-panel"><div className="ops-panel-title"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId}/><TrackMap key={`${layout.id}:${map.degrees}`} layout={map.layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers} authoritative={s.simulationVersion === 8} pitRoute={map.pitRoute} compact={phone} raceViewer/><p className="map-notice">{t('viewer.interpolation')} {t('viewer.labelNote')}</p></section>
    {weather && <details className="ops-panel forecast-drawer"><summary>{t('weather.forecast')}</summary><WeatherPanel state={s}/></details>}
    <EventFeed data={data}/>
    </div>

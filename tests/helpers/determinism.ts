@@ -38,3 +38,14 @@ export function remapIds(state: RaceSimulationState, seed: number) {
 }
 /** Canonical serialisation (sorted keys) for exact comparison, independent of property insertion order. */
 export function canonical(value: unknown) { return JSON.stringify(reorderKeys(value, "REVERSE")); }
+/**
+ * The historical v8A fixture canonicalisation (unchanged since the save was accepted): entrant / driver IDs become their
+ * grid slot and team IDs their first-appearance index, keeping the engine's own serialisation. Its SHA-256 is
+ * `finishedSha256` in race-v8a-postgres-main-save.json.
+ */
+export function slotCanonical(state: RaceSimulationState, ids: RaceSimulationState) {
+    let text = JSON.stringify(state);
+    for (const e of ids.input.entrants) text = text.replaceAll(e.entrantId, `slot-${e.gridPosition}`).replaceAll(e.driverId, `driver-${e.gridPosition}`);
+    for (const [n, id] of [...new Set(ids.input.entrants.map(e => e.teamId))].entries()) text = text.replaceAll(id, `team-${n}`);
+    return text;
+}

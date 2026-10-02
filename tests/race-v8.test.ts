@@ -8,8 +8,9 @@ import { neutralise, forceMechanical } from './helpers/incidents';
 import { requestPitStop } from '../src/simulation/race/pits/model';
 import { projectRaceState } from '../src/features/race/projection';
 import type { RaceSimulationState } from '../src/simulation/race/types';
+import { tieOrderFor } from '../src/simulation/race/progression/tie-order';
 function input(count=4,laps=12) { const i=racecraftInput({count,laps,paceMs:Array.from({length:count},(_,n)=>n*250)}); return {...i,progression:progressionForCircuit('00000000-0000-4000-8000-000000000301')}; }
-function distance(s:RaceSimulationState,id:string,total:number):RaceSimulationState { return {...s,entrants:classifyProgress(s.entrants.map(e=>e.entrantId===id?{...e,completedLaps:Math.floor(total/LAP_UNITS),track:{...e.track!,progressMicrolaps:total}}:e),s.input.circuit.baseLapTimeMs)}; }
+function distance(s:RaceSimulationState,id:string,total:number):RaceSimulationState { return {...s,entrants:classifyProgress(s.entrants.map(e=>e.entrantId===id?{...e,completedLaps:Math.floor(total/LAP_UNITS),track:{...e.track!,progressMicrolaps:total}}:e),s.input.circuit.baseLapTimeMs,tieOrderFor(s.input.progression!))}; }
 const reload=(s:RaceSimulationState)=>JSON.parse(JSON.stringify(s)) as RaceSimulationState;
 describe('v8 authoritative distance foundation',()=>{
     it('dispatches explicitly and retains the historical v7 creation / continuation path',()=>{
@@ -29,8 +30,8 @@ describe('v8 authoritative distance foundation',()=>{
     it('separates circular physical neighbours from championship order, including start/finish wrap',()=>{
         let s=advanceRace(createRace(input(3)),4);const [a,b,c]=s.input.entrants.map(e=>e.entrantId);
         s=distance(distance(distance(s,a,4_800_000),b,3_820_000),c,4_300_000);
-        const leader=s.entrants.find(e=>e.entrantId===a)!; expect(leader.position).toBe(1);expect(physicalAhead(s.entrants,leader,s.progression!.cars)!.entrant.entrantId).toBe(b);
-        s=distance(distance(s,a,4_990_000),b,3_010_000);expect(physicalAhead(s.entrants,s.entrants.find(e=>e.entrantId===a)!)!.distance).toBe(20000);
+        const leader=s.entrants.find(e=>e.entrantId===a)!; expect(leader.position).toBe(1);expect(physicalAhead(s.entrants,leader,s.progression!.cars,tieOrderFor(s.input.progression!))!.entrant.entrantId).toBe(b);
+        s=distance(distance(s,a,4_990_000),b,3_010_000);expect(physicalAhead(s.entrants,s.entrants.find(e=>e.entrantId===a)!,undefined,tieOrderFor(s.input.progression!))!.distance).toBe(20000);
     });
     it('accepts one/multiple lap deficits and deterministic reload without equalising the field',()=>{
         let s=advanceRace(createRace(input(4,20)),6);const id=s.input.entrants[3].entrantId;s=distance(s,id,2_600_000);

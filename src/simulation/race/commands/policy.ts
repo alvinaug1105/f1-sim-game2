@@ -1,4 +1,5 @@
 import { physicalAhead, physicalBehind, LAP_UNITS } from '../progression/model';
+import { tieOrderFor } from '../progression/tie-order';
 import type { RaceEntrantState, RaceSimulationState } from "../types";
 import type { RacecraftConfiguration } from "../traffic/racecraft";
 import { commandPaceMs, projectedFuelGrams, type CommandConfiguration, type CommandState } from "./model";
@@ -26,7 +27,7 @@ function racecraftModes(state: RaceSimulationState, e: RaceEntrantState, r: Race
     (tyreEdge(car, ahead) || (heldOnMerit(car) && !justPassedBy(car, ahead)));
   let ahead = byPosition(e.position - 1), behind = byPosition(e.position + 1);
   if (state.simulationVersion === 8) {
-    const nearAhead = physicalAhead(state.entrants,e,state.progression!.cars), nearBehind = physicalBehind(state.entrants,e,state.progression!.cars);
+    const nearAhead = physicalAhead(state.entrants,e,state.progression!.cars,tieOrderFor(state.input.progression!)), nearBehind = physicalBehind(state.entrants,e,state.progression!.cars);
     const ms = (distance: number) => Math.round(distance*state.input.circuit.baseLapTimeMs/LAP_UNITS);
     ahead = nearAhead?.entrant;
     e = { ...e, intervalToAheadMs: nearAhead ? ms(nearAhead.distance) : null };

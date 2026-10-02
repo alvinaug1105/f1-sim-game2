@@ -35,7 +35,9 @@ describe("Content Expansion Pass B circuits", () => {
         expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(.1);
         // Uniform fit: the longer side spans the whole unit square.
         expect(Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys))).toBeCloseTo(1, 9);
-        expect(layout.startFinishProgress).toBe(0);
+        // Presentation lap-line correction in whole 1/64-lap segments (only Monaco and Silverstone; FIA control line).
+        expect(layout.startFinishProgress * 64).toBe(Math.round(layout.startFinishProgress * 64));
+        expect(layout.startFinishProgress === 0 || ['monaco', 'silverstone'].includes(layout.id)).toBe(true);
         const path = prepareCircuitPath(layout), project = circuitProjection(layout.points);
         let previous = project(path.sample(0));
         for (let i = 1; i <= 2000; i++) {

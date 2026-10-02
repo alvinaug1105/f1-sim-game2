@@ -10,6 +10,7 @@ import { followingEffects, passProbability, attackEdge, type OvertakeCause } fro
 import { driverRiskPpm, mechanicalRiskPpm, effectivePitLaneLoss, validateIncidentState, type RaceEvent, type IncidentKind, type RaceControlMode } from '../incidents/model';
 import { closeRetiredStints } from '../incidents/engine';
 import { classifyProgress, physicalAhead, zonesAt, localProgress, LAP_UNITS, validateProgressionState, type CarProgression } from './model';
+import { tieOrderFor } from './tie-order';
 /** Integration uses integer milliseconds and nanolaps/ms, carrying the sub-microlap remainder (0..999). */
 const QUANTUM_MS = 100;
 const emptyTrack = (e: RaceEntrantState) => ({ ...e.track!, drsEligible: false, drsBenefitMs: 0, dirtyAirMs: 0, trafficLossMs: 0, attempted: false, passed: false });
@@ -26,6 +27,8 @@ export function advanceLegacyProgressionLap(saved: RaceSimulationState): RaceSim
     validateProgressionState(saved); validateIncidentState(saved);
     if (saved.status !== 'RUNNING' || saved.lap >= saved.input.totalLaps) throw new RangeError('Race finished');
     const lap = saved.lap + 1, input = saved.input, config = input.progression!, control = saved.incidents!, neutral = control.mode !== 'GREEN';
+    // Frozen revision-1 tie rule (historical entrant-ID order), so accepted v8A saves continue exactly as before.
+    const tie = tieOrderFor(config);
     const weather = advanceWeather(saved.weather!, input.weather!, lap), random = createSeededRandom(saved.rngState);
     let state = chooseAiCommands({ ...saved, weather });
     if (neutral) state = { ...state, entrants: state.entrants.map(e => input.entrants.find(s => s.entrantId === e.entrantId)!.strategyController === 'PLAYER' ? e : { ...e, commands: { ...e.commands!, paceMode: 'CONSERVE', fuelMode: 'CONSERVE', ersMode: 'HARVEST' } }) };
@@ -101,7 +104,7 @@ export function advanceLegacyProgressionLap(saved: RaceSimulationState): RaceSim
         let dt = QUANTUM_MS;
         const movement = new Map<string,{ rate: number; ahead: RaceEntrantState | null; distance: number; gapMs: number; effects: ReturnType<typeof followingEffects> }>();
         for (const e of running) {
-            const p = cars[e.entrantId], near = p.route === 'TRACK' ? physicalAhead(entries,e,cars) : null;
+            const p = cars[e.entrantId], near = p.route === 'TRACK' ? physicalAhead(entries,e,cars,tie) : null;
             const gapMs = near ? Math.round(near.distance*input.circuit.baseLapTimeMs/LAP_UNITS) : Infinity;
             const zone = zonesAt(config,e.track!.progressMicrolaps);
             const interaction = { ...input.interaction!, drsZoneCount: neutral || control.drsDelay>0 || weather.drsState==='DRS_DISABLED_WET' || !zone.some(z=>z.kind==='ASSISTANCE') ? 0 : input.interaction!.drsZoneCount };
@@ -195,7 +198,7 @@ export function advanceLegacyProgressionLap(saved: RaceSimulationState): RaceSim
             const e=entries[indexOf(source.entrantId)];
             if (active(e) && Math.floor(e.track!.progressMicrolaps/LAP_UNITS)>e.completedLaps) completeLap(e.entrantId);
         }
-        entries=classifyProgress(entries,input.circuit.baseLapTimeMs);
+        entries=classifyProgress(entries,input.circuit.baseLapTimeMs,tie);
         if (!flagged && entries.some(e=>e.incident!.status!=='RETIRED' && e.completedLaps>=lap)) {
             if (lap<input.totalLaps) break;
             flagged=true;
@@ -213,7 +216,7 @@ export function advanceLegacyProgressionLap(saved: RaceSimulationState): RaceSim
         const [error,kindRoll,severityRoll,mechanical,outcome,durationRoll]=Array.from({length:6},()=>incidentRandom.next());
         const e=entries[indexOf(source.entrantId)]; if (neutral || e.incident!.status==='RETIRED' || affected.has(e.entrantId)) continue;
         let kind:IncidentKind|null=null,severity:RaceEvent['severity']='MINOR';
-        const near=physicalAhead(entries,e,cars), ahead=near && near.distance*input.circuit.baseLapTimeMs/LAP_UNITS<=1000 ? near.entrant : null;
+        const near=physicalAhead(entries,e,cars,tie), ahead=near && near.distance*input.circuit.baseLapTimeMs/LAP_UNITS<=1000 ? near.entrant : null;
         const context={...state,entrants:entries,weather};
         if (error*1e6<driverRiskPpm(context,{...e,commands:cars[e.entrantId].lapCommands??e.commands,position:ahead?2:1,intervalToAheadMs:ahead?Math.round(near!.distance*input.circuit.baseLapTimeMs/LAP_UNITS):null},source)) {
             kind=(['DRIVER_MISTAKE','LOCK_UP','SPIN','CONTACT'] as const)[Math.floor(kindRoll*4)];
@@ -240,7 +243,7 @@ export function advanceLegacyProgressionLap(saved: RaceSimulationState): RaceSim
     const finished=lap===input.totalLaps;
     if(finished) entries=entries.map(e=>e.incident!.status==='RETIRED'?e:{...e,incident:{...e.incident!,status:'FINISHED'},pit:{...e.pit!,pendingCompound:null,stints:e.pit!.stints.map(s=>s.endLap===null&&s.startLap<e.completedLaps?{...s,endLap:e.completedLaps,endingTyre:e.stint!.tyre}:s)}});
     for (const e of entries) { const p=cars[e.entrantId]; if (p.passingId && !entries.some(x=>x.entrantId===p.passingId&&x.incident!.status==='RUNNING')) p.passingId=null; }
-    const next:RaceSimulationState={...saved,lap,status:finished?'FINISHED':'RUNNING',weather,rngState:random.getState(),incidents:nextControl,progression:{elapsedTimeMs:clock,cars},entrants:classifyProgress(entries,input.circuit.baseLapTimeMs,finished)};
+    const next:RaceSimulationState={...saved,lap,status:finished?'FINISHED':'RUNNING',weather,rngState:random.getState(),incidents:nextControl,progression:{elapsedTimeMs:clock,cars},entrants:classifyProgress(entries,input.circuit.baseLapTimeMs,tie,finished)};
     validateProgressionState(next); validateIncidentState(next);
     return next;
 }

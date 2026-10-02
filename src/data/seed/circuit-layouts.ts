@@ -1,5 +1,6 @@
 import type { CircuitMapLayout } from '../../game/domain/circuit-layout';
 import { normalizeCircuitPoints, projectCoordinates } from '../../game/domain/circuit-geometry';
+import { lapLineShift, SEGMENT_COUNT } from './circuit-race-metadata';
 import albertPark from './geometry/albert-park.json';
 import suzuka from './geometry/suzuka.json';
 import shanghai from './geometry/shanghai.json';
@@ -43,7 +44,8 @@ const geometry = (collection: { features: readonly { geometry: { coordinates: nu
  * Stable source IDs survive display-name and historical content-key changes. Rotations fit each circuit to the
  * landscape map; the two original layouts keep their accepted rotations.
  */
-export const circuitLayouts: Readonly<Record<string, CircuitMapLayout>> = {
+/** Source layouts with the source start point as progress 0 (what the frozen Race metadata was derived from). */
+export const sourceCircuitLayouts: Readonly<Record<string, CircuitMapLayout>> = {
     '00000000-0000-4000-8000-000000000300': realLayout('albert-park', 'au-1953.geojson', geometry(albertPark), 90, 'CLOCKWISE'),
     '00000000-0000-4000-8000-000000000301': realLayout('suzuka', 'jp-1962.geojson', geometry(suzuka), 0, 'FIGURE_EIGHT'),
     '00000000-0000-4000-8000-000000000302': realLayout('shanghai', 'cn-2004.geojson', geometry(shanghai), 120, 'CLOCKWISE'),
@@ -69,5 +71,10 @@ export const circuitLayouts: Readonly<Record<string, CircuitMapLayout>> = {
     '00000000-0000-4000-8000-000000000322': realLayout('lusail', 'qa-2004.geojson', geometry(circuit322), -61, 'CLOCKWISE'),
     '00000000-0000-4000-8000-000000000323': realLayout('yas-marina', 'ae-2009.geojson', geometry(circuit323), -82, 'COUNTER_CLOCKWISE'),
 };
+/**
+ * Production layouts. `startFinishProgress` (presentation only) moves the drawn lap line onto the FIA control-line
+ * straight where the source start point is elsewhere (whole 1/64-lap segments; see circuit-race-metadata.ts).
+ */
+export const circuitLayouts: Readonly<Record<string, CircuitMapLayout>> = Object.fromEntries(Object.entries(sourceCircuitLayouts).map(([id, layout]) => [id, { ...layout, startFinishProgress: lapLineShift(id) / SEGMENT_COUNT }]));
 export const fallbackLayout: CircuitMapLayout = { id: 'generic-schematic', closed: true, startFinishProgress: 0, direction: 'CLOCKWISE', points: [{ x: .2, y: .75 }, { x: .1, y: .5 }, { x: .2, y: .25 }, { x: .8, y: .25 }, { x: .9, y: .5 }, { x: .8, y: .75 }] };
 export function layoutForCircuit(sourceCircuitId?: string | null) { return sourceCircuitId ? circuitLayouts[sourceCircuitId] ?? fallbackLayout : fallbackLayout; }

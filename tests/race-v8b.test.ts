@@ -2,10 +2,10 @@ import {describe,it,expect} from 'vitest';
 import {createRace,advanceRace,advanceRaceLap} from '../src/simulation/race/engine';
 import {progressionBForCircuit,circuitProgressionB,progressionForCircuit} from '../src/data/seed/circuit-progression';
 import {circuitLayouts} from '../src/data/seed/circuit-layouts';
-import {prepareCircuitPath} from '../src/game/domain/circuit-geometry';
-import {samplePitRoute} from '../src/game/domain/pit-geometry';
+import {circuitPitLanes} from '../src/data/seed/circuit-pit-lanes';
 import {energyStep,qualify,initialAssistance,clearEntitlement,validateAssistance,ENERGY_POLICIES} from '../src/simulation/race/assistance/model';
 import {validateProgressionState,validateProgressionConfiguration,physicalAhead} from '../src/simulation/race/progression/model';
+import {domainTieOrder} from '../src/simulation/race/progression/tie-order';
 import {racecraftInput} from './helpers/racecraft';
 import {neutralise} from './helpers/incidents';
 import {requestPitStop} from '../src/simulation/race/pits/model';
@@ -28,18 +28,17 @@ describe('v8B revision and content',()=>{
   expect(()=>validateProgressionConfiguration({...b.input.progression!,version:3 as 2})).toThrow();
   expect(()=>advanceRaceLap({...b,entrants:b.entrants.map(e=>({...e,commands:{...e.commands!,ersMode:'DEPLOY'}}))})).toThrow();
  });
- it('supplies all 24 distinct pit paths with exact joins, service anchor and ordered finite points, including Suzuka',()=>{
+ it('supplies all 24 production circuits with authored pit progress anchors (no x/y in Race content), including Suzuka',()=>{
   expect(Object.keys(circuitProgressionB)).toHaveLength(24);expect(circuitLayouts[suzuka].id.toLowerCase()).toContain('suzuka');
-  const profiles=new Set<string>();
+  const profiles=new Set<string>(),anchors=new Set<string>();
   for(const [id,c] of Object.entries(circuitProgressionB)) {
-   validateProgressionConfiguration(c);const g=c.pit.geometry!,path=prepareCircuitPath(circuitLayouts[id]);
-   expect(samplePitRoute(g,c.pit.entry)).toMatchObject({x:path.sample(c.pit.entry/1e6).x,y:path.sample(c.pit.entry/1e6).y});
-   expect(samplePitRoute(g,c.pit.exit).x).toBeCloseTo(path.sample(c.pit.exit/1e6).x,10);
-   expect(Math.hypot(samplePitRoute(g,c.pit.service).x-path.sample(c.pit.service/1e6).x,samplePitRoute(g,c.pit.service).y-path.sample(c.pit.service/1e6).y)).toBeGreaterThan(.01);
-   for(const p of [c.pit.entry,940000,c.pit.service,990000,10000,c.pit.exit])expect(Number.isFinite(samplePitRoute(g,p).x)).toBe(true);
-   profiles.add(JSON.stringify(c.assistance));
+   validateProgressionConfiguration(c);const lane=circuitPitLanes[id];
+   expect(c.pit.geometry).toBeUndefined();
+   expect(c.pit).toMatchObject({entry:lane.entry,service:lane.service,exit:lane.exit});
+   expect(c.pit.segments[0]).toMatchObject({start:lane.entry,end:lane.laneStart});
+   anchors.add(`${c.pit.entry}/${c.pit.exit}`);profiles.add(JSON.stringify(c.assistance));
   }
-  expect(profiles.size).toBeGreaterThan(10);
+  expect(anchors.size).toBeGreaterThan(20);expect(profiles.size).toBeGreaterThan(10);
  });
 });
 describe('v8B assistance envelope',()=>{
@@ -110,7 +109,7 @@ describe('v8B integration and observable presentation',()=>{
   const s=advanceRace(createRace(input()),1),team=s.input.entrants[0].teamId,v=projectRaceState(s,team),text=JSON.stringify(v);
   for(const key of ['rngState','"seed"','deploymentRemainder','recoveryRemainder','qualifiedLap','validUseLap','expiresAfterLap','lapCommands','freeLapMs','passingId','timeline'])expect(text).not.toContain(key);
   for(const e of v.entrants) {const own=s.input.entrants.find(x=>x.entrantId===e.entrantId)!.teamId===team;expect(Boolean(e.assistance)).toBe(own);for(const o of e.track!.routeHistory!)expect(o.atMs).toBeLessThanOrEqual(s.progression!.elapsedTimeMs);}
-  const pitId=s.input.entrants[1].entrantId;s.progression!.cars[pitId].route='LANE';expect(physicalAhead(s.entrants,s.entrants[0],s.progression!.cars)?.entrant.entrantId).not.toBe(pitId);
+  const pitId=s.input.entrants[1].entrantId;s.progression!.cars[pitId].route='LANE';expect(physicalAhead(s.entrants,s.entrants[0],s.progression!.cars,domainTieOrder)?.entrant.entrantId).not.toBe(pitId);
  });
  it('keeps 390px field/player/selected glyph floors, bounded targets and priority drawing without altering progress',()=>{
   // Circular bubbles keep a stable on-screen size: 22 px on a 341 px phone map, 23 px on a tablet-width map, 26 px on

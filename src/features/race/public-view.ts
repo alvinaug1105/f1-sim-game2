@@ -1,4 +1,4 @@
-import type { PitRouteGeometry } from '../../game/domain/pit-geometry';
+import type { PitAnchors } from '../../game/domain/pit-geometry';
 import type { EnergyPolicy } from '../../simulation/race/assistance/model';
 /**
  * The Race / Sprint **browser view** — the only Race shape a client component may receive.
@@ -109,7 +109,8 @@ export interface RacePublicState {
   readonly input: {
     readonly totalLaps: number;
     readonly modelRevision?: 1 | 2;
-    readonly pitRoute?: PitRouteGeometry;
+    /** Revision 2: the Race's frozen pit progress anchors (static, public). The drawn lane comes from the circuit catalogue. */
+    readonly pitAnchors?: PitAnchors;
     readonly circuit: { readonly baseLapTimeMs: number };
     readonly entrants: readonly RacePublicEntrantInfo[];
     /** Feature flags / public rendering constants only. */

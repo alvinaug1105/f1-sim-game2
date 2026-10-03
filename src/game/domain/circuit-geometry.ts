@@ -55,3 +55,32 @@ export function pointAtProgress(layout: CircuitMapLayout, progress: number) {
     if (!path) { path = prepareCircuitPath(layout); cache.set(layout, path); }
     const { x, y } = path.sample(progress); return { x, y };
 }
+/** Rigid presentation rotation about the unit-square centre (no scaling, no per-axis stretch). */
+export function rotateMapPoints<T extends MapPoint>(points: readonly T[], degrees: number): T[] {
+    const a = degrees * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    return points.map(p => ({ ...p, x: .5 + (p.x - .5) * c - (p.y - .5) * s, y: .5 + (p.x - .5) * s + (p.y - .5) * c }));
+}
+/**
+ * Data-driven compact (phone) orientation for strip-like circuits (bounding height under 60% of the width): the smallest
+ * rigid rotation, in 5° steps within ±90°, whose drawing is within 3% of the largest that fits a `width × maxHeight`
+ * canvas — applied only when it enlarges the drawing by more than 15%. Rounder circuits keep their authored orientation,
+ * and no circuit is flipped over. Deterministic; never stretches an axis.
+ */
+export function compactRotation(points: readonly MapPoint[], width = 1000, maxHeight = 1290, padding = 16) {
+    const span = (r: readonly MapPoint[]) => { const xs = r.map(p => p.x), ys = r.map(p => p.y); return { w: Math.max(...xs) - Math.min(...xs) || 1e-9, h: Math.max(...ys) - Math.min(...ys) || 1e-9 }; };
+    const zoom = (degrees: number) => { const s = span(rotateMapPoints(points, degrees)); return Math.min((width - 2 * padding) / s.w, (maxHeight - 2 * padding) / s.h); };
+    const base = span(points);
+    if (base.h / base.w >= .6) return 0;
+    const candidates = Array.from({ length: 36 }, (_, i) => -85 + i * 5).map(degrees => ({ degrees, zoom: zoom(degrees) }));
+    const best = Math.max(...candidates.map(c => c.zoom));
+    const chosen = candidates.filter(c => c.zoom >= best * .97).sort((a, b) => Math.abs(a.degrees) - Math.abs(b.degrees) || b.degrees - a.degrees)[0];
+    return chosen.zoom > zoom(0) * 1.15 ? chosen.degrees : 0;
+}
+/** Rotates a layout for presentation and re-fits it to the unit square (uniform scale); `transform` maps any companion points (pit lane) identically. */
+export function orientLayout(layout: CircuitMapLayout, degrees: number) {
+    if (!degrees) return { layout, transform: <T extends MapPoint>(points: readonly T[]) => [...points] };
+    const r = rotateMapPoints(layout.points, degrees), xs = r.map(p => p.x), ys = r.map(p => p.y);
+    const minX = Math.min(...xs), minY = Math.min(...ys), w = Math.max(...xs) - minX, h = Math.max(...ys) - minY, size = Math.max(w, h);
+    const fit = <T extends MapPoint>(points: readonly T[]) => rotateMapPoints(points, degrees).map(p => ({ ...p, x: (p.x - minX + (size - w) / 2) / size, y: (p.y - minY + (size - h) / 2) / size }));
+    return { layout: { ...layout, points: fit(layout.points) }, transform: fit };
+}

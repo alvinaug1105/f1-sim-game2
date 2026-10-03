@@ -62,7 +62,7 @@ Seven targeted full-race executions, all 22 cars: Suzuka dry (53 laps), Monaco d
 
 Production-build browser sanity used disposable PostgreSQL careers at Suzuka, Monaco and Monza. All showed 22 identities, pit transit, stationary service, exit/rejoin and separate assistance controls without DRS/legacy ERS labels. Boost saved and reduced energy; keyboard and pointer activation were checked. Pause/resume and speed selection were checked. Suzuka advanced from dry conditions to 46% rainfall at lap 8 and 7% track water at lap 9; current Aero/energy remained observable. Traditional Chinese labels and language persistence after reload were checked. A 390px screenshot is kept outside the repository in the Builder evidence directory.
 
-Independent QA should prioritise late/wrapping detection windows, partial-energy boundaries, control transitions during a pit visit, replay from a partially drawn checkpoint, approximate pit geometry on crossing/compact circuits, dense mobile identity selection and older editable-database saves. Pit geometry remains approximate, Active Aero baseline tuning is conservative, and browser observations are focused sanity checks rather than acceptance.
+Independent QA should prioritise late/wrapping detection windows, partial-energy boundaries, control transitions during a pit visit, replay from a partially drawn checkpoint, approximate pit geometry on crossing/compact circuits, dense mobile identity selection and older editable-database saves. Pit lanes are FIA-referenced but drawn wider than true scale, Active Aero baseline tuning is conservative, and browser observations are focused sanity checks rather than acceptance.
 
 Deferred: v8C dry specification/regulatory expansion and deep energy campaigns; v8D wet AI diversity, late-stop/tyre-cliff strategy and circuit pit-loss calibration; v8E and Phases 18/29/31; dynamic 2027/multi-season regulation work. No migration, balance campaign or final acceptance is included.
 
@@ -79,8 +79,19 @@ Deferred: v8C dry specification/regulatory expansion and deep energy campaigns; 
 - **Dense packs.** Bubbles use five bounded lateral lanes (within 1.5 diameters). Partial overlap is accepted rather than moving cars away from their track position, and crossing branches stay separate (track progress, not screen distance). The anchor line appears only for an outer-lane bubble.
 - **Layout.** From 1221 px the Race page is a three-column dashboard: timing tower | track map | selected-driver management (240/1fr/310, and 290/1fr/360 from 1600 px). This replaces the v8A two-column grid that pushed the driver panel full-width under the map and stretched resource bars across the page. Resource bars and Active Aero / Overtake / Boost controls stay inside the management column, and mode buttons wrap within it. Tablet and phone widths keep the existing stacked layout.
 
-## v8B-R
-- **Persisted determinism:** an exact on-track distance tie now resolves by classification instead of entrant-ID text.
-  The root cause, the compatibility impact and the PostgreSQL round-trip coverage are in `race-v8b-r-determinism.md`.
-- **Circuit and pit-lane fidelity:** audited in `circuit-geometry-sources.md`. Pit lanes are still the generic
-  placeholder: authoring them is blocked on reference access and a licence decision recorded there.
+## v8B-R and final fidelity repair
+- **Determinism (versioned):** revision 1 keeps the frozen historical tie rule, so accepted v8A saves continue exactly
+  as before and the original digest is restored. Revision 2 resolves exact ties by classification, never by ID text.
+  Details: `race-v8b-r-determinism.md`.
+- **Circuits:** all 24 production circuits were checked against the official FIA circuit map and pit-lane drawing; see
+  `circuit-geometry-sources.md`. Revision-2 Races freeze authored per-circuit pit progress anchors (entry, lane start,
+  service, exit). The drawn lane is separate presentation content (`circuit-pit-lanes.ts`) that the client
+  re-parameterises by the Race's own anchors. Race content no longer carries x/y.
+- **Frozen metadata:** segment kinds are explicit data (`circuit-race-metadata.ts`), so map corrections cannot retune
+  the Race. Monaco and Silverstone had their lap line moved onto the FIA control-line straight by whole segments, with
+  every zone kept on the same track.
+- **Map:**
+  - compact chequered start/finish line with no text label;
+  - slim muted pit lane with a garage tick;
+  - phone-width maps rotate strip-like circuits rigidly (data-driven, at most ±90°) and may grow to a portrait canvas.
+    Monza at 390 px goes from 356×155 to about 356×436.

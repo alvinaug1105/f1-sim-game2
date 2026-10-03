@@ -96,7 +96,7 @@ export function projectRaceState(s: RaceSimulationState, playerTeamId: string): 
     input: {
       totalLaps: s.input.totalLaps,
       ...(s.input.progression?{modelRevision:s.input.progression.version}:{}),
-      ...(s.input.progression?.version===2?{pitRoute:{service:s.input.progression.pit.geometry!.service,points:s.input.progression.pit.geometry!.points.map(p=>({x:p.x,y:p.y,progress:p.progress}))}}:{}),
+      ...(s.input.progression?.version===2?{pitAnchors:{entry:s.input.progression.pit.entry,service:s.input.progression.pit.service,exit:s.input.progression.pit.exit}}:{}),
       circuit: { baseLapTimeMs: s.input.circuit.baseLapTimeMs },
       entrants: s.input.entrants.map((e) => ({ entrantId: e.entrantId, driverId: e.driverId, teamId: e.teamId, gridPosition: e.gridPosition })),
       commands: s.input.commands ? { capacity: s.input.commands.capacity } : null,

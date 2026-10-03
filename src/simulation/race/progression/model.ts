@@ -2,6 +2,7 @@ import { validateAssistance, validateAssistanceConfiguration, type AssistanceCon
 import { validatePitGeometry, type PitRouteGeometry } from '../../../game/domain/pit-geometry';
 import { validateCommandState, type CommandState } from '../commands/model';
 import type { RaceEntrantState, RaceSimulationState } from '../types';
+import type { TieOrder } from './tie-order';
 /** One microlap = 1 / 1,000,000 lap. Integer total distance is canonical (track.progressMicrolaps). */
 export const LAP_UNITS = 1_000_000;
 export type SegmentKind = 'STRAIGHT' | 'FAST' | 'MEDIUM' | 'SLOW' | 'PIT_ENTRY' | 'PIT_LANE' | 'PIT_EXIT';
@@ -14,6 +15,7 @@ export interface ProgressionConfiguration {
     resolution: typeof LAP_UNITS;
     segments: readonly LocalSegment[];
     zones: readonly InteractionZone[];
+    /** `geometry`: legacy presentation route of pre-release v8B candidate saves only; never produced, never simulated. */
     pit: { geometry?: PitRouteGeometry; entry: number; service: number; exit: number; segments: readonly LocalSegment[] };
     lapping: { thresholdMs: number; resistancePermille: number; passingCostMs: number; failedCostMs: number };
 }
@@ -59,12 +61,15 @@ export function zonesAt(c: ProgressionConfiguration, total: number) {
 }
 /** Physical distance forward around the circuit, independent of classification / number of completed race laps. */
 export function forwardDistance(from: number, to: number) { return (localProgress(to) - localProgress(from) + LAP_UNITS) % LAP_UNITS; }
-export function physicalAhead(entrants: readonly RaceEntrantState[], car: RaceEntrantState, cars?: ProgressionState['cars']) {
+/**
+ * Nearest running car physically ahead. An exact distance tie (cars side by side, e.g. a leader lapping a backmarker)
+ * is resolved by the Race's frozen tie rule (`tieOrderFor`): classification order from revision 2, historical
+ * entrant-ID order for revision-1 compatibility.
+ */
+export function physicalAhead(entrants: readonly RaceEntrantState[], car: RaceEntrantState, cars: ProgressionState['cars'] | undefined, tie: TieOrder) {
     return entrants.filter(e => e.entrantId !== car.entrantId && e.incident?.status === 'RUNNING' && (forwardDistance(car.track!.progressMicrolaps,e.track!.progressMicrolaps)>0 || e.position<car.position) && (!cars || cars[e.entrantId].route === 'TRACK'))
         .map(e => ({ entrant: e, distance: forwardDistance(car.track!.progressMicrolaps, e.track!.progressMicrolaps) }))
-        // Exact distance ties (cars side by side, e.g. a leader lapping a backmarker) resolve by race-domain order — the
-        // car higher in the classification — never by entrant ID text, which must not influence the simulation.
-        .sort((a, b) => a.distance - b.distance || a.entrant.position - b.entrant.position)[0] ?? null;
+        .sort((a, b) => a.distance - b.distance || tie(a.entrant, b.entrant))[0] ?? null;
 }
 export function physicalBehind(entrants: readonly RaceEntrantState[], car: RaceEntrantState, cars?: ProgressionState['cars']) {
     return entrants.filter(e => e.entrantId !== car.entrantId && e.incident?.status === 'RUNNING' && (!cars || cars[e.entrantId].route === 'TRACK'))
@@ -77,7 +82,9 @@ export function initialCarProgression(gridPosition: number, gridOffsetMs: number
 function integer(n: number, lo: number, hi: number) { if (!Number.isSafeInteger(n) || n < lo || n > hi) throw new RangeError('Invalid v8 progression integer'); }
 export function validateProgressionConfiguration(c: ProgressionConfiguration) {
     if (!c || ![1,2].includes(c.version) || c.resolution !== LAP_UNITS || !Array.isArray(c.segments) || !c.segments.length || !Array.isArray(c.zones)) throw new RangeError('Missing v8 circuit progression');
-    if(c.version===2) { validateAssistanceConfiguration(c.assistance!);validatePitGeometry(c.pit.geometry!,c.pit.entry,c.pit.service,c.pit.exit); }
+    // Revision 2 holds pit PROGRESS anchors only; the drawn lane is presentation content. Pre-release candidate saves
+    // that still carry the former drawn route keep validating it (it is never read by the simulation).
+    if(c.version===2) { validateAssistanceConfiguration(c.assistance!);if(c.pit.geometry)validatePitGeometry(c.pit.geometry,c.pit.entry,c.pit.service,c.pit.exit); }
     else if(c.assistance||c.pit.geometry) throw new RangeError('v8A cannot acquire v8B content');
     let end = 0;
     const ids = new Set<string>();
@@ -135,10 +142,10 @@ export function validateProgressionState(s: RaceSimulationState) {
     }
 }
 /** Classification is total race distance; local neighbour order is a separate circular query. */
-export function classifyProgress(entrants: readonly RaceEntrantState[], baseLapMs: number, finished = false): RaceEntrantState[] {
+export function classifyProgress(entrants: readonly RaceEntrantState[], baseLapMs: number, tie: TieOrder, finished = false): RaceEntrantState[] {
     const active = entrants.filter(e => e.incident!.status !== 'RETIRED').sort((a,b) => finished
-        ? b.completedLaps - a.completedLaps || a.elapsedTimeMs - b.elapsedTimeMs || a.position - b.position
-        : b.track!.progressMicrolaps - a.track!.progressMicrolaps || a.position - b.position);
+        ? b.completedLaps - a.completedLaps || a.elapsedTimeMs - b.elapsedTimeMs || tie(a, b)
+        : b.track!.progressMicrolaps - a.track!.progressMicrolaps || a.position - b.position || tie(a, b));
     const retired = entrants.filter(e => e.incident!.status === 'RETIRED').sort((a,b) => b.track!.progressMicrolaps - a.track!.progressMicrolaps || a.incident!.retirementOrder! - b.incident!.retirementOrder!);
     return [...active, ...retired].map((e,i) => {
         const leader = active[0], ahead = active[i-1];

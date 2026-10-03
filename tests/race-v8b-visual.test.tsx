@@ -15,7 +15,8 @@ import { createRace } from '../src/simulation/race/engine';
 import { progressionBForCircuit } from '../src/data/seed/circuit-progression';
 import { circuitLayouts } from '../src/data/seed/circuit-layouts';
 import { circuitProjection } from '../src/game/domain/circuit-geometry';
-import { samplePitRoute } from '../src/game/domain/pit-geometry';
+import { samplePitRoute, racePitRoute } from '../src/game/domain/pit-geometry';
+import { drawnPitLane } from '../src/data/seed/circuit-pit-lanes';
 import { viewerData } from './helpers/viewer';
 
 const suzuka = '00000000-0000-4000-8000-000000000301';
@@ -26,8 +27,10 @@ function raceView() {
     const labels = d.labels.map((l, n) => ({ ...l, abbreviation: `C${String(n + 1).padStart(2, '0')}` }));
     return projectRaceView({ ...d, labels, circuit: { ...d.circuit, sourceCircuitId: suzuka }, state });
 }
+/** As the Race page does: the drawn catalogue lane, re-parameterised by the Race's own frozen anchors. */
+const pitRoute = (view: ReturnType<typeof raceView>) => racePitRoute(drawnPitLane(suzuka)!, view.state!.input.pitAnchors!);
 function render(rows: ReturnType<typeof timingRows>, selected: string, view: ReturnType<typeof raceView>) {
-    return renderToStaticMarkup(<I18nProvider initialLocale="en"><TrackMap layout={circuitLayouts[suzuka]} rows={rows} selected={selected} onSelect={() => {}} speed={1} reduceMotion={false} raceViewer authoritative pitRoute={view.state!.input.pitRoute}/></I18nProvider>);
+    return renderToStaticMarkup(<I18nProvider initialLocale="en"><TrackMap layout={circuitLayouts[suzuka]} rows={rows} selected={selected} onSelect={() => {}} speed={1} reduceMotion={false} raceViewer authoritative pitRoute={pitRoute(view)}/></I18nProvider>);
 }
 const carGroup = (html: string, id: string) => html.match(new RegExp(`<g data-car="${id}"[\\s\\S]*?</g></g>`))?.[0] ?? '';
 
@@ -65,12 +68,19 @@ describe('Race map markers: circular live-timing bubbles', () => {
         expect(g).toContain('1 lap(s) down');
         expect(g).not.toContain('lapped-mark');
     });
+    it('draws a compact start/finish line (no text label over bubbles) and a secondary pit lane with a garage tick', () => {
+        const html = render(rows, player[0], view), sf = html.match(/<g class="start-finish compact"[\s\S]*?<\/g><\/g>/)?.[0] ?? '';
+        expect(sf).toContain('<title>START / FINISH</title>'); expect(sf).not.toContain('<text');
+        expect(html).toContain('class="pit-lane"'); expect(html).toContain('class="pit-garage"');
+        expect(html).not.toContain('#e8c86b" stroke-width="4"');
+        expect(html.match(/<circle class="driver-bubble"/g)).toHaveLength(22); expect(html).not.toContain('driver-badge');
+    });
     it('keeps the same circular marker for a pitting car, placed on the pit route geometry', () => {
         const pitting = rows.map(r => r.id === rival.id ? { ...r, pitting: true, route: 'LANE' as const } : r), html = render(pitting, player[0], view), g = carGroup(html, rival.id);
         expect(g).toContain('class="driver-bubble"'); expect(g).toContain('class="pit-mark"');
         expect(html).toContain('class="pit-route"');
         // The initial transform comes from the pit route, not the racing line.
-        const route = view.state!.input.pitRoute!, layout = circuitLayouts[suzuka], canvas = raceMapCanvas(layout);
+        const route = pitRoute(view), layout = circuitLayouts[suzuka], canvas = raceMapCanvas(layout);
         const project = circuitProjection([...layout.points, ...route.points], canvas.width, canvas.height, canvas.padding);
         const expected = project(samplePitRoute(route, (rival.progress % 1) * 1e6));
         const [x, y] = g.match(/transform="translate\(([-\d.]+) ([-\d.]+)\)"/)!.slice(1).map(Number);

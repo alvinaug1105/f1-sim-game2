@@ -12,6 +12,7 @@ import { followingEffects, passProbability, attackEdge, type OvertakeCause } fro
 import { driverRiskPpm, mechanicalRiskPpm, effectivePitLaneLoss, validateIncidentState, type RaceEvent, type IncidentKind, type RaceControlMode } from '../incidents/model';
 import { closeRetiredStints } from '../incidents/engine';
 import { classifyProgress, physicalAhead, zonesAt, localProgress, LAP_UNITS, validateProgressionState, type CarProgression } from './model';
+import { tieOrderFor } from './tie-order';
 /** Integration uses integer milliseconds and nanolaps/ms, carrying the sub-microlap remainder (0..999). */
 const QUANTUM_MS = 100;
 const emptyTrack = (e: RaceEntrantState) => ({ ...e.track!, drsEligible: false, drsBenefitMs: 0, dirtyAirMs: 0, trafficLossMs: 0, attempted: false, passed: false });
@@ -29,6 +30,8 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
     if(saved.input.progression!.version===1)return advanceLegacyProgressionLap(saved);
     if (saved.status !== 'RUNNING' || saved.lap >= saved.input.totalLaps) throw new RangeError('Race finished');
     const lap = saved.lap + 1, input = saved.input, config = input.progression!, assistance=config.assistance!, control = saved.incidents!, neutral = control.mode !== 'GREEN';
+    // Revision 2: exact ties resolve by Race-domain (classification) order, never by generated ID text.
+    const tie = tieOrderFor(config);
     const boundaries=[...new Set([0,LAP_UNITS,assistance.detection,assistance.deploymentStart,assistance.deploymentEnd,...config.segments.map(s=>s.end),...config.zones.flatMap(z=>[z.start,z.end])])].sort((a,b)=>a-b);
     const zoneTable=boundaries.slice(0,-1).map(p=>zonesAt(config,p));
     const interval=(total:number)=>{const local=localProgress(total);let lo=0,hi=boundaries.length-2;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(boundaries[mid]<=local)lo=mid;else hi=mid-1;}return lo;};
@@ -113,8 +116,8 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         const movement = new Map<string,{ rate: number; ahead: RaceEntrantState | null; distance: number; gapMs: number; effects: ReturnType<typeof followingEffects> }>();
         for (const e of running) {
             const p = cars[e.entrantId];let near:{entrant:RaceEntrantState;distance:number}|null=null;
-            // Nearest car ahead on track; an exact distance tie resolves to the car higher in the classification (never ID text).
-            if(p.route==='TRACK')for(const peer of entries) {if(peer.entrantId===e.entrantId||peer.incident!.status!=='RUNNING'||cars[peer.entrantId].route!=='TRACK')continue;const distance=(localProgress(peer.track!.progressMicrolaps)-localProgress(e.track!.progressMicrolaps)+LAP_UNITS)%LAP_UNITS;if((distance>0||peer.position<e.position)&&(!near||distance<near.distance||(distance===near.distance&&peer.position<near.entrant.position)))near={entrant:peer,distance};}
+            // Nearest car ahead on track; an exact distance tie uses the Race's frozen tie rule.
+            if(p.route==='TRACK')for(const peer of entries) {if(peer.entrantId===e.entrantId||peer.incident!.status!=='RUNNING'||cars[peer.entrantId].route!=='TRACK')continue;const distance=(localProgress(peer.track!.progressMicrolaps)-localProgress(e.track!.progressMicrolaps)+LAP_UNITS)%LAP_UNITS;if((distance>0||peer.position<e.position)&&(!near||distance<near.distance||(distance===near.distance&&tie(peer,near.entrant)<0)))near={entrant:peer,distance};}
             const gapMs = near ? Math.round(near.distance*input.circuit.baseLapTimeMs/LAP_UNITS) : Infinity;
             const zone = localZones(e.track!.progressMicrolaps);
             const interaction = { ...input.interaction!, drsZoneCount: 0 };
@@ -207,7 +210,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         for(const e of entries.filter(active)) {
             const old=running.find(x=>x.entrantId===e.entrantId),p=cars[e.entrantId];if(!old)continue;
             const before=old.track!.progressMicrolaps,after=e.track!.progressMicrolaps,line=(Math.floor(before/LAP_UNITS)+(assistance.detection===0?1:0))*LAP_UNITS+assistance.detection;
-            if(before<line&&after>=line) { const near=p.route==='TRACK'?physicalAhead(entries,e,cars):null;qualify(p.assistance!,assistance,Math.floor(line/LAP_UNITS),near?Math.round(near.distance*input.circuit.baseLapTimeMs/LAP_UNITS):null,near?after-near.entrant.track!.progressMicrolaps:LAP_UNITS,!neutral&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater); }
+            if(before<line&&after>=line) { const near=p.route==='TRACK'?physicalAhead(entries,e,cars,tie):null;qualify(p.assistance!,assistance,Math.floor(line/LAP_UNITS),near?Math.round(near.distance*input.circuit.baseLapTimeMs/LAP_UNITS):null,near?after-near.entrant.track!.progressMicrolaps:LAP_UNITS,!neutral&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater); }
         }
         // Record passes only after actual movement of BOTH cars; boundary clamping must not invent a pass.
         for (const source of grid) {
@@ -224,7 +227,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             const e=entries[indexOf(source.entrantId)];
             if (active(e) && Math.floor(e.track!.progressMicrolaps/LAP_UNITS)>e.completedLaps) completeLap(e.entrantId);
         }
-        entries=classifyProgress(entries,input.circuit.baseLapTimeMs);
+        entries=classifyProgress(entries,input.circuit.baseLapTimeMs,tie);
         if (!flagged && entries.some(e=>e.incident!.status!=='RETIRED' && e.completedLaps>=lap)) {
             if (lap<input.totalLaps) break;
             flagged=true;
@@ -242,7 +245,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         const [error,kindRoll,severityRoll,mechanical,outcome,durationRoll]=Array.from({length:6},()=>incidentRandom.next());
         const e=entries[indexOf(source.entrantId)]; if (neutral || e.incident!.status==='RETIRED' || affected.has(e.entrantId)) continue;
         let kind:IncidentKind|null=null,severity:RaceEvent['severity']='MINOR';
-        const near=physicalAhead(entries,e,cars), ahead=near && near.distance*input.circuit.baseLapTimeMs/LAP_UNITS<=1000 ? near.entrant : null;
+        const near=physicalAhead(entries,e,cars,tie), ahead=near && near.distance*input.circuit.baseLapTimeMs/LAP_UNITS<=1000 ? near.entrant : null;
         const context={...state,entrants:entries,weather};
         if (error*1e6<driverRiskPpm(context,{...e,commands:cars[e.entrantId].lapCommands??e.commands,position:ahead?2:1,intervalToAheadMs:ahead?Math.round(near!.distance*input.circuit.baseLapTimeMs/LAP_UNITS):null},source)) {
             kind=(['DRIVER_MISTAKE','LOCK_UP','SPIN','CONTACT'] as const)[Math.floor(kindRoll*4)];
@@ -272,7 +275,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         if(nextControl.mode!=='GREEN'||e.incident!.status!=='RUNNING'||p.route!=='TRACK') { clearEntitlement(p.assistance!);p.assistance!.aero='SAFE';p.assistance!.electricalDeltaMs=0; }
         refreshAssistance(p.assistance!,assistance,{lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight:localZones(e.track!.progressMicrolaps).some(z=>z.kind==='ASSISTANCE'),safe:nextControl.mode==='GREEN'&&e.incident!.status==='RUNNING'&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater});
         observe(e.entrantId); if (p.passingId && !entries.some(x=>x.entrantId===p.passingId&&x.incident!.status==='RUNNING')) p.passingId=null; }
-    const next:RaceSimulationState={...saved,lap,status:finished?'FINISHED':'RUNNING',weather,rngState:random.getState(),incidents:nextControl,progression:{elapsedTimeMs:clock,cars},entrants:classifyProgress(entries,input.circuit.baseLapTimeMs,finished)};
+    const next:RaceSimulationState={...saved,lap,status:finished?'FINISHED':'RUNNING',weather,rngState:random.getState(),incidents:nextControl,progression:{elapsedTimeMs:clock,cars},entrants:classifyProgress(entries,input.circuit.baseLapTimeMs,tie,finished)};
     validateProgressionState(next); validateIncidentState(next);
     return next;
 }

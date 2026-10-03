@@ -28,7 +28,6 @@ if (!importOnly && (!inputFile || !outDir || !Number.isInteger(workerId))) throw
 const circuits = new Map(developmentContent.circuits.map(c => [c.id, c]));
 const drivers = developmentContent.driverEntries;
 const teams = new Map(developmentContent.teamEntries.map(t => [t.teamId, t]));
-const profileByKey = new Map(developmentContent.circuits.map(c => [c.key, c]));
 const { createRace, advanceRace, raceResult } = race;
 const { developmentBaseLapTimeMs, developmentCommandFuelKg, sprintLapCount } = profiles;
 const { DEFAULT_RACE_PARAMETERS } = race;
@@ -49,6 +48,12 @@ const canonical = value => {
   return JSON.stringify(value);
 };
 const hash = value => createHash("sha256").update(typeof value === "string" ? value : canonical(value)).digest("hex");
+const uuidFor = (salt, kind, value) => {
+  const h = createHash("sha256").update(String(salt) + "|" + kind + "|" + value).digest("hex");
+  const variant = ((Number.parseInt(h[16], 16) & 3) | 8).toString(16);
+  return h.slice(0, 8) + "-" + h.slice(8, 12) + "-4" + h.slice(13, 16) + "-" + variant + h.slice(17, 20) + "-" + h.slice(20, 32);
+};
+const remappedId = (job, kind, value) => job.uuidRemapSalt === undefined ? value : uuidFor(job.uuidRemapSalt, kind, value);
 function customWeather(seed, laps, kind) {
   const base = weatherModel.developmentWeather(seed, laps);
   const at = x => Math.max(1, Math.min(laps, Math.round(1 + x * (laps - 1))));
@@ -88,8 +93,8 @@ function buildInput(job) {
     const isPlayer = job.campaign === "C" && i + 1 === 10;
     return {
       entrantId: `qa-v8-${String(i + 1).padStart(2, "0")}`,
-      driverId: d.driverId,
-      teamId: d.teamId,
+      driverId: remappedId(job, "driver", d.driverId),
+      teamId: remappedId(job, "team", d.teamId),
       gridPosition: i + 1,
       driver: { pace: d.pace, consistency: d.consistency },
       car: { performance: team.carPerformance },
@@ -99,6 +104,7 @@ function buildInput(job) {
       interaction: developmentDriverInteraction(),
     };
   });
+  if (job.uuidRemapSalt !== undefined) roster.forEach((entry, i) => { entry.entrantId = remappedId(job, "entrant", String(i + 1)); });
   const incidentsInput = { ...incidentsCfg };
   return {
     seed: job.raceSeed, totalLaps: laps,
@@ -164,7 +170,8 @@ function runRace(job) {
   let passAttempts = 0, earlyPassAttempts = 0, latePassAttempts = 0, earlyPasses = 0, latePasses = 0, drsEligibleObservations = 0, drsBenefitObservations = 0, drsBenefitMsTotal = 0, nearFloorSamples = 0, exactFloorSamples = 0, longestPairRun = 0;
   let currentPairRuns = new Map(), maxWearById = Object.fromEntries(s0.entrants.map(e => [e.entrantId, 0]));
   let deepCliffLaps = 0, pitRouteErrors = 0, numericErrors = 0, fuelCreationChecks = 0, fuelCreation = 0;
-  const attemptCause = new Map();
+  const pairRuns = [], seenPairRuns = new Set();
+  let longestClampOnlyRun = 0, longestActiveAttackRun = 0, longestRecatchingRun = 0;
   const attemptsById = Object.fromEntries(s0.entrants.map(e => [e.entrantId, []]));
   const lapTelemetryById = Object.fromEntries(s0.entrants.map(e => [e.entrantId, []]));
   const commandSchedule = [];
@@ -199,10 +206,17 @@ function runRace(job) {
       if (late) latePasses++; else earlyPasses++;
     }
     const beforeById = new Map(before.entrants.map(e=>[e.entrantId,e]));
+    const attacksThisLap = new Map();
     for (const e of s.entrants) {
       const b = beforeById.get(e.entrantId);
       const late = Boolean(lateRaceAttackWindow(s.input.commands?.racecraft, s.input.interaction, b?.completedLaps ?? e.completedLaps, input.totalLaps)?.late);
-      if (e.track?.attempted) { passAttempts++; passAttemptsById[e.entrantId]++; attemptsById[e.entrantId].push({leaderLap:s.lap,attackerCompletedLaps:b?.completedLaps??e.completedLaps,late}); if (late) latePassAttempts++; else earlyPassAttempts++; if (!e.track.passed) attemptCause.set(e.entrantId,(attemptCause.get(e.entrantId)||0)+1); }
+      if (e.track?.attempted) {
+        const defender = b ? before.entrants.find(x => x.position === b.position - 1) : null;
+        const attempt = { leaderLap:s.lap,attackerCompletedLaps:b?.completedLaps??e.completedLaps,attackerId:e.entrantId,defenderId:defender?.entrantId??null,success:Boolean(e.track.passed),late };
+        passAttempts++;passAttemptsById[e.entrantId]++;attemptsById[e.entrantId].push(attempt);
+        if (late) latePassAttempts++; else earlyPassAttempts++;
+        if (attempt.defenderId) attacksThisLap.set(`${attempt.defenderId}:${e.entrantId}`,attempt);
+      }
       if (b && e.completedLaps > b.completedLaps) {
         const car=s.progression.cars[e.entrantId], lapCommand=car.lapCommands??b.commands;
         lapTelemetryById[e.entrantId].push({lap:e.completedLaps,lapTimeMs:e.lastLapTimeMs,fuelKg:e.fuelMassKg,paceMode:lapCommand?.paceMode??null,fuelMode:lapCommand?.fuelMode??null,energyPolicy:car.assistance?.policy??null,energy:car.assistance?.energy??null,tyreCompound:e.stint?.tyre?.compound??null,tyreAgeLaps:e.stint?.tyre?.ageLaps??null,tyreWearPermille:e.stint?.tyre?.wearPermille??null,tyreTemperatureMilliC:e.stint?.tyre?.temperatureMilliC??null});
@@ -226,10 +240,23 @@ function runRace(job) {
       if(!ahead||ahead.completedLaps!==e.completedLaps) continue;
       const key=`${ahead.entrantId}:${e.entrantId}`;
       const gap=e.intervalToAheadMs;
-      if(gap<=100){nearFloorSamples++;if(gap<=80)exactFloorSamples++;const n=(currentPairRuns.get(key)||0)+1;present.set(key,n);longestPairRun=Math.max(longestPairRun,n);}
+      if(gap<=100){
+        nearFloorSamples++;if(gap<=80)exactFloorSamples++;
+        const old=currentPairRuns.get(key);
+        const run=old?{...old,endLap:s.lap,length:old.length+1}:{aheadId:ahead.entrantId,behindId:e.entrantId,startLap:s.lap,endLap:s.lap,length:1,attackAttempts:0,successfulAttacks:0,recatch:seenPairRuns.has(key)};
+        const attack=attacksThisLap.get(key);if(attack){run.attackAttempts++;if(attack.success)run.successfulAttacks++;}
+        present.set(key,run);longestPairRun=Math.max(longestPairRun,run.length);
+      }
+    }
+    for(const [key,run] of currentPairRuns)if(!present.has(key)){
+      pairRuns.push(run);seenPairRuns.add(key);
+      if(run.attackAttempts===0)longestClampOnlyRun=Math.max(longestClampOnlyRun,run.length);
+      if(run.attackAttempts>0)longestActiveAttackRun=Math.max(longestActiveAttackRun,run.length);
+      if(run.recatch)longestRecatchingRun=Math.max(longestRecatchingRun,run.length);
     }
     currentPairRuns=present;
   }
+  for(const run of currentPairRuns.values()){pairRuns.push(run);if(run.attackAttempts===0)longestClampOnlyRun=Math.max(longestClampOnlyRun,run.length);if(run.attackAttempts>0)longestActiveAttackRun=Math.max(longestActiveAttackRun,run.length);if(run.recatch)longestRecatchingRun=Math.max(longestRecatchingRun,run.length);}
   const allowed={TRACK:["ENTRY"],ENTRY:["LANE"],LANE:["SERVICE","EXIT"],SERVICE:["LANE"],EXIT:["TRACK"]};
   for (const car of Object.values(s.progression.cars)) if(car.observations?.length) for(let i=1;i<car.observations.length;i++) if(car.observations[i].route!==car.observations[i-1].route&&!allowed[car.observations[i-1].route]?.includes(car.observations[i].route)) pitRouteErrors++;
   const results = raceResult(s);
@@ -249,6 +276,7 @@ function runRace(job) {
       pits:e.pit?.stops?.length ?? 0,pitStops:e.pit?.stops??[],stints:e.pit?.stints?.map(x=>({number:x.number,startLap:x.startLap,endLap:x.endLap,startingTyre:x.startingTyre.compound,endingTyre:x.endingTyre?.compound??null}))??[],passes:events.filter(x=>x.type==="OVERTAKE"&&x.entrantIds[0]===e.entrantId).length,
       lappingPasses:s.progression.cars[e.entrantId].completedLappingPasses,attempts:passAttemptsById[e.entrantId],
       paceMode:e.commands?.paceMode??null,fuelMode:e.commands?.fuelMode??null,energyEnd:s.progression.cars[e.entrantId].assistance.energy,
+      energyStart:s0.progression.cars[e.entrantId].assistance.energy,
       energyPolicy:s.progression.cars[e.entrantId].assistance.policy,
       attemptedLaps:attemptsById[e.entrantId],lapTelemetry:lapTelemetryById[e.entrantId],
       routeTransitions:s.progression.cars[e.entrantId].observations??[],
@@ -266,7 +294,8 @@ function runRace(job) {
     raceTimeMs:Math.max(...entrants.map(e=>e.totalTimeMs)),passAttempts,earlyPassAttempts,latePassAttempts,earlyPasses,latePasses,passes:events.filter(e=>e.type==="OVERTAKE").length,
     drsEligibleObservations,drsBenefitObservations,drsBenefitMsTotal,drsPasses:events.filter(e=>e.type==="OVERTAKE"&&e.cause==="DRS").length,
     commandSchedule,initialWeather:input.weather?.initial??null,weatherTimeline:input.weather?.timeline??[],weatherForecast:input.weather?.forecast??[],finishWeather:s.weather??null,
-    nearFloorSamples,exactFloorSamples,longestSamePairNearFloorRun:longestPairRun,deepCliffLaps,numericErrors,fuelCreation,fuelCreationChecks,pitRouteErrors,
+    tyreCliffs:Object.fromEntries(Object.entries(input.tyres.profiles).map(([compound,profile])=>[compound,profile.cliffWear])),
+    nearFloorSamples,exactFloorSamples,longestSamePairNearFloorRun:longestPairRun,longestClampOnlyRun,longestActiveAttackRun,longestRecatchingRun,nearFloorPairRuns:pairRuns,deepCliffLaps,numericErrors,fuelCreation,fuelCreationChecks,pitRouteErrors,
     pitStops:entrants.reduce((n,e)=>n+e.pits,0),incidents:control.INCIDENT||0,
     safetyCarStarts:control.SAFETY_CAR_START||0,vscStarts:control.VSC_START||0,retirements:entrants.filter(e=>e.status==="RETIRED").length,
     dsqs:entrants.filter(e=>e.disqualified).length,eventCounts:control,events,finalDigest:digest,entrants,

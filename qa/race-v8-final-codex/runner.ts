@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { createWriteStream, mkdirSync, writeFileSync } from "node:fs";
 import { once } from "node:events";
 import { execFileSync } from "node:child_process";
-import { gzip } from "node:zlib";
+import { createGzip } from "node:zlib";
 import { performance } from "node:perf_hooks";
 import { createRace, advanceRaceLap } from "../../src/simulation/race/engine";
 import { validateProgressionState, LAP_UNITS } from "../../src/simulation/race/progression/model";
@@ -223,13 +223,13 @@ function entrantLap(state: RaceSimulationState, previous: RaceSimulationState | 
 async function gzipLines(file: string) {
   mkdirSync(file.slice(0, file.lastIndexOf("/")), { recursive: true });
   const output = createWriteStream(file);
-  const zip = gzip({ level: 6 });
+  const zip = createGzip({ level: 6 });
   zip.pipe(output);
   return {
     async write(value: unknown) {
       if (!zip.write(`${JSON.stringify(value)}\n`)) await once(zip, "drain");
     },
-    async close() { zip.end(); await once(output, "finish"); },
+    async close() { const finished = once(output, "finish"); zip.end(); await finished; },
   };
 }
 

@@ -13,7 +13,6 @@ const alias={monaco:'MONACO',monza:'MONZA',baku:'BAKU',silverstone:'SILVERSTONE'
 const byKey=new Map(developmentContent.circuits.map(c=>[c.key,c]));
 const circuits=circuitKeys.map(k=>{const c=byKey.get(`circuit-${k}`);if(!c)throw new Error(`missing circuit ${k}`);return c;});
 const seedStart=ranges.ranges.supplemental.start;
-const seedCapacity=ranges.ranges.supplemental.capacity;
 const canonical=x=>Array.isArray(x)?`[${x.map(canonical).join(',')}]`:x&&typeof x==='object'?`{${Object.keys(x).sort().map(k=>`${JSON.stringify(k)}:${canonical(x[k])}`).join(',')}}`:JSON.stringify(x);
 const hash=x=>createHash('sha256').update(canonical(x)).digest('hex');
 const jobs=[],groups=new Map();

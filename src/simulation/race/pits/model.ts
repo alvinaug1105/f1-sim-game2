@@ -12,8 +12,9 @@ import {
 } from "../tyres/model";
 import type { PitState } from "./types";
 import { developmentPitChoice } from "./strategy-policy";
-import { assessAiStop, publicWeather, strategyPreference } from "./ai-strategy";
+import { assessAiStop, publicWeather, strategyPreference, type StrategyPreference } from "./ai-strategy";
 import { orderedClassification } from "../traffic/model";
+import { regulateAiStop } from "../regulations/ai-compliance";
 export function initialPitState(tyre: TyreState): PitState {
   return {
     pendingCompound: null,
@@ -80,11 +81,17 @@ export function committedStops(
         throw new RangeError("Pit request on final lap");
       continue;
     }
-    const compound =
+    // The pit strategy layer owns each AI car's stable character: derived once here, used by the strategic decision
+    // and handed to the regulation filter (which decides only what is legal).
+    const ai = source.strategyController === "DEVELOPMENT_AI";
+    const preference = ai && state.input.pits!.strategy ? strategyPreference(state.input.seed, source.gridPosition) : null;
+    const planned =
       e.pit.pendingCompound ??
-      (source.strategyController === "DEVELOPMENT_AI"
-        ? state.input.weather ? state.input.pits!.strategy ? chooseStrategicPit(state, e) : chooseWeatherPit(state, e) : developmentPitChoice(e, state.input, state.lap)
+      (ai
+        ? state.input.weather ? preference ? chooseStrategicPit(state, e, preference) : chooseWeatherPit(state, e) : developmentPitChoice(e, state.input, state.lap)
         : null);
+    // Race v8C (revision 3 only): AI-managed cars comply with the snapshotted dry-tyre regulation. No-op otherwise.
+    const compound = ai ? regulateAiStop(state, e, planned, greenPitLaneLoss(state), preference) : planned;
     if (compound) result.set(e.entrantId, compound);
   }
   return result;
@@ -246,7 +253,7 @@ export function greenPitLaneLoss(state: RaceSimulationState) {
  if (!control || !c || control.mode === "GREEN") return state.input.pits!.pitLaneLossMs;
  return state.input.pits!.pitLaneLossMs + Math.round(c.pitTrackSectionMs * (c[control.mode].lapMultiplierPermille - 1000) / 1000);
 }
-function chooseStrategicPit(state: RaceSimulationState, entrant: RaceEntrantState) {
+function chooseStrategicPit(state: RaceSimulationState, entrant: RaceEntrantState, preference: StrategyPreference) {
  return assessAiStop({ state, entrant, weather: state.weather!, publicWeather: publicWeather(state.input.weather!), mode: state.incidents?.mode ?? "GREEN", greenPitLaneLossMs: greenPitLaneLoss(state) },
-  state.input.pits!.strategy!, strategyPreference(state.input.seed, state.input.entrants.find(e => e.entrantId === entrant.entrantId)!.gridPosition)).compound;
+  state.input.pits!.strategy!, preference).compound;
 }

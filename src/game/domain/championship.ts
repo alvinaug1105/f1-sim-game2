@@ -110,6 +110,11 @@ export interface ClassifiedEntry {
   readonly teamId: string;
   /** Final classified position; equal positions are a dead heat (the next position skips accordingly). */
   readonly position: number;
+  /**
+   * Excluded from the results (Race v8C: B6.3.6 dry-tyre disqualification). Scores nothing and never enters the
+   * Grand Prix countback, whatever its listed position (disqualified cars are listed after every other car).
+   */
+  readonly disqualified?: boolean;
 }
 export interface SessionClassification extends SessionDistance {
   readonly entries: readonly ClassifiedEntry[];
@@ -131,7 +136,7 @@ export function scoreSession(version: ScoringRulesVersion, kind: ScoredSessionKi
   validateEntries(session.entries);
   const table = pointsTable(version, kind, session);
   const byPosition = new Map<number, ClassifiedEntry[]>();
-  for (const e of session.entries) byPosition.set(e.position, [...(byPosition.get(e.position) ?? []), e]);
+  for (const e of session.entries) if (!e.disqualified) byPosition.set(e.position, [...(byPosition.get(e.position) ?? []), e]);
   const shares = new Map<number, number>();
   for (const [position, group] of byPosition) {
     let pool = 0;
@@ -139,7 +144,7 @@ export function scoreSession(version: ScoringRulesVersion, kind: ScoredSessionKi
     if (pool % group.length !== 0) throw new RangeError("Dead-heat share is not representable in half points");
     shares.set(position, pool / group.length);
   }
-  return [...session.entries].sort((a, b) => a.position - b.position || cmp(a.driverId, b.driverId)).map((e) => ({ ...e, units: shares.get(e.position)! }));
+  return [...session.entries].sort((a, b) => a.position - b.position || cmp(a.driverId, b.driverId)).map((e) => ({ ...e, units: e.disqualified ? 0 : shares.get(e.position)! }));
 }
 /** Plain code-unit order (locale-free); used only to render perfectly tied rows in a stable order. */
 function cmp(a: string, b: string) {
@@ -172,9 +177,11 @@ function includes(cutoff: StandingsCutoff | null, round: number, part: "SPRINT" 
 export interface RoundResult {
   readonly eventId: string;
   readonly round: number;
-  readonly sprint: { readonly position: number; readonly units: number } | null;
-  readonly race: { readonly position: number; readonly units: number } | null;
+  readonly sprint: RoundSlot | null;
+  readonly race: RoundSlot | null;
 }
+/** A round's result for a driver (or a team's best car). `disqualified`: every car of that slot was disqualified. */
+export interface RoundSlot { readonly position: number; readonly units: number; readonly disqualified?: boolean }
 export type Movement = "UP" | "DOWN" | "SAME";
 export interface StandingRow {
   /** Career driver ID (WDC) or Career team ID (WCC). */
@@ -215,7 +222,7 @@ interface Tally {
   units: number;
   race: number[];
   qualifying: number[];
-  rounds: Map<string, { eventId: string; round: number; sprint: { position: number; units: number } | null; race: { position: number; units: number } | null }>;
+  rounds: Map<string, { eventId: string; round: number; sprint: RoundSlot | null; race: RoundSlot | null }>;
   teamId?: string;
   teamRound?: number;
 }
@@ -243,9 +250,11 @@ function roundEntry(t: Tally, r: ScoredRound) {
   if (!row) t.rounds.set(r.eventId, (row = { eventId: r.eventId, round: r.round, sprint: null, race: null }));
   return row;
 }
-function add(slot: { position: number; units: number } | null, position: number, units: number) {
-  // A team's round slot keeps its best car's position and the sum of both cars' points.
-  return slot ? { position: Math.min(slot.position, position), units: slot.units + units } : { position, units };
+function add(slot: RoundSlot | null, position: number, units: number, disqualified = false): RoundSlot {
+  // A team's round slot keeps its best (non-disqualified) car's position and the sum of both cars' points.
+  if (!slot) return disqualified ? { position, units, disqualified: true } : { position, units };
+  if (disqualified) return { ...slot, units: slot.units + units };
+  return { position: slot.disqualified ? position : Math.min(slot.position, position), units: slot.units + units };
 }
 function rank(tallies: Map<string, Tally>, previous: Map<string, number> | null, driver: boolean): StandingRow[] {
   const rows = [...tallies].map(([id, t]) => ({
@@ -290,9 +299,9 @@ function accumulate(input: ChampionshipInput, cutoff: StandingsCutoff | null) {
         }
         const key = part === "SPRINT" ? "sprint" : "race";
         const dr = roundEntry(d, r), tr = roundEntry(t, r);
-        dr[key] = add(dr[key], e.position, e.units);
-        tr[key] = add(tr[key], e.position, e.units);
-        if (part === "RACE") {
+        dr[key] = add(dr[key], e.position, e.units, e.disqualified);
+        tr[key] = add(tr[key], e.position, e.units, e.disqualified);
+        if (part === "RACE" && !e.disqualified) {
           bump(d.race, e.position);
           bump(t.race, e.position);
         }

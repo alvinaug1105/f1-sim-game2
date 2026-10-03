@@ -5,6 +5,18 @@ import { tyreFamily, type Suitability, type TyreFamily } from "../../../simulati
 import type { ErsOutlook, RacePublicEntrant, RacePublicState } from "../public-view";
 import type { timingRows } from "./model";
 import { LABEL_TIER } from "./labels";
+/**
+ * The official Race leader, distinct from the ordinal position used for ordering and storage:
+ * - while RUNNING: the live P1 (not retired);
+ * - after the flag: only a car the authoritative final classification (v8C) marks CLASSIFIED — a disqualified car is
+ *   never the leader or winner because of its ordinal P1, and when no car is classified there is NO leader (null).
+ * Races without a final classification record (pre-v8C revisions) keep the ordinal P1.
+ */
+export function officialLeaderId(s: RacePublicState): string | null {
+    if (s.status === "FINISHED" && s.classification)
+        return [...s.classification].filter(x => x.status === "CLASSIFIED").sort((a, b) => a.position - b.position)[0]?.entrantId ?? null;
+    return s.entrants.find(e => e.position === 1 && e.incident?.status !== "RETIRED")?.entrantId ?? null;
+}
 type Row = ReturnType<typeof timingRows>[number];
 /** Presentation threshold for calling a nearby car a "battle". Informational only; not a simulation rule. */
 export const BATTLE_GAP_MS = 1000;
@@ -13,7 +25,7 @@ export function controlMode(s: RacePublicState): ControlMode { return s.incident
 /** Global DRS state from existing engine flags only; map distance never decides eligibility. */
 export type DrsState = "UNAVAILABLE" | "ENABLED" | "WET" | "CONTROL" | "RESTART" | "FINISHED";
 export function drsState(s: RacePublicState): DrsState {
-    if(s.input.modelRevision===2)return 'UNAVAILABLE';
+    if((s.input.modelRevision??1)>=2)return 'UNAVAILABLE';
     if (!s.input.interaction) return "UNAVAILABLE";
     if (s.status === "FINISHED") return "FINISHED";
     if (controlMode(s) !== "GREEN") return "CONTROL";
@@ -40,8 +52,7 @@ export function battleContext(rows: readonly Row[], id: string, s: RacePublicSta
 export function labelTiers(rows: readonly Row[], selected: string, s: RacePublicState) {
     const tiers = new Map<string, number>(rows.map(r => [r.id, LABEL_TIER.FIELD]));
     const raise = (id: string | undefined, tier: number) => { if (id && tiers.has(id)) tiers.set(id, Math.min(tiers.get(id)!, tier)); };
-    const leader = rows.find(r => r.entrant.position === 1 && r.status !== "RETIRED");
-    raise(leader?.id, LABEL_TIER.LEADER);
+    raise(officialLeaderId(s) ?? undefined, LABEL_TIER.LEADER);
     for (const player of rows.filter(r => r.player && r.id !== selected)) {
         raise(player.id, LABEL_TIER.PLAYER);
         const b = battleContext(rows, player.id, s);

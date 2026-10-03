@@ -4,7 +4,7 @@ import type { SessionStatus, SessionType } from "../../src/game/domain/progressi
 export const TEAMS = ["t1", "t2", "t3"] as const;
 export const DRIVERS = ["d1", "d2", "d3", "d4", "d5", "d6"] as const;
 export const teamOf = (d: string) => `t${Math.ceil(Number(d.slice(1)) / 2)}`;
-export function session(order: readonly string[], opts: { scheduled?: number; leader?: number; green?: number; retired?: readonly string[]; team?: (d: string) => string } = {}): ChampionshipSession {
+export function session(order: readonly string[], opts: { scheduled?: number; leader?: number; green?: number; retired?: readonly string[]; disqualified?: readonly string[]; team?: (d: string) => string } = {}): ChampionshipSession {
   const scheduled = opts.scheduled ?? 20, leader = opts.leader ?? scheduled;
   return {
     scheduledLaps: scheduled,
@@ -17,6 +17,7 @@ export function session(order: readonly string[], opts: { scheduled?: number; le
       completedLaps: opts.retired?.includes(driverId) ? Math.max(0, leader - 5) : leader,
       elapsedTimeMs: 3_600_000 + i * 1_500,
       retired: Boolean(opts.retired?.includes(driverId)),
+      disqualified: Boolean(opts.disqualified?.includes(driverId)),
       stops: 1,
     })),
   };

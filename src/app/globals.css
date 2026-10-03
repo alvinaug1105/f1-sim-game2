@@ -1076,3 +1076,9 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 /* Circular live-timing bubbles: the selected car's ring glows; keyboard focus gets its own halo. */
 .race-track-view .map-car.selected .selected-ring { filter:drop-shadow(0 0 3px #ffffffcc); }
 .race-track-view .map-car .bubble-label { pointer-events:none; font-family:inherit; }
+/* Race v8C: dry-tyre rule status and disqualification (text + icon carry meaning; colour is supplementary). */
+.tyre-rule { margin:8px 0;padding:8px 10px;border-left:3px solid #6f8494;background:#1d2830;border-radius:4px; }.tyre-rule p { margin:2px 0; }
+.tyre-rule.rule-outstanding { border-left-color:#f3dc8a; }.tyre-rule.rule-urgent { border-left-color:#ff9c95;background:#33201f; }.tyre-rule.rule-ok { border-left-color:#9fdcae; }
+.tyre-rule-note { padding:6px 10px;border-left:3px solid #f3dc8a;background:#1d2830; }
+.driver-status.status-DSQ,.status-DSQ { color:#ff9c95; }.no-commands.status-DSQ { background:#3e1f22;color:#ffc9c5; }
+.dsq-row { opacity:.7; }.dsq-row .driver-select strong { text-decoration:line-through; }

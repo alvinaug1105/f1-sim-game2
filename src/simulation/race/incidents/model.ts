@@ -2,6 +2,7 @@ import type { RaceSimulationState, RaceEntrant, RaceEntrantState } from "../type
 import type { PaceMode } from "../commands/model";
 import { waterPenaltyMs } from "../weather/model";
 import type { OvertakeCause } from "../traffic/model";
+import { hasAssistance } from "../progression/revision";
 export type RaceControlMode = "GREEN" | "VSC" | "SAFETY_CAR";
 export type IncidentKind = "DRIVER_MISTAKE" | "SPIN" | "LOCK_UP" | "CONTACT" | "MECHANICAL_PROBLEM" | "MECHANICAL_RETIREMENT";
 /**
@@ -181,7 +182,7 @@ export function validateIncidentState(state: RaceSimulationState) {
             throw new RangeError("Invalid incident kind");
         if (e.severity !== null && !["MINOR", "MODERATE", "MAJOR"].includes(e.severity))
             throw new RangeError("Invalid incident severity");
-        if (e.cause !== undefined && (e.type !== "OVERTAKE" || !(state.input.progression?.version===2?["TYRE","PACE","OVERTAKE_MODE","BOOST"]:["TYRE", "ERS", "DRS", "PACE"]).includes(e.cause)))
+        if (e.cause !== undefined && (e.type !== "OVERTAKE" || !(hasAssistance(state.input.progression)?["TYRE","PACE","OVERTAKE_MODE","BOOST"]:["TYRE", "ERS", "DRS", "PACE"]).includes(e.cause)))
             throw new RangeError("Invalid overtake cause");
         if (e.type === "OVERTAKE" && e.entrantIds.length !== 2)
             throw new RangeError("Invalid overtake event");

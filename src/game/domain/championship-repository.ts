@@ -14,6 +14,8 @@ export interface ChampionshipResultRow {
   readonly completedLaps: number;
   readonly elapsedTimeMs: number;
   readonly retired: boolean;
+  /** Race v8C: excluded from the results by the B6.3.6 dry-tyre regulation (no points, listed after every other car). */
+  readonly disqualified: boolean;
   readonly stops: number | null;
 }
 export interface ChampionshipSession {

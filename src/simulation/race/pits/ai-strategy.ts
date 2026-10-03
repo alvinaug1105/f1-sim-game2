@@ -285,8 +285,11 @@ export function assessAiStop(ctx: StrategyContext, strategy: AiStrategyConfigura
  * the flag, or one further stop onto the best follow-up compound). Every compound within the tolerance of the best
  * plan is a sensible choice and the car's own softer/harder preference picks among them; a compound that is clearly
  * worse is never chosen, so there is no fake diversity.
+ *
+ * `allowed` (Race v8C regulation) restricts which compound may be fitted NOW — the regulation filters the legal
+ * candidates and this same planner chooses among them; follow-up stints stay unrestricted. Omitted = unchanged.
  */
-export function dryCompound(ctx: StrategyContext, strategy: AiStrategyConfiguration, preference: StrategyPreference, tyres: TyreConfiguration, remaining: number): TyreCompound {
+export function dryCompound(ctx: StrategyContext, strategy: AiStrategyConfiguration, preference: StrategyPreference, tyres: TyreConfiguration, remaining: number, allowed?: (compound: TyreCompound) => boolean): TyreCompound {
   const input = ctx.state.input, lap = ctx.state.lap;
   const dry: TyreCompound[] = TYRE_COMPOUNDS.filter(x => input.tyres!.profiles[x]);
   const prefix = new Map(dry.map(x => [x, stintCosts(fresh(x, input), remaining, lap, ctx.weather, ctx.publicWeather, tyres)]));
@@ -303,8 +306,9 @@ export function dryCompound(ctx: StrategyContext, strategy: AiStrategyConfigurat
       for (const y of dry) if (fits(x, k) && fits(y, remaining - k)) best = Math.min(best, costs[k] + stop + prefix.get(y)![remaining - k]);
     return best;
   };
-  const feasible = dry.map(compound => ({ compound, cost: plan(compound, true) }));
-  const plans = feasible.some(p => Number.isFinite(p.cost)) ? feasible : dry.map(compound => ({ compound, cost: plan(compound, false) }));
+  const candidates = allowed ? dry.filter(allowed) : dry;
+  const feasible = candidates.map(compound => ({ compound, cost: plan(compound, true) }));
+  const plans = feasible.some(p => Number.isFinite(p.cost)) ? feasible : candidates.map(compound => ({ compound, cost: plan(compound, false) }));
   const best = Math.min(...plans.map(p => p.cost));
   const sensible = plans.filter(p => p.cost - best <= strategy.compoundToleranceMs).map(p => p.compound); // softest → hardest
   const index = Math.min(sensible.length - 1, Math.max(0, Math.round((preference.compound + 1) / 2 * (sensible.length - 1))));

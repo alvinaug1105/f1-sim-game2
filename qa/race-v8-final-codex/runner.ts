@@ -25,7 +25,7 @@ function git(args: string[]) { return execFileSync("git", args, { encoding: "utf
 export function verifyProductionBase() {
   if (git(["cat-file", "-e", `${PRODUCTION_SHA}^{commit}`]) !== "") throw new Error("Exact production base SHA cannot be resolved");
   execFileSync("git", ["merge-base", "--is-ancestor", PRODUCTION_SHA, "HEAD"]);
-  const changed = git(["diff", "--name-only", `${PRODUCTION_SHA}..HEAD"]).split("\n").filter(Boolean);
+  const changed = git(["diff", "--name-only", `${PRODUCTION_SHA}..HEAD`]).split("\n").filter(Boolean);
   const unexpected = changed.filter((path) => !path.startsWith("qa/race-v8-final-codex/") && path !== ".github/workflows/race-v8-final-codex.yml");
   if (unexpected.length) throw new Error(`Production or out-of-scope files changed: ${unexpected.join(", ")}`);
   return { productionBaseSha: PRODUCTION_SHA, qaHarnessSha: git(["rev-parse", "HEAD"]), changedFiles: changed };

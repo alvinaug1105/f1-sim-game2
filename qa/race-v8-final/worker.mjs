@@ -54,10 +54,15 @@ const uuidFor = (salt, kind, value) => {
   return h.slice(0, 8) + "-" + h.slice(8, 12) + "-4" + h.slice(13, 16) + "-" + variant + h.slice(17, 20) + "-" + h.slice(20, 32);
 };
 const remappedId = (job, kind, value) => job.uuidRemapSalt === undefined ? value : uuidFor(job.uuidRemapSalt, kind, value);
-function customWeather(seed, laps, kind) {
+function customWeather(seed, laps, kind, trackWater = null) {
   const base = weatherModel.developmentWeather(seed, laps);
   const at = x => Math.max(1, Math.min(laps, Math.round(1 + x * (laps - 1))));
   let points;
+  if (kind === "WET_GRID") {
+    const water = Number.isInteger(trackWater) ? Math.max(0, Math.min(1000, trackWater)) : 500;
+    const timeline = [{ startLap: 1, rainfall: 650, airTemperatureMilliC: 19000 }];
+    return { ...base, timeline, forecast: [{ arrivalMinLap: 1, arrivalMaxLap: 1, rainfallMin: 500, rainfallMax: 800 }], initial: { rainfallIntensity: 650, airTemperatureMilliC: 19000, trackTemperatureMilliC: 21000, trackWater: water, drsState: "DRS_DISABLED_WET" } };
+  }
   if (kind === "DAMP") points = [[0, 0], [.02, 0]];
   else if (kind === "DRYING") points = [[0, 900], [.32, 700], [.62, 180], [.82, 0]];
   else if (kind === "EARLY_RAIN") points = [[0, 0], [.12, 780], [.36, 600], [.6, 120], [.82, 0]];
@@ -80,7 +85,7 @@ function buildInput(job) {
   const initialFuelKg = developmentCommandFuelKg(Math.round(fuelBurnPerLapKg * laps * 1000) / 1000);
   const raceProfile = { overtakingDifficulty:c.overtakingDifficulty, dirtyAirSensitivityPermille:c.dirtyAirSensitivityPermille, drsEffectivenessPermille:c.drsEffectivenessPermille };
   const bundle = v8dTuningBundle(progression, baseLapTimeMs, true, raceProfile);
-  const weather = job.weatherKind && job.weatherKind !== "CLIMATE" ? customWeather(job.raceSeed, laps, job.weatherKind) : climateWeather(job.raceSeed, laps, c.climateProfile);
+  const weather = job.weatherKind && job.weatherKind !== "CLIMATE" ? customWeather(job.raceSeed, laps, job.weatherKind, job.trackWater) : climateWeather(job.raceSeed, laps, c.climateProfile);
   const incidentsCfg = { ...defaultIncidentConfiguration(), pitTrackSectionMs: bundle.pitTiming.pitTrackSectionMs, ...(job.incidentProfile?.overrides ?? {}) };
   const p = defaultCommandConfiguration();
   const commands = { ...p, racecraft: bundle.racecraft };
@@ -90,7 +95,7 @@ function buildInput(job) {
     const preference = strategyPreference(job.raceSeed, i + 1);
     const proposed = aiStartingCompound(weather.initial);
     const compound = proposed === "MEDIUM" ? aiDryStartingCompound(preference) : aiWetStartingCompound(proposed, weather.initial, bundle.tyres, publicWeather(weather), bundle.strategy, preference);
-    const isPlayer = job.campaign === "C" && i + 1 === 10;
+    const isPlayer = ["C", "G", "H"].includes(job.campaign) && i + 1 === 10;
     return {
       entrantId: `qa-v8-${String(i + 1).padStart(2, "0")}`,
       driverId: remappedId(job, "driver", d.driverId),
@@ -164,7 +169,7 @@ function runRace(job) {
   if (input.entrants.length !== 22) throw new Error("wrong field size");
   const s0 = createRace(input);
   if (s0.input.progression?.version !== 4 || s0.simulationVersion !== 8) throw new Error("wrong revision contract");
-  const player = job.campaign === "C" ? s0.input.entrants.find(e => e.gridPosition === 10) : null;
+  const player = ["C", "G", "H"].includes(job.campaign) ? s0.input.entrants.find(e => e.gridPosition === 10) : null;
   let s = s0;
   const passAttemptsById = Object.fromEntries(s0.entrants.map(e => [e.entrantId, 0]));
   let passAttempts = 0, earlyPassAttempts = 0, latePassAttempts = 0, earlyPasses = 0, latePasses = 0, drsEligibleObservations = 0, drsBenefitObservations = 0, drsBenefitMsTotal = 0, nearFloorSamples = 0, exactFloorSamples = 0, longestPairRun = 0;
@@ -180,7 +185,7 @@ function runRace(job) {
   const playerId = player?.entrantId;
   const startCompound = playerId ? s.entrants.find(e=>e.entrantId===playerId).stint?.tyre.compound : null;
   const pitCompound = startCompound === "HARD" ? "MEDIUM" : "HARD";
-  const playerPitLap = Math.max(2,Math.floor(input.totalLaps*.5));
+  const playerPitLap = Number.isInteger(job.strategyPitLap) ? Math.max(2, Math.min(input.totalLaps - 2, job.strategyPitLap)) : Math.max(2,Math.floor(input.totalLaps*.5));
   if (playerId) {
     s = setModes(s, playerId, { paceMode:job.paceMode, fuelMode:job.fuelMode, energyPolicy:job.energyPolicy });
     const e=s.entrants.find(x=>x.entrantId===playerId); commandSchedule.push({lap:0,paceMode:e.commands.paceMode,fuelMode:e.commands.fuelMode,energyPolicy:s.progression.cars[playerId].assistance.policy});
@@ -289,12 +294,14 @@ function runRace(job) {
   return {
     scenarioId:job.scenarioId,campaign:job.campaign,sessionKind:job.sessionKind,circuitId:job.circuitId,circuitName:job.circuitName,
     seedIndex:job.seedIndex,raceSeed:job.raceSeed,configurationHash:job.configurationHash,productionSHA:job.productionSHA,testedSHA:job.testedSHA,qaShardId:job.qaShardId,
+    ...(job.comparisonGroup?{comparisonGroup:job.comparisonGroup,comparisonRole:job.comparisonRole,strategyPitLap:job.strategyPitLap}:{}),
     totalLaps:input.totalLaps,entrantCount:s.entrants.length,status:s.status,revision:s.input.progression.version,simulationVersion:s.simulationVersion,
     winner:results[0]?.entrantId??null,finishPositions:entrants.map(e=>e.position),classified:classificationOk,
+    classification:results.map(x=>{const c=s.progression.classification?.entries.find(y=>y.entrantId===x.entrantId);return {entrantId:x.entrantId,driverId:x.driverId,teamId:x.teamId,position:c?.position??x.position,roadPosition:c?.roadPosition??x.roadPosition??x.position,status:c?.status??x.status??null,disqualified:c?.status==='DISQUALIFIED',reason:c?.reason??null};}),
     raceTimeMs:Math.max(...entrants.map(e=>e.totalTimeMs)),passAttempts,earlyPassAttempts,latePassAttempts,earlyPasses,latePasses,passes:events.filter(e=>e.type==="OVERTAKE").length,
     drsEligibleObservations,drsBenefitObservations,drsBenefitMsTotal,drsPasses:events.filter(e=>e.type==="OVERTAKE"&&e.cause==="DRS").length,
     commandSchedule,initialWeather:input.weather?.initial??null,weatherTimeline:input.weather?.timeline??[],weatherForecast:input.weather?.forecast??[],finishWeather:s.weather??null,
-    tyreCliffs:Object.fromEntries(Object.entries(input.tyres.profiles).map(([compound,profile])=>[compound,profile.cliffWear])),
+    tyreCliffs:Object.fromEntries(Object.entries(input.tyres.profiles).map(([compound,profile])=>[compound,{degradationStartWear:profile.degradationStartWear,cliffWear:profile.cliffWear,progressivePenaltyMs:profile.progressivePenaltyMs,cliffPenaltyMs:profile.cliffPenaltyMs}])),
     nearFloorSamples,exactFloorSamples,longestSamePairNearFloorRun:longestPairRun,longestClampOnlyRun,longestActiveAttackRun,longestRecatchingRun,nearFloorPairRuns:pairRuns,deepCliffLaps,numericErrors,fuelCreation,fuelCreationChecks,pitRouteErrors,
     pitStops:entrants.reduce((n,e)=>n+e.pits,0),incidents:control.INCIDENT||0,
     safetyCarStarts:control.SAFETY_CAR_START||0,vscStarts:control.VSC_START||0,retirements:entrants.filter(e=>e.status==="RETIRED").length,
@@ -333,13 +340,16 @@ for await (const line of lines) {
   }
   completed++;
   if(completed%10===0) {
-    const snapshot={worker:wid,completed,valid,failed,elapsedMs:Date.now()-started};
+    if (global.gc && completed % 100 === 0) global.gc();
+    const memory=process.memoryUsage();
+    const snapshot={worker:wid,completed,valid,failed,elapsedMs:Date.now()-started,memory:{rss:memory.rss,heapUsed:memory.heapUsed,heapTotal:memory.heapTotal,postGcHeapUsed:global.gc&&completed%100===0?memory.heapUsed:null,activeResourceTypes:process.getActiveResourcesInfo()}};
     process.stdout.write(JSON.stringify(snapshot)+"\n");
-    await import("node:fs/promises").then(fs=>fs.writeFile(`${outPath}/progress-${String(wid).padStart(2,"0")}.json`,JSON.stringify(snapshot)));
+    await import("node:fs/promises").then(async fs=>{await fs.appendFile(`${outPath}/progress-${String(wid).padStart(2,"0")}.jsonl`,JSON.stringify(snapshot)+"\n");await fs.writeFile(`${outPath}/progress-${String(wid).padStart(2,"0")}.json`,JSON.stringify(snapshot));});
   }
 }
 gzip.end(); await once(output,"finish");
 const aggregate={worker:wid,completed,valid,failed,totalRuntimeMs,totalLaps,totalPassAttempts,totalEarlyPassAttempts,totalLatePassAttempts,totalEarlyPasses,totalLatePasses,totalPasses,totalDrsEligibleObservations,totalDrsBenefitObservations,totalDrsBenefitMsTotal,totalDrsPasses,totalPitStops,totalIncidents,totalSc,totalVsc,totalRetirements,totalDsqs,totalFuelCreation,totalNumeric,totalClassErrors,elapsedMs:Date.now()-started};
 await import("node:fs/promises").then(fs=>fs.writeFile(`${outPath}/aggregate-${String(wid).padStart(2,"0")}.json`,JSON.stringify(aggregate,null,2)));
 process.stdout.write(JSON.stringify(aggregate)+"\n");
+if(failed>0)process.exitCode=1;
 }

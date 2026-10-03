@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   remote-pilot:
-    name: Hosted runner quality gates and 100-race pilot
+    name: Hosted quality gates and 100-race pilot
     runs-on: ubuntu-latest
     timeout-minutes: 360
     services:
@@ -43,7 +43,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify hosted runner and production pin
+      - name: Verify hosted runner, production pin and QA-only diff
         shell: bash
         run: |
           set -euo pipefail
@@ -61,9 +61,7 @@ jobs:
           cat > qa-out/quality/runner.json <<EOF
           {"runnerEnvironment":"$RUNNER_ENVIRONMENT","runnerOS":"$RUNNER_OS","runnerArch":"$RUNNER_ARCH","runnerName":"$RUNNER_NAME","runId":"$GITHUB_RUN_ID","runAttempt":"$GITHUB_RUN_ATTEMPT","job":"$GITHUB_JOB","qaCommit":"$GITHUB_SHA","productionSHA":"$PRODUCTION_SHA"}
           EOF
-          echo "Runner: $RUNNER_ENVIRONMENT / $RUNNER_OS / $RUNNER_ARCH"
-          echo "Production SHA: $PRODUCTION_SHA"
-          echo "QA commit: $GITHUB_SHA"
+          git diff --check "$PRODUCTION_SHA...$GITHUB_SHA" | tee qa-out/quality/diff-check-base.txt
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -88,7 +86,9 @@ jobs:
           npm run db:seed 2>&1 | tee qa-out/quality/db-seed.log
 
       - name: Run PostgreSQL integration tests
-        run: npm run test:db 2>&1 | tee qa-out/quality/db-tests.log
+        run: |
+          set -o pipefail
+          npm run test:db 2>&1 | tee qa-out/quality/db-tests.log
 
       - name: Run typecheck, lint, build and Prisma checks
         run: |
@@ -98,7 +98,7 @@ jobs:
           npm run build 2>&1 | tee qa-out/quality/build.log
           npx prisma validate 2>&1 | tee qa-out/quality/prisma-validate.log
           npx prisma generate 2>&1 | tee qa-out/quality/prisma-generate.log
-          git diff --check 2>&1 | tee qa-out/quality/diff-check.log
+          git diff --check "$PRODUCTION_SHA...$GITHUB_SHA" 2>&1 | tee qa-out/quality/diff-check-final.txt
 
       - name: Record npm audit without changing dependencies
         shell: bash
@@ -110,22 +110,22 @@ jobs:
           echo "npm audit exit code: $audit_status"
           exit 0
 
-      - name: Prepare deterministic 100-race pilot manifest
+      - name: Prepare deterministic remote pilot manifest
         run: node --import tsx qa/race-v8-final/prepare.mjs pilot qa-out/pilot
 
-      - name: Run pilot on GitHub-hosted runner
+      - name: Run the 100-race pilot on this hosted runner
         run: |
           set -o pipefail
-          node --import tsx qa/race-v8-final/worker.mjs qa-out/pilot/jobs.jsonl qa-out/pilot/telemetry 1 2>&1 | tee qa-out/pilot/worker.log
+          node --expose-gc --import tsx qa/race-v8-final/worker.mjs qa-out/pilot/jobs.jsonl qa-out/pilot/telemetry 1 2>&1 | tee qa-out/pilot/worker.log
 
-      - name: Verify pilot races, telemetry and runner identity
+      - name: Verify pilot, version, invariants and runner identity
         run: node qa/race-v8-final/verify-pilot.mjs qa-out/pilot
 
-      - name: Upload pilot manifest
+      - name: Upload pilot seed evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: race-v8-seed-manifest
+          name: race-v8-pilot-seed-manifest
           path: qa-out/pilot/manifest*
           if-no-files-found: warn
           retention-days: 30
@@ -134,22 +134,614 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: race-v8-primary-telemetry
+          name: race-v8-pilot-telemetry
           path: qa-out/pilot/telemetry/
           if-no-files-found: warn
           compression-level: 0
           retention-days: 30
 
-      - name: Upload pilot summary and remote quality evidence
+      - name: Upload pilot, quality gate and security evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: race-v8-primary-summary
+          name: race-v8-pilot-summary
           path: |
             qa-out/pilot/run.json
             qa-out/pilot/runner.json
             qa-out/pilot/pilot-summary.json
             qa-out/pilot/worker.log
             qa-out/quality/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload security audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-security
+          path: qa-out/quality/npm-audit*
+          if-no-files-found: warn
+          retention-days: 30
+
+  prepare-primary:
+    name: Prepare 30,000 deterministic primary jobs
+    needs: remote-pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PRODUCTION_SHA: 55846a9c465b58fc5687517ace67772421868dff
+      RACE_QA_REPO: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Check production pin and QA-only diff
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$(git rev-parse "$PRODUCTION_SHA^{commit}")" = "$PRODUCTION_SHA"
+          git diff --check "$PRODUCTION_SHA...$GITHUB_SHA"
+          git diff --name-only "$PRODUCTION_SHA...$GITHUB_SHA" | while IFS= read -r path; do case "$path" in .github/workflows/race-v8-final-qa.yml|qa/race-v8-final/*) ;; *) echo "Forbidden source change: $path" >&2; exit 1;; esac; done
+      - run: npm ci
+      - name: Build and hash seed manifest with fixed shard assignments
+        run: node --import tsx qa/race-v8-final/prepare.mjs full qa-out/full
+      - name: Upload primary seed manifest and 16 exact shard inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-seed-manifest
+          path: |
+            qa-out/full/manifest.jsonl
+            qa-out/full/manifest.sha256
+            qa-out/full/run.json
+            qa-out/full/shards/
+          if-no-files-found: error
+          retention-days: 30
+
+  primary-race-shard:
+    name: Primary races ${{ matrix.shard }}
+    needs: prepare-primary
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard:
+          - shard-01
+          - shard-02
+          - shard-03
+          - shard-04
+          - shard-05
+          - shard-06
+          - shard-07
+          - shard-08
+          - shard-09
+          - shard-10
+          - shard-11
+          - shard-12
+          - shard-13
+          - shard-14
+          - shard-15
+          - shard-16
+    env:
+      PRODUCTION_SHA: 55846a9c465b58fc5687517ace67772421868dff
+      RACE_QA_REPO: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: race-v8-seed-manifest
+          path: qa-out/full
+      - name: Verify exact deterministic shard input
+        run: node qa/race-v8-final/verify-shard.mjs qa-out/full/shards/${{ matrix.shard }}/jobs.jsonl ${{ matrix.shard }}
+      - name: Run exact primary shard attempt 1
+        id: shard_attempt_1
+        continue-on-error: true
+        run: node --expose-gc --import tsx qa/race-v8-final/worker.mjs qa-out/full/shards/${{ matrix.shard }}/jobs.jsonl qa-out/${{ matrix.shard }}/attempt-1 1
+      - name: Retry exact failed primary seed range once
+        id: shard_attempt_2
+        if: steps.shard_attempt_1.outcome == 'failure'
+        continue-on-error: true
+        run: node --expose-gc --import tsx qa/race-v8-final/worker.mjs qa-out/full/shards/${{ matrix.shard }}/jobs.jsonl qa-out/${{ matrix.shard }}/attempt-2 1
+      - name: Verify one complete attempt against the original shard manifest
+        if: always()
+        run: |
+          attempt=attempt-1
+          if [ -d "qa-out/${{ matrix.shard }}/attempt-2" ]; then attempt=attempt-2; fi
+          node qa/race-v8-final/verify-worker-output.mjs qa-out/full/shards/${{ matrix.shard }}/jobs.jsonl "qa-out/${{ matrix.shard }}/$attempt"
+      - name: Upload shard attempt telemetry, retry record and memory snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-primary-shard-${{ matrix.shard }}
+          path: qa-out/${{ matrix.shard }}/
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 30
+
+  analyze-primary:
+    name: Analyze primary races and prepare forensic replay seeds
+    needs: [prepare-primary, primary-race-shard]
+    if: ${{ always() && needs.prepare-primary.result == 'success' && needs.primary-race-shard.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: race-v8-seed-manifest
+          path: qa-out/full
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: race-v8-primary-shard-*
+          path: qa-out/full/results
+          merge-multiple: false
+        continue-on-error: true
+      - name: Verify exact source pin again before analyzing telemetry
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$(git rev-parse 55846a9c465b58fc5687517ace67772421868dff^{commit})" = "55846a9c465b58fc5687517ace67772421868dff"
+      - name: Analyze all primary telemetry and seed-paired command results
+        id: analyze
+        continue-on-error: true
+        run: node qa/race-v8-final/analyze-primary.mjs qa-out/full qa-out/analysis
+      - name: Upload all primary telemetry and attempt evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-primary-telemetry
+          path: qa-out/full/results/
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 30
+      - name: Upload primary summary and performance telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-primary-summary
+          path: |
+            qa-out/full/run.json
+            qa-out/analysis/primary-summary.json
+            qa-out/analysis/sample-disclosure.json
+            qa-out/analysis/performance-primary.json
+            qa-out/full/results/*/*/aggregate-*.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload command-factorial analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-command-factorial
+          path: qa-out/analysis/command-factorial.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload passing and close-battle analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-passing-analysis
+          path: qa-out/analysis/passing-analysis.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload weather and tyre analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-weather-analysis
+          path: |
+            qa-out/analysis/weather-analysis.json
+            qa-out/analysis/tyre-analysis.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload sporting regulation analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-regulation-analysis
+          path: qa-out/analysis/regulation-analysis.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload exact outlier replay seed lists
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-outlier-seeds
+          path: qa-out/analysis/outlier-replay-seeds.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload analyzer failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-failures
+          path: qa-out/analysis/failures.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Fail the analysis job when primary requirements were not met
+        if: always()
+        run: test "${{ steps.analyze.outcome }}" = success
+
+  prepare-supplemental:
+    name: Prepare 3,000 undercut and 3,000 overcut paired experiments
+    needs: analyze-primary
+    if: ${{ always() && needs.analyze-primary.result != 'cancelled' && needs.analyze-primary.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RACE_QA_REPO: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx qa/race-v8-final/prepare-supplemental.mjs qa-out/supplemental
+      - uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-supplemental-seed-manifest
+          path: qa-out/supplemental/
+          if-no-files-found: error
+          retention-days: 30
+
+  supplemental-pit-shard:
+    name: Paired pit experiments ${{ matrix.shard }}
+    needs: prepare-supplemental
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard: [supplement-01, supplement-02, supplement-03, supplement-04, supplement-05, supplement-06, supplement-07, supplement-08]
+    env:
+      RACE_QA_REPO: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: race-v8-supplemental-seed-manifest
+          path: qa-out/supplemental
+      - run: node --expose-gc --import tsx qa/race-v8-final/worker.mjs qa-out/supplemental/shards/${{ matrix.shard }}/jobs.jsonl qa-out/${{ matrix.shard }}/attempt-1 1
+        id: pit_attempt_1
+        continue-on-error: true
+      - run: node --expose-gc --import tsx qa/race-v8-final/worker.mjs qa-out/supplemental/shards/${{ matrix.shard }}/jobs.jsonl qa-out/${{ matrix.shard }}/attempt-2 1
+        if: steps.pit_attempt_1.outcome == 'failure'
+        id: pit_attempt_2
+        continue-on-error: true
+      - name: Upload exact seed-range telemetry and retries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-supplemental-pit-${{ matrix.shard }}
+          path: qa-out/${{ matrix.shard }}/
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 30
+
+  analyze-supplemental-pit:
+    name: Verify undercut and overcut paired outcomes
+    needs: [prepare-supplemental, supplemental-pit-shard]
+    if: ${{ always() && needs.prepare-supplemental.result == 'success' && needs.supplemental-pit-shard.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: race-v8-supplemental-seed-manifest
+          path: qa-out/supplemental
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: race-v8-supplemental-pit-*
+          path: qa-out/supplemental/results
+          merge-multiple: false
+        continue-on-error: true
+      - name: Compare paired fixed-seed stop windows
+        id: analyze_pits
+        continue-on-error: true
+        run: node qa/race-v8-final/analyze-supplemental.mjs qa-out/supplemental qa-out/supplemental-analysis
+      - name: Upload undercut and overcut results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-undercut-overcut-analysis
+          path: qa-out/supplemental-analysis/undercut-overcut-analysis.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Enforce supplemental paired sample counts
+        if: always()
+        run: test "${{ steps.analyze_pits.outcome }}" = success
+
+  supplemental-forensics:
+    name: Determinism, path, UUID, wet-grid, command, performance and outlier QA
+    needs: analyze-primary
+    if: ${{ always() && needs.analyze-primary.result != 'cancelled' && needs.analyze-primary.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      RACE_QA_REPO: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: race-v8-seed-manifest
+          path: qa-out/full
+      - uses: actions/download-artifact@v4
+        with:
+          name: race-v8-outlier-seeds
+          path: qa-out/analysis
+      - uses: actions/download-artifact@v4
+        with:
+          name: race-v8-primary-summary
+          path: qa-out/analysis
+        continue-on-error: true
+      - name: Run 1,500 exact full-race determinism replays
+        id: determinism
+        continue-on-error: true
+        run: node --import tsx qa/race-v8-final/replay.mjs determinism qa-out/full/manifest.jsonl qa-out/determinism 0 1
+      - name: Run 500 execution-path equivalence cases
+        id: path
+        continue-on-error: true
+        run: node --import tsx qa/race-v8-final/replay.mjs path qa-out/full/manifest.jsonl qa-out/path-equivalence 0 1
+      - name: Run 500 UUID-remap semantic equivalence cases
+        id: uuid
+        continue-on-error: true
+        run: node --import tsx qa/race-v8-final/replay.mjs uuid qa-out/full/manifest.jsonl qa-out/uuid-remap 0 1
+      - name: Run 100-per-category exact outlier replays
+        id: outliers
+        continue-on-error: true
+        run: node --import tsx qa/race-v8-final/replay.mjs outlier qa-out/full/manifest.jsonl qa-out/outlier-replays 0 1 qa-out/analysis/outlier-replay-seeds.json
+      - name: Test 16 wet-grid water values across four circuits
+        id: wet_grid
+        continue-on-error: true
+        run: node --import tsx qa/race-v8-final/wet-grid.mjs
+      - name: Test player command and server command boundary
+        id: command_contract
+        continue-on-error: true
+        run: node --import tsx qa/race-v8-final/command-contract.mjs
+      - name: Measure remote runtime and memory, including v8C versus v8D
+        id: performance
+        continue-on-error: true
+        run: node --expose-gc --import tsx qa/race-v8-final/performance.mjs qa-out/full/manifest.jsonl qa-out/performance
+      - name: Upload determinism, execution-path, UUID and outlier evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-determinism
+          path: |
+            qa-out/determinism/
+            qa-out/path-equivalence/
+            qa-out/uuid-remap/
+            qa-out/outlier-replays/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload outlier replay evidence under its dedicated artifact name
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-outlier-replays
+          path: qa-out/outlier-replays/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload wet-grid and command-boundary evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-command-contract
+          path: |
+            qa-out/wet-grid.json
+            qa-out/command-contract.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload remote performance and memory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-performance
+          path: |
+            qa-out/performance/
+            qa-out/analysis/performance-primary.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Mark supplemental failures after preserving all evidence
+        if: always()
+        run: |
+          test "${{ steps.determinism.outcome }}" = success
+          test "${{ steps.path.outcome }}" = success
+          test "${{ steps.uuid.outcome }}" = success
+          test "${{ steps.outliers.outcome }}" = success
+          test "${{ steps.wet_grid.outcome }}" = success
+          test "${{ steps.command_contract.outcome }}" = success
+          test "${{ steps.performance.outcome }}" = success
+
+  postgres-persistence:
+    name: 100 PostgreSQL persistence and continuation cases
+    needs: analyze-primary
+    if: ${{ always() && needs.analyze-primary.result != 'cancelled' && needs.analyze-primary.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: qa
+          POSTGRES_PASSWORD: qa
+          POSTGRES_DB: race_v8_persistence
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qa -d race_v8_persistence"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://qa:qa@localhost:5432/race_v8_persistence
+      TEST_DATABASE_URL: postgresql://qa:qa@localhost:5432/race_v8_persistence
+      RACE_QA_REPO: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run persistence campaign in disposable hosted PostgreSQL schema
+        id: persistence
+        continue-on-error: true
+        run: node --import tsx qa/race-v8-final/postgres-persistence.mjs
+      - name: Upload exact PostgreSQL snapshots and continuation comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-persistence
+          path: qa-out/postgres-persistence.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Mark PostgreSQL mismatches after preserving evidence
+        if: always()
+        run: test "${{ steps.persistence.outcome }}" = success
+
+  final-report:
+    name: Assemble final remote QA report data
+    needs: [remote-pilot, prepare-primary, primary-race-shard, analyze-primary, analyze-supplemental-pit, supplemental-forensics, postgres-persistence]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download pilot evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-pilot-summary
+          path: qa-out/final/evidence/pilot
+        continue-on-error: true
+      - name: Download security audit evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-security
+          path: qa-out/final/evidence/security
+        continue-on-error: true
+      - name: Download primary summary
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-primary-summary
+          path: qa-out/final/evidence/primary-summary
+        continue-on-error: true
+      - name: Download command factorial
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-command-factorial
+          path: qa-out/final/evidence/commands
+        continue-on-error: true
+      - name: Download passing analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-passing-analysis
+          path: qa-out/final/evidence/passing
+        continue-on-error: true
+      - name: Download weather analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-weather-analysis
+          path: qa-out/final/evidence/weather
+        continue-on-error: true
+      - name: Download regulation analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-regulation-analysis
+          path: qa-out/final/evidence/regulation
+        continue-on-error: true
+      - name: Download failure evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-failures
+          path: qa-out/final/evidence/failures
+        continue-on-error: true
+      - name: Download deterministic replay evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-determinism
+          path: qa-out/final/evidence/determinism
+        continue-on-error: true
+      - name: Download outlier replay evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-outlier-replays
+          path: qa-out/final/evidence/outlier-replays
+        continue-on-error: true
+      - name: Download persistence evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-persistence
+          path: qa-out/final/evidence/persistence
+        continue-on-error: true
+      - name: Download performance evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-performance
+          path: qa-out/final/evidence/performance
+        continue-on-error: true
+      - name: Download command contract evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-command-contract
+          path: qa-out/final/evidence/command-contract
+        continue-on-error: true
+      - name: Download pit strategy experiments
+        uses: actions/download-artifact@v4
+        with:
+          name: race-v8-undercut-overcut-analysis
+          path: qa-out/final/evidence/pit-experiments
+        continue-on-error: true
+      - name: Record workflow gate outcomes and generate report bundle
+        env:
+          PILOT_RESULT: ${{ needs.remote-pilot.result }}
+          PREPARE_RESULT: ${{ needs.prepare-primary.result }}
+          PRIMARY_SHARDS_RESULT: ${{ needs.primary-race-shard.result }}
+          PRIMARY_ANALYSIS_RESULT: ${{ needs.analyze-primary.result }}
+          PIT_EXPERIMENT_RESULT: ${{ needs.analyze-supplemental-pit.result }}
+          SUPPLEMENTAL_RESULT: ${{ needs.supplemental-forensics.result }}
+          POSTGRES_RESULT: ${{ needs.postgres-persistence.result }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SHA: ${{ github.sha }}
+          PRODUCTION_SHA: 55846a9c465b58fc5687517ace67772421868dff
+        run: node qa/race-v8-final/final-report.mjs qa-out/final/evidence qa-out/final
+      - name: Upload final remote QA report data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-final-report-data
+          path: qa-out/final/
           if-no-files-found: warn
           retention-days: 30

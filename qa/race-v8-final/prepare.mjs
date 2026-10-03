@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -97,7 +98,7 @@ function buildPrimary() {
   return jobs;
 }
 
-const seedRanges = JSON.parse(requireReadFileSync(join(repo, "qa/race-v8-final/seed-ranges.json")));
+const seedRanges = JSON.parse(readFileSync(join(repo, "qa/race-v8-final/seed-ranges.json"), "utf8"));
 for (const name of ["primary", "pilot", "supplemental"]) {
   const range = seedRanges.ranges?.[name];
   if (!Number.isInteger(range?.start) || !Number.isInteger(range?.capacity) || range.start < 0 || range.start + range.capacity > 0xffff_ffff) throw new Error(`invalid ${name} seed range`);
@@ -155,16 +156,13 @@ function pilotSubset(primary) {
     (j.campaign === "C" && j.circuitKey === "circuit-monaco" && j.seedIndex === 1) ||
     (j.campaign === "D" && j.seedIndex === 1) ||
     (j.campaign === "E" && j.seedIndex === 1) ||
-    (j.campaign === "F" && j.seedIndex === 1 && ["BASELINE", "LOW_RELIABILITY", "SC_FREQUENCY"].some(g => j.scenarioId.includes(`:${g}:`))));
+    (j.campaign === "F" && j.circuitKey === "circuit-monaco" && j.seedIndex === 1 && ["BASELINE", "LOW_RELIABILITY", "SC_FREQUENCY"].some(g => j.scenarioId.includes(`:${g}:`))));
   if (selected.length !== 100) throw new Error(`pilot selection expected 100 races, got ${selected.length}`);
   return selected;
 }
 
 async function writeJson(path, value) { await writeFile(path, `${JSON.stringify(value, null, 2)}\n`); }
 async function writeJsonl(path, jobs) { await writeFile(path, `${jobs.map(j => JSON.stringify(j)).join("\n")}\n`); }
-
-const readFileSync = await import("node:fs").then(m => m.readFileSync);
-function requireReadFileSync(path) { return readFileSync(path, "utf8"); }
 
 await mkdir(outDir, { recursive: true });
 const primary = buildPrimary();

@@ -17,6 +17,7 @@ import { circuitLayouts } from '../src/data/seed/circuit-layouts';
 import { circuitProjection } from '../src/game/domain/circuit-geometry';
 import { samplePitRoute, racePitRoute } from '../src/game/domain/pit-geometry';
 import { drawnPitLane } from '../src/data/seed/circuit-pit-lanes';
+import { raceMapPadding, svgNumber } from '../src/features/race/viewer/race-map-style';
 import { viewerData } from './helpers/viewer';
 
 const suzuka = '00000000-0000-4000-8000-000000000301';
@@ -80,11 +81,12 @@ describe('Race map markers: circular live-timing bubbles', () => {
         expect(g).toContain('class="driver-bubble"'); expect(g).toContain('class="pit-mark"');
         expect(html).toContain('class="pit-route"');
         // The initial transform comes from the pit route, not the racing line.
-        const route = pitRoute(view), layout = circuitLayouts[suzuka], canvas = raceMapCanvas(layout);
+        // Server render: screen scale 1 ⇒ canvas padding from the 1000-unit bubble scale; numbers are canonical (0.01).
+        const route = pitRoute(view), layout = circuitLayouts[suzuka], canvas = raceMapCanvas(layout, false, route.points, raceMapPadding(raceBubbleScale(1, 1000)));
         const project = circuitProjection([...layout.points, ...route.points], canvas.width, canvas.height, canvas.padding);
         const expected = project(samplePitRoute(route, (rival.progress % 1) * 1e6));
         const [x, y] = g.match(/transform="translate\(([-\d.]+) ([-\d.]+)\)"/)!.slice(1).map(Number);
-        expect(x).toBeCloseTo(expected.x, 6); expect(y).toBeCloseTo(expected.y, 6);
+        expect(x).toBe(Number(svgNumber(expected.x))); expect(y).toBe(Number(svgNumber(expected.y)));
     });
     it('holds a stable on-screen size: 26 px on desktop maps, 23 px tablet, 22 px phone; text stays ≥ 8 px', () => {
         const size = (mapPx: number) => 2 * RACE_BUBBLE.r * (mapPx / 1000) * raceBubbleScale(mapPx / 1000);

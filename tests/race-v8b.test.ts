@@ -3,6 +3,7 @@ import {createRace,advanceRace,advanceRaceLap} from '../src/simulation/race/engi
 import {progressionBForCircuit,circuitProgressionB,progressionForCircuit} from '../src/data/seed/circuit-progression';
 import {circuitLayouts} from '../src/data/seed/circuit-layouts';
 import {circuitPitLanes} from '../src/data/seed/circuit-pit-lanes';
+import {placeInPitPhase,pitPhaseDistance} from './helpers/pit-phase';
 import {energyStep,qualify,initialAssistance,clearEntitlement,validateAssistance,ENERGY_POLICIES} from '../src/simulation/race/assistance/model';
 import {validateProgressionState,validateProgressionConfiguration,physicalAhead} from '../src/simulation/race/progression/model';
 import {domainTieOrder} from '../src/simulation/race/progression/tie-order';
@@ -11,7 +12,8 @@ import {neutralise} from './helpers/incidents';
 import {requestPitStop} from '../src/simulation/race/pits/model';
 import {projectRaceState} from '../src/features/race/projection';
 import {chooseAssistanceAi} from '../src/simulation/race/assistance/policy';
-import {raceBubbleScale,clampBadgeCenter,RaceMarkerPacks,RACE_BUBBLE} from '../src/features/race/viewer/marker-packs';
+import {raceBubbleScale,RACE_BUBBLE} from '../src/features/race/viewer/marker-packs';
+import {raceMapPadding} from '../src/features/race/viewer/race-map-style';
 import {RaceMotion} from '../src/features/race/viewer/motion';
 import {translate} from '../src/i18n/catalog';
 const suzuka='00000000-0000-4000-8000-000000000301';
@@ -27,6 +29,18 @@ describe('v8B revision and content',()=>{
   expect(()=>validateProgressionState({...b,input:{...b.input,progression:a.input.progression}})).toThrow();
   expect(()=>validateProgressionConfiguration({...b.input.progression!,version:3 as 2})).toThrow();
   expect(()=>advanceRaceLap({...b,entrants:b.entrants.map(e=>({...e,commands:{...e.commands!,ersMode:'DEPLOY'}}))})).toThrow();
+ });
+ it('derives valid ENTRY / LANE / SERVICE / EXIT pit states from each circuit\'s own frozen anchors (no magic distances)',()=>{
+  for(const id of Object.keys(circuitProgressionB)) {
+   const s=advanceRace(createRace({...racecraftInput({count:4,laps:6}),progression:progressionBForCircuit(id)}),2),car=s.input.entrants[1].entrantId,pit=s.input.progression!.pit;
+   for(const phase of ['ENTRY','LANE','SERVICE','EXIT'] as const) {
+    const placed=placeInPitPhase(structuredClone(s),car,phase),d=pitPhaseDistance(pit,phase==='EXIT'?s.lap-1:s.lap,phase);
+    expect(()=>validateProgressionState(placed)).not.toThrow();
+    expect(placed.entrants.find(e=>e.entrantId===car)!.track!.progressMicrolaps).toBe(d.total);
+    if(phase==='SERVICE')expect(d.local).toBe(pit.service);
+    expect(()=>advanceRaceLap(placed)).not.toThrow();
+   }
+  }
  });
  it('supplies all 24 production circuits with authored pit progress anchors (no x/y in Race content), including Suzuka',()=>{
   expect(Object.keys(circuitProgressionB)).toHaveLength(24);expect(circuitLayouts[suzuka].id.toLowerCase()).toContain('suzuka');
@@ -117,8 +131,8 @@ describe('v8B integration and observable presentation',()=>{
   const diameter=(scale:number)=>2*RACE_BUBBLE.r*scale*raceBubbleScale(scale);
   expect(diameter(.341)).toBeCloseTo(22);expect(diameter(.5)).toBeCloseTo(23);expect(diameter(1.4)).toBeCloseTo(26);expect(diameter(.7)).toBeCloseTo(26);
   expect(8.8*.341*raceBubbleScale(.341)).toBeGreaterThanOrEqual(8);
-  const center=clampBadgeCenter(-100,9999,1000,650,3);expect(center).toEqual({x:51,y:599});
-  const cars=Array.from({length:22},(_,n)=>({id:String(n),progress:n*.001,x:100+n*2,y:100,nx:0,ny:1,tier:n<2?n:3}));const p=new RaceMarkerPacks(3).frame(cars,2000,16,true);for(const c of cars){expect(p.get(c.id)!.x).toBe(c.x);expect(Math.abs(p.get(c.id)!.offset)).toBeLessThanOrEqual(108);}
+  // Canvas padding always fits a selected bubble (bubble + ring), so no marker is clamped away from its route.
+  for(const scale of [.341,.5,.7,1.4])expect(raceMapPadding(raceBubbleScale(scale))).toBeGreaterThanOrEqual((RACE_BUBBLE.r+5)*raceBubbleScale(scale));
   expect(translate('zh-TW','assistance.overtake.ACTIVE')).toBe('啟用中');expect(translate('en','viewer.overtakeCause.BOOST')).toBe('Boost');
  });
 });

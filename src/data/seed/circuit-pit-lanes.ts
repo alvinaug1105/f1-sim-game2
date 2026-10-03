@@ -53,9 +53,9 @@ export const circuitPitLanes: Readonly<Record<string, CircuitPitLane>> = {
     // Jeddah: leaves just after T27, inside; left of the main straight; garages after the control line; rejoins before the T1 chicane.
     '00000000-0000-4000-8000-000000000308': lane({ reference: FIA('Saudi Arabian Grand Prix', 2025), side: 'LEFT', entry: 912000, laneStart: 930000, service: 990000, exit: 50000, garage: 1020000,
         route: [[912000, 0, C], [930000, 1], [1035000, 1], [1050000, 0]] }),
-    // Miami: leaves after T18 and cuts inside T19; right of the main straight; exit runs inside T1 and rejoins after T2.
+    // Miami: leaves after T18 and cuts inside T19; right of the main straight; the lane ends before T1 turns in and the exit road runs straight through the inside of T1, rejoining after T2.
     '00000000-0000-4000-8000-000000000309': lane({ reference: FIA('Miami Grand Prix', 2026), side: 'RIGHT', entry: 915000, laneStart: 945000, service: 990000, exit: 68000, garage: 990000,
-        route: [[915000, 0, C], [945000, 1], [1045000, 1, C], [1068000, 0]] }),
+        route: [[915000, 0, C], [945000, 1], [1030000, 1, C], [1068000, 0]] }),
     // Montréal: leaves before the final chicane (T13/T14); left of the straight; exit lane continues past T1 and rejoins after the T2 hairpin.
     '00000000-0000-4000-8000-000000000310': lane({ reference: FIA('Canadian Grand Prix', 2026), side: 'LEFT', entry: 938000, laneStart: 955000, service: 985000, exit: 136000, garage: 1000000,
         route: [[938000, 0], [955000, 1], [1095000, 1, C], [1136000, 0]] }),

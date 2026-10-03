@@ -43,7 +43,7 @@ export function RaceOperations({ initialData }: {
     const phone = useSyncExternalStore(subscribePhone, () => window.matchMedia(PHONE).matches, () => false);
     const map = useMemo(() => {
         const degrees = phone ? compactRotation([...layout.points, ...(pitRoute?.points ?? [])]) : 0, oriented = orientLayout(layout, degrees);
-        return { degrees, layout: oriented.layout, pitRoute: pitRoute && { ...pitRoute, points: oriented.transform(pitRoute.points) } };
+        return { layout: oriented.layout, pitRoute: pitRoute && { ...pitRoute, points: oriented.transform(pitRoute.points) } };
     }, [phone, layout, pitRoute]);
     const send = (intent: ViewerIntent) => { void controller.command(async (state) => { const result = await viewerAction(data.progress.career.id, data.eventId, state.lap, intent, data.kind ?? 'RACE'); if (!result.data)
         throw new Error(result.error!); setData(result.data); return result.data.state!; }, commandInfo(intent)); };
@@ -81,7 +81,7 @@ export function RaceOperations({ initialData }: {
   {sprint && s.status === 'FINISHED' && <SprintSummary data={data} rows={rows}/>}
   <div className="ops-grid">
    <TimingTower state={s} rows={rows} selected={row.id} onSelect={setSelected} interval={interval} onInterval={setIntervalView} attentionId={attentionId}/>
-   <div className="map-column"><section className="ops-panel track-panel"><div className="ops-panel-title"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId}/><TrackMap key={`${layout.id}:${map.degrees}`} layout={map.layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers} authoritative={s.simulationVersion === 8} pitRoute={map.pitRoute} compact={phone} raceViewer/><p className="map-notice">{t('viewer.interpolation')} {t('viewer.labelNote')}</p></section>
+   <div className="map-column"><section className="ops-panel track-panel"><div className="ops-panel-title"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId}/><TrackMap key={layout.id} layout={map.layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers} authoritative={s.simulationVersion === 8} pitRoute={map.pitRoute} compact={phone} raceViewer/><p className="map-notice">{t('viewer.interpolation')} {t('viewer.labelNote')}</p></section>
    {weather && <details className="ops-panel forecast-drawer"><summary>{t('weather.forecast')}</summary><WeatherPanel state={s}/></details>}
    <EventFeed data={data}/>
    </div>

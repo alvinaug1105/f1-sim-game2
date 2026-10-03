@@ -2,6 +2,7 @@ import fixture from './fixtures/race-v8a-postgres-main-save.json';
 import {createHash} from 'node:crypto';
 import {qualify} from '../src/simulation/race/assistance/model';
 import {canonical,slotCanonical} from './helpers/determinism';
+import {placeInPitPhase} from './helpers/pit-phase';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
@@ -59,10 +60,9 @@ describe('PostgreSQL v8B revision persistence and server commands',()=>{
  });
  it.each(['ENTRY','LANE','SERVICE','EXIT'] as const)('reloads %s without acquiring main-track interaction',async route=>{
   await start();await advanceCareerRace(races,career.id,eventId,0,1);
-  const before=await edit(s=>{const id=own(s),p=s.progression!.cars[id],total=route==='ENTRY'?1930000:route==='LANE'?1950000:route==='SERVICE'?1970000:1020000;
-   p.route=route;p.compound='HARD';p.pitEntryLap=route==='EXIT'?0:1;p.pitLossMs=22500;p.stationaryMs=2500;p.delayMs=route==='SERVICE'?2500:0;p.observations=[{atMs:s.progression!.elapsedTimeMs,total,route}];
-   return {...s,entrants:s.entrants.map(e=>e.entrantId===id?{...e,completedLaps:Math.floor(total/1000000),track:{...e.track!,progressMicrolaps:total}}:e)};
-  });
+  // Phase distances come from this Race's own frozen pit anchors (circuit-authored), never from magic numbers.
+  const before=await edit(s=>placeInPitPhase(s,own(s),route));
+  expect(before.progression!.cars[own(before)].route).toBe(route);
   await advanceCareerRace(races,career.id,eventId,1,1);expect((await get()).state).toEqual(advanceRace(before,1));
  });
  it('round-trips a real main v8A fixture and finishes with its original engine digest; legacy ERS remains accepted',async()=>{

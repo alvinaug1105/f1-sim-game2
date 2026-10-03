@@ -82,6 +82,18 @@ describe('authored pit lanes (no generic production route)', () => {
             }
         }
     });
+    it('Miami (V8B-MED-001): the full lane is clearly separate from the racing line, with its anchors unchanged', () => {
+        const MIAMI = '00000000-0000-4000-8000-000000000309', shape = circuitPitLanes[MIAMI], lane = drawnPitLane(MIAMI)!, line = mainLine(circuitLayouts[MIAMI]);
+        // Timing anchors are untouched by the presentation repair.
+        expect([shape.entry, shape.laneStart, shape.service, shape.exit, shape.garage]).toEqual([915000, 945000, 990000, 68000, 990000]);
+        // Every full-lane point (lane start → last followed knot, across the lap line) keeps the 0.5-unit clearance (threshold not relaxed)…
+        const full = shape.route.filter(k => k.offset >= .9), from = full[0].progress, to = full.at(-1)!.progress;
+        const lanePoints = lane.points.filter(p => p.progress >= from && p.progress <= to);
+        expect(lanePoints.length).toBeGreaterThan(10);
+        for (const p of lanePoints) expect(nearest(line, p)).toBeGreaterThan(.5 * PIT_LANE_UNIT);
+        // …and, as presented, it sits well clear (no cusp toward T1): at least 0.8 lane units everywhere on that section.
+        expect(Math.min(...lanePoints.map(p => nearest(line, p)))).toBeGreaterThan(.8 * PIT_LANE_UNIT);
+    });
     it('re-parameterises the drawn lane by any Race\'s own frozen anchors, pausing exactly on the drawn garage', () => {
         const lane = drawnPitLane(SUZUKA)!;
         for (const anchors of [{ entry: circuitPitLanes[SUZUKA].entry, service: circuitPitLanes[SUZUKA].service, exit: circuitPitLanes[SUZUKA].exit }, { entry: 920000, service: 970000, exit: 40000 }]) {

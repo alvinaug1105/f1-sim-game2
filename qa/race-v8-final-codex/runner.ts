@@ -120,6 +120,7 @@ async function initialRace(grid: Awaited<ReturnType<typeof careerGrid>>, scenari
       entrants: input.entrants.map((entrant) => ({ ...entrant, startingTyre: startingTyre(startingCompound(input, entrant)) })),
     };
     const seedState = createRace(input);
+    const playerEntrantIds = new Set(input.entrants.filter((entrant) => entrant.teamId === grid.playerTeamId).map((entrant) => entrant.entrantId));
     const state = {
       ...seedState,
       entrants: seedState.entrants.map((entrant) => input.entrants.find((x) => x.entrantId === entrant.entrantId)?.teamId === grid.playerTeamId
@@ -129,7 +130,7 @@ async function initialRace(grid: Awaited<ReturnType<typeof careerGrid>>, scenari
         ...seedState.progression!,
         cars: Object.fromEntries(Object.entries(seedState.progression!.cars).map(([id, car]) => [id, {
           ...car,
-          assistance: seedState.entrants.find((e) => e.entrantId === id)?.teamId === grid.playerTeamId
+          assistance: playerEntrantIds.has(id)
             ? { ...car.assistance!, policy: scenario.commandProfile.split("/")[2] as NonNullable<typeof car.assistance>["policy"] }
             : car.assistance,
         }])),

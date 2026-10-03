@@ -1,0 +1,204 @@
+name: Race v8 final Codex closure QA
+
+on:
+  push:
+    branches:
+      - qa/race-v8-final-codex
+    paths:
+      - qa/race-v8-final-codex/**
+      - .github/workflows/race-v8-final-codex.yml
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: QA stage to run
+        required: true
+        default: pilot
+        type: choice
+        options:
+          - pilot
+          - campaign
+
+permissions:
+  contents: read
+
+concurrency:
+  group: race-v8-final-codex-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    outputs:
+      selected: ${{ steps.read.outputs.selected }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: read
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            selected="${{ inputs.stage }}"
+          else
+            selected="$(tr -d '\r\n' < qa/race-v8-final-codex/stage.txt)"
+          fi
+          if [[ "$selected" != "pilot" && "$selected" != "campaign" ]]; then
+            echo "Unexpected QA stage: $selected" >&2
+            exit 2
+          fi
+          echo "selected=$selected" >> "$GITHUB_OUTPUT"
+          echo "Selected QA stage: $selected"
+
+  baseline:
+    needs: stage
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: raceqa
+          POSTGRES_PASSWORD: raceqa
+          POSTGRES_DB: raceqa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U raceqa -d raceqa"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://raceqa:raceqa@localhost:5432/raceqa
+      TEST_DATABASE_URL: postgresql://raceqa:raceqa@localhost:5432/raceqa
+      RACE_V8_PRODUCTION_SHA: 55846a9c465b58fc5687517ace67772421868dff
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Record remote runner
+        run: |
+          uname -a
+          printf 'node='; node --version
+          printf 'npm='; npm --version
+          printf 'cpu='; nproc
+          free -h
+          df -h .
+      - name: Verify exact production base and QA-only change scope
+        shell: bash
+        run: |
+          test "$(git rev-parse 55846a9c465b58fc5687517ace67772421868dff)" = "55846a9c465b58fc5687517ace67772421868dff"
+          git merge-base --is-ancestor 55846a9c465b58fc5687517ace67772421868dff HEAD
+          git diff --check 55846a9c465b58fc5687517ace67772421868dff..HEAD
+          changed="$(git diff --name-only 55846a9c465b58fc5687517ace67772421868dff..HEAD)"
+          printf '%s\n' "$changed"
+          bad="$(printf '%s\n' "$changed" | sed '/^qa\/race-v8-final-codex\//d; /^\.github\/workflows\/race-v8-final-codex\.yml$/d' | sed '/^$/d')"
+          test -z "$bad"
+          git diff --quiet 55846a9c465b58fc5687517ace67772421868dff..HEAD -- src prisma package.json package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Prisma validation
+        run: npm run db:validate
+      - name: Generate Prisma client
+        run: npm run db:generate
+      - name: Unit and non-database integration tests
+        run: npm test
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: PostgreSQL integration tests
+        run: npm run test:db
+      - name: npm audit evidence
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p qa-out
+          set +e
+          npm audit --json > qa-out/npm-audit.json 2> qa-out/npm-audit.stderr
+          code=$?
+          echo "npm_audit_exit=$code" > qa-out/npm-audit-status.txt
+          exit 0
+      - name: Upload baseline evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-final-codex-baseline-${{ github.run_id }}
+          path: qa-out/
+          if-no-files-found: ignore
+          retention-days: 90
+
+  pilot:
+    needs: stage
+    if: needs.stage.outputs.selected == 'pilot' || needs.stage.outputs.selected == 'campaign'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      QA_OUT: qa-out
+      RACE_V8_PRODUCTION_SHA: 55846a9c465b58fc5687517ace67772421868dff
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Record remote runner identity
+        run: |
+          uname -a
+          printf 'node='; node --version
+          printf 'npm='; npm --version
+          printf 'cpu='; nproc
+          free -h
+          df -h .
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npm run db:generate
+      - name: Run fresh remote 100-race pilot
+        run: npx tsx qa/race-v8-final-codex/runner.ts pilot
+      - name: Upload pilot manifest and raw telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-final-codex-pilot-${{ github.run_id }}
+          path: qa-out/
+          if-no-files-found: error
+          retention-days: 90
+
+  primary:
+    needs: [stage, baseline, pilot]
+    if: needs.stage.outputs.selected == 'campaign' && needs.baseline.result == 'success' && needs.pilot.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+    env:
+      QA_OUT: qa-out
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Run assigned primary shard
+        run: npx tsx qa/race-v8-final-codex/runner.ts primary ${{ matrix.shard }} 30
+      - name: Upload raw primary telemetry and seed disclosure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-final-codex-primary-${{ matrix.shard }}-${{ github.run_id }}
+          path: qa-out/
+          if-no-files-found: error
+          retention-days: 90

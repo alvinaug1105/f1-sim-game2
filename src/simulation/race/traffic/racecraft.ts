@@ -59,6 +59,16 @@ export interface RacecraftConfiguration {
   readonly lateRaceStartPermille?: number;
   readonly lateRaceAttackThresholdPermille?: number;
   readonly lateRaceMinimumPaceAdvantagePermille?: number;
+  /**
+   * Race v8D progression held-following loss (GAME TUNING; present together, revision-4 snapshots only). In the v8
+   * progression engine a car whose movement is clamped to the physical minimum gap, in green running, that has not
+   * already attempted (or completed) a pass on this lap, owes this share (‰) of the pace it could not use, capped per
+   * checkpoint in ms, and gives it up as a real drop-back (see `progressionHeldRelease`) — so a held car falls off the
+   * floor instead of riding it exactly. Distinct from `heldFollowingLoss*` (the v7
+   * traffic model), so accepted revision-3 snapshots, which carry those, are never retuned. Absent = clamp only.
+   */
+  readonly progressionHeldFollowingLossPermille?: number;
+  readonly progressionHeldFollowingLossMaxMs?: number;
 }
 export function defaultRacecraftConfiguration(): RacecraftConfiguration {
   return {
@@ -82,7 +92,8 @@ export function defaultRacecraftConfiguration(): RacecraftConfiguration {
 }
 /** Race v8D (revision 4) racecraft: the accepted configuration plus the late-Race attack window (GAME TUNING). */
 export function v8dRacecraftConfiguration(): RacecraftConfiguration {
-  return { ...defaultRacecraftConfiguration(), lateRaceStartPermille: 750, lateRaceAttackThresholdPermille: 1300, lateRaceMinimumPaceAdvantagePermille: 800 };
+  return { ...defaultRacecraftConfiguration(), lateRaceStartPermille: 750, lateRaceAttackThresholdPermille: 1300, lateRaceMinimumPaceAdvantagePermille: 800,
+    progressionHeldFollowingLossPermille: 500, progressionHeldFollowingLossMaxMs: 250 };
 }
 /**
  * The attack window for one ordinary (non-lapping) attempt. "Late" is judged by the attacker's OWN completed distance
@@ -125,4 +136,33 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   // A late window may only widen the attack range and relax (never remove) the pace-edge requirement.
   if (c.lateRaceAttackThresholdPermille !== undefined) integer(c.lateRaceAttackThresholdPermille, 1000, 3000);
   if (c.lateRaceMinimumPaceAdvantagePermille !== undefined) integer(c.lateRaceMinimumPaceAdvantagePermille, 1, 1000);
+  if ((c.progressionHeldFollowingLossPermille === undefined) !== (c.progressionHeldFollowingLossMaxMs === undefined)) throw new RangeError("Invalid racecraft configuration");
+  if (c.progressionHeldFollowingLossPermille !== undefined) integer(c.progressionHeldFollowingLossPermille, 0, 1000);
+  if (c.progressionHeldFollowingLossMaxMs !== undefined) integer(c.progressionHeldFollowingLossMaxMs, 0, 1000);
+}
+
+/** Race v8D held-following ledger for one car within one checkpoint (local to the engine; never persisted). */
+export interface HeldLossLedger {
+  /** Loss owed but not yet given up, in thousandths of a microlap (exact integer accumulation). */
+  readonly owedMilli: number;
+  /** Loss already given up this checkpoint, in microlaps. */
+  readonly spentUnits: number;
+}
+export const EMPTY_HELD_LEDGER: HeldLossLedger = { owedMilli: 0, spentUnits: 0 };
+/**
+ * Race v8D: the held-following loss for one slice. `heldUnits` is the movement the physical floor just absorbed; the
+ * car owes `progressionHeldFollowingLossPermille` of it. Spreading that across 100 ms slices would be recovered in the
+ * very next slice (the car is still faster), leaving it riding the floor exactly, so the owed loss is GIVEN UP as a
+ * physical drop-back once it amounts to the circuit's minimum gap (`floorUnits`) — or to whatever remains of the
+ * per-checkpoint cap (`capUnits`) — and never more than this slice's movement (`availableUnits`: never negative).
+ * Pure integer arithmetic; no RNG, no timer. Without the revision-4 fields: always 0.
+ */
+export function progressionHeldRelease(racecraft: RacecraftConfiguration | undefined, ledger: HeldLossLedger, heldUnits: number, floorUnits: number, capUnits: number, availableUnits: number): { readonly extraUnits: number; readonly ledger: HeldLossLedger } {
+  const permille = racecraft?.progressionHeldFollowingLossPermille;
+  if (permille === undefined || racecraft?.progressionHeldFollowingLossMaxMs === undefined || heldUnits <= 0) return { extraUnits: 0, ledger };
+  const owedMilli = ledger.owedMilli + heldUnits * permille, owed = Math.floor(owedMilli / 1000);
+  const budget = Math.max(0, capUnits - ledger.spentUnits);
+  if (!budget || owed < Math.min(floorUnits, budget)) return { extraUnits: 0, ledger: { ...ledger, owedMilli } };
+  const extraUnits = Math.max(0, Math.min(owed, budget, availableUnits));
+  return { extraUnits, ledger: { owedMilli: owedMilli - extraUnits * 1000, spentUnits: ledger.spentUnits + extraUnits } };
 }

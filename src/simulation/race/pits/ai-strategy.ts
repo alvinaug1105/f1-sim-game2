@@ -389,17 +389,15 @@ export function aiDryStartingCompound(preference: StrategyPreference): TyreCompo
 }
 
 /**
- * Race v8D (revision 4 only): wet-grid starting tyre. When the current public grid conditions call for a wet-family
- * start and both the intermediate and the full wet are within the strategy tolerance in those CURRENT conditions,
- * the car's own wet-compound trait chooses; otherwise the established current-conditions choice stands. Dry grids and
- * earlier revisions are untouched (the caller only uses this for revision-4 Races).
+ * Race v8D (revision 4 only): wet-grid starting tyre. The established grid helper decides only WHETHER the start is
+ * wet-family; which wet tyre is then a current-condition economic choice (the v8D tyre / water costs on the public grid
+ * conditions): a tyre more than `wetCompoundToleranceMs` cheaper wins outright, and only a genuinely close pair is
+ * left to the car's own wet-compound trait. The old threshold's INTERMEDIATE / WET pick can no longer veto a clearly
+ * better wet tyre. Dry grids, earlier revisions and player choices are untouched (the caller only uses this for AI /
+ * auto-managed cars in revision-4 Races). No forecast, timeline or RNG.
  */
 export function aiWetStartingCompound(proposed: TyreCompound, grid: Pick<WeatherState, "trackWater" | "trackTemperatureMilliC">, tyres: TyreConfiguration, weather: Pick<WeatherConfiguration, "waterProfiles" | "circuit">, strategy: AiStrategyConfiguration, preference: StrategyPreference): TyreCompound {
   if (isDry(proposed)) return proposed;
   const candidates = WET_CHOICES.filter(x => tyres.profiles[x] && weather.waterProfiles[x]).map(x => ({ compound: x as TyreCompound, cost: currentCompoundCostMs(x, grid, tyres, weather) }));
-  const choice = sensibleWetChoice(candidates, strategy, preference);
-  if (!choice) return proposed;
-  // Only a genuine alternative to the established choice: the proposed compound must itself still be sensible.
-  const best = Math.min(...candidates.map(x => x.cost)), own = candidates.find(x => x.compound === proposed);
-  return own && own.cost - best <= strategy.wetCompoundToleranceMs! ? choice : proposed;
+  return sensibleWetChoice(candidates, strategy, preference) ?? proposed;
 }

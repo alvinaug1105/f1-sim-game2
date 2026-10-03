@@ -2,7 +2,8 @@
 
 Race v8D is Race v8 **progression revision 4** (still `simulationVersion` 8; there is no version 9). It tunes five
 areas only: the wet crossover spread, intermediate vs full-wet diversity, the tyre cliff shape, late-Race attack
-eligibility and per-circuit pit-loss economics.
+eligibility and per-circuit pit-loss economics. A focused repair (sections 12–14) also makes legacy DRS inert in
+revision-4 Races, stops held cars riding the exact minimum gap, and makes the wet-grid tyre a current-condition choice.
 
 Every number in this document is **GAME TUNING** — chosen for the game's feel, **not** official F1 / FIA / team
 measurements. In particular there is no FIA-measured pit-loss data behind the pit timing below.
@@ -52,9 +53,7 @@ and the car / driver performance ranges. No UI redesign, no new dependency, no n
   close they are (an equal pair splits the field by trait sign; a pair near the tolerance edge converges on the cheaper
   one). It is applied to the crossover (gate-passing horizon options) and to POOR-family recovery (current-condition
   cost; never back into the POOR family being left).
-- Wet grid start (revision 4 only): `aiWetStartingCompound` lets the trait choose between the intermediate and full wet
-  when the established current-conditions choice is wet and both are sensible on the grid; otherwise the established
-  choice stands. Dry grids are unchanged; player starting tyres stay player choices.
+- Wet grid start (revision 4 only): see section 14.
 - Obvious conditions still converge (e.g. very heavy water → everyone on the full wet). Anti-churn reuses the existing
   minimum stint, weather gate and stop economics: a car already on a sensible wet tyre is not called in just to swap
   inter ↔ wet because of its trait (the stop must still repay its loss). No extra hysteresis was needed.
@@ -173,7 +172,63 @@ effective = GREEN ? pitLaneLossMs : max(1000, pitLaneLossMs - round(pitTrackSect
 - Revisions 1/2/3 never receive any v8D configuration. Existing saves are never upgraded.
 - The v8B golden digests and the v8C regulation / strategy / weather suites are unchanged.
 
-## 12. What remains for v8E
+## 12. Legacy DRS disabled for revision-4 (2026) Races
+
+- The 2026 Race systems are **Active Aero**, **Overtake Mode** and **Boost / Balanced / Recharge** (the progression
+  assistance model). They are separate systems; none of them is a renamed DRS, and Active Aero is not a chasing-car
+  entitlement. Legacy DRS is not replaced by anything.
+- Root cause: the v8 progression engine already zeroes the DRS zone count before `followingEffects`, so legacy DRS gave
+  no lap-time benefit or pass bonus in revisions 2–4, and the viewer already reports DRS `UNAVAILABLE` for v8
+  revisions ≥ 2. But the frozen revision-4 interaction snapshot still carried a usable DRS configuration
+  (zones, effectiveness, benefit), so "no DRS" depended on one engine line rather than on the Race's own snapshot.
+- Repair: revision 4 freezes `v8dCircuitInteractionConfiguration(profile)` (part of the v8D bundle) — the circuit's
+  traffic identity (overtaking difficulty, dirty air, minimum gap, attack threshold…) with `drsZoneCount`,
+  `drsEffectivenessPermille`, `drsMsPerZone` and `maxDrsBenefitMs` all 0. `hasLegacyDrs` is false for it. The
+  structural fields stay (type, validator and persisted columns need them); nothing is migrated or rewritten.
+- So, by the snapshot alone: no `drsEligible`, `drsBenefitMs` 0, no `passProbability` DRS bonus (it scales by the
+  zeroed effectiveness even if a flag were set), no `DRS` pass cause. The historical `weather.drsState` has no
+  performance effect. SC/VSC restrictions on Active Aero / Overtake / Boost are the existing assistance rules.
+- The viewer: `drsState` is `UNAVAILABLE` for a revision-4 Race, so the Race header conditions strip, Race alerts,
+  Driver Panel and Timing Tower DRS chip show nothing. No UI redesign; DRS text is not replaced with "Active Aero".
+- Historical: `defaultInteractionConfiguration()` / `circuitInteractionConfiguration()` are unchanged and revision 3
+  (`startRevision3CareerRace`) still freezes them. Pre-v8 Races still show their legacy DRS.
+
+## 13. Exact-minimum-gap pinning and the revision-4 held-following repair
+
+- Root cause: in the progression engine's local no-pass resistance, a faster car's movement each 100 ms slice is
+  clamped to exactly `distance + leader movement − floor` (`minimumGapMs`). The surplus is only recorded in
+  `trafficLossMs`; nothing physically costs the follower anything, so it lands exactly on the floor every slice. Unless
+  it attacks (passing/braking zone, minimum pace edge, one attempt per lap) it rides the floor indefinitely — e.g. a
+  20-lap two-car fixture read the floor at every checkpoint.
+- A per-slice proportional loss does not fix this: any loss below 100 % of the held pace, spread over 100 ms slices, is
+  recovered in the next slice (the follower is still faster), so the gap reads the floor (measured while building).
+- Repair (revision-4 racecraft only; GAME TUNING): `progressionHeldFollowingLossPermille: 500`,
+  `progressionHeldFollowingLossMaxMs: 250` (both or neither; deliberately NOT the v7 `heldFollowingLoss*` fields that
+  accepted revision-3 snapshots already carry). A car held at the floor in green running that has not attempted a pass
+  this lap owes 50 % of the movement the floor absorbed (exact integer accounting). The owed loss is given up as a real
+  drop-back once it amounts to the circuit's minimum gap (or the rest of the 250 ms per-checkpoint cap), never more than
+  that slice's movement (never negative). `trafficLossMs` includes the loss actually given up. No RNG, no timer, no
+  IDs/teams, no forced pass; the delay mechanism is not used, so Active Aero / Overtake / Boost state is untouched.
+- The floor itself is unchanged (no overlap). A failed attack is not charged again on that lap (its own delay already
+  separates the cars). No pace edge → never held → no effect. Pass probability and the late-Race window are unchanged;
+  circuit difficulty still governs passing (the drop-back is the same at any circuit and is never a pass mechanism).
+- Observation for QA: a car that attacks every lap and fails re-closes to the floor within that lap after serving its
+  failed-attack delay (the preferred no-double-penalty rule leaves that unchanged), so checkpoint gaps in such battles
+  can still read the floor until a pass happens.
+
+## 14. Wet-grid starting tyre from current-condition economics
+
+- The historical grid helper (`aiStartingCompound`) picks WET from 350 ‰ track water. Under the v8D tyre / water costs
+  the intermediate is clearly faster at about 400–600 ‰, yet revision 4 kept the WET pick there.
+- Revision 4 now uses the helper only to decide whether the start is wet-family; `aiWetStartingCompound` then costs
+  both the intermediate and the full wet on the CURRENT public grid conditions: one more than `wetCompoundToleranceMs`
+  cheaper wins outright for every car; a genuinely close pair is left to the stable `wetCompound` trait. Dry grids,
+  player-chosen tyres and revision 3 (threshold behaviour) are unchanged; auto-managed player cars use the same AI rule.
+  No forecast, timeline or RNG.
+
+All numbers in sections 12–14 are GAME TUNING, not measured F1 data.
+
+## 15. What remains for v8E
 
 Still deferred to v8E:
 - 5,000–10,000 Race campaign;

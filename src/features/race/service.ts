@@ -102,7 +102,7 @@ export function startCareerRace(
           : progressionForCircuit(data.circuit.sourceCircuitId)
         : undefined;
       // Revision 4 (v8D) freezes ONE coherent tuning bundle; revisions 1–3 keep their accepted configurations exactly.
-      const v8d = progression && withProgression === 4 ? v8dTuningBundle(progression, snapshot.input.circuit.baseLapTimeMs, !!withWeather) : null;
+      const v8d = progression && withProgression === 4 ? v8dTuningBundle(progression, snapshot.input.circuit.baseLapTimeMs, !!withWeather, data.circuit.raceProfile) : null;
       // AI teams pick starting tyres from current public grid conditions, never from player input or future weather.
       // Career Races (v7) also give each AI car its own stable strategic character: on a dry grid a strong soft
       // preference starts on the soft (never the hard). Wet or damp grids keep the current-conditions choice.
@@ -140,7 +140,8 @@ export function startCareerRace(
                 // (neutral defaults when the Career predates it). Older Race versions keep their historical inputs.
                 // v8D: circuit-derived green pit-lane loss and the v8D strategy (wet character); earlier revisions: 19.5 s.
                 ...(withPits ? { pits: withIncidents ? v8d ? { ...defaultPitConfiguration(), pitLaneLossMs: v8d.pitTiming.pitLaneLossMs, strategy: v8d.strategy } : { ...defaultPitConfiguration(), strategy: defaultAiStrategyConfiguration() } : defaultPitConfiguration() } : {}),
-                interaction: withIncidents ? circuitInteractionConfiguration(data.circuit.raceProfile) : defaultInteractionConfiguration(),
+                // v8D: legacy DRS is inert in the revision-4 snapshot (2026: Active Aero / Overtake Mode / Boost).
+                interaction: withIncidents ? v8d ? v8d.interaction : circuitInteractionConfiguration(data.circuit.raceProfile) : defaultInteractionConfiguration(),
                 entrants: input.entrants.map((e) => ({
                   ...e,
                   ...(withIncidents ? { reliability: defaultReliability() } : {}),

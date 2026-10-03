@@ -5,6 +5,7 @@
  * - tyres: the v8D cliff calibration (weather Races include explicit intermediate / full-wet curves);
  * - AI pit strategy: the accepted strategy plus the wet-weather character (weather risk, intermediate vs full wet);
  * - racecraft: the accepted racecraft plus the late-Race attack window;
+ * - interaction: the circuit's traffic identity with legacy DRS inert (2026: Active Aero / Overtake Mode / Boost);
  * - pit timing: derived from the circuit's authoritative progression pit anchors and base lap, feeding BOTH the pit
  *   lane loss and the incident model's pit track section (SC/VSC reduced stops).
  *
@@ -18,19 +19,23 @@ import { v8dAiStrategyConfiguration, type AiStrategyConfiguration } from "../../
 import { v8dRacecraftConfiguration, type RacecraftConfiguration } from "../../simulation/race/traffic/racecraft";
 import { circuitPitTiming, type CircuitPitTiming } from "../../simulation/race/pits/circuit-timing";
 import type { TyreConfiguration } from "../../simulation/race/tyres/model";
+import { v8dCircuitInteractionConfiguration, type CircuitRaceProfile } from "../../simulation/race/traffic/profiles";
+import type { InteractionConfiguration } from "../../simulation/race/traffic/model";
 
 export interface V8dTuningBundle {
   readonly tyres: TyreConfiguration;
   readonly strategy: AiStrategyConfiguration;
   readonly racecraft: RacecraftConfiguration;
   readonly pitTiming: CircuitPitTiming;
+  readonly interaction: InteractionConfiguration;
 }
-export function v8dTuningBundle(progression: ProgressionConfiguration, baseLapTimeMs: number, weather: boolean): V8dTuningBundle {
+export function v8dTuningBundle(progression: ProgressionConfiguration, baseLapTimeMs: number, weather: boolean, raceProfile?: CircuitRaceProfile | null): V8dTuningBundle {
   if (!hasV8dTuning(progression)) throw new RangeError("v8D tuning requires progression revision 4");
   return {
     tyres: weather ? v8dWeatherTyreConfiguration() : v8dTyreConfiguration(),
     strategy: v8dAiStrategyConfiguration(),
     racecraft: v8dRacecraftConfiguration(),
     pitTiming: circuitPitTiming(progression.pit, baseLapTimeMs),
+    interaction: v8dCircuitInteractionConfiguration(raceProfile),
   };
 }

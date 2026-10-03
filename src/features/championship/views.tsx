@@ -98,7 +98,7 @@ function RoundBreakdown({ rounds }: { rounds: readonly RoundResult[] }) {
             )}
             {r.race && (
               <span>
-                {t("championship.positionValue", { position: format.number(r.race.position) })} {t("championship.plusPoints", { points: pts(r.race.units) })}
+                {r.race.disqualified ? t("classification.dsq") : t("championship.positionValue", { position: format.number(r.race.position) })} {t("championship.plusPoints", { points: pts(r.race.units) })}
               </span>
             )}
           </li>
@@ -368,18 +368,18 @@ function SessionTable({ title, session, id }: { title: string; session: SessionR
                 <tbody>
                   {session.rows.map((r) => (
                     <tr key={r.driver.id} className={r.driver.player ? "player-row" : undefined} style={{ ["--team" as string]: r.driver.color }}>
-                      <td className="pos">{format.number(r.position)}</td>
+                      <td className="pos">{r.disqualified ? <abbr title={t("classification.DISQUALIFIED")}>{t("classification.dsq")}</abbr> : format.number(r.position)}</td>
                       <th scope="row"><DriverName driver={r.driver} /></th>
                       <td className="team-cell">{r.driver.teamName}</td>
                       <td className="num">{r.gridPosition === null ? "—" : format.number(r.gridPosition)}</td>
                       <td className="num">{format.number(r.completedLaps)}</td>
                       <td className="num">
-                        {r.retired ? "—"
+                        {r.retired || r.disqualified ? "—"
                           : r.position === 1 ? formatRaceTime(r.elapsedTimeMs, locale)
                             : r.lapsDown > 0 ? t("sprint.lapsDown", { count: format.number(r.lapsDown) })
                               : r.gapMs === null ? "—" : formatRaceGap(r.gapMs, locale)}
                       </td>
-                      <td>{t(r.retired ? "incident.RETIRED" : "incident.FINISHED")}</td>
+                      <td>{r.disqualified ? <span title={t("classification.reason.DRY_TYRE_SPECIFICATIONS")}>{t("classification.DISQUALIFIED")}</span> : t(r.retired ? "incident.RETIRED" : "incident.FINISHED")}</td>
                       <td className="num">{r.stops === null ? "—" : format.number(r.stops)}</td>
                       <td className="num points">{r.units > 0 ? t("championship.plusPoints", { points: pts(r.units) }) : "—"}</td>
                     </tr>

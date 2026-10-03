@@ -1,5 +1,6 @@
 import { ENERGY_POLICIES, type EnergyPolicy } from '../../simulation/race/assistance/model';
-import { progressionForCircuit, progressionBForCircuit } from '../../data/seed/circuit-progression';
+import { progressionForCircuit, progressionBForCircuit, progressionCForCircuit } from '../../data/seed/circuit-progression';
+import { hasAssistance, type ProgressionRevision } from '../../simulation/race/progression/revision';
 import { defaultRacecraftConfiguration } from "../../simulation/race/traffic/racecraft";
 import { defaultIncidentConfiguration, defaultReliability } from "../../simulation/race/incidents/model";
 import { developmentWeather } from "../../simulation/race/weather/model";
@@ -47,7 +48,8 @@ export function startCareerRace(
   withWeather = false,
   withIncidents = false,
   autoPlayer = false,
-  withProgression: boolean | 2 = false,
+  /** Progression revision to freeze: true = 1 (v8A), 2 = v8B, 3 = v8C. */
+  withProgression: boolean | Exclude<ProgressionRevision, 1> = false,
 ) {
   // An explicit seed (tests, development tooling) keeps the legacy development weather so historical fixtures stay
   // reproducible. Career play (no explicit seed) freezes a weather scenario seeded by stable Career/event/circuit identity.
@@ -115,7 +117,8 @@ export function startCareerRace(
             ? {
                 ...input,
                 ...(withIncidents ? { incidents: defaultIncidentConfiguration() } : {}),
-                ...(withProgression ? { progression: withProgression===2?progressionBForCircuit(data.circuit.sourceCircuitId):progressionForCircuit(data.circuit.sourceCircuitId) } : {}),
+                // Revision 3 snapshots the regulation of THIS session (Grand Prix or Sprint), never inferred from the circuit.
+                ...(withProgression ? { progression: withProgression===3?progressionCForCircuit(data.circuit.sourceCircuitId,data.kind??'RACE'):withProgression===2?progressionBForCircuit(data.circuit.sourceCircuitId):progressionForCircuit(data.circuit.sourceCircuitId) } : {}),
                 ...(weather ? { weather } : {}),
                 // Career Races (v7) also freeze the racecraft tuning (close-racing pressure, selective AI aggression).
                 ...(withCommands ? { commands: withIncidents ? { ...defaultCommandConfiguration(), racecraft: defaultRacecraftConfiguration() } : defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
@@ -297,7 +300,8 @@ function setCommand(repository: CareerRaceRepository, careerId: string, eventId:
     const s = data.state, event = data.progress.events.find(e => e.id === eventId);
     const e = s?.entrants.find(e => e.entrantId === entrantId), source = s?.input.entrants.find(e => e.entrantId === entrantId);
     if (!s || ![5,6,7,8].includes(s.simulationVersion) || s.status !== "RUNNING" || data.progress.career.status !== "ACTIVE" || event?.status !== "CURRENT" || event.weekend?.sessions.find(x => x.id === data.sessionId)?.status !== "IN_PROGRESS" || !e?.commands || e.incident?.status === "RETIRED" || source?.strategyController !== "PLAYER" || source.teamId !== data.progress.career.playerTeamId) throw new RaceError("INVALID_ACTION");
-    if((intent.kind==='energyPolicy'&&s.input.progression?.version!==2)||(intent.kind==='ersMode'&&s.input.progression?.version===2))throw new RaceError('INVALID_ACTION');
+    // Revisions 2 and 3 use the v8 assistance controls; legacy ERS stays a revision-1 / pre-v8 control.
+    if((intent.kind==='energyPolicy'&&!hasAssistance(s.input.progression))||(intent.kind==='ersMode'&&hasAssistance(s.input.progression)))throw new RaceError('INVALID_ACTION');
     if (s.lap !== lap || e.commands.commandRevision !== revision) throw new RaceError("STALE");
     return { state: { ...s,...(intent.kind==='energyPolicy'?{progression:{...s.progression!,cars:{...s.progression!.cars,[entrantId]:{...s.progression!.cars[entrantId],assistance:{...s.progression!.cars[entrantId].assistance!,policy:intent.mode}}}}}:{}), entrants: s.entrants.map(x => x.entrantId !== entrantId ? x : { ...x, commands: { ...x.commands!,...(intent.kind==='energyPolicy'?{}:{[intent.kind]:intent.mode}), commandRevision: revision + 1 } }) }, labels: data.labels, progress: data.progress };
   });
@@ -344,13 +348,18 @@ export function simulateCareerRaceRemainder(repository: CareerRaceRepository, ca
   });
 }
 
-/** Production creation entry point: new Race / Sprint sessions freeze v8 progression. Explicit v7 helpers remain
- * available for historical fixtures and compatibility tooling; an existing Race is never upgraded. */
+/** Production creation entry point: new Race / Sprint sessions freeze v8 progression revision 3 (v8C) with their own
+ * session regulation. Explicit historical helpers remain for fixtures and compatibility tooling (revision 2 below,
+ * revision 1 / v7 through `startCareerRace`); an existing Race is never upgraded. */
 export function startProgressionCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
+  return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,3);
+}
+/** Historical (accepted v8B) revision-2 creation, for compatibility fixtures and tests only — never production. */
+export function startRevision2CareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
   return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,2);
 }
 export async function simulateProgressionCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, seed?: number) {
-  await startCareerRace(repository,careerId,eventId,seed,{},true,true,true,true,true,true,2);
+  await startCareerRace(repository,careerId,eventId,seed,{},true,true,true,true,true,true,3);
   const data=await repository.getRace(careerId,eventId);
   if(!data?.state) throw new RaceError('NOT_FOUND');
   return advanceCareerRace(repository,careerId,eventId,data.state.lap,'finish');

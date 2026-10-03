@@ -14,17 +14,20 @@ export type AttentionKind =
     | "FINISH" | "SAFETY_CAR" | "VSC" | "RESTART" | "RETIREMENT" | "INCIDENT" | "PIT"
     | "RIVAL_TYRE_AHEAD" | "RIVAL_TYRE_BEHIND" | "RIVAL_PIT_AHEAD" | "RIVAL_PIT_BEHIND" | "TYRE_WAVE" | "TYRE_CROSSOVER"
     | "RAIN_START" | "RAIN_STOP" | "RAIN_UP" | "RAIN_DOWN" | "TRACK_WET" | "TRACK_DRYING"
-    | "DRS_ENABLED" | "DRS_DISABLED" | "TYRE_HIGH" | "TYRE_CRITICAL" | "FUEL" | "FUEL_CRITICAL" | "FUEL_OUT" | "BATTLE_AHEAD" | "BATTLE_BEHIND";
+    | "DRS_ENABLED" | "DRS_DISABLED" | "TYRE_HIGH" | "TYRE_CRITICAL" | "FUEL" | "FUEL_CRITICAL" | "FUEL_OUT" | "BATTLE_AHEAD" | "BATTLE_BEHIND"
+    /** v8C: a player car reached its last safe stop opportunity with another dry compound still required. */
+    | "TYRE_RULE_URGENT";
 /** Coarse category shown by playback (and used by Next Strategic Event). */
 export type StrategicReason = "FINISH" | "CONTROL" | "INCIDENT" | "RETIREMENT" | "PIT" | "RIVAL" | "WAVE" | "CROSSOVER" | "WEATHER" | "DRS" | "TYRE" | "FUEL" | "BATTLE" | "LIMIT" | "COMMAND";
 export interface Attention { kind: AttentionKind; reason: StrategicReason; entrantId: string | null; lap: number }
 /** Highest priority first; only the first item explains a stop, the rest are counted. */
-const PRIORITY: readonly AttentionKind[] = ["FINISH", "SAFETY_CAR", "VSC", "FUEL_OUT", "RETIREMENT", "FUEL_CRITICAL", "INCIDENT", "RESTART", "PIT", "TYRE_CROSSOVER", "RIVAL_TYRE_AHEAD", "RIVAL_TYRE_BEHIND", "TYRE_WAVE", "RIVAL_PIT_AHEAD", "RIVAL_PIT_BEHIND", "RAIN_START", "RAIN_UP", "TRACK_WET", "RAIN_DOWN", "RAIN_STOP", "TRACK_DRYING", "DRS_DISABLED", "DRS_ENABLED", "TYRE_CRITICAL", "TYRE_HIGH", "FUEL", "BATTLE_AHEAD", "BATTLE_BEHIND"];
+const PRIORITY: readonly AttentionKind[] = ["FINISH", "SAFETY_CAR", "VSC", "FUEL_OUT", "RETIREMENT", "FUEL_CRITICAL", "TYRE_RULE_URGENT", "INCIDENT", "RESTART", "PIT", "TYRE_CROSSOVER", "RIVAL_TYRE_AHEAD", "RIVAL_TYRE_BEHIND", "TYRE_WAVE", "RIVAL_PIT_AHEAD", "RIVAL_PIT_BEHIND", "RAIN_START", "RAIN_UP", "TRACK_WET", "RAIN_DOWN", "RAIN_STOP", "TRACK_DRYING", "DRS_DISABLED", "DRS_ENABLED", "TYRE_CRITICAL", "TYRE_HIGH", "FUEL", "BATTLE_AHEAD", "BATTLE_BEHIND"];
 const REASON: Record<AttentionKind, StrategicReason> = {
     FINISH: "FINISH", SAFETY_CAR: "CONTROL", VSC: "CONTROL", RESTART: "CONTROL", RETIREMENT: "RETIREMENT", INCIDENT: "INCIDENT", PIT: "PIT",
     RIVAL_TYRE_AHEAD: "RIVAL", RIVAL_TYRE_BEHIND: "RIVAL", RIVAL_PIT_AHEAD: "RIVAL", RIVAL_PIT_BEHIND: "RIVAL", TYRE_WAVE: "WAVE", TYRE_CROSSOVER: "CROSSOVER",
     RAIN_START: "WEATHER", RAIN_STOP: "WEATHER", RAIN_UP: "WEATHER", RAIN_DOWN: "WEATHER", TRACK_WET: "WEATHER", TRACK_DRYING: "WEATHER",
     DRS_ENABLED: "DRS", DRS_DISABLED: "DRS", TYRE_HIGH: "TYRE", TYRE_CRITICAL: "TYRE", FUEL: "FUEL", FUEL_CRITICAL: "FUEL", FUEL_OUT: "FUEL", BATTLE_AHEAD: "BATTLE", BATTLE_BEHIND: "BATTLE",
+    TYRE_RULE_URGENT: "TYRE",
 };
 /** What has already been announced. Plain data: safe to keep across checkpoints and to compare in tests. */
 export interface AttentionMemory {
@@ -50,6 +53,8 @@ export interface AttentionMemory {
      * performance crossover, from the server's current-condition tyre assessment).
      */
     fit: Readonly<Record<string, { family: TyreFamily; armed: boolean }>>;
+    /** v8C: player cars whose URGENT dry-tyre obligation is already announced (from their own public status). */
+    tyreRuleUrgent?: Readonly<Record<string, boolean>>;
 }
 export type { TyreFamily };
 export interface Neighbours { readonly ahead: string | null; readonly behind: string | null }
@@ -118,8 +123,11 @@ export function initialAttention(s: RacePublicState, playerTeamId: string): Atte
         battle: Object.fromEntries(mine.map(e => { const g = neighbourGaps(s, e.entrantId), near = Math.min(g.ahead ?? Infinity, g.behind ?? Infinity); return [e.entrantId, near <= BATTLE_GAP_MS]; })),
         ...tyreFacts(s), switchLap: {}, neighbours: neighboursOf(s, playerIdSet(s, playerTeamId)), waveLap: null,
         fit: crossoverFit(s, mine, {}),
+        tyreRuleUrgent: Object.fromEntries(mine.map(e => [e.entrantId, ruleUrgent(s, e)])),
     };
 }
+/** Own car's dry-tyre obligation is at its last safe stop opportunity (server-derived public status; never a plan). */
+function ruleUrgent(s: RacePublicState, e: RacePublicEntrant) { return s.status === "RUNNING" && running(e) && e.regulation?.status === "URGENT"; }
 /** Compares one newly committed checkpoint with what was already announced. Returns items (priority order) and the next memory. */
 export function assessCheckpoint(memory: AttentionMemory, s: RacePublicState, playerTeamId: string): { items: Attention[]; memory: AttentionMemory } {
     const items: Attention[] = [], lap = s.lap;
@@ -179,9 +187,12 @@ export function assessCheckpoint(memory: AttentionMemory, s: RacePublicState, pl
         else if (drs === "WET") add("DRS_DISABLED");
     }
     const neutral = control !== "GREEN" || memory.control !== "GREEN" || lap <= 1 || s.status !== "RUNNING";
-    const tyre: Record<string, { stint: number; level: WearLevel }> = {}, fuel: Record<string, boolean> = {}, critical: Record<string, boolean> = {}, battle: Record<string, boolean> = {};
+    const tyre: Record<string, { stint: number; level: WearLevel }> = {}, fuel: Record<string, boolean> = {}, critical: Record<string, boolean> = {}, battle: Record<string, boolean> = {}, urgent: Record<string, boolean> = {};
     for (const e of mine) {
         const id = e.entrantId, live = running(e) && s.status === "RUNNING";
+        // v8C dry-tyre rule: announce once, when the car first reaches its last safe stop opportunity.
+        urgent[id] = ruleUrgent(s, e);
+        if (urgent[id] && !memory.tyreRuleUrgent?.[id]) add("TYRE_RULE_URGENT", id);
         // Tyres: announce each escalation once per stint; a new stint re-baselines silently.
         const c = tyreCondition(s, e), last = memory.tyre[id];
         if (c && e.stint) {
@@ -204,6 +215,6 @@ export function assessCheckpoint(memory: AttentionMemory, s: RacePublicState, pl
     items.sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind));
     return {
         items,
-        memory: { control, drs, rain, water, events: events.length, stops: Object.fromEntries(mine.map(e => [e.entrantId, e.pit?.stops.length ?? 0])), tyre, fuelDeficit: fuel, fuelCritical: critical, battle, ...facts, switchLap, neighbours: now, waveLap, fit },
+        memory: { control, drs, rain, water, events: events.length, stops: Object.fromEntries(mine.map(e => [e.entrantId, e.pit?.stops.length ?? 0])), tyre, fuelDeficit: fuel, fuelCritical: critical, battle, ...facts, switchLap, neighbours: now, waveLap, fit, tyreRuleUrgent: urgent },
     };
 }

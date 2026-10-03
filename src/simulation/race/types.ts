@@ -89,10 +89,14 @@ export interface RaceSimulationState {
 export interface RaceResult {
   readonly status?: EntrantIncidentState["status"];
   readonly completedLaps?: number;
+  /** Official position (after any v8C regulation sanction; a disqualified car follows every other car). */
   readonly position: number;
   readonly entrantId: string;
   readonly driverId: string;
   readonly teamId: string;
   readonly totalTimeMs: number;
   readonly bestLapTimeMs: number;
+  /** v8C: excluded from the Race results (no points); present only on revision-3 Races. */
+  readonly disqualified?: boolean;
+  readonly roadPosition?: number;
 }

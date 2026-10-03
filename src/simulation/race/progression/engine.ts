@@ -3,7 +3,7 @@ import { calculateLapTime } from '../engine';
 import { createSeededRandom } from '../../core/random';
 import { advanceLegacyProgressionLap } from './legacy';
 import { chooseAssistanceAi } from '../assistance/policy';
-import { energyStep, qualify, clearEntitlement, refreshAssistance } from '../assistance/model';
+import { energyStep, qualify, clearEntitlement, refreshAssistance, deploys, recoverByDistance } from '../assistance/model';
 import { commandLapEffects } from '../commands/model';
 import { committedStops } from '../pits/model';
 import { getTyreProfile, type TyreState } from '../tyres/model';
@@ -13,6 +13,8 @@ import { driverRiskPpm, mechanicalRiskPpm, effectivePitLaneLoss, validateInciden
 import { closeRetiredStints } from '../incidents/engine';
 import { classifyProgress, physicalAhead, zonesAt, localProgress, LAP_UNITS, validateProgressionState, type CarProgression } from './model';
 import { tieOrderFor } from './tie-order';
+import { energyModelFor } from './revision';
+import { enforceFinalClassification } from '../regulations/tyres';
 /** Integration uses integer milliseconds and nanolaps/ms, carrying the sub-microlap remainder (0..999). */
 const QUANTUM_MS = 100;
 const emptyTrack = (e: RaceEntrantState) => ({ ...e.track!, drsEligible: false, drsBenefitMs: 0, dirtyAirMs: 0, trafficLossMs: 0, attempted: false, passed: false });
@@ -32,6 +34,8 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
     const lap = saved.lap + 1, input = saved.input, config = input.progression!, assistance=config.assistance!, control = saved.incidents!, neutral = control.mode !== 'GREEN';
     // Revision 2: exact ties resolve by Race-domain (classification) order, never by generated ID text.
     const tie = tieOrderFor(config);
+    // Revision 3 (v8C): recovery by distance travelled after each slice's deployment; revision 2 keeps time recovery.
+    const distanceRecovery = energyModelFor(config) === 'V8C';
     const boundaries=[...new Set([0,LAP_UNITS,assistance.detection,assistance.deploymentStart,assistance.deploymentEnd,...config.segments.map(s=>s.end),...config.zones.flatMap(z=>[z.start,z.end])])].sort((a,b)=>a-b);
     const zoneTable=boundaries.slice(0,-1).map(p=>zonesAt(config,p));
     const interval=(total:number)=>{const local=localProgress(total);let lo=0,hi=boundaries.length-2;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(boundaries[mid]<=local)lo=mid;else hi=mid-1;}return lo;};
@@ -160,14 +164,15 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             p.delayMs += success ? lapping ? config.lapping.passingCostMs : input.interaction!.minimumGapMs : lapping ? config.lapping.failedCostMs : Math.max(input.interaction!.minimumGapMs,Math.round(draw*(input.commands!.racecraft?.failedAttackLossMaxMs??300)));
             entries[i] = { ...e,track:{ ...e.track!,attempted:true,passed:false } };
         }
-        const deltas = new Map<string,number>();
+        const deltas = new Map<string,number>(), deploying = new Map<string,boolean>();
         for (const e of running) {
             const p = cars[e.entrantId], m = movement.get(e.entrantId)!;
             if(p.launchDelayMs||p.delayMs) { p.assistance!.aero='SAFE';p.assistance!.electricalDeltaMs=0;clearEntitlement(p.assistance!); }
             if (p.launchDelayMs) { p.launchDelayMs=Math.max(0,p.launchDelayMs-dt); deltas.set(e.entrantId,0); continue; }
             if (p.delayMs) { p.delayMs=Math.max(0,p.delayMs-dt); deltas.set(e.entrantId,0); continue; }
-            const zone=localZones(e.track!.progressMicrolaps);
-            energyStep(p.assistance!,assistance,{dt,lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight:zone.some(z=>z.kind==='ASSISTANCE'),safe:!neutral&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater});
+            const zone=localZones(e.track!.progressMicrolaps),context={dt,lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight:zone.some(z=>z.kind==='ASSISTANCE'),safe:!neutral&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater};
+            energyStep(p.assistance!,assistance,context);
+            if(distanceRecovery)deploying.set(e.entrantId,deploys(p.assistance!,context));
             const units = dt*m.rate+p.remainder;
             deltas.set(e.entrantId,Math.floor(units/1000)); p.remainder=units%1000;
         }
@@ -204,6 +209,8 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             if (p.route==='SERVICE' && p.delayMs===0) p.route='LANE';
             if (p.route==='EXIT' && localProgress(total)>=config.pit.exit) { p.route='TRACK'; p.compound=null; p.pitEntryLap=null; p.remainder=0; }
             entries[i] = { ...e,track:{ ...e.track!,...m.effects,progressMicrolaps:total } };
+            // v8C: energy recovered for the distance actually travelled in this slice, after its deployment.
+            if(deploying.has(e.entrantId))recoverByDistance(p.assistance!,assistance,total-oldTotal,deploying.get(e.entrantId)!);
             if(oldRoute!==p.route)observe(e.entrantId);
 
         }
@@ -275,7 +282,12 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         if(nextControl.mode!=='GREEN'||e.incident!.status!=='RUNNING'||p.route!=='TRACK') { clearEntitlement(p.assistance!);p.assistance!.aero='SAFE';p.assistance!.electricalDeltaMs=0; }
         refreshAssistance(p.assistance!,assistance,{lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight:localZones(e.track!.progressMicrolaps).some(z=>z.kind==='ASSISTANCE'),safe:nextControl.mode==='GREEN'&&e.incident!.status==='RUNNING'&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater});
         observe(e.entrantId); if (p.passingId && !entries.some(x=>x.entrantId===p.passingId&&x.incident!.status==='RUNNING')) p.passingId=null; }
-    const next:RaceSimulationState={...saved,lap,status:finished?'FINISHED':'RUNNING',weather,rngState:random.getState(),incidents:nextControl,progression:{elapsedTimeMs:clock,cars},entrants:classifyProgress(entries,input.circuit.baseLapTimeMs,tie,finished)};
+    let next:RaceSimulationState={...saved,lap,status:finished?'FINISHED':'RUNNING',weather,rngState:random.getState(),incidents:nextControl,progression:{elapsedTimeMs:clock,cars},entrants:classifyProgress(entries,input.circuit.baseLapTimeMs,tie,finished)};
+    // v8C: the regulation is enforced once, at the flag, from the actual final tyre history (no random draw).
+    if (finished && config.regulation) {
+        const { entrants, record } = enforceFinalClassification(next, subset => classifyProgress(subset,input.circuit.baseLapTimeMs,tie,true));
+        next = { ...next, entrants, progression: { ...next.progression!, classification: record } };
+    }
     validateProgressionState(next); validateIncidentState(next);
     return next;
 }

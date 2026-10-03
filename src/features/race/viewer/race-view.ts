@@ -13,7 +13,7 @@ export function controlMode(s: RacePublicState): ControlMode { return s.incident
 /** Global DRS state from existing engine flags only; map distance never decides eligibility. */
 export type DrsState = "UNAVAILABLE" | "ENABLED" | "WET" | "CONTROL" | "RESTART" | "FINISHED";
 export function drsState(s: RacePublicState): DrsState {
-    if(s.input.modelRevision===2)return 'UNAVAILABLE';
+    if((s.input.modelRevision??1)>=2)return 'UNAVAILABLE';
     if (!s.input.interaction) return "UNAVAILABLE";
     if (s.status === "FINISHED") return "FINISHED";
     if (controlMode(s) !== "GREEN") return "CONTROL";

@@ -3,6 +3,7 @@ import { assertContentId } from "../../game/domain/content-repository";
 import { countGreenLaps, scoringRulesOf } from "../../game/domain/championship";
 import type { ChampionshipRepository, ChampionshipSession, ChampionshipSource } from "../../game/domain/championship-repository";
 import type { EntrantIncidentState, RaceEvent } from "../../simulation/race/incidents/model";
+import type { ProgressionState } from "../../simulation/race/progression/model";
 /** Safety Car / VSC periods from the structured Race control events (a start without an end ran to the flag). */
 function neutralisedPeriods(events: readonly RaceEvent[] | undefined) {
   const periods: { startLap: number; endLap: number | null }[] = [];
@@ -53,6 +54,8 @@ export class PrismaChampionshipRepository implements ChampionshipRepository {
           },
           // Only the per-car status map (RUNNING/FINISHED/RETIRED) and the public Race control log (for green laps).
           incidentProfile: { select: { entrants: true, events: true } },
+          // Race v8C: the authoritative final classification record lives in the progression state (revision 3).
+          progression: true,
         },
       }),
       this.client.careerQualifyingSimulation.findMany({
@@ -79,6 +82,9 @@ export class PrismaChampionshipRepository implements ChampionshipRepository {
     for (const sim of races) {
       const eventId = sim.session.weekend.careerCalendarEventId;
       const status = sim.incidentProfile?.entrants as unknown as Record<string, EntrantIncidentState> | undefined;
+      const record = (sim.progression as unknown as { state?: ProgressionState } | null)?.state?.classification;
+      const disqualified = new Set(record?.entries.filter((x) => x.status === "DISQUALIFIED").map((x) => x.entrantId) ?? []);
+      // Distance bands use the classified leader's laps (the official P1; a disqualified car is never P1 while any other car is classified).
       const leaderLaps = Math.min(sim.entrants.find((e) => e.position === 1)?.completedLaps ?? 0, sim.totalLaps);
       const session: ChampionshipSession = {
         scheduledLaps: sim.totalLaps,
@@ -91,6 +97,7 @@ export class PrismaChampionshipRepository implements ChampionshipRepository {
           completedLaps: e.completedLaps,
           elapsedTimeMs: e.elapsedTimeMs,
           retired: status?.[e.id]?.status === "RETIRED",
+          disqualified: disqualified.has(e.id),
           stops: e.stopCount ?? null,
         })),
       };

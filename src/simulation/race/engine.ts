@@ -30,6 +30,7 @@ import {
   type TyreCompoundProfile,
 } from "./tyres/model";
 import { createSeededRandom, type RandomSource } from "../core/random";
+import { hasAssistance } from "./progression/revision";
 import type {
   RaceSimulationInput,
   RaceSimulationState,
@@ -247,7 +248,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   return {
     ...(snapshot.weather ? { weather: structuredClone(snapshot.weather.initial) } : {}),
     ...(input.incidents ? { incidents: initialIncidentRace(input.seed) } : {}),
-    ...(input.progression ? { progression: { elapsedTimeMs: 0, cars: Object.fromEntries(snapshot.entrants.map(e => [e.entrantId,{...initialCarProgression(e.gridPosition,input.parameters.gridOffsetMs),...(input.progression!.version===2?{assistance:initialAssistance(input.progression!.assistance!),observations:[{atMs:0,total:0,route:'TRACK' as const}]}:{})}])) } } : {}),
+    ...(input.progression ? { progression: { elapsedTimeMs: 0, cars: Object.fromEntries(snapshot.entrants.map(e => [e.entrantId,{...initialCarProgression(e.gridPosition,input.parameters.gridOffsetMs),...(hasAssistance(input.progression)?{assistance:initialAssistance(input.progression!.assistance!),observations:[{atMs:0,total:0,route:'TRACK' as const}]}:{})}])) } } : {}),
     simulationVersion: input.progression ? 8 : input.incidents ? 7 : input.weather ? 6 : input.commands ? 5 : input.pits
       ? 4
       : input.interaction
@@ -259,7 +260,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
     rngState: input.seed,
     lap: 0,
     status: "RUNNING",
-    entrants: (input.progression ? (entries: RaceEntrantState[]) => entries.map(e => ({ ...e, elapsedTimeMs: 0,...(input.progression!.version===2?{commands:{...e.commands!,ersMode:'NEUTRAL' as const,ersCharge:0}}:{}) })) : input.interaction
+    entrants: (input.progression ? (entries: RaceEntrantState[]) => entries.map(e => ({ ...e, elapsedTimeMs: 0,...(hasAssistance(input.progression)?{commands:{...e.commands!,ersMode:'NEUTRAL' as const,ersCharge:0}}:{}) })) : input.interaction
       ? (entries: RaceEntrantState[]) =>
           orderedClassification(
             entries.sort((a, b) => a.position - b.position),
@@ -427,11 +428,14 @@ export function advanceRace(
 export function raceResult(state: RaceSimulationState): readonly RaceResult[] {
   if (state.status !== "FINISHED")
     throw new RangeError("Race result requires a finished race");
+  const record = new Map(state.progression?.classification?.entries.map((x) => [x.entrantId, x]) ?? []);
   return state.entrants.map((e) => {
     const source = state.input.entrants.find(
       (s) => s.entrantId === e.entrantId,
     )!;
+    const sanction = record.get(e.entrantId);
     return {
+      ...(sanction ? { disqualified: sanction.status === "DISQUALIFIED", roadPosition: sanction.roadPosition } : {}),
       ...(e.incident ? { status: e.incident.status, completedLaps: e.completedLaps } : {}),
       position: e.position,
       entrantId: e.entrantId,

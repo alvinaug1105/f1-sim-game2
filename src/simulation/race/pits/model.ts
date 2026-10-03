@@ -14,6 +14,7 @@ import type { PitState } from "./types";
 import { developmentPitChoice } from "./strategy-policy";
 import { assessAiStop, publicWeather, strategyPreference } from "./ai-strategy";
 import { orderedClassification } from "../traffic/model";
+import { regulateAiStop } from "../regulations/ai-compliance";
 export function initialPitState(tyre: TyreState): PitState {
   return {
     pendingCompound: null,
@@ -80,11 +81,13 @@ export function committedStops(
         throw new RangeError("Pit request on final lap");
       continue;
     }
-    const compound =
+    const planned =
       e.pit.pendingCompound ??
       (source.strategyController === "DEVELOPMENT_AI"
         ? state.input.weather ? state.input.pits!.strategy ? chooseStrategicPit(state, e) : chooseWeatherPit(state, e) : developmentPitChoice(e, state.input, state.lap)
         : null);
+    // Race v8C (revision 3 only): AI-managed cars comply with the snapshotted dry-tyre regulation. No-op otherwise.
+    const compound = source.strategyController === "DEVELOPMENT_AI" ? regulateAiStop(state, e, planned, greenPitLaneLoss(state)) : planned;
     if (compound) result.set(e.entrantId, compound);
   }
   return result;

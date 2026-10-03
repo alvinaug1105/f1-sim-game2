@@ -24,7 +24,7 @@ function classification(session: ChampionshipSession | null): SessionClassificat
     scheduledLaps: session.scheduledLaps,
     leaderLaps: Math.min(leader.completedLaps, session.scheduledLaps),
     leaderGreenLaps: session.leaderGreenLaps,
-    entries: session.entrants.map(({ driverId, teamId, position }) => ({ driverId, teamId, position })),
+    entries: session.entrants.map(({ driverId, teamId, position, disqualified }) => ({ driverId, teamId, position, ...(disqualified ? { disqualified: true } : {}) })),
   };
 }
 export function championshipInput(source: ChampionshipSource): ChampionshipInput {
@@ -147,7 +147,7 @@ function standingsViews(source: ChampionshipSource, input: ChampionshipInput, cu
 }
 const eventName = (source: ChampionshipSource, round: number) => source.events.find((e) => e.round === round)?.name ?? "";
 function winner(session: ChampionshipSession | null, driver: (id: string, teamId: string) => DriverLabel) {
-  const w = session?.entrants.find((e) => e.position === 1);
+  const w = session?.entrants.find((e) => e.position === 1 && !e.disqualified);
   return w ? driver(w.driverId, w.teamId) : null;
 }
 export function standingsPage(source: ChampionshipSource, requested: StandingsCutoff | null): StandingsPage {
@@ -199,6 +199,8 @@ export interface ResultRowView {
   readonly lapsDown: number;
   readonly elapsedTimeMs: number;
   readonly retired: boolean;
+  /** Race v8C: disqualified (B6.3.6) — shown as DSQ, never as a mechanical retirement; scores nothing. */
+  readonly disqualified: boolean;
   readonly stops: number | null;
   readonly units: number;
 }
@@ -236,10 +238,11 @@ function sessionView(version: ChampionshipInput["version"], kind: "SPRINT" | "RA
         position: e.position,
         gridPosition: e.gridPosition,
         completedLaps: e.completedLaps,
-        gapMs: e.position === leader.position || e.retired || lapsDown > 0 ? null : e.elapsedTimeMs - leader.elapsedTimeMs,
+        gapMs: e.position === leader.position || e.retired || e.disqualified || lapsDown > 0 ? null : e.elapsedTimeMs - leader.elapsedTimeMs,
         lapsDown,
         elapsedTimeMs: e.elapsedTimeMs,
         retired: e.retired,
+        disqualified: e.disqualified,
         stops: e.stops,
         units: units.get(e.driverId) ?? 0,
       };

@@ -4,6 +4,7 @@ import type { CircuitMapLayout } from '../../game/domain/circuit-layout';
 import { LAP_UNITS, type ProgressionConfiguration, type LocalSegment, type InteractionZone, type SegmentKind } from '../../simulation/race/progression/model';
 import { circuitSegmentKinds, fallbackSegmentKinds, lapLineShift, SEGMENT_COUNT } from './circuit-race-metadata';
 import { circuitPitLanes, type CircuitPitLane } from './circuit-pit-lanes';
+import { raceRegulationForSession, type RegulatedSession } from '../../simulation/race/regulations/tyres';
 /**
  * Race progression content. Authoritative metadata is explicit normalised data (circuit-race-metadata.ts and the
  * progress anchors of circuit-pit-lanes.ts): it is NOT derived from the drawn x/y geometry at run time, so correcting or
@@ -86,3 +87,19 @@ export function progressionBForCircuit(id?:string|null) { return id ? circuitPro
 export function progressionBForLayout(layout: CircuitMapLayout = fallbackLayout): ProgressionConfiguration {
     return progressionBFromMetadata(segmentKindsForLayout(layout), { entry: 920000, laneStart: 940000, service: 970000, exit: 40000 });
 }
+/**
+ * Revision-3 (v8C) energy: the same store, deployment and Overtake envelope as v8B, with recovery by DISTANCE
+ * travelled while not deploying instead of by time. Per-millilap rates equal the v8B per-second rates over a
+ * representative 90 s green lap (RECHARGE 5000/s → 450, BALANCED 1500/s → 135), so a green lap keeps its v8B budget
+ * while SC/VSC, pit-lane and slow running no longer multiply recovery. BOOST recovers nothing: it is a pure depletion
+ * mode with no non-zero equilibrium. (Exact values are v8D tuning.)
+ */
+export function v8cEnergy(a: NonNullable<ProgressionConfiguration['assistance']>): NonNullable<ProgressionConfiguration['assistance']> {
+    return { ...a, recoveryPerSecond: { RECHARGE: 0, BALANCED: 0, BOOST: 0 }, recoveryPerMillilap: { RECHARGE: 450, BALANCED: 135, BOOST: 0 } };
+}
+/** Revision-3 (v8C) configuration: revision-2 circuit content, v8C energy and the session's frozen regulation. */
+export function progressionCFrom(b: ProgressionConfiguration, session: RegulatedSession): ProgressionConfiguration {
+    if (b.version !== 2) throw new RangeError('v8C derives from v8B circuit content');
+    return { ...b, version: 3, assistance: v8cEnergy(b.assistance!), regulation: raceRegulationForSession(session) };
+}
+export function progressionCForCircuit(id: string | null | undefined, session: RegulatedSession) { return progressionCFrom(progressionBForCircuit(id), session); }

@@ -51,6 +51,8 @@ function RacePreparation({ data, prep }: { data: RaceViewData; prep: RacePrepara
           </section>
           <div className="tyre-selection">
             <h2>{t("tyre.starting")}</h2><p>{t("pit.startingNotice")}</p>
+            {/* v8C: new sessions freeze the FIA B6.3.6 dry-tyre rule for the Grand Prix only (never the Sprint). */}
+            <p className="tyre-rule-note">{t(sprint ? "regulation.notApplicable" : "regulation.preRace")}</p>
             <h3>{t("prep.yourDrivers")}</h3>
             {mine.map((row) => <label key={row.driverId} htmlFor={`tyre-${row.driverId}`}>
               {row.driverName}

@@ -15,7 +15,7 @@ import { PrismaRaceRepository } from '../src/data/repositories/prisma-race';
 import { PrismaProgressionRepository } from '../src/data/repositories/prisma-progression';
 import { createCareer } from '../src/features/career/create-career';
 import { advanceToNextEvent,runSessionAction } from '../src/features/career/progression';
-import { startProgressionCareerRace,startCareerRace,setDriverEnergyPolicy,setDriverErsMode,advanceCareerRace, } from '../src/features/race/service';
+import { startRevision2CareerRace as startProgressionCareerRace,startCareerRace,setDriverEnergyPolicy,setDriverErsMode,advanceCareerRace, } from '../src/features/race/service';
 import { advanceRace } from '../src/simulation/race/engine';
 import { projectRaceView } from '../src/features/race/projection';
 import type { Career } from '../src/game/domain/career';

@@ -16,6 +16,8 @@ import { assessTyreFamilies } from "../../simulation/race/tyres/suitability";
 import { estimatePitWindow } from "./strategy-estimate";
 import { aiStartingCompound, careerRaceWeather } from "./weather-scenarios";
 import { scheduledLaps } from "./development-profiles";
+import { hasAssistance } from "../../simulation/race/progression/revision";
+import { assessTyreRule, compoundSatisfies } from "../../simulation/race/regulations/tyres";
 import type {
   ErsOutlook,
   PlayerCarInsight,
@@ -43,7 +45,7 @@ function insight(s: RaceSimulationState, e: RaceEntrantState): PlayerCarInsight 
   return {
     projectedFuelGrams: e.commands && s.input.commands ? projectedFuelGrams(s, e) : null,
     fuelLapsRemaining: e.commands && s.input.commands ? Math.floor(Math.round(e.fuelMassKg * 1000) / Math.max(1, fuelBurnGrams(s.input.fuelBurnPerLapKg, e.commands.fuelMode, s.input.commands))) : null,
-    ers: s.input.progression?.version===2?null:ersOutlook(s, e),
+    ers: hasAssistance(s.input.progression)?null:ersOutlook(s, e),
     pitEstimate: est ? { lapsToCliff: est.lapsToCliff, minimumLossMs: est.minimumLossMs, maximumLossMs: est.maximumLossMs } : null,
   };
 }
@@ -71,11 +73,18 @@ function entrant(s: RaceSimulationState, e: RaceEntrantState, own: boolean): Rac
           },
         }
       : {}),
-    ...(e.track ? { track: { progressMicrolaps: e.track.progressMicrolaps,...(s.input.progression?.version===2?{routeHistory:s.progression!.cars[e.entrantId].observations!.map(o=>({atMs:o.atMs,total:o.total,route:o.route}))}:{}), drsEligible: e.track.drsEligible, overtakesCompleted: e.track.overtakesCompleted, ...(s.simulationVersion === 8 ? { local: { progressMicrolaps: localProgress(e.track.progressMicrolaps), segmentId: segmentAt(s.input.progression!,e.track.progressMicrolaps,s.progression!.cars[e.entrantId].route).id, route: s.progression!.cars[e.entrantId].route, lapsDown: Math.max(0,Math.floor(((s.entrants.find(x=>x.incident?.status!=='RETIRED')?.track?.progressMicrolaps??0)-e.track.progressMicrolaps)/LAP_UNITS)) } } : {}) } } : {}),
+    ...(e.track ? { track: { progressMicrolaps: e.track.progressMicrolaps,...(hasAssistance(s.input.progression)?{routeHistory:s.progression!.cars[e.entrantId].observations!.map(o=>({atMs:o.atMs,total:o.total,route:o.route}))}:{}), drsEligible: e.track.drsEligible, overtakesCompleted: e.track.overtakesCompleted, ...(s.simulationVersion === 8 ? { local: { progressMicrolaps: localProgress(e.track.progressMicrolaps), segmentId: segmentAt(s.input.progression!,e.track.progressMicrolaps,s.progression!.cars[e.entrantId].route).id, route: s.progression!.cars[e.entrantId].route, lapsDown: Math.max(0,Math.floor(((s.entrants.find(x=>x.incident?.status!=='RETIRED')?.track?.progressMicrolaps??0)-e.track.progressMicrolaps)/LAP_UNITS)) } } : {}) } } : {}),
     ...(own && e.commands ? { commands: { paceMode: e.commands.paceMode, fuelMode: e.commands.fuelMode, ersMode: e.commands.ersMode, ersCharge: e.commands.ersCharge, commandRevision: e.commands.commandRevision } } : {}),
-    ...(own && s.input.progression?.version===2?{assistance:{energy:s.progression!.cars[e.entrantId].assistance!.energy,capacity:s.input.progression.assistance!.capacity,policy:s.progression!.cars[e.entrantId].assistance!.policy,aero:s.progression!.cars[e.entrantId].assistance!.aero,overtake:s.progression!.cars[e.entrantId].assistance!.overtake}}:{}),
+    ...(own && s.input.progression?.regulation?.dryTyres ? { regulation: regulationStatus(s, e.entrantId) } : {}),
+    ...(own && hasAssistance(s.input.progression)?{assistance:{energy:s.progression!.cars[e.entrantId].assistance!.energy,capacity:s.input.progression.assistance!.capacity,policy:s.progression!.cars[e.entrantId].assistance!.policy,aero:s.progression!.cars[e.entrantId].assistance!.aero,overtake:s.progression!.cars[e.entrantId].assistance!.overtake}}:{}),
     ...(own ? { insight: insight(s, e) } : {}),
   };
+}
+/** Own car's dry-tyre obligation from actual tyre use (never a plan, request or forecast). */
+function regulationStatus(s: RaceSimulationState, id: string) {
+  const rule = s.input.progression!.regulation!.dryTyres!, a = assessTyreRule(s, id);
+  return { status: a.status, usedDry: a.usedDry, wetUsed: a.wetUsed, required: a.required, deadlineLap: a.deadlineLap, lastRequestLap: a.lastRequestLap,
+    satisfyingCompounds: a.status === "OUTSTANDING" || a.status === "URGENT" ? WEATHER_TYRE_COMPOUNDS.filter((c) => s.input.tyres?.profiles[c] && compoundSatisfies(a, c, rule)) : [] };
 }
 /** Authoritative state → public view for one player team. */
 export function projectRaceState(s: RaceSimulationState, playerTeamId: string): RacePublicState {
@@ -96,7 +105,9 @@ export function projectRaceState(s: RaceSimulationState, playerTeamId: string): 
     input: {
       totalLaps: s.input.totalLaps,
       ...(s.input.progression?{modelRevision:s.input.progression.version}:{}),
-      ...(s.input.progression?.version===2?{pitAnchors:{entry:s.input.progression.pit.entry,service:s.input.progression.pit.service,exit:s.input.progression.pit.exit}}:{}),
+      ...(s.input.progression?.regulation ? { regulation: { session: s.input.progression.regulation.session, dryTyres: s.input.progression.regulation.dryTyres
+        ? { article: s.input.progression.regulation.dryTyres.article, minimumDistinctDrySpecifications: s.input.progression.regulation.dryTyres.minimumDistinctDrySpecifications, wetTyreExemption: s.input.progression.regulation.dryTyres.wetTyreExemption, mandatoryDrySpecifications: s.input.progression.regulation.dryTyres.mandatoryDrySpecifications, consequence: s.input.progression.regulation.dryTyres.consequence } : null } } : {}),
+      ...(hasAssistance(s.input.progression)?{pitAnchors:{entry:s.input.progression.pit.entry,service:s.input.progression.pit.service,exit:s.input.progression.pit.exit}}:{}),
       circuit: { baseLapTimeMs: s.input.circuit.baseLapTimeMs },
       entrants: s.input.entrants.map((e) => ({ entrantId: e.entrantId, driverId: e.driverId, teamId: e.teamId, gridPosition: e.gridPosition })),
       commands: s.input.commands ? { capacity: s.input.commands.capacity } : null,
@@ -124,6 +135,7 @@ export function projectRaceState(s: RaceSimulationState, playerTeamId: string): 
         }
       : {}),
     entrants: s.entrants.map((e) => entrant(s, e, own.has(e.entrantId))),
+    ...(s.progression?.classification ? { classification: s.progression.classification.entries.map((x) => ({ entrantId: x.entrantId, roadPosition: x.roadPosition, position: x.position, status: x.status, reason: x.reason })) } : {}),
   };
 }
 function preparation(data: CareerRaceData): RacePreparationView {

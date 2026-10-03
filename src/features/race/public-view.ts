@@ -16,6 +16,28 @@ import type { RacePitStop } from "../../simulation/race/pits/types";
 import type { TyreCompound } from "../../simulation/race/tyres/model";
 import type { ForecastWindow, WeatherState } from "../../simulation/race/weather/model";
 import type { TyreFamilyAssessment } from "../../simulation/race/tyres/family";
+import type { ClassificationEntry, TyreRuleStatus } from "../../simulation/race/regulations/tyres";
+/** v8C: the Race's frozen dry-tyre rule (static, public — the same for every car). */
+export interface PublicTyreRule {
+  readonly article: "B6.3.6";
+  readonly minimumDistinctDrySpecifications: number;
+  readonly wetTyreExemption: boolean;
+  /** Mandatory dry Race specification(s); empty while no source-backed event data exists. */
+  readonly mandatoryDrySpecifications: readonly TyreCompound[];
+  readonly consequence: "DISQUALIFICATION";
+}
+/** v8C, player cars only: the car's own current obligation, from the tyres it has actually used. */
+export interface PublicTyreRuleStatus {
+  readonly status: TyreRuleStatus;
+  readonly usedDry: readonly TyreCompound[];
+  readonly wetUsed: boolean;
+  readonly required: number;
+  /** Last safe stop opportunity (URGENT from here) and last checkpoint a pit request is accepted. */
+  readonly deadlineLap: number | null;
+  readonly lastRequestLap: number | null;
+  /** Compounds that would meet the requirement if fitted next (selection hint only; any compound may be chosen). */
+  readonly satisfyingCompounds: readonly TyreCompound[];
+}
 /** Tyre as seen from the pit wall: compound and age for every car; wear and temperature only for the player's cars. */
 export interface PublicTyre {
   readonly compound: TyreCompound;
@@ -83,6 +105,8 @@ export interface RacePublicEntrant {
   readonly track?: PublicTrack;
   /** Player cars only: the player's own commands (modes, charge, revision). */
   readonly commands?: CommandState;
+  /** v8C, player cars only. */
+  readonly regulation?: PublicTyreRuleStatus;
   readonly assistance?: {readonly energy:number;readonly capacity:number;readonly policy:EnergyPolicy;readonly aero:'CORNER'|'STRAIGHT'|'SAFE';readonly overtake:'NOT_ELIGIBLE'|'AVAILABLE'|'ACTIVE'};
   /** Player cars only. */
   readonly insight?: PlayerCarInsight;
@@ -108,7 +132,9 @@ export interface RacePublicState {
   readonly status: "RUNNING" | "FINISHED";
   readonly input: {
     readonly totalLaps: number;
-    readonly modelRevision?: 1 | 2;
+    readonly modelRevision?: 1 | 2 | 3;
+    /** v8C: the session's frozen regulation (null dry rule = not applicable, e.g. the Sprint). */
+    readonly regulation?: { readonly session: "RACE" | "SPRINT"; readonly dryTyres: PublicTyreRule | null };
     /** Revision 2: the Race's frozen pit progress anchors (static, public). The drawn lane comes from the circuit catalogue. */
     readonly pitAnchors?: PitAnchors;
     readonly circuit: { readonly baseLapTimeMs: number };
@@ -137,6 +163,8 @@ export interface RacePublicState {
     readonly events: readonly RaceEvent[];
   };
   readonly entrants: readonly RacePublicEntrant[];
+  /** v8C, finished Race only: the official classification after regulation enforcement (public result). */
+  readonly classification?: readonly ClassificationEntry[];
 }
 /** Pre-start information for the preparation screen (public conditions and the approximate forecast only). */
 export interface RacePreparationView {

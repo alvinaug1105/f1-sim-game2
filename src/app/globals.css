@@ -1049,13 +1049,30 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .topbar > strong { min-width: 0; }
 @media (max-width: 540px) { .topbar > strong { font-size: 12px; } }
 
-/* Race v8A: map gets the former two right-hand columns; controls continue below. Geometry remains uniformly fit. */
+/* Race v8: live-timing dashboard. Desktop keeps three columns — timing tower | large track map | selected-driver
+   management — instead of the v8A two-column grid that pushed the driver panel full-width under the map. */
 @media (min-width:1221px) {
-  .race-track-view .ops-grid { grid-template-columns:280px minmax(0,1fr); }
-  .race-track-view .ops-grid>.driver-focus { grid-column:1/-1; position:static; max-height:none; }
-  .race-track-view .driver-focus .mode-buttons button { flex:0 1 auto; min-width:85px; }
-  .race-track-view .driver-focus .tyre-focus { max-width:460px; }
+  .race-track-view .ops-grid { grid-template-columns:minmax(220px,240px) minmax(0,1fr) minmax(290px,310px); gap:12px; }
+  .race-track-view .ops-grid>.driver-focus { grid-column:auto; }
+  body:has(.race-track-view) .app-shell { grid-template-columns:140px minmax(0,1fr); }
+  body:has(.race-track-view) main { padding:16px 18px; }
 }
-.race-track-view .circuit-map { min-height:0; max-height:680px; }
-.race-track-view .map-car.lapped .driver-badge { stroke-dasharray:3 2; }
+@media (min-width:1600px) {
+  .race-track-view .ops-grid { grid-template-columns:minmax(260px,290px) minmax(0,1fr) minmax(320px,360px); }
+  body:has(.race-track-view) .app-shell { grid-template-columns:170px minmax(0,1fr); }
+}
+.race-track-view .circuit-map { min-height:0; max-height:min(680px,calc(100vh - 230px)); }
 @media (max-width:600px) { .race-track-view .circuit-map { max-height:460px; } }
+/* Compact management column: resources and their controls stay grouped and never stretch beyond the panel. */
+.race-track-view .assistance-status { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; }
+.race-track-view .assistance-status .stat strong { font-size:13px; }
+.race-track-view .driver-focus progress { max-width:100%; }
+.race-track-view .driver-focus .mode-buttons { margin:6px 0 10px; }
+@media (min-width:1221px) {
+  .race-track-view .driver-focus .neighbours { grid-template-columns:1fr 1fr; gap:6px; }
+  .race-track-view .driver-focus .tyre-focus { margin-bottom:10px; }
+  .race-track-view .driver-focus .mode-buttons button { flex:1 1 auto; min-width:0; padding:6px 5px; }
+}
+/* Circular live-timing bubbles: the selected car's ring glows; keyboard focus gets its own halo. */
+.race-track-view .map-car.selected .selected-ring { filter:drop-shadow(0 0 3px #ffffffcc); }
+.race-track-view .map-car .bubble-label { pointer-events:none; font-family:inherit; }

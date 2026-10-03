@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { I18nProvider } from '../src/i18n/provider';
 import { TrackMap,raceMapCanvas } from '../src/features/race/viewer/track-map';
 import { RaceMotion } from '../src/features/race/viewer/motion';
-import { RACE_BADGE,BADGE,MarkerPacks,RaceMarkerPacks } from '../src/features/race/viewer/marker-packs';
+import { RACE_BUBBLE,BADGE,MarkerPacks,RaceMarkerPacks } from '../src/features/race/viewer/marker-packs';
 import { timingRows,entrantProgress } from '../src/features/race/viewer/model';
 import { viewerData } from './helpers/viewer';
 import { projectRaceView } from '../src/features/race/projection';
@@ -25,7 +25,7 @@ describe('v8 Race map presentation',()=>{
  it('renders 22 compact identities, selected / player shape cues, keyboard controls, lapped and retired state',()=>{
   const d=viewerData(22),view=projectRaceView(d),rows=timingRows(view).map((r,n)=>({...r,lapsDown:n===21?2:0,status:r.status}));
   const html=renderToStaticMarkup(<I18nProvider initialLocale="en"><TrackMap layout={circuitLayouts[d.circuit.sourceCircuitId!]} rows={rows} selected={rows[0].id} onSelect={()=>{}} speed={1} reduceMotion={false} raceViewer authoritative/></I18nProvider>);
-  expect(html.match(/data-car=/g)).toHaveLength(22);expect(html.match(/class="driver-badge"/g)).toHaveLength(22);expect(html).toContain('player-notch');expect(html).toContain('selected-ring');expect(html).toContain('lapped-mark');expect(html).toContain('2 lap(s) down');expect(html.match(/role="button"/g)).toHaveLength(22);expect(RACE_BADGE.w*RACE_BADGE.h).toBeLessThan(BADGE.w*BADGE.h*.6);expect(html).toContain('rx="4"');const retired=renderToStaticMarkup(<I18nProvider><TrackMap layout={circuitLayouts[d.circuit.sourceCircuitId!]} rows={rows.map((r,n)=>n===20?{...r,status:'RETIRED'}:r)} selected={rows[0].id} onSelect={()=>{}} speed={1} reduceMotion={false} raceViewer authoritative/></I18nProvider>);expect(retired.match(/data-car=/g)).toHaveLength(21);expect(retired).not.toContain(`data-car="${rows[20].id}"`);
+  expect(html.match(/data-car=/g)).toHaveLength(22);expect(html.match(/<circle class="driver-bubble"/g)).toHaveLength(22);expect(html).not.toContain('driver-badge');expect(html.match(/class="player-ring"/g)).toHaveLength(2);expect(html.match(/class="selected-ring"/g)).toHaveLength(1);expect(html).toContain('stroke-dasharray="2.6 2"');expect(html).toContain('2 lap(s) down');expect(html.match(/role="button"/g)).toHaveLength(22);expect(Math.PI*RACE_BUBBLE.r**2).toBeLessThan(BADGE.w*BADGE.h*.6);const retired=renderToStaticMarkup(<I18nProvider><TrackMap layout={circuitLayouts[d.circuit.sourceCircuitId!]} rows={rows.map((r,n)=>n===20?{...r,status:'RETIRED'}:r)} selected={rows[0].id} onSelect={()=>{}} speed={1} reduceMotion={false} raceViewer authoritative/></I18nProvider>);expect(retired.match(/data-car=/g)).toHaveLength(21);expect(retired).not.toContain(`data-car="${rows[20].id}"`);
  });
  it('interpolates authoritative checkpoints smoothly with no extrapolation, lap-wrap reversal or motion after retirement',()=>{
   const motion=new RaceMotion([{id:'a',progress:2.98,retired:false},{id:'b',progress:1.7,retired:false}]);motion.reconcile([{id:'a',progress:3.4,retired:false},{id:'b',progress:1.9,retired:false}],1);motion.configure('playing',1000);let previous=2.98;for(let now=0;now<=1000;now+=20){motion.frame(now);expect(motion.progress('a')).toBeGreaterThanOrEqual(previous);expect(motion.progress('a')).toBeLessThanOrEqual(3.4);previous=motion.progress('a');}expect(motion.progress('a')).toBe(3.4);const stopped=motion.progress('b');motion.reconcile([{id:'a',progress:4.4,retired:false},{id:'b',progress:2.1,retired:true}],2);for(let now=1100;now<=2200;now+=20)motion.frame(now);expect(motion.progress('b')).toBe(stopped);
@@ -36,8 +36,10 @@ describe('v8 Race map presentation',()=>{
  it('spreads a 22-car train in bounded lateral lanes without changing track progress or mixing crossing branches',()=>{
   const cars=Array.from({length:22},(_,n)=>({id:`car-${String(n).padStart(2,'0')}`,progress:n*6/2000,x:n*6,y:100,nx:0,ny:1,tier:n}));
   const pack=new RaceMarkerPacks(),positions=pack.frame(cars,2000,16,true);
-  for(const car of cars){const p=positions.get(car.id)!;expect(p.x).toBe(car.x);expect(Math.abs(p.offset)).toBeLessThanOrEqual(36);}
-  for(let i=0;i<cars.length;i++)for(let j=i+1;j<cars.length;j++){const a=positions.get(cars[i].id)!,b=positions.get(cars[j].id)!;expect(Math.abs(a.x-b.x)>=RACE_BADGE.w||Math.abs(a.y-b.y)>=RACE_BADGE.h).toBe(true);}
+  const d=2*RACE_BUBBLE.r;
+  for(const car of cars){const p=positions.get(car.id)!;expect(p.x).toBe(car.x);expect(Math.abs(p.offset)).toBeLessThanOrEqual(1.5*d);}
+  // Bubbles may overlap partially (up to ~30%) but never stack on top of each other.
+  for(let i=0;i<cars.length;i++)for(let j=i+1;j<cars.length;j++){const a=positions.get(cars[i].id)!,b=positions.get(cars[j].id)!;expect(Math.hypot(a.x-b.x,a.y-b.y)).toBeGreaterThanOrEqual(.7*d);}
   const crossing=new RaceMarkerPacks().frame([cars[0],{...cars[0],id:'crossing',progress:.6,tier:1}],2000,16,true);expect(crossing.get('crossing')!.offset).toBe(0);
  });
  it('projects current local segments / pit route / lap deficit without exposing integration plans',()=>{

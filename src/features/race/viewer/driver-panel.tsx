@@ -1,4 +1,5 @@
 "use client";
+import { ENERGY_POLICIES,type EnergyPolicy } from '../../../simulation/race/assistance/model';
 import { useState, type ReactNode } from 'react';
 import { formatRaceGap, formatRaceTime } from '../../../i18n/race-time';
 import { useI18n } from '../../../i18n/provider';
@@ -13,7 +14,7 @@ type Row = ReturnType<typeof timingRows>[number];
 /** Laps-to-cliff at or below this reads as "high wear risk soon". Presentation wording only. */
 const RISK_LAPS = 3;
 /** Mode row: buttons for an editable player car, otherwise the active mode as read-only text. */
-function Modes<T extends PaceMode | FuelMode | ErsMode>({ label, modes, active, editable, busy, onPick, fuel = false }: { label: string; modes: readonly T[]; active: T; editable: boolean; busy: boolean; onPick: (mode: T) => void; fuel?: boolean }) {
+function Modes<T extends PaceMode | FuelMode | ErsMode | EnergyPolicy>({ label, modes, active, editable, busy, onPick, fuel = false }: { label: string; modes: readonly T[]; active: T; editable: boolean; busy: boolean; onPick: (mode: T) => void; fuel?: boolean }) {
     const { t } = useI18n();
     // Fuel modes have their own wording (Lean / Balanced / Rich) so they never read like the Pace modes.
     const name = (mode: T) => fuel ? t(`command.fuel.${mode as FuelMode}`) : t(`command.${mode}`);
@@ -68,14 +69,15 @@ export function DriverPanel({ data, row, busy, send, rows }: {
     {estimate && row.status === 'RUNNING' && s.status === 'RUNNING' && condition?.wear !== 'CRITICAL' && <p className="tyre-estimate">{estimate.lapsToCliff <= RISK_LAPS ? t('viewer.tyreLifeRisk') : t('viewer.tyreLife', { count: format.number(estimate.lapsToCliff) })}<small>{t('viewer.estimateNote')}</small></p>}
    </div>}
   </div><div className="driver-resources">{c && s.input.commands ? <>
-   {s.simulationVersion === 8 && editable && <p className="ops-muted">{t('viewer.commandTiming')}</p>}
+   {s.simulationVersion === 8 && editable && <p className="ops-muted">{t(s.input.modelRevision===2?'assistance.commandTiming':'viewer.commandTiming')}</p>}
    <div className="resource-heading"><h3>{t('race.fuel')}</h3><strong>{e.fuelMassKg === null ? t('race.noTime') : kg(e.fuelMassKg)}</strong></div>
    <p className={`fuel-delta ${projection! < 0 ? 'fuel-warning' : 'fuel-ok'}`}>{t('command.projectedFuel')}: <strong>{kg(projection!, true)}</strong></p>
    {fuelCritical(s, e) && <p className="fuel-delta fuel-warning" role="status"><span aria-hidden="true">⚠ </span>{t('command.fuelCritical', { laps: format.number(e.insight!.fuelLapsRemaining!) })}</p>}
    <Modes fuel label={t('command.fuelMode')} modes={FUEL_MODES} active={c.fuelMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'fuelMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
-   <div className="resource-heading"><h3>{t('command.ersMode')}</h3><strong>{format.percentage(c.ersCharge / s.input.commands.capacity, { maximumFractionDigits: 0 })}</strong></div><progress max={s.input.commands.capacity} value={c.ersCharge} aria-label={t('command.energy')}/>
+   {e.assistance ? <><div className="assistance-status"><Stat label={t('assistance.aero')}>{t(`assistance.aero.${e.assistance.aero}`)}</Stat><Stat label={t('assistance.overtake')}>{t(`assistance.overtake.${e.assistance.overtake}`)}</Stat></div><div className="resource-heading"><h3>{t('command.energy')}</h3><strong>{format.percentage(e.assistance.energy/e.assistance.capacity,{maximumFractionDigits:0})}</strong></div><progress max={e.assistance.capacity} value={e.assistance.energy} aria-label={t('command.energy')}/><Modes label={t('assistance.policy')} modes={ENERGY_POLICIES} active={e.assistance.policy} editable={editable} busy={busy} onPick={mode=>send({kind:'energyPolicy',entrantId:e.entrantId,revision:c.commandRevision,mode})}/><p className="ops-muted">{t('assistance.note')}</p></> : <><div className="resource-heading"><h3>{t('command.ersMode')}</h3><strong>{format.percentage(c.ersCharge / s.input.commands.capacity, { maximumFractionDigits: 0 })}</strong></div><progress max={s.input.commands.capacity} value={c.ersCharge} aria-label={t('command.energy')}/>
    {ers && <p className="ers-outlook ops-muted">{ers.kind === 'LAPS' ? t('viewer.ersLaps', { count: format.number(ers.laps) }) : t(ers.kind === 'CHARGING' ? 'viewer.ersCharging' : 'viewer.ersSustainable')}</p>}
    <Modes label={t('viewer.ersDeployment')} modes={ERS_MODES} active={c.ersMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'ersMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+   </>}
    <Modes label={t('command.paceMode')} modes={PACE_MODES} active={c.paceMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'paceMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
   </> : e.fuelMassKg !== null ? <div className="resource-heading"><h3>{t('race.fuel')}</h3><strong>{kg(e.fuelMassKg)}</strong></div> : null}
   </div>

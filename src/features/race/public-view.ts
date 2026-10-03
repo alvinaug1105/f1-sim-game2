@@ -1,3 +1,5 @@
+import type { PitRouteGeometry } from '../../game/domain/pit-geometry';
+import type { EnergyPolicy } from '../../simulation/race/assistance/model';
 /**
  * The Race / Sprint **browser view** — the only Race shape a client component may receive.
  *
@@ -46,6 +48,7 @@ export interface PublicPit {
 }
 export interface PublicTrack {
   /** v8: current observable circuit position / route and completed lap deficit only. No integration plans. */
+  readonly routeHistory?: readonly {atMs:number;total:number;route:'TRACK'|'ENTRY'|'LANE'|'SERVICE'|'EXIT'}[];
   readonly local?: { readonly progressMicrolaps: number; readonly segmentId: string; readonly route: "TRACK" | "ENTRY" | "LANE" | "SERVICE" | "EXIT"; readonly lapsDown: number };
   readonly progressMicrolaps: number;
   readonly drsEligible: boolean;
@@ -80,6 +83,7 @@ export interface RacePublicEntrant {
   readonly track?: PublicTrack;
   /** Player cars only: the player's own commands (modes, charge, revision). */
   readonly commands?: CommandState;
+  readonly assistance?: {readonly energy:number;readonly capacity:number;readonly policy:EnergyPolicy;readonly aero:'CORNER'|'STRAIGHT'|'SAFE';readonly overtake:'NOT_ELIGIBLE'|'AVAILABLE'|'ACTIVE'};
   /** Player cars only. */
   readonly insight?: PlayerCarInsight;
 }
@@ -104,6 +108,8 @@ export interface RacePublicState {
   readonly status: "RUNNING" | "FINISHED";
   readonly input: {
     readonly totalLaps: number;
+    readonly modelRevision?: 1 | 2;
+    readonly pitRoute?: PitRouteGeometry;
     readonly circuit: { readonly baseLapTimeMs: number };
     readonly entrants: readonly RacePublicEntrantInfo[];
     /** Feature flags / public rendering constants only. */

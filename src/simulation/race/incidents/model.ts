@@ -181,7 +181,7 @@ export function validateIncidentState(state: RaceSimulationState) {
             throw new RangeError("Invalid incident kind");
         if (e.severity !== null && !["MINOR", "MODERATE", "MAJOR"].includes(e.severity))
             throw new RangeError("Invalid incident severity");
-        if (e.cause !== undefined && (e.type !== "OVERTAKE" || !["TYRE", "ERS", "DRS", "PACE"].includes(e.cause)))
+        if (e.cause !== undefined && (e.type !== "OVERTAKE" || !(state.input.progression?.version===2?["TYRE","PACE","OVERTAKE_MODE","BOOST"]:["TYRE", "ERS", "DRS", "PACE"]).includes(e.cause)))
             throw new RangeError("Invalid overtake cause");
         if (e.type === "OVERTAKE" && e.entrantIds.length !== 2)
             throw new RangeError("Invalid overtake event");

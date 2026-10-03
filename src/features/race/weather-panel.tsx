@@ -12,7 +12,7 @@ export function WeatherPanel({state}:{state:RacePublicState}) {
   <p>{t("weather.rain")}: {percent(w.rainfallIntensity)} · {t(w.rainfallIntensity===0?"weather.dry":w.rainfallIntensity<650?"weather.light":"weather.heavy")}</p>
   <p>{t("weather.water")}: {percent(w.trackWater)} · {t(w.trackWater<100?"weather.dry":w.trackWater<350?"weather.damp":"weather.wet")}</p>
   <p>{t("weather.air")}: {temperature(w.airTemperatureMilliC)} · {t("weather.track")}: {temperature(w.trackTemperatureMilliC)}</p>
-  <p>{state.incidents && (state.incidents.mode!=="GREEN"||state.incidents.drsDelay>0) ? t("incident.drsSuspended") : t(`weather.${w.drsState}`)}</p>
+  {state.input.modelRevision!==2&&<p>{state.incidents && (state.incidents.mode!=="GREEN"||state.incidents.drsDelay>0) ? t("incident.drsSuspended") : t(`weather.${w.drsState}`)}</p>}
   {state.status==="RUNNING" && <><h3>{t("weather.forecast")}</h3><p>{t("weather.uncertainty")}</p>{(()=>{const rain=state.weather?.rainfallIntensity??0,items=forecastItems(state.forecast,rain);return items.length?<ul>{items.map(({label,window:f},n)=><li key={n}>{t(label)}: {t("weather.window",{from:format.number(f.arrivalMinLap),to:format.number(f.arrivalMaxLap),min:percent(f.rainfallMin),max:percent(f.rainfallMax)})}</li>)}</ul>:<p>{t(quietForecastKey(rain))}</p>;})()}</>}
  </section>;
 }

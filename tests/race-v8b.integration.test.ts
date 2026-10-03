@@ -1,0 +1,94 @@
+import fixture from './fixtures/race-v8a-postgres-main-save.json';
+import {createHash} from 'node:crypto';
+import {qualify} from '../src/simulation/race/assistance/model';
+import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { Pool } from 'pg';
+import { beforeAll,beforeEach,afterAll,describe,it,expect } from 'vitest';
+import { createPrismaClient } from '../src/data/prisma/connection';
+import { seedDevelopmentContent } from '../src/data/seed/seed-content';
+import { developmentContent as source } from '../src/data/seed/content-development';
+import { PrismaCareerRepository } from '../src/data/repositories/prisma-career';
+import { PrismaRaceRepository } from '../src/data/repositories/prisma-race';
+import { PrismaProgressionRepository } from '../src/data/repositories/prisma-progression';
+import { createCareer } from '../src/features/career/create-career';
+import { advanceToNextEvent,runSessionAction } from '../src/features/career/progression';
+import { startProgressionCareerRace,startCareerRace,setDriverEnergyPolicy,setDriverErsMode,advanceCareerRace, } from '../src/features/race/service';
+import { advanceRace } from '../src/simulation/race/engine';
+import { projectRaceView } from '../src/features/race/projection';
+import type { Career } from '../src/game/domain/career';
+import type { RaceSimulationState } from '../src/simulation/race/types';
+const value=process.env.TEST_DATABASE_URL;
+if(!value)throw new Error('TEST_DATABASE_URL required; SQL tests did not run.');
+const schema=`race_v8b_${randomUUID().replaceAll('-','')}`,url=new URL(value);url.searchParams.set('schema',schema);
+const adminUrl=new URL(value);adminUrl.searchParams.delete('schema');const admin=new Pool({connectionString:adminUrl.toString()});
+const client=createPrismaClient(url.toString()),careers=new PrismaCareerRepository(client),races=new PrismaRaceRepository(client),progression=new PrismaProgressionRepository(client);
+let career:Career,eventId:string;
+const createInput={name:'v8 disposable integration',gameDatabaseId:source.database.id,seasonId:source.seasons[0].id,playerTeamId:source.teams[0].id};
+beforeAll(async()=>{
+ await admin.query(`CREATE SCHEMA "${schema}"`);
+ execFileSync(process.execPath,['node_modules/prisma/build/index.js','migrate','deploy'],{env:{...process.env,DATABASE_URL:url.toString()},timeout:45000,stdio:'pipe'});
+});
+beforeEach(async()=>{
+ await seedDevelopmentContent(client);career=await createCareer(careers,createInput);
+ const progress=(await progression.getProgress(career.id))!;eventId=progress.events[0].id;
+ const entered=await advanceToNextEvent(progression,career.id,eventId),sessions=entered.events[0].weekend!.sessions;
+ for(const s of sessions.filter(s=>s.type.startsWith('PRACTICE')))await runSessionAction(progression,career.id,eventId,s.id,'simulatePractice');
+ const q=sessions.find(s=>s.type==='QUALIFYING')!;await runSessionAction(progression,career.id,eventId,q.id,'start');await runSessionAction(progression,career.id,eventId,q.id,'completeDevelopment');
+});
+afterAll(async()=>{await client.$disconnect();await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);await admin.end();});
+const get=async()=>(await races.getRace(career.id,eventId))!;
+async function start(){await startProgressionCareerRace(races,career.id,eventId,{},42);return (await get()).state!;}
+async function edit(fn:(s:RaceSimulationState)=>RaceSimulationState){await races.changeRace(career.id,eventId,d=>({state:fn(d.state!),labels:d.labels,progress:d.progress}));return (await get()).state!;}
+const own=(s:RaceSimulationState)=>s.input.entrants.find(e=>e.teamId===career.playerTeamId)!.entrantId;
+/** Canonical finished-state digest of the real main v8A save after the v8B-R tie-break repair (see the round-trip test). */
+const V8A_FIXTURE_FINISHED_SHA256='198812df733f623a37f2554a361d8b920be57dff2ca85219e857ea8ac51cc8b5';
+
+describe('PostgreSQL v8B revision persistence and server commands',()=>{
+ it('creates revision 2 using existing JSON, saves independent energy policy and rejects legacy/rival/stale/invalid commands',async()=>{
+  const s=await start(),id=own(s);expect(s.input.progression!.version).toBe(2);
+  await setDriverEnergyPolicy(races,career.id,eventId,id,0,0,'BOOST');const b=(await get()).state!;expect(b.progression!.cars[id].assistance!.policy).toBe('BOOST');expect(b.entrants.find(e=>e.entrantId===id)!.commands!.ersMode).toBe('NEUTRAL');
+  await expect(setDriverErsMode(races,career.id,eventId,id,0,1,'OVERTAKE')).rejects.toThrow();
+  await expect(setDriverEnergyPolicy(races,career.id,eventId,id,0,0,'RECHARGE')).rejects.toThrow();
+  const rival=s.input.entrants.find(e=>e.teamId!==career.playerTeamId)!.entrantId;await expect(setDriverEnergyPolicy(races,career.id,eventId,rival,0,0,'BOOST')).rejects.toThrow();
+  expect(()=>setDriverEnergyPolicy(races,career.id,eventId,id,0,1,'DEPLOY' as 'BOOST')).toThrow();
+  await advanceCareerRace(races,career.id,eventId,0,1);expect((await get()).state).toEqual(advanceRace(b,1));
+ });
+ it('persists qualified-but-not-yet-used entitlement and remainders exactly',async()=>{
+  await start();const before=await edit(s=>{const id=own(s),a=s.progression!.cars[id].assistance!,c=s.input.progression!.assistance!;qualify(a,c,0,500,0,true);a.deploymentRemainder=123;a.recoveryRemainder=456;return s;});
+  const row=await client.careerRaceSimulation.findFirstOrThrow({where:{careerId:career.id}});expect(row.progression).toEqual({configuration:before.input.progression,state:before.progression});await advanceCareerRace(races,career.id,eventId,0,1);expect((await get()).state).toEqual(advanceRace(before,1));
+ });
+ it.each(['ENTRY','LANE','SERVICE','EXIT'] as const)('reloads %s without acquiring main-track interaction',async route=>{
+  await start();await advanceCareerRace(races,career.id,eventId,0,1);
+  const before=await edit(s=>{const id=own(s),p=s.progression!.cars[id],total=route==='ENTRY'?1930000:route==='LANE'?1950000:route==='SERVICE'?1970000:1020000;
+   p.route=route;p.compound='HARD';p.pitEntryLap=route==='EXIT'?0:1;p.pitLossMs=22500;p.stationaryMs=2500;p.delayMs=route==='SERVICE'?2500:0;p.observations=[{atMs:s.progression!.elapsedTimeMs,total,route}];
+   return {...s,entrants:s.entrants.map(e=>e.entrantId===id?{...e,completedLaps:Math.floor(total/1000000),track:{...e.track!,progressMicrolaps:total}}:e)};
+  });
+  await advanceCareerRace(races,career.id,eventId,1,1);expect((await get()).state).toEqual(advanceRace(before,1));
+ });
+ it('round-trips a real main v8A fixture and finishes with its original engine digest; legacy ERS remains accepted',async()=>{
+  const original=fixture.state as unknown as RaceSimulationState;
+  await startCareerRace(races,career.id,eventId,42,{},true,true,true,true,true,false,true);const fresh=(await get()).state!;
+  const replacements=new Map<string,string>();for(const e of original.input.entrants){const n=fresh.input.entrants.find(x=>x.gridPosition===e.gridPosition)!;replacements.set(e.entrantId,n.entrantId);replacements.set(e.driverId,n.driverId);replacements.set(e.teamId,n.teamId);}
+  let text=JSON.stringify(original);for(const [from,to]of replacements)text=text.replaceAll(from,to);const mapped=JSON.parse(text) as RaceSimulationState;
+  await edit(()=>mapped);const historical=(await get()).state!;expect(historical).toEqual(mapped);expect(historical.input.progression!.version).toBe(1);
+  const expected=advanceRace(historical,historical.input.totalLaps);
+  const canonical=(s:RaceSimulationState)=>{let text=JSON.stringify(s);for(const e of historical.input.entrants)text=text.replaceAll(e.entrantId,`slot-${e.gridPosition}`).replaceAll(e.driverId,`driver-${e.gridPosition}`);for(const [n,id]of [...new Set(historical.input.entrants.map(e=>e.teamId))].entries())text=text.replaceAll(id,`team-${n}`);return text;};
+  const originalExpected=advanceRace(original,original.input.totalLaps);
+  const canonicalOriginal=(s:RaceSimulationState)=>{let text=JSON.stringify(s);for(const e of original.input.entrants)text=text.replaceAll(e.entrantId,`slot-${e.gridPosition}`).replaceAll(e.driverId,`driver-${e.gridPosition}`);for(const [n,id]of [...new Set(original.input.entrants.map(e=>e.teamId))].entries())text=text.replaceAll(id,`team-${n}`);return text;};
+  // Determinism repair (v8B-R): exact distance ties between cars side by side now resolve by classification, not by
+  // entrant-ID text, so this save's continuation differs from the one recorded on main (fixture.finishedSha256) — it
+  // is now the same for any IDs the save is persisted under. The post-repair digest is pinned here.
+  expect(createHash('sha256').update(canonicalOriginal(originalExpected)).digest('hex')).toBe(V8A_FIXTURE_FINISHED_SHA256);
+  expect(fixture.finishedSha256).not.toBe(V8A_FIXTURE_FINISHED_SHA256);
+  // PostgreSQL JSONB reorders record keys; compare normalised object structure, not serialisation key order.
+  expect(JSON.parse(canonical(expected))).toEqual(JSON.parse(canonicalOriginal(originalExpected)));
+  const id=own(historical);await expect(setDriverEnergyPolicy(races,career.id,eventId,id,historical.lap,historical.entrants.find(e=>e.entrantId===id)!.commands!.commandRevision,'BOOST')).rejects.toThrow();await setDriverErsMode(races,career.id,eventId,id,historical.lap,historical.entrants.find(e=>e.entrantId===id)!.commands!.commandRevision,'DEPLOY');const commanded=(await get()).state!;
+  const done=advanceRace(commanded,commanded.input.totalLaps);await advanceCareerRace(races,career.id,eventId,commanded.lap,'finish');expect((await get()).state).toEqual(done);
+ },180000); // three full 57-lap continuations; not a determinism allowance
+ it('rolls back invalid/mixed revision state and keeps hidden entitlement and rival energy off the browser',async()=>{
+  const s=await start(),id=own(s);await expect(edit(x=>{x.progression!.cars[id].assistance!.energy=-1;return x;})).rejects.toThrow();expect((await get()).state).toEqual(s);
+  const v=projectRaceView(await get()),text=JSON.stringify(v);for(const hidden of ['qualifiedLap','validUseLap','expiresAfterLap','deploymentRemainder','recoveryRemainder','rngState','"seed"'])expect(text).not.toContain(hidden);
+  expect(v.state!.entrants.filter(e=>s.input.entrants.find(x=>x.entrantId===e.entrantId)!.teamId!==career.playerTeamId).every(e=>!e.assistance&&!e.commands)).toBe(true);
+ });
+});

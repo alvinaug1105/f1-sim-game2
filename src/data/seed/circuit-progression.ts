@@ -33,3 +33,19 @@ export function progressionForLayout(layout: CircuitMapLayout): ProgressionConfi
 export const circuitProgression: Readonly<Record<string, ProgressionConfiguration>> = Object.fromEntries(Object.entries(circuitLayouts).map(([id, layout]) => [id, progressionForLayout(layout)]));
 export const fallbackProgression = progressionForLayout(fallbackLayout);
 export function progressionForCircuit(sourceCircuitId?: string | null) { return sourceCircuitId ? circuitProgression[sourceCircuitId] ?? progressionForLayout(layoutForCircuit(sourceCircuitId)) : fallbackProgression; }
+
+/** v8B content is prepared once, then frozen in each new Race. Approximate parallel pit lanes, not surveyed maps. */
+export function progressionBForLayout(layout: CircuitMapLayout): ProgressionConfiguration {
+    const legacy=progressionForLayout(layout),path=prepareCircuitPath(layout),{entry,service,exit}=legacy.pit;
+    const anchors=[entry,930000,940000,950000,960000,service,980000,990000,1000000,1010000,1020000,1030000,1000000+exit];
+    const points=anchors.map(progress=>{const p=path.sample(progress/LAP_UNITS),f=(progress-entry)/(LAP_UNITS+exit-entry),offset=.025*Math.sin(Math.PI*f);return {progress,x:p.x-p.tangentY*offset,y:p.y+p.tangentX*offset};});
+    const straights=legacy.segments.filter(s=>s.kind==='STRAIGHT'||s.kind==='FAST');
+    // Longest contiguous straight/fast run selects the local electrical window; topology preserves circuit personality.
+    const runs: {start:number;end:number}[]=[];
+    for(const s of straights) { const last=runs.at(-1);if(last?.end===s.start)last.end=s.end;else runs.push({start:s.start,end:s.end}); }
+    const deployment=[...runs].sort((a,b)=>(b.end-b.start)-(a.end-a.start)||a.start-b.start)[0]??{start:0,end:15625};
+    return {...legacy,version:2,pit:{...legacy.pit,geometry:{points,service}},assistance:{capacity:1000000,initialCharge:700000,detection:(deployment.start-5000+LAP_UNITS)%LAP_UNITS,deploymentStart:deployment.start,deploymentEnd:deployment.end,thresholdMs:1000,maxWater:350,straightDeltaMs:0,boostDeltaMs:400,overtakeDeltaMs:600,deploymentPerSecond:{RECHARGE:0,BALANCED:2000,BOOST:8000},recoveryPerSecond:{RECHARGE:5000,BALANCED:1500,BOOST:500},overtakePerSecond:10000}};
+}
+export const circuitProgressionB: Readonly<Record<string,ProgressionConfiguration>>=Object.fromEntries(Object.entries(circuitLayouts).map(([id,layout])=>[id,progressionBForLayout(layout)]));
+export const fallbackProgressionB=progressionBForLayout(fallbackLayout);
+export function progressionBForCircuit(id?:string|null) { return id?circuitProgressionB[id]??progressionBForLayout(layoutForCircuit(id)):fallbackProgressionB; }

@@ -55,7 +55,7 @@ export type PlaybackSnapshot<A extends { reason: string } = Attention, C = Comma
     error: string | null;
 };
 /** What a player command did, so confirmations can always name the driver it targeted. */
-export interface CommandInfo { entrantId: string; kind: 'pit' | 'paceMode' | 'fuelMode' | 'ersMode'; value: string | null }
+export interface CommandInfo { entrantId: string; kind: 'pit' | 'paceMode' | 'fuelMode' | 'ersMode' | 'energyPolicy'; value: string | null }
 export interface PlaybackClock {
     set(callback: () => void, delay: number): ReturnType<typeof setTimeout>;
     clear(timer: ReturnType<typeof setTimeout>): void;

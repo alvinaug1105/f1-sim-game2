@@ -66,9 +66,10 @@ A revision-3 configuration must carry a regulation snapshot, and revisions 1 and
 
 The source is `pit.stints`, the authoritative persisted history:
 - the starting tyre counts once the car has moved;
-- a pit-fitted tyre counts only once the car's route has returned to TRACK; its open stint on the pit EXIT route does
-  not count yet;
-- pending requests, committed stops and plans never count.
+- a pit-fitted tyre counts once the car has left the modelled Pit Lane with it. The engine creates the new stint
+  exactly when the car leaves the PIT_LANE segment (service → lap line) and moves onto its PIT_EXIT route (lap line →
+  authored exit), so the tyre already counts on PIT_EXIT and remains counted after rejoining TRACK;
+- pending requests, committed stops and stops not yet serviced (ENTRY / LANE / SERVICE) never count.
 
 Retired cars carry no obligation: a retirement is never turned into a disqualification.
 
@@ -88,6 +89,10 @@ handed to auto-management (Simulate Race / Sprint / Remainder):
   consumes no random draw.
 
 A forced stop uses the ordinary pit-service draw, exactly like any other stop.
+
+**Ownership:** the pit strategy layer (`pits/model.ts`) derives each AI car's stable `StrategyPreference` once per
+decision and passes it to both the strategic choice and `regulateAiStop`. The regulation module decides only what is
+legal and never derives a car's character itself.
 
 PLAYER cars are never altered. The player can deliberately violate the rule and is disqualified at the flag.
 
@@ -115,6 +120,7 @@ the progression JSON, and validation re-derives it from the tyre history, so a t
 | Results page / round breakdown | "DSQ" / "Disqualified" |
 | Timing tower and driver panel after the flag | DSQ, reason, road position |
 | Winner lookup | Never a disqualified car |
+| Race viewer leader (`officialLeaderId`) | While RUNNING: the live P1. After the flag: only a CLASSIFIED car. When every finisher is disqualified there is **no** official leader or winner; the stored ordinal P1 is ordering only. Used by map label priority, driver panel, player switch and timing tower. |
 | Sprint results | Unchanged: no B6.3.6 |
 
 ### Player information

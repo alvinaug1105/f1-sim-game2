@@ -9,7 +9,9 @@ import { validateProgressionConfiguration, validateProgressionState, classifyPro
 import { tieOrderFor } from "../src/simulation/race/progression/tie-order";
 import { assessTyreRule, compoundSatisfies, enforceFinalClassification, raceRegulationForSession, validateClassificationRecord, validateRegulationConfiguration, type DryTyreRule } from "../src/simulation/race/regulations/tyres";
 import { regulateAiStop } from "../src/simulation/race/regulations/ai-compliance";
+import { placeInPitPhase } from "./helpers/pit-phase";
 import { requestPitStop } from "../src/simulation/race/pits/model";
+import { strategyPreference } from "../src/simulation/race/pits/ai-strategy";
 import { autoManagePlayerCars } from "../src/features/race/service";
 import { projectRaceState } from "../src/features/race/projection";
 import { computeStandings, scoreSession } from "../src/game/domain/championship";
@@ -82,17 +84,43 @@ describe("dry regulation: compliance from tyres ACTUALLY used", () => {
         expect(statusOf(withTyres({ ...base, status: "FINISHED" }, id(base), tyres, "TRACK", "FINISHED"))).toBe("VIOLATED");
         expect(statusOf(withTyres({ ...base, status: "FINISHED" }, id(base), ["MEDIUM", "HARD"], "TRACK", "FINISHED"))).toBe("SATISFIED");
     });
-    it("a pending HARD request, a committed stop and a tyre still in the pit lane do NOT count; leaving the pit lane does", () => {
+    it("B6.3.2: pending, committed and not-yet-serviced (ENTRY / LANE / SERVICE) tyres do NOT count; the new tyre counts from PIT_EXIT", () => {
         let s = withTyres(base, id(base), ["MEDIUM"]);
         s = requestPitStop(s, id(s), "HARD");
         expect(s.entrants[0].pit!.pendingCompound).toBe("HARD");
         expect(statusOf(s)).toBe("OUTSTANDING");
-        // Committed / in the lane before service: the stint history still holds only MEDIUM.
-        s = { ...s, progression: { ...s.progression!, cars: { ...s.progression!.cars, [id(s)]: { ...s.progression!.cars[id(s)], route: "LANE", compound: "HARD", pitEntryLap: s.lap } } } };
+        // Committed, not yet at pit entry: the stint history still holds only MEDIUM.
+        s = { ...s, progression: { ...s.progression!, cars: { ...s.progression!.cars, [id(s)]: { ...s.progression!.cars[id(s)], compound: "HARD", pitEntryLap: s.lap } } } };
         expect(statusOf(s)).toBe("OUTSTANDING");
-        // Serviced: the HARD stint exists but the car is still on its pit EXIT route (B6.3.2: not yet left the pit lane).
-        expect(statusOf(withTyres(base, id(base), ["MEDIUM", "HARD"], "EXIT"))).toBe("OUTSTANDING");
+        // In the pit lane before / at service: coherent engine states (validated), still only MEDIUM used.
+        for (const phase of ["ENTRY", "LANE", "SERVICE"] as const) {
+            const inPit = placeInPitPhase(withTyres(base, id(base), ["MEDIUM"]), id(base), phase);
+            expect(() => validateProgressionState(inPit)).not.toThrow();
+            expect(assessTyreRule(inPit, id(base))).toMatchObject({ status: "OUTSTANDING", usedDry: ["MEDIUM"] });
+        }
+        // The engine creates the HARD stint when the car leaves the Pit Lane onto its PIT_EXIT route: it counts there…
+        expect(assessTyreRule(withTyres(base, id(base), ["MEDIUM", "HARD"], "EXIT"), id(base))).toMatchObject({ status: "SATISFIED", usedDry: ["MEDIUM", "HARD"] });
+        // …and still after rejoining TRACK.
         expect(statusOf(withTyres(base, id(base), ["MEDIUM", "HARD"], "TRACK"))).toBe("SATISFIED");
+    });
+    it("B6.3.2 in the real engine: MEDIUM → pit for HARD → at the PIT_EXIT transition both are used and the rule is already SATISFIED", () => {
+        // One car: each checkpoint is its own line crossing, so a crossing in the pit lane lands exactly on PIT_EXIT.
+        let s = advanceRace(v8cRace({ count: 1, players: 1, laps: 12, quiet: true }), 2);
+        const me = id(s);
+        expect(assessTyreRule(s, me)).toMatchObject({ status: "OUTSTANDING", usedDry: ["MEDIUM"] });
+        s = requestPitStop(s, me, "HARD");
+        for (let n = 0; n < 4 && s.progression!.cars[me].route !== "EXIT"; n++) {
+            expect(assessTyreRule(s, me).usedDry).toEqual(["MEDIUM"]); // pending / committed / not yet serviced
+            s = advanceRaceLap(s);
+        }
+        const car = s.progression!.cars[me], e = s.entrants[0];
+        expect(car.route).toBe("EXIT");
+        expect(e.pit!.stints.map(x => x.startingTyre.compound)).toEqual(["MEDIUM", "HARD"]);
+        expect(e.pit!.stints.at(-1)!.endLap).toBeNull();
+        expect(assessTyreRule(s, me)).toMatchObject({ status: "SATISFIED", usedDry: ["MEDIUM", "HARD"] });
+        s = advanceRaceLap(s);
+        expect(s.progression!.cars[me].route).toBe("TRACK");
+        expect(assessTyreRule(s, me)).toMatchObject({ status: "SATISFIED", usedDry: ["MEDIUM", "HARD"] });
     });
     it("the starting tyre counts only once the car has left its grid position", () => {
         const grid = v8cRace({ quiet: true, count: 4, laps: 10 });
@@ -181,19 +209,21 @@ describe("AI compliance: same pit system, same consequence, no cheat", () => {
     }, 120_000);
     it("filters only illegal choices; never forces a stop on a satisfied or exempt car; calls an outstanding car in at the deadline", () => {
         const s = running(), late = { ...s, lap: assessTyreRule(s, id(s)).deadlineLap! }, e = (x: RaceSimulationState) => x.entrants[0];
+        // The pit strategy layer supplies the car's character; the regulation filter never derives it.
+        const pref = strategyPreference(s.input.seed, s.input.entrants[0].gridPosition);
         const one = withTyres(s, id(s), ["MEDIUM"]);
-        expect(regulateAiStop(one, e(one), "MEDIUM", 20000)).not.toBe("MEDIUM");
-        expect(regulateAiStop(one, e(one), "HARD", 20000)).toBe("HARD");
-        expect(regulateAiStop(one, e(one), null, 20000)).toBeNull(); // plenty of time: normal strategy stays primary
+        expect(regulateAiStop(one, e(one), "MEDIUM", 20000, pref)).not.toBe("MEDIUM");
+        expect(regulateAiStop(one, e(one), "HARD", 20000, pref)).toBe("HARD");
+        expect(regulateAiStop(one, e(one), null, 20000, pref)).toBeNull(); // plenty of time: normal strategy stays primary
         const urgent = withTyres(late, id(s), ["MEDIUM"]);
-        expect(regulateAiStop(urgent, e(urgent), null, 20000)).toMatch(/^(SOFT|HARD)$/);
+        expect(regulateAiStop(urgent, e(urgent), null, 20000, pref)).toMatch(/^(SOFT|HARD)$/);
         for (const done of [withTyres(late, id(s), ["MEDIUM", "HARD"]), withTyres(late, id(s), ["MEDIUM", "INTERMEDIATE"])]) {
-            expect(regulateAiStop(done, e(done), null, 20000)).toBeNull();
-            expect(regulateAiStop(done, e(done), "MEDIUM", 20000)).toBe("MEDIUM"); // satisfied / exempt: unchanged strategy
+            expect(regulateAiStop(done, e(done), null, 20000, pref)).toBeNull();
+            expect(regulateAiStop(done, e(done), "MEDIUM", 20000, pref)).toBe("MEDIUM"); // satisfied / exempt: unchanged strategy
         }
         // Historical revisions: no regulation, no change.
         const two = advanceRace(createRace({ ...v8cInput({ count: 4, laps: 20, quiet: true }), progression: progressionBForCircuit(SUZUKA) }), 17);
-        expect(regulateAiStop(two, two.entrants[0], null, 20000)).toBeNull();
+        expect(regulateAiStop(two, two.entrants[0], null, 20000, pref)).toBeNull();
     });
     it("a changing-weather Race: actual wet-family use exempts the field (no pointless dry stop afterwards)", () => {
         const done = advanceRace(v8cRace({ circuit: MONACO, seed: 7, laps: 40, weather: true }), 40);

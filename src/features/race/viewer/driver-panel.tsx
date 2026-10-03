@@ -8,7 +8,7 @@ import { timingRows } from './model';
 import { PACE_MODES, FUEL_MODES, ERS_MODES, type PaceMode, type FuelMode, type ErsMode } from '../../../simulation/race/commands/model';
 import { isTyreCompound, type TyreCompound } from '../../../simulation/race/tyres/model';
 import type { ViewerIntent } from './intents';
-import { battleContext, drsState, fuelCritical, tyreCondition, tyreSuitability, ersOutlook } from './race-view';
+import { battleContext, drsState, fuelCritical, tyreCondition, tyreSuitability, ersOutlook, officialLeaderId } from './race-view';
 import { tyreFamily } from '../../../simulation/race/tyres/family';
 type Row = ReturnType<typeof timingRows>[number];
 /** Laps-to-cliff at or below this reads as "high wear risk soon". Presentation wording only. */
@@ -80,7 +80,7 @@ export function DriverPanel({ data, row, busy, send, rows }: {
     {(battle.battleAhead || battle.battleBehind) && <p className="battle-flag"><span aria-hidden="true">⚔ </span>{t('viewer.battle')}</p>}
     <div className="neighbours">{neighbour('ahead')}{neighbour('behind')}</div>
     <div className="lap-times"><div className="stat"><span>{t('viewer.lastLap')}</span><strong>{lap(e.lastLapTimeMs)}{e.lastLapTimeMs !== null && e.lastLapTimeMs === e.bestLapTimeMs && <small className="pb-mark">{t('viewer.personalBest')}</small>}</strong></div><div className="stat"><span>{t('viewer.bestLap')}</span><strong>{lap(e.bestLapTimeMs)}</strong></div></div>
-    <p className="ops-muted">{t('viewer.toLeader')}: {e.position === 1 ? t('race.leader') : gap(row.gap)}</p>
+    <p className="ops-muted">{t('viewer.toLeader')}: {officialLeaderId(s) === row.id ? t('race.leader') : row.disqualified ? t('classification.DISQUALIFIED') : gap(row.gap)}</p>
     {drs !== 'UNAVAILABLE' && drs !== 'FINISHED' && <p className={`drs-line ${drs === 'ENABLED' && e.track?.drsEligible ? 'drs-on' : 'drs-off'}`}>{drs === 'ENABLED' ? t(e.track?.drsEligible ? 'viewer.drsEligible' : 'viewer.drsNotEligible') : t(`viewer.drs.${drs}`, { count: format.number(s.incidents?.drsDelay ?? 0) })}</p>}
    </div>}
    {e.stint && <div className="tyre-focus">

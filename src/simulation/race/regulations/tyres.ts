@@ -5,7 +5,8 @@
  * - B6.3.6: unless a driver used intermediate or wet-weather tyres during the Race, they must use at least two
  *   different dry-weather specifications, at least one of them a mandatory dry-weather Race specification (B6.1.2);
  *   in a normally completed Race a failure means disqualification from the Race results.
- * - B6.3.2: a tyre counts as used once the car has left its grid position, or has left the pit lane, with it fitted.
+ * - B6.3.2: a tyre counts as used once the car has left its grid position, or has left the Pit Lane, with it fitted
+ *   (in the v8 route model: the starting stint once moving; a pit stint from the PIT_EXIT route onwards).
  * - B6.1.2: up to two mandatory dry-weather Race specifications are announced before each Competition.
  *
  * Game model: generic SOFT / MEDIUM / HARD dry specifications. The minimum-different-specifications rule, the wet
@@ -19,7 +20,6 @@
  */
 import { TYRE_COMPOUNDS, type DryTyreCompound, type TyreCompound } from '../tyres/model';
 import type { RaceEntrantState, RaceSimulationState } from '../types';
-import type { CarProgression } from '../progression/model';
 
 export type RegulatedSession = 'RACE' | 'SPRINT';
 export interface DryTyreRule {
@@ -72,13 +72,17 @@ export function validateRegulationConfiguration(c: RaceRegulationConfiguration, 
 }
 
 /**
- * Tyres ACTUALLY used, in stint order (B6.3.2): the starting tyre once the car has left its grid position; a tyre
- * fitted in the pit once the car has left the pit lane with it (the open stint of a car still on its pit EXIT route
- * does not count yet). Pending requests, committed-but-unserviced stops and plans never appear in the stint history.
+ * Tyres ACTUALLY used, in stint order (B6.3.2), from the authoritative stint history alone:
+ * - the starting tyre, once the car has left its grid position;
+ * - every later stint. The v8 engine creates a pit stint only at the end of the modelled Pit Lane (the PIT_LANE
+ *   segment, service → lap line), switching the car onto its PIT_EXIT route (lap line → authored exit) in the same
+ *   transition — so a stint exists exactly when the car has left the Pit Lane with that tyre fitted. It counts on
+ *   PIT_EXIT and after rejoining TRACK.
+ * Pending requests, committed stops and stops not yet serviced (ENTRY / LANE / SERVICE) never appear in the history.
  */
-export function usedCompounds(e: RaceEntrantState, route: CarProgression['route'] | undefined): TyreCompound[] {
+export function usedCompounds(e: RaceEntrantState): TyreCompound[] {
     const moved = e.completedLaps > 0 || (e.track?.progressMicrolaps ?? 0) > 0;
-    return (e.pit?.stints ?? []).flatMap((s, i) => (i === 0 ? moved : !(s.endLap === null && route === 'EXIT')) ? [s.startingTyre.compound] : []);
+    return (e.pit?.stints ?? []).flatMap((s, i) => i > 0 || moved ? [s.startingTyre.compound] : []);
 }
 export type TyreRuleStatus = 'NOT_APPLICABLE' | 'EXEMPT' | 'SATISFIED' | 'OUTSTANDING' | 'URGENT' | 'VIOLATED';
 export interface TyreRuleAssessment {
@@ -99,7 +103,7 @@ export interface TyreRuleAssessment {
 /** One entrant's current obligation under the Race's frozen regulation. Pure; consumes no random numbers. */
 export function assessTyreRule(state: RaceSimulationState, entrantId: string): TyreRuleAssessment {
     const rule = state.input.progression?.regulation?.dryTyres ?? null, e = state.entrants.find(x => x.entrantId === entrantId)!;
-    const used = usedCompounds(e, state.progression?.cars[entrantId]?.route);
+    const used = usedCompounds(e);
     const usedDry = TYRE_COMPOUNDS.filter(c => used.includes(c)), wetUsed = used.some(c => !isDry(c));
     const base = { usedDry, wetUsed, required: rule?.minimumDistinctDrySpecifications ?? 0, mandatory: rule?.mandatoryDrySpecifications ?? [], current: e.stint?.tyre.compound ?? null,
         deadlineLap: rule ? Math.max(0, state.input.totalLaps - 2 - rule.latestSafeStopMarginLaps) : null, lastRequestLap: rule ? state.input.totalLaps - 2 : null };

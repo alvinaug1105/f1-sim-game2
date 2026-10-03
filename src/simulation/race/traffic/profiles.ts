@@ -41,3 +41,13 @@ export function circuitInteractionConfiguration(profile: CircuitRaceProfile | nu
     ? { ...base, overtakingDifficulty: profile.overtakingDifficulty, dirtyAirSensitivityPermille: profile.dirtyAirSensitivityPermille, drsEffectivenessPermille: profile.drsEffectivenessPermille }
     : base;
 }
+/**
+ * Race v8D (revision 4, 2026 Race generation): the circuit's interaction identity with legacy DRS INERT. Active Aero,
+ * Overtake Mode and Boost (the progression assistance model) are the 2026 systems; legacy DRS is not renamed or
+ * replaced. Overtaking difficulty, dirty air and every other traffic value are kept; the DRS fields stay present
+ * (the type, validator and persisted columns require them) but zeroed, so `followingEffects` can never grant
+ * eligibility or a benefit and `passProbability` adds no DRS bonus. The historical constructors above are unchanged.
+ */
+export function v8dCircuitInteractionConfiguration(profile: CircuitRaceProfile | null | undefined): InteractionConfiguration {
+  return { ...circuitInteractionConfiguration(profile), drsZoneCount: 0, drsEffectivenessPermille: 0, drsMsPerZone: 0, maxDrsBenefitMs: 0 };
+}

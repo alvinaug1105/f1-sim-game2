@@ -1,5 +1,5 @@
 /**
- * Race v8C (progression revision 3) on real PostgreSQL: production creation, regulation obligation persistence
+ * Race v8C (progression revision 3) on real PostgreSQL: historical revision-3 creation, regulation obligation persistence
  * (outstanding / pending / satisfied / exempt), the final DSQ record, and championship scoring from the database.
  */
 import { execFileSync } from 'node:child_process';
@@ -15,7 +15,7 @@ import { PrismaProgressionRepository } from '../src/data/repositories/prisma-pro
 import { PrismaChampionshipRepository } from '../src/data/repositories/prisma-championship';
 import { createCareer } from '../src/features/career/create-career';
 import { advanceToNextEvent, runSessionAction } from '../src/features/career/progression';
-import { startProgressionCareerRace, setDriverEnergyPolicy, setDriverErsMode, advanceCareerRace, changeCareerPitRequest } from '../src/features/race/service';
+import { startRevision3CareerRace, setDriverEnergyPolicy, setDriverErsMode, advanceCareerRace, changeCareerPitRequest } from '../src/features/race/service';
 import { advanceRace } from '../src/simulation/race/engine';
 import { assessTyreRule } from '../src/simulation/race/regulations/tyres';
 import { championshipInput } from '../src/features/championship/model';
@@ -43,7 +43,8 @@ beforeEach(async () => {
 afterAll(async () => { await client.$disconnect(); await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`); await admin.end(); });
 const get = async () => (await races.getRace(career.id, eventId))!;
 const mine = (s: RaceSimulationState) => s.input.entrants.filter(e => e.teamId === career.playerTeamId).map(e => e.entrantId);
-async function start() { await startProgressionCareerRace(races, career.id, eventId, {}, 42); return (await get()).state!; }
+/** Accepted v8C (revision 3) creation: production now freezes revision 4 (tests/race-v8d.integration.test.ts). */
+async function start() { await startRevision3CareerRace(races, career.id, eventId, {}, 42); return (await get()).state!; }
 /** Advance one checkpoint at a time until `done` holds for the reloaded state (bounded). */
 async function until(done: (s: RaceSimulationState) => boolean) {
     for (let n = 0; n < 15; n++) { const s = (await get()).state!; if (done(s) || s.status !== 'RUNNING') return s; await advanceCareerRace(races, career.id, eventId, s.lap, 1); }
@@ -51,7 +52,7 @@ async function until(done: (s: RaceSimulationState) => boolean) {
 }
 
 describe('PostgreSQL v8C revision 3', () => {
-    it('production Race creation freezes revision 3 with the Grand Prix regulation; v8 assistance controls only', async () => {
+    it('revision-3 (accepted v8C) Race creation freezes revision 3 with the Grand Prix regulation; v8 assistance controls only', async () => {
         const s = await start(), id = mine(s)[0];
         expect(s.simulationVersion).toBe(8); expect(s.input.progression!.version).toBe(3);
         expect(s.input.progression!.regulation).toMatchObject({ session: 'RACE', dryTyres: { article: 'B6.3.6', minimumDistinctDrySpecifications: 2, mandatoryDrySpecifications: [] } });

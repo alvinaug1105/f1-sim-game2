@@ -72,3 +72,36 @@ export function weatherTyreConfiguration(): TyreConfiguration {
   WET:{...dry.profiles.MEDIUM,compound:"WET",baseGripDeltaMs:0,idealTemperatureMinMilliC:55000,idealTemperatureMaxMilliC:80000,targetTemperatureMilliC:68000,baseWearPerLapPermille:20},
  }};
 }
+
+/**
+ * Race v8D (progression revision 4) tyre calibration — GAME TUNING, not factual compound data. Only the wear curve
+ * changes: degradation onset, cliff point, progressive penalty and post-cliff penalty. Base grip and base wear per
+ * lap are unchanged, so a fresh SOFT is still the fastest tyre and the HARD still lasts longest; the earlier and
+ * steeper cliffs make running a worn tyre to the flag a real cost rather than a free one-stop. The defaults above
+ * stay frozen for every earlier Race.
+ */
+const V8D_DRY_CURVES: Readonly<Record<DryTyreCompound, Pick<TyreCompoundProfile, "degradationStartWear" | "cliffWear" | "progressivePenaltyMs" | "cliffPenaltyMs">>> = Object.freeze({
+  SOFT: Object.freeze({ degradationStartWear: 400, cliffWear: 780, progressivePenaltyMs: 1700, cliffPenaltyMs: 8500 }),
+  MEDIUM: Object.freeze({ degradationStartWear: 450, cliffWear: 830, progressivePenaltyMs: 1300, cliffPenaltyMs: 7000 }),
+  HARD: Object.freeze({ degradationStartWear: 500, cliffWear: 880, progressivePenaltyMs: 1000, cliffPenaltyMs: 5500 }),
+});
+export function v8dTyreConfiguration(): TyreConfiguration {
+  const dry = defaultTyreConfiguration();
+  return { ...dry, profiles: {
+    SOFT: { ...dry.profiles.SOFT, ...V8D_DRY_CURVES.SOFT },
+    MEDIUM: { ...dry.profiles.MEDIUM, ...V8D_DRY_CURVES.MEDIUM },
+    HARD: { ...dry.profiles.HARD, ...V8D_DRY_CURVES.HARD },
+  } };
+}
+/**
+ * Race v8D weather tyres: the v8D dry curves plus EXPLICIT intermediate / full-wet curves (GAME TUNING), so the wet
+ * family no longer silently inherits whatever the medium is. Temperatures, grip and base wear match the accepted
+ * weather profiles exactly.
+ */
+export function v8dWeatherTyreConfiguration(): TyreConfiguration {
+  const dry = v8dTyreConfiguration(), accepted = weatherTyreConfiguration();
+  return { ...dry, profiles: { ...dry.profiles,
+    INTERMEDIATE: { ...accepted.profiles.INTERMEDIATE!, degradationStartWear: 420, cliffWear: 820, progressivePenaltyMs: 1300, cliffPenaltyMs: 7000 },
+    WET: { ...accepted.profiles.WET!, degradationStartWear: 450, cliffWear: 850, progressivePenaltyMs: 1200, cliffPenaltyMs: 6500 },
+  } };
+}

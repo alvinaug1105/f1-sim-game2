@@ -4,7 +4,7 @@ import { validateCommandState, type CommandState } from '../commands/model';
 import type { RaceEntrantState, RaceSimulationState } from '../types';
 import type { TieOrder } from './tie-order';
 import { validateClassificationRecord, validateRegulationConfiguration, type RaceClassificationRecord, type RaceRegulationConfiguration } from '../regulations/tyres';
-import { energyModelFor, hasAssistance } from './revision';
+import { energyModelFor, hasAssistance, hasRegulation } from './revision';
 /** One microlap = 1 / 1,000,000 lap. Integer total distance is canonical (track.progressMicrolaps). */
 export const LAP_UNITS = 1_000_000;
 export type SegmentKind = 'STRAIGHT' | 'FAST' | 'MEDIUM' | 'SLOW' | 'PIT_ENTRY' | 'PIT_LANE' | 'PIT_EXIT';
@@ -12,10 +12,10 @@ export type ZoneKind = 'PASSING' | 'DIRTY_AIR' | 'ASSISTANCE' | 'BRAKING' | 'BLU
 export interface LocalSegment { id: string; kind: SegmentKind; start: number; end: number }
 export interface InteractionZone { id: string; kind: ZoneKind; start: number; end: number }
 export interface ProgressionConfiguration {
-    /** Progression revision (simulationVersion stays 8): 1 = v8A, 2 = v8B, 3 = v8C. See revision.ts. */
-    version: 1 | 2 | 3;
+    /** Progression revision (simulationVersion stays 8): 1 = v8A, 2 = v8B, 3 = v8C, 4 = v8D. See revision.ts. */
+    version: 1 | 2 | 3 | 4;
     assistance?: AssistanceConfiguration;
-    /** Revision 3 only: the Race's snapshotted sporting regulation (FIA 2026 Section B Issue 09, B6.3.6). */
+    /** Revision ≥ 3: the Race's snapshotted sporting regulation (FIA 2026 Section B Issue 09, B6.3.6). */
     regulation?: RaceRegulationConfiguration;
     resolution: typeof LAP_UNITS;
     segments: readonly LocalSegment[];
@@ -53,7 +53,7 @@ export interface CarProgression {
 export interface ProgressionState {
     elapsedTimeMs: number;
     cars: Readonly<Record<string, CarProgression>>;
-    /** Revision 3 only, once FINISHED: the authoritative final classification after regulation enforcement. */
+    /** Revision ≥ 3, once FINISHED: the authoritative final classification after regulation enforcement. */
     classification?: RaceClassificationRecord;
 }
 export function localProgress(total: number) { return total % LAP_UNITS; }
@@ -88,14 +88,14 @@ export function initialCarProgression(gridPosition: number, gridOffsetMs: number
 }
 function integer(n: number, lo: number, hi: number) { if (!Number.isSafeInteger(n) || n < lo || n > hi) throw new RangeError('Invalid v8 progression integer'); }
 export function validateProgressionConfiguration(c: ProgressionConfiguration) {
-    if (!c || ![1,2,3].includes(c.version) || c.resolution !== LAP_UNITS || !Array.isArray(c.segments) || !c.segments.length || !Array.isArray(c.zones)) throw new RangeError('Missing v8 circuit progression');
+    if (!c || ![1,2,3,4].includes(c.version) || c.resolution !== LAP_UNITS || !Array.isArray(c.segments) || !c.segments.length || !Array.isArray(c.zones)) throw new RangeError('Missing v8 circuit progression');
     // Revision 2 holds pit PROGRESS anchors only; the drawn lane is presentation content. Pre-release candidate saves
     // that still carry the former drawn route keep validating it (it is never read by the simulation).
     const v8bSystems: boolean = hasAssistance(c);
     if(v8bSystems) { validateAssistanceConfiguration(c.assistance!,energyModelFor(c));if(c.pit.geometry)validatePitGeometry(c.pit.geometry,c.pit.entry,c.pit.service,c.pit.exit); }
     else if(c.assistance||c.pit.geometry) throw new RangeError('v8A cannot acquire v8B content');
-    // Revision 3 snapshots its regulation; earlier revisions can never acquire one (no silent upgrade).
-    if((c.version===3)!==(c.regulation!==undefined)) throw new RangeError(c.version===3?'Missing v8C regulation snapshot':'Historical revisions cannot acquire a v8C regulation');
+    // Revisions 3 and 4 snapshot their regulation; revisions 1 and 2 can never acquire one (no silent upgrade).
+    if(hasRegulation(c)!==(c.regulation!==undefined)) throw new RangeError(hasRegulation(c)?'Missing v8C regulation snapshot':'Historical revisions cannot acquire a v8C regulation');
     let end = 0;
     const ids = new Set<string>();
     for (const s of c.segments) {
@@ -152,7 +152,7 @@ export function validateProgressionState(s: RaceSimulationState) {
         if (c.route !== 'TRACK' && (c.pitEntryLap === null || !c.compound || !s.input.tyres?.profiles[c.compound])) throw new RangeError('Missing v8 pit commitment');
         if (c.pitEntryLap !== null) integer(c.pitEntryLap, 0, s.input.totalLaps - 1);
     }
-    // The final classification record exists exactly for a finished revision-3 Race and must match its tyre history.
+    // The final classification record exists exactly for a finished revision-3/4 Race and must match its tyre history.
     if (p.classification !== undefined && (!regulation || s.status !== 'FINISHED')) throw new RangeError('Unexpected final classification record');
     if (regulation && s.status === 'FINISHED') { if (!p.classification) throw new RangeError('Missing final classification record'); validateClassificationRecord(s, p.classification); }
 }

@@ -132,7 +132,7 @@ export interface RacePublicState {
   readonly status: "RUNNING" | "FINISHED";
   readonly input: {
     readonly totalLaps: number;
-    readonly modelRevision?: 1 | 2 | 3;
+    readonly modelRevision?: 1 | 2 | 3 | 4;
     /** v8C: the session's frozen regulation (null dry rule = not applicable, e.g. the Sprint). */
     readonly regulation?: { readonly session: "RACE" | "SPRINT"; readonly dryTyres: PublicTyreRule | null };
     /** Revision 2: the Race's frozen pit progress anchors (static, public). The drawn lane comes from the circuit catalogue. */

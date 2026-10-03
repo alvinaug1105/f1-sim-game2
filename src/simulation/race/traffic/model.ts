@@ -86,6 +86,10 @@ export function initialTrackState(): TrackState {
     passed: false,
   };
 }
+/** Whether an interaction snapshot carries a usable legacy (pre-2026) DRS capability. Revision-4 snapshots never do. */
+export function hasLegacyDrs(c: InteractionConfiguration): boolean {
+  return c.drsZoneCount > 0 && c.drsEffectivenessPermille > 0 && c.drsMsPerZone > 0 && c.maxDrsBenefitMs > 0;
+}
 export function followingEffects(
   gapMs: number | null,
   lap: number,

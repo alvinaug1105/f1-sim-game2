@@ -1,0 +1,155 @@
+name: Race v8 Final Remote QA
+
+on:
+  push:
+    branches:
+      - qa/race-v8-final-remote
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: race-v8-final-remote-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  remote-pilot:
+    name: Hosted runner quality gates and 100-race pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: qa
+          POSTGRES_PASSWORD: qa
+          POSTGRES_DB: race_v8_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qa -d race_v8_qa"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://qa:qa@localhost:5432/race_v8_qa
+      TEST_DATABASE_URL: postgresql://qa:qa@localhost:5432/race_v8_qa
+      PRODUCTION_SHA: 55846a9c465b58fc5687517ace67772421868dff
+      RACE_QA_REPO: ${{ github.workspace }}
+    steps:
+      - name: Check out QA branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify hosted runner and production pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-out/quality qa-out/pilot
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          test "$(git rev-parse "$PRODUCTION_SHA^{commit}")" = "$PRODUCTION_SHA"
+          git diff --name-only "$PRODUCTION_SHA...$GITHUB_SHA" | tee qa-out/quality/qa-branch-diff.txt
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/race-v8-final-qa.yml|qa/race-v8-final/*) ;;
+              *) echo "Forbidden non-QA branch difference: $path" >&2; exit 1 ;;
+            esac
+          done < qa-out/quality/qa-branch-diff.txt
+          cat > qa-out/quality/runner.json <<EOF
+          {"runnerEnvironment":"$RUNNER_ENVIRONMENT","runnerOS":"$RUNNER_OS","runnerArch":"$RUNNER_ARCH","runnerName":"$RUNNER_NAME","runId":"$GITHUB_RUN_ID","runAttempt":"$GITHUB_RUN_ATTEMPT","job":"$GITHUB_JOB","qaCommit":"$GITHUB_SHA","productionSHA":"$PRODUCTION_SHA"}
+          EOF
+          echo "Runner: $RUNNER_ENVIRONMENT / $RUNNER_OS / $RUNNER_ARCH"
+          echo "Production SHA: $PRODUCTION_SHA"
+          echo "QA commit: $GITHUB_SHA"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee qa-out/quality/npm-ci.log
+
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee qa-out/quality/unit-tests.log
+
+      - name: Apply migrations and seed disposable CI PostgreSQL
+        run: |
+          set -o pipefail
+          npm run db:migrate 2>&1 | tee qa-out/quality/db-migrate.log
+          npm run db:seed 2>&1 | tee qa-out/quality/db-seed.log
+
+      - name: Run PostgreSQL integration tests
+        run: npm run test:db 2>&1 | tee qa-out/quality/db-tests.log
+
+      - name: Run typecheck, lint, build and Prisma checks
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee qa-out/quality/typecheck.log
+          npm run lint 2>&1 | tee qa-out/quality/lint.log
+          npm run build 2>&1 | tee qa-out/quality/build.log
+          npx prisma validate 2>&1 | tee qa-out/quality/prisma-validate.log
+          npx prisma generate 2>&1 | tee qa-out/quality/prisma-generate.log
+          git diff --check 2>&1 | tee qa-out/quality/diff-check.log
+
+      - name: Record npm audit without changing dependencies
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > qa-out/quality/npm-audit.json 2> qa-out/quality/npm-audit-stderr.log
+          audit_status=$?
+          printf '%s\n' "$audit_status" > qa-out/quality/npm-audit-exit-code.txt
+          echo "npm audit exit code: $audit_status"
+          exit 0
+
+      - name: Prepare deterministic 100-race pilot manifest
+        run: node --import tsx qa/race-v8-final/prepare.mjs pilot qa-out/pilot
+
+      - name: Run pilot on GitHub-hosted runner
+        run: |
+          set -o pipefail
+          node --import tsx qa/race-v8-final/worker.mjs qa-out/pilot/jobs.jsonl qa-out/pilot/telemetry 1 2>&1 | tee qa-out/pilot/worker.log
+
+      - name: Verify pilot races, telemetry and runner identity
+        run: node qa/race-v8-final/verify-pilot.mjs qa-out/pilot
+
+      - name: Upload pilot manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-seed-manifest
+          path: qa-out/pilot/manifest*
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload pilot telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-primary-telemetry
+          path: qa-out/pilot/telemetry/
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload pilot summary and remote quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-v8-primary-summary
+          path: |
+            qa-out/pilot/run.json
+            qa-out/pilot/runner.json
+            qa-out/pilot/pilot-summary.json
+            qa-out/pilot/worker.log
+            qa-out/quality/
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,20 @@
+{
+  "seedPolicy": "fixed ascending 32-bit ranges; ranges were selected against all locally reserved prior QA race seeds; seed assignment is independent of time, process ID, randomness, runner identity, and filesystem order",
+  "priorLocalSeedSources": 48,
+  "priorLocalSeedCount": 42400,
+  "priorLocalSeedDigest": "65bf68fa3847ce0723d91f0c42b610b07ffed2377844958b979b42a614abea48",
+  "ranges": {
+    "primary": {
+      "start": 2500000000,
+      "capacity": 50000
+    },
+    "pilot": {
+      "start": 3500000000,
+      "capacity": 5000
+    },
+    "supplemental": {
+      "start": 3600000000,
+      "capacity": 100000
+    }
+  }
+}

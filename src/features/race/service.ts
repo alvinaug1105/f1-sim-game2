@@ -1,5 +1,5 @@
 import { ENERGY_POLICIES, type EnergyPolicy } from '../../simulation/race/assistance/model';
-import { progressionForCircuit, progressionBForCircuit, progressionCForCircuit } from '../../data/seed/circuit-progression';
+import { progressionForCircuit, progressionBForCircuit, progressionCForCircuit, progressionDForCircuit } from '../../data/seed/circuit-progression';
 import { hasAssistance, type ProgressionRevision } from '../../simulation/race/progression/revision';
 import { defaultRacecraftConfiguration } from "../../simulation/race/traffic/racecraft";
 import { defaultIncidentConfiguration, defaultReliability } from "../../simulation/race/incidents/model";
@@ -14,7 +14,8 @@ import {
   defaultInteractionConfiguration,
   developmentDriverInteraction,
 } from "../../simulation/race/traffic/profiles";
-import { aiDryStartingCompound, defaultAiStrategyConfiguration, strategyPreference } from "../../simulation/race/pits/ai-strategy";
+import { aiDryStartingCompound, aiWetStartingCompound, defaultAiStrategyConfiguration, publicWeather, strategyPreference } from "../../simulation/race/pits/ai-strategy";
+import { v8dTuningBundle } from "./v8d-tuning";
 import {
   defaultTyreConfiguration,
   startingTyre,
@@ -48,7 +49,7 @@ export function startCareerRace(
   withWeather = false,
   withIncidents = false,
   autoPlayer = false,
-  /** Progression revision to freeze: true = 1 (v8A), 2 = v8B, 3 = v8C. */
+  /** Progression revision to freeze: true = 1 (v8A), 2 = v8B, 3 = v8C, 4 = v8D (production). */
   withProgression: boolean | Exclude<ProgressionRevision, 1> = false,
 ) {
   // An explicit seed (tests, development tooling) keeps the legacy development weather so historical fixtures stay
@@ -92,19 +93,32 @@ export function startCareerRace(
           ? careerRaceWeather(data.progress.career.id, eventId, data.circuit.sourceCircuitId ?? "custom", snapshot.input.totalLaps, data.kind, data.circuit.climateProfile)
           : developmentWeather(seed, snapshot.input.totalLaps)
         : undefined;
+      // The progression revision is chosen explicitly and frozen; a saved Race is never upgraded. Revision 3+ snapshots
+      // the regulation of THIS session (Grand Prix or Sprint), never inferred from the circuit.
+      const progression = withTraffic && withProgression
+        ? withProgression === 4 ? progressionDForCircuit(data.circuit.sourceCircuitId, data.kind ?? 'RACE')
+          : withProgression === 3 ? progressionCForCircuit(data.circuit.sourceCircuitId, data.kind ?? 'RACE')
+          : withProgression === 2 ? progressionBForCircuit(data.circuit.sourceCircuitId)
+          : progressionForCircuit(data.circuit.sourceCircuitId)
+        : undefined;
+      // Revision 4 (v8D) freezes ONE coherent tuning bundle; revisions 1–3 keep their accepted configurations exactly.
+      const v8d = progression && withProgression === 4 ? v8dTuningBundle(progression, snapshot.input.circuit.baseLapTimeMs, !!withWeather) : null;
       // AI teams pick starting tyres from current public grid conditions, never from player input or future weather.
       // Career Races (v7) also give each AI car its own stable strategic character: on a dry grid a strong soft
       // preference starts on the soft (never the hard). Wet or damp grids keep the current-conditions choice.
       const startingCompound = (driverId: string, teamId: string, gridPosition: number) => {
         // Auto-managed player cars (Simulate) start like any AI car: from current public conditions and character.
         if (!(withIncidents && weather && (autoPlayer || teamId !== data.progress.career.playerTeamId))) return tyreChoices?.[driverId] ?? "MEDIUM";
-        const compound = aiStartingCompound(weather.initial);
-        return compound === "MEDIUM" ? aiDryStartingCompound(strategyPreference(seed, gridPosition)) : compound;
+        const compound = aiStartingCompound(weather.initial), preference = strategyPreference(seed, gridPosition);
+        if (compound === "MEDIUM") return aiDryStartingCompound(preference);
+        // v8D: on a wet grid the car's own wet-compound trait may choose between two sensible wet tyres (current grid
+        // conditions only). Earlier revisions keep the established current-conditions choice.
+        return v8d ? aiWetStartingCompound(compound, weather.initial, v8d.tyres, publicWeather(weather), v8d.strategy, preference) : compound;
       };
       const input = tyreChoices
         ? {
             ...snapshot.input,
-            tyres: withWeather ? weatherTyreConfiguration() : defaultTyreConfiguration(),
+            tyres: v8d ? v8d.tyres : withWeather ? weatherTyreConfiguration() : defaultTyreConfiguration(),
             entrants: snapshot.input.entrants.map((e) => ({
               ...e,
               startingTyre: startingTyre(startingCompound(e.driverId, e.teamId, e.gridPosition)),
@@ -116,15 +130,16 @@ export function startCareerRace(
           withTraffic
             ? {
                 ...input,
-                ...(withIncidents ? { incidents: defaultIncidentConfiguration() } : {}),
-                // Revision 3 snapshots the regulation of THIS session (Grand Prix or Sprint), never inferred from the circuit.
-                ...(withProgression ? { progression: withProgression===3?progressionCForCircuit(data.circuit.sourceCircuitId,data.kind??'RACE'):withProgression===2?progressionBForCircuit(data.circuit.sourceCircuitId):progressionForCircuit(data.circuit.sourceCircuitId) } : {}),
+                // v8D: the incident model's pit track section is the circuit's own (SC/VSC reduced stops).
+                ...(withIncidents ? { incidents: v8d ? { ...defaultIncidentConfiguration(), pitTrackSectionMs: v8d.pitTiming.pitTrackSectionMs } : defaultIncidentConfiguration() } : {}),
+                ...(progression ? { progression } : {}),
                 ...(weather ? { weather } : {}),
                 // Career Races (v7) also freeze the racecraft tuning (close-racing pressure, selective AI aggression).
-                ...(withCommands ? { commands: withIncidents ? { ...defaultCommandConfiguration(), racecraft: defaultRacecraftConfiguration() } : defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
+                ...(withCommands ? { commands: withIncidents ? { ...defaultCommandConfiguration(), racecraft: v8d ? v8d.racecraft : defaultRacecraftConfiguration() } : defaultCommandConfiguration(), initialFuelKg: developmentCommandFuelKg(input.initialFuelKg) } : {}),
                 // Career Races (v7) freeze the AI pit strategy and the Career circuit's Race interaction identity
                 // (neutral defaults when the Career predates it). Older Race versions keep their historical inputs.
-                ...(withPits ? { pits: withIncidents ? { ...defaultPitConfiguration(), strategy: defaultAiStrategyConfiguration() } : defaultPitConfiguration() } : {}),
+                // v8D: circuit-derived green pit-lane loss and the v8D strategy (wet character); earlier revisions: 19.5 s.
+                ...(withPits ? { pits: withIncidents ? v8d ? { ...defaultPitConfiguration(), pitLaneLossMs: v8d.pitTiming.pitLaneLossMs, strategy: v8d.strategy } : { ...defaultPitConfiguration(), strategy: defaultAiStrategyConfiguration() } : defaultPitConfiguration() } : {}),
                 interaction: withIncidents ? circuitInteractionConfiguration(data.circuit.raceProfile) : defaultInteractionConfiguration(),
                 entrants: input.entrants.map((e) => ({
                   ...e,
@@ -348,10 +363,15 @@ export function simulateCareerRaceRemainder(repository: CareerRaceRepository, ca
   });
 }
 
-/** Production creation entry point: new Race / Sprint sessions freeze v8 progression revision 3 (v8C) with their own
- * session regulation. Explicit historical helpers remain for fixtures and compatibility tooling (revision 2 below,
- * revision 1 / v7 through `startCareerRace`); an existing Race is never upgraded. */
+/** Production creation entry point: new Race / Sprint sessions freeze v8 progression revision 4 (v8D) — the v8C
+ * regulation and energy plus the v8D tuning bundle. Explicit historical helpers remain for fixtures and compatibility
+ * tooling (revisions 3 and 2 below, revision 1 / v7 through `startCareerRace`); an existing Race is never upgraded. */
 export function startProgressionCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
+  return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,4);
+}
+/** Historical (accepted v8C) revision-3 creation, for compatibility fixtures and tests only — never production. It
+ * freezes the accepted v8C configuration exactly (tyres, 19.5 s pit loss, strategy, racecraft, incidents). */
+export function startRevision3CareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
   return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,3);
 }
 /** Historical (accepted v8B) revision-2 creation, for compatibility fixtures and tests only — never production. */
@@ -359,7 +379,7 @@ export function startRevision2CareerRace(repository: CareerRaceRepository, caree
   return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,2);
 }
 export async function simulateProgressionCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, seed?: number) {
-  await startCareerRace(repository,careerId,eventId,seed,{},true,true,true,true,true,true,3);
+  await startCareerRace(repository,careerId,eventId,seed,{},true,true,true,true,true,true,4);
   const data=await repository.getRace(careerId,eventId);
   if(!data?.state) throw new RaceError('NOT_FOUND');
   return advanceCareerRace(repository,careerId,eventId,data.state.lap,'finish');

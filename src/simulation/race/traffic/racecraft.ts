@@ -49,6 +49,16 @@ export interface RacecraftConfiguration {
    */
   readonly heldFollowingLossPermille?: number;
   readonly heldFollowingLossMaxMs?: number;
+  /**
+   * Race v8D late-Race window (GAME TUNING; present together, revision-4 snapshots only). Once the ATTACKER itself has
+   * completed `lateRaceStartPermille` of the scheduled distance, an ordinary (non-lapping) attack may start from
+   * `lateRaceAttackThresholdPermille` of the circuit's attack threshold, and needs at least
+   * `lateRaceMinimumPaceAdvantagePermille` of the circuit's minimum pace edge. The pass probability formula is unchanged,
+   * a genuine pace edge is still required, and no energy is created. Absent = the earlier gate exactly.
+   */
+  readonly lateRaceStartPermille?: number;
+  readonly lateRaceAttackThresholdPermille?: number;
+  readonly lateRaceMinimumPaceAdvantagePermille?: number;
 }
 export function defaultRacecraftConfiguration(): RacecraftConfiguration {
   return {
@@ -69,6 +79,23 @@ export function defaultRacecraftConfiguration(): RacecraftConfiguration {
     heldFollowingLossPermille: 500,
     heldFollowingLossMaxMs: 250,
   };
+}
+/** Race v8D (revision 4) racecraft: the accepted configuration plus the late-Race attack window (GAME TUNING). */
+export function v8dRacecraftConfiguration(): RacecraftConfiguration {
+  return { ...defaultRacecraftConfiguration(), lateRaceStartPermille: 750, lateRaceAttackThresholdPermille: 1300, lateRaceMinimumPaceAdvantagePermille: 800 };
+}
+/**
+ * The attack window for one ordinary (non-lapping) attempt. "Late" is judged by the attacker's OWN completed distance
+ * (`completedLaps * 1000 >= totalLaps * lateRaceStartPermille`), never by the leader's lap. Callers apply it only to
+ * ordinary racing — never to lapping / blue flags, cars in the pit lane, under SC/VSC, or retired cars.
+ */
+export function lateRaceAttackWindow(racecraft: RacecraftConfiguration | undefined, base: { readonly attackThresholdMs: number; readonly minimumPaceAdvantageMs: number }, completedLaps: number, totalLaps: number) {
+  const start = racecraft?.lateRaceStartPermille;
+  const late = start !== undefined && completedLaps * 1000 >= totalLaps * start;
+  return late
+    // A genuine pace edge is always required (at least 1 ms), even where the circuit's own minimum is tiny.
+    ? { late, attackThresholdMs: Math.round(base.attackThresholdMs * racecraft!.lateRaceAttackThresholdPermille! / 1000), minimumPaceAdvantageMs: Math.max(1, Math.round(base.minimumPaceAdvantageMs * racecraft!.lateRaceMinimumPaceAdvantagePermille! / 1000)) }
+    : { late, attackThresholdMs: base.attackThresholdMs, minimumPaceAdvantageMs: base.minimumPaceAdvantageMs };
 }
 function integer(n: number, lo: number, hi: number) {
   if (!Number.isSafeInteger(n) || n < lo || n > hi) throw new RangeError("Invalid racecraft configuration");
@@ -92,4 +119,10 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   if ((c.heldFollowingLossPermille === undefined) !== (c.heldFollowingLossMaxMs === undefined)) throw new RangeError("Invalid racecraft configuration");
   if (c.heldFollowingLossPermille !== undefined) integer(c.heldFollowingLossPermille, 0, 1000);
   if (c.heldFollowingLossMaxMs !== undefined) integer(c.heldFollowingLossMaxMs, 0, 1000);
+  const late = [c.lateRaceStartPermille, c.lateRaceAttackThresholdPermille, c.lateRaceMinimumPaceAdvantagePermille];
+  if (late.some(x => x === undefined) && late.some(x => x !== undefined)) throw new RangeError("Invalid racecraft configuration");
+  if (c.lateRaceStartPermille !== undefined) integer(c.lateRaceStartPermille, 1, 1000);
+  // A late window may only widen the attack range and relax (never remove) the pace-edge requirement.
+  if (c.lateRaceAttackThresholdPermille !== undefined) integer(c.lateRaceAttackThresholdPermille, 1000, 3000);
+  if (c.lateRaceMinimumPaceAdvantagePermille !== undefined) integer(c.lateRaceMinimumPaceAdvantagePermille, 1, 1000);
 }

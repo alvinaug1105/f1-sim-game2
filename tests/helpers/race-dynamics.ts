@@ -62,7 +62,7 @@ import { effectivePitLaneLoss } from "../../src/simulation/race/incidents/model"
 import type { WeatherConfiguration } from "../../src/simulation/race/weather/model";
 import type { RaceEntrantState } from "../../src/simulation/race/types";
 /** Neutral character; tests vary one trait at a time. */
-export const NEUTRAL: StrategyPreference = { stopBias: 0, undercut: 0.5, trafficSensitivity: 1, compound: 0 };
+export const NEUTRAL: StrategyPreference = { stopBias: 0, undercut: 0.5, trafficSensitivity: 1, compound: 0, weatherRisk: 0, wetCompound: 0 };
 /** Quiet v7 race with the AI strategy configuration frozen in (cars stay player-managed unless a test says otherwise). */
 export function strategyRace(count = 1, seed = 42, weather?: WeatherConfiguration, ai = false): RaceSimulationState {
   const s = quietIncidentRace(count, seed);

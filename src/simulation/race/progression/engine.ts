@@ -9,6 +9,7 @@ import { committedStops } from '../pits/model';
 import { getTyreProfile, type TyreState } from '../tyres/model';
 import { advanceWeather, advanceWeatherTyre, waterPenaltyMs } from '../weather/model';
 import { followingEffects, passProbability, attackEdge, type OvertakeCause } from '../traffic/model';
+import { lateRaceAttackWindow } from '../traffic/racecraft';
 import { driverRiskPpm, mechanicalRiskPpm, effectivePitLaneLoss, validateIncidentState, type RaceEvent, type IncidentKind, type RaceControlMode } from '../incidents/model';
 import { closeRetiredStints } from '../incidents/engine';
 import { classifyProgress, physicalAhead, zonesAt, localProgress, LAP_UNITS, validateProgressionState, type CarProgression } from './model';
@@ -154,9 +155,12 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             const lapping = e.track!.progressMicrolaps-d.track!.progressMicrolaps>LAP_UNITS/2;
             const blueFlag = lapping && localZones(e.track!.progressMicrolaps).some(z=>z.kind==='BLUE_FLAG');
             const { edge } = input.commands!.racecraft ? attackEdge(defender.expectedLapMs-p.expectedLapMs+p.assistance!.electricalDeltaMs-defender.assistance!.electricalDeltaMs,defender.commandMs-p.commandMs,input.commands!.racecraft) : { edge: defender.expectedLapMs-p.expectedLapMs };
-            const threshold = lapping ? config.lapping.thresholdMs : input.interaction!.attackThresholdMs;
+            // Race v8D late-Race window (revision-4 racecraft only): ordinary on-track racing between two TRACK cars, judged
+            // by the attacker's own distance. Lapping / blue flags keep their own gate; neutralised running never gets here.
+            const window = lapping || defender.route!=='TRACK' ? null : lateRaceAttackWindow(input.commands!.racecraft,input.interaction!,e.completedLaps,input.totalLaps);
+            const threshold = lapping ? config.lapping.thresholdMs : window ? window.attackThresholdMs : input.interaction!.attackThresholdMs;
             if (blueFlag && m.gapMs<=threshold) p.lappedAheadId = d.entrantId;
-            if (m.gapMs>threshold || edge<input.interaction!.minimumPaceAdvantageMs) continue;
+            if (m.gapMs>threshold || edge<(window ? window.minimumPaceAdvantageMs : input.interaction!.minimumPaceAdvantageMs)) continue;
             const ordinary = passProbability(edge,source.interaction!,sourceOf(d.entrantId).interaction!,source.car.performance-sourceOf(d.entrantId).car.performance,m.effects.drsEligible,input.interaction!);
             const probability = blueFlag ? Math.min(990,1000-Math.round((1000-ordinary)*config.lapping.resistancePermille/1000)) : ordinary;
             const draw = random.next(), success = draw*1000<probability;

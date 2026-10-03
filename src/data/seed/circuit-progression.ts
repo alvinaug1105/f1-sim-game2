@@ -103,3 +103,13 @@ export function progressionCFrom(b: ProgressionConfiguration, session: Regulated
     return { ...b, version: 3, assistance: v8cEnergy(b.assistance!), regulation: raceRegulationForSession(session) };
 }
 export function progressionCForCircuit(id: string | null | undefined, session: RegulatedSession) { return progressionCFrom(progressionBForCircuit(id), session); }
+/**
+ * Revision-4 (v8D) configuration: the accepted revision-3 circuit content, energy and session regulation unchanged
+ * (no new geometry, pit anchors or presentation). v8D tuning is frozen in the Race's own tyre / pit / strategy /
+ * racecraft / incident snapshots at creation (see features/race/v8d-tuning.ts).
+ */
+export function progressionDFrom(c: ProgressionConfiguration): ProgressionConfiguration {
+    if (c.version !== 3) throw new RangeError('v8D derives from v8C circuit content');
+    return { ...c, version: 4 };
+}
+export function progressionDForCircuit(id: string | null | undefined, session: RegulatedSession) { return progressionDFrom(progressionCForCircuit(id, session)); }

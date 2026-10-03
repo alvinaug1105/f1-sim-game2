@@ -63,6 +63,15 @@ export interface AiStrategyConfiguration {
    */
   readonly weatherGateMs?: number;
   readonly weatherGateSpreadMs?: number;
+  /**
+   * Race v8D (GAME TUNING). Present together, only in revision-4 snapshots; absent = the earlier weather rule exactly.
+   * `weatherRiskSpreadPermille`: ± spread of each car's crossover / POOR-recovery commitment point, driven by its own
+   * `weatherRisk` trait instead of the dry `stopBias` (the weather gate uses the same trait).
+   * `wetCompoundToleranceMs`: when both the intermediate and the full wet are within this of the best wet-family
+   * option, the car's `wetCompound` trait chooses between them; a clearly worse one is never chosen.
+   */
+  readonly weatherRiskSpreadPermille?: number;
+  readonly wetCompoundToleranceMs?: number;
 }
 export function defaultAiStrategyConfiguration(): AiStrategyConfiguration {
   return {
@@ -71,6 +80,10 @@ export function defaultAiStrategyConfiguration(): AiStrategyConfiguration {
     extendBonusPermille: 180, forceStopPermille: 1700, neutralWindowPermille: 700, compoundToleranceMs: 1500,
     crossoverSpreadPermille: 250, extraStopTrackPositionMs: 6000, weatherGateMs: 250, weatherGateSpreadMs: 750,
   };
+}
+/** Race v8D (revision 4) strategy: the accepted configuration plus the wet-weather character fields (GAME TUNING). */
+export function v8dAiStrategyConfiguration(): AiStrategyConfiguration {
+  return { ...defaultAiStrategyConfiguration(), weatherRiskSpreadPermille: 350, wetCompoundToleranceMs: 1500 };
 }
 export function validateAiStrategyConfiguration(c: AiStrategyConfiguration) {
   const integer = (n: number, min: number, max: number) => {
@@ -96,6 +109,11 @@ export function validateAiStrategyConfiguration(c: AiStrategyConfiguration) {
   if ((c.weatherGateMs === undefined) !== (c.weatherGateSpreadMs === undefined)) throw new RangeError("Invalid AI strategy configuration");
   if (c.weatherGateMs !== undefined) integer(c.weatherGateMs, -5000, 5000);
   if (c.weatherGateSpreadMs !== undefined) integer(c.weatherGateSpreadMs, 0, 5000);
+  if ((c.weatherRiskSpreadPermille === undefined) !== (c.wetCompoundToleranceMs === undefined)) throw new RangeError("Invalid AI strategy configuration");
+  // The v8D wet character builds on the weather gate / POOR recovery; it is never snapshotted without them.
+  if (c.weatherRiskSpreadPermille !== undefined && c.weatherGateMs === undefined) throw new RangeError("Invalid AI strategy configuration");
+  if (c.weatherRiskSpreadPermille !== undefined) integer(c.weatherRiskSpreadPermille, 0, 500);
+  if (c.wetCompoundToleranceMs !== undefined) integer(c.wetCompoundToleranceMs, 0, 10000);
 }
 
 /** Stable per-car strategic character. Never exposed to the player; never derived from names. */
@@ -108,6 +126,13 @@ export interface StrategyPreference {
   readonly trafficSensitivity: number;
   /** −1 softer … +1 harder compound preference among sensible choices. */
   readonly compound: number;
+  /**
+   * Race v8D: −1 early … +1 late commitment to a change of tyre family (weather risk). Read only by v8D strategy
+   * snapshots; older snapshots keep `stopBias` as the weather character.
+   */
+  readonly weatherRisk: number;
+  /** Race v8D: −1 intermediate … +1 full-wet preference when both are sensible. Read only by v8D snapshots. */
+  readonly wetCompound: number;
 }
 /**
  * FNV-1a (32-bit) of the Race seed and the entrant's frozen starting-grid slot, then a few seeded draws. The same Race
@@ -120,7 +145,36 @@ export function strategyPreference(seed: number, gridPosition: number): Strategy
   const random = createSeededRandom(hash >>> 0);
   random.next(); // decorrelate nearby hashes
   const unit = () => random.next() * 2 - 1;
-  return { stopBias: unit(), undercut: random.next(), trafficSensitivity: 0.5 + random.next(), compound: unit() };
+  // v8D traits are APPENDED draws: every earlier field keeps exactly the value it always had for this seed + slot.
+  const stopBias = unit(), undercut = random.next(), trafficSensitivity = 0.5 + random.next(), compound = unit();
+  return { stopBias, undercut, trafficSensitivity, compound, weatherRisk: unit(), wetCompound: unit() };
+}
+
+/** The car's weather character: v8D snapshots use the dedicated trait and spread; older ones the dry stop bias. */
+function weatherCharacter(strategy: AiStrategyConfiguration, preference: StrategyPreference) {
+  return strategy.weatherRiskSpreadPermille !== undefined
+    ? { bias: preference.weatherRisk, spreadPermille: strategy.weatherRiskSpreadPermille }
+    : { bias: preference.stopBias, spreadPermille: strategy.crossoverSpreadPermille };
+}
+const WET_CHOICES = ["INTERMEDIATE", "WET"] as const satisfies readonly TyreCompound[];
+/**
+ * Race v8D: intermediate vs full wet. Among the offered wet-family candidates (each with its cost, already filtered for
+ * eligibility), every one within `wetCompoundToleranceMs` of the cheapest is sensible; when both are, the car's
+ * `wetCompound` trait chooses, weighted by how close they are (an equal pair splits the field by trait sign, a pair at
+ * the tolerance edge converges on the cheaper one). Otherwise the cheapest is taken, so obvious conditions converge.
+ * Returns null for snapshots without the v8D field (callers then keep their earlier choice exactly).
+ */
+export function sensibleWetChoice(candidates: readonly { readonly compound: TyreCompound; readonly cost: number }[], strategy: AiStrategyConfiguration, preference: StrategyPreference): TyreCompound | null {
+  const tolerance = strategy.wetCompoundToleranceMs;
+  if (tolerance === undefined) return null;
+  const wet = candidates.filter(x => (WET_CHOICES as readonly TyreCompound[]).includes(x.compound));
+  if (!wet.length) return null;
+  const best = Math.min(...wet.map(x => x.cost));
+  const sensible = wet.filter(x => x.cost - best <= tolerance);
+  const inter = sensible.find(x => x.compound === "INTERMEDIATE"), full = sensible.find(x => x.compound === "WET");
+  if (!inter || !full) return sensible[0].compound;
+  const closeness = tolerance === 0 ? 0 : (full.cost - inter.cost) / tolerance; // −1 (wet clearly cheaper) … +1
+  return preference.wetCompound > closeness ? "WET" : "INTERMEDIATE";
 }
 
 type PublicWeather = Omit<WeatherConfiguration, "timeline" | "initial">;
@@ -196,13 +250,19 @@ export function assessAiStop(ctx: StrategyContext, strategy: AiStrategyConfigura
     const assessment = assessTyreFamilies(ctx.weather, input.tyres!, c);
     if (assessment?.levels[family] === "POOR") {
       const costs = familyCostsMs(ctx.weather, input.tyres!, c);
-      const deficit = costs[family]! - costs[assessment.best]!;
+      // Race v8D: when the best family is wet, the car's wet-compound trait may pick the other wet compound if it is
+      // within tolerance in the CURRENT conditions (never the POOR family it is leaving). Earlier snapshots: unchanged.
+      const wetChoice = assessment.best === "DRY" ? null : sensibleWetChoice(WET_CHOICES
+        .filter(x => input.tyres!.profiles[x] && c.waterProfiles[x] && tyreFamily(x) !== family && assessment.levels[tyreFamily(x)] !== "POOR")
+        .map(x => ({ compound: x, cost: currentCompoundCostMs(x, ctx.weather, input.tyres!, c) })), strategy, preference);
+      const deficit = costs[family]! - (wetChoice ? currentCompoundCostMs(wetChoice, ctx.weather, input.tyres!, c) : costs[assessment.best]!);
       // A current-conditions payback estimate, not a claim that today's weather will persist. Include the
-      // existing margin and stop bias; the caller supplies the effective (including SC/VSC) pit-lane loss.
+      // existing margin and the car's weather character; the caller supplies the effective (including SC/VSC) pit-lane loss.
+      const character = weatherCharacter(strategy, preference);
       const required = Math.round((input.pits!.pitLaneLossMs + input.pits!.stationaryBaseMs + c.strategy.marginMs)
-        * (1000 + preference.stopBias * strategy.crossoverSpreadPermille) / 1000);
+        * (1000 + character.bias * character.spreadPermille) / 1000);
       if (deficit * remaining > required) {
-        const compound = WEATHER_TYRE_COMPOUNDS.filter(x => input.tyres!.profiles[x] && c.waterProfiles[x] && tyreFamily(x) === assessment.best)
+        const compound = wetChoice ?? WEATHER_TYRE_COMPOUNDS.filter(x => input.tyres!.profiles[x] && c.waterProfiles[x] && tyreFamily(x) === assessment.best)
           .sort((a, b) => currentCompoundCostMs(a, ctx.weather, input.tyres!, c) - currentCompoundCostMs(b, ctx.weather, input.tyres!, c))[0];
         // Minimum stint is a strategy anti-churn rule, not pit legality. Only a profitable POOR-family
         // recovery bypasses it; execution still uses the ordinary next-lap pit machinery and final-lap guard.
@@ -225,17 +285,21 @@ export function assessAiStop(ctx: StrategyContext, strategy: AiStrategyConfigura
   let best = options[0];
   const family = tyreFamily(e.stint!.tyre.compound);
   if (strategy.weatherGateMs !== undefined && strategy.weatherGateSpreadMs !== undefined) {
-    const costs = familyCostsMs(ctx.weather, input.tyres!, c), allowance = strategy.weatherGateMs - Math.round(preference.stopBias * strategy.weatherGateSpreadMs);
+    const costs = familyCostsMs(ctx.weather, input.tyres!, c), allowance = strategy.weatherGateMs - Math.round(weatherCharacter(strategy, preference).bias * strategy.weatherGateSpreadMs);
     const passes = (compound: TyreCompound) => { const f = tyreFamily(compound), current = costs[family], target = costs[f];
       return f === family || current === undefined || target === undefined || target - current <= allowance; };
     best = options.find(o => passes(o.compound)) ?? best;
+    // Race v8D: intermediate vs full wet among gate-passing horizon options (null = earlier snapshots, unchanged).
+    const wetChoice = isDry(best.compound) ? null : sensibleWetChoice(options.filter(o => passes(o.compound)), strategy, preference);
+    if (wetChoice) best = options.find(o => o.compound === wetChoice)!;
   }
   const saving = oldCost - best.cost, service = input.pits!.stationaryBaseMs + c.strategy.marginMs;
   const effectiveThreshold = input.pits!.pitLaneLossMs + service, greenThreshold = ctx.greenPitLaneLossMs + service;
   // Weather crossover (dry ↔ wet family, or intermediate ↔ full wet): the established weather rule and compound
   // choice, with each car's own commitment point spread a little around it.
   if (!isDry(e.stint!.tyre.compound) || !isDry(best.compound)) {
-    const required = Math.round(effectiveThreshold * (1000 + preference.stopBias * strategy.crossoverSpreadPermille) / 1000);
+    const character = weatherCharacter(strategy, preference);
+    const required = Math.round(effectiveThreshold * (1000 + character.bias * character.spreadPermille) / 1000);
     return saving > required ? { ...hold("WEATHER"), compound: best.compound } : hold("NO_WINDOW");
   }
   const gain = Math.round(saving * 1000 / greenThreshold);
@@ -322,4 +386,20 @@ export function dryCompound(ctx: StrategyContext, strategy: AiStrategyConfigurat
  */
 export function aiDryStartingCompound(preference: StrategyPreference): TyreCompound {
   return preference.compound <= -0.55 ? "SOFT" : "MEDIUM";
+}
+
+/**
+ * Race v8D (revision 4 only): wet-grid starting tyre. When the current public grid conditions call for a wet-family
+ * start and both the intermediate and the full wet are within the strategy tolerance in those CURRENT conditions,
+ * the car's own wet-compound trait chooses; otherwise the established current-conditions choice stands. Dry grids and
+ * earlier revisions are untouched (the caller only uses this for revision-4 Races).
+ */
+export function aiWetStartingCompound(proposed: TyreCompound, grid: Pick<WeatherState, "trackWater" | "trackTemperatureMilliC">, tyres: TyreConfiguration, weather: Pick<WeatherConfiguration, "waterProfiles" | "circuit">, strategy: AiStrategyConfiguration, preference: StrategyPreference): TyreCompound {
+  if (isDry(proposed)) return proposed;
+  const candidates = WET_CHOICES.filter(x => tyres.profiles[x] && weather.waterProfiles[x]).map(x => ({ compound: x as TyreCompound, cost: currentCompoundCostMs(x, grid, tyres, weather) }));
+  const choice = sensibleWetChoice(candidates, strategy, preference);
+  if (!choice) return proposed;
+  // Only a genuine alternative to the established choice: the proposed compound must itself still be sensible.
+  const best = Math.min(...candidates.map(x => x.cost)), own = candidates.find(x => x.compound === proposed);
+  return own && own.cost - best <= strategy.wetCompoundToleranceMs! ? choice : proposed;
 }

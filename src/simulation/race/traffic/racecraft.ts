@@ -69,6 +69,17 @@ export interface RacecraftConfiguration {
    */
   readonly progressionHeldFollowingLossPermille?: number;
   readonly progressionHeldFollowingLossMaxMs?: number;
+  /**
+   * Race v8E attack cadence (GAME TUNING; present together, revision-5 snapshots only). Replaces "one attempt per lap"
+   * with a deterministic re-attempt rule: a further attempt needs `attackCooldownMs` of Race clock since the last one,
+   * the battle to have RE-ARMED (the gap to the car ahead re-opened to at least `attackRearmGapMs` after the attempt,
+   * then the follower re-closed into attack range) and fewer than `maxAttacksPerLap` attempts this lap. The first
+   * attempt of a lap needs only the cooldown. Never per-slice dice: at most `maxAttacksPerLap` draws per car per lap.
+   * Absent = one attempt per lap exactly as before.
+   */
+  readonly attackCooldownMs?: number;
+  readonly attackRearmGapMs?: number;
+  readonly maxAttacksPerLap?: number;
 }
 export function defaultRacecraftConfiguration(): RacecraftConfiguration {
   return {
@@ -108,6 +119,19 @@ export function lateRaceAttackWindow(racecraft: RacecraftConfiguration | undefin
     ? { late, attackThresholdMs: Math.round(base.attackThresholdMs * racecraft!.lateRaceAttackThresholdPermille! / 1000), minimumPaceAdvantageMs: Math.max(1, Math.round(base.minimumPaceAdvantageMs * racecraft!.lateRaceMinimumPaceAdvantagePermille! / 1000)) }
     : { late, attackThresholdMs: base.attackThresholdMs, minimumPaceAdvantageMs: base.minimumPaceAdvantageMs };
 }
+/**
+ * Race v8E (revision 5) racecraft — GAME TUNING. The accepted racecraft plus:
+ * - the attack cadence (re-attempt after a cooldown once the battle has re-armed; at most two attempts a lap);
+ * - the v8D held-following drop-back (same mechanism);
+ * - NO late-Race attack window: v8D's widening was measured ineffective (more failed attempts, no more passes).
+ */
+export const V8E_ATTACK_COOLDOWN_MS = 8000;
+export const V8E_ATTACK_REARM_GAP_MS = 300;
+export const V8E_MAX_ATTACKS_PER_LAP = 2;
+export function v8eRacecraftConfiguration(): RacecraftConfiguration {
+  return { ...defaultRacecraftConfiguration(), progressionHeldFollowingLossPermille: 500, progressionHeldFollowingLossMaxMs: 250,
+    attackCooldownMs: V8E_ATTACK_COOLDOWN_MS, attackRearmGapMs: V8E_ATTACK_REARM_GAP_MS, maxAttacksPerLap: V8E_MAX_ATTACKS_PER_LAP };
+}
 function integer(n: number, lo: number, hi: number) {
   if (!Number.isSafeInteger(n) || n < lo || n > hi) throw new RangeError("Invalid racecraft configuration");
 }
@@ -139,6 +163,11 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   if ((c.progressionHeldFollowingLossPermille === undefined) !== (c.progressionHeldFollowingLossMaxMs === undefined)) throw new RangeError("Invalid racecraft configuration");
   if (c.progressionHeldFollowingLossPermille !== undefined) integer(c.progressionHeldFollowingLossPermille, 0, 1000);
   if (c.progressionHeldFollowingLossMaxMs !== undefined) integer(c.progressionHeldFollowingLossMaxMs, 0, 1000);
+  const cadence = [c.attackCooldownMs, c.attackRearmGapMs, c.maxAttacksPerLap];
+  if (cadence.some(x => x === undefined) && cadence.some(x => x !== undefined)) throw new RangeError("Invalid racecraft configuration");
+  if (c.attackCooldownMs !== undefined) integer(c.attackCooldownMs, 1000, 120000);
+  if (c.attackRearmGapMs !== undefined) integer(c.attackRearmGapMs, 1, 5000);
+  if (c.maxAttacksPerLap !== undefined) integer(c.maxAttacksPerLap, 1, 3);
 }
 
 /** Race v8D held-following ledger for one car within one checkpoint (local to the engine; never persisted). */
@@ -165,4 +194,21 @@ export function progressionHeldRelease(racecraft: RacecraftConfiguration | undef
   if (!budget || owed < Math.min(floorUnits, budget)) return { extraUnits: 0, ledger: { ...ledger, owedMilli } };
   const extraUnits = Math.max(0, Math.min(owed, budget, availableUnits));
   return { extraUnits, ledger: { owedMilli: owedMilli - extraUnits * 1000, spentUnits: ledger.spentUnits + extraUnits } };
+}
+
+/**
+ * Race v8E: may this car start an attack now? Without the cadence fields: once per lap (the accepted rule). With them:
+ * the first attempt of a lap needs only the cooldown; a further attempt in the same lap also needs the battle to have
+ * re-armed and the per-lap cap not to be reached.
+ */
+export function attackOpen(racecraft: RacecraftConfiguration | undefined, car: { readonly attemptedLap: number; readonly attacksThisLap?: number; readonly lastAttackAtMs?: number; readonly attackArmed?: boolean }, lap: number, clockMs: number): boolean {
+  if (racecraft?.attackCooldownMs === undefined) return car.attemptedLap !== lap;
+  if (car.lastAttackAtMs !== undefined && car.lastAttackAtMs >= 0 && clockMs - car.lastAttackAtMs < racecraft.attackCooldownMs) return false;
+  if (car.attemptedLap !== lap) return true;
+  return car.attackArmed === true && (car.attacksThisLap ?? 1) < racecraft.maxAttacksPerLap!;
+}
+/** Race v8E: a held / failed-attack car may give up held-following loss only outside its attack phase. */
+export function heldLossAllowed(racecraft: RacecraftConfiguration | undefined, car: { readonly attemptedLap: number; readonly lastAttackAtMs?: number }, lap: number, clockMs: number): boolean {
+  if (racecraft?.attackCooldownMs === undefined) return car.attemptedLap !== lap;
+  return car.lastAttackAtMs === undefined || car.lastAttackAtMs < 0 || clockMs - car.lastAttackAtMs >= racecraft.attackCooldownMs;
 }

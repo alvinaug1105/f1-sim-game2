@@ -49,6 +49,8 @@ export function RaceAlerts({ data, rows }: { data: RaceViewData; rows: Rows }) {
     if (seen.drs !== drs) setSeen({ drs, enabledAt: drs === 'ENABLED' ? s.lap : null });
     const alerts: { key: string; text: string; tone: string }[] = [];
     if (s.status === 'RUNNING' && control !== 'GREEN') alerts.push({ key: 'control', tone: `control-${control}`, text: s.incidents!.endingThisLap ? `${t(`incident.${control}`)} · ${t(`incident.endingThisLap.${control}`)}` : t(`incident.${control}`) });
+    // v8E: explain the neutralisation's effect on gaps (VSC holds them; the Safety Car gathers the field into a train).
+    if (s.status === 'RUNNING' && control !== 'GREEN') alerts.push({ key: 'control-note', tone: `control-${control}`, text: t(`incident.gapNote.${control}`) });
     if (s.status === 'RUNNING' && (drs === 'WET' || drs === 'RESTART')) alerts.push({ key: 'drs', tone: 'alert-drs-off', text: t(`viewer.drs.${drs}`, { count: format.number(s.incidents?.drsDelay ?? 0) }) });
     if (s.status === 'RUNNING' && drs === 'ENABLED' && seen.enabledAt === s.lap && s.lap > 0) alerts.push({ key: 'drs-on', tone: 'alert-drs-on', text: t('viewer.drsEnabledNow') });
     for (const r of rows.filter(r => r.player)) {

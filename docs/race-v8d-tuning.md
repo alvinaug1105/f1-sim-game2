@@ -1,5 +1,8 @@
 # Race v8D: balance tuning (progression revision 4)
 
+> New Races now freeze **revision 5 (v8E)** — see `docs/race-v8e-final-tuning.md`. Revision 4 below stays frozen for
+> existing saves and the explicit `startRevision4CareerRace` helper.
+
 Race v8D is Race v8 **progression revision 4** (still `simulationVersion` 8; there is no version 9). It tunes five
 areas only: the wet crossover spread, intermediate vs full-wet diversity, the tyre cliff shape, late-Race attack
 eligibility and per-circuit pit-loss economics. A focused repair (sections 12–14) also makes legacy DRS inert in

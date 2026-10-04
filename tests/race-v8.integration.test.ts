@@ -65,8 +65,8 @@ describe('PostgreSQL v8 progression / compatibility',()=>{
   }
   const sprint=new PrismaRaceRepository(client,'SPRINT');await simulateProgressionCareerRace(sprint,career.id,next.id,42);
   const done=(await sprint.getRace(career.id,next.id))!;expect(done.state!.simulationVersion).toBe(8);expect(done.state!.status).toBe('FINISHED');expect(done.state!.entrants).toHaveLength(22);
-  // Production Sprints freeze the latest revision (4, v8D) with the Sprint regulation — B6.3.6 does not apply, so no tyre DSQ.
-  expect(done.state!.input.progression!.version).toBe(4);expect(done.state!.input.progression!.regulation).toMatchObject({session:'SPRINT',dryTyres:null});
+  // Production Sprints freeze the latest revision (5, v8E) with the Sprint regulation — B6.3.6 does not apply, so no tyre DSQ.
+  expect(done.state!.input.progression!.version).toBe(5);expect(done.state!.input.progression!.regulation).toMatchObject({session:'SPRINT',dryTyres:null});
   expect(done.state!.progression!.classification!.entries.some(x=>x.status==='DISQUALIFIED')).toBe(false);
   expect(done.progress.events.find(e=>e.id===next.id)!.weekend!.sessions.find(s=>s.id===done.sessionId)!.status).toBe('COMPLETED');
   expect((await races.getRace(career.id,next.id))!.state).toBeNull();

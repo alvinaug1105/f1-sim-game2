@@ -72,6 +72,13 @@ export interface AiStrategyConfiguration {
    */
   readonly weatherRiskSpreadPermille?: number;
   readonly wetCompoundToleranceMs?: number;
+  /**
+   * Race v8E (GAME TUNING; revision-5 snapshots only, requires the v8D weather fields). How far ahead each car plans a
+   * change of tyre family on the PUBLIC forecast: the established horizon ± this many laps from its own `weatherRisk`
+   * (early committers plan further ahead and anticipate; cautious cars weigh nearer laps and react to the track). Same
+   * public information for every car; only the stable character differs. Absent = one shared horizon, exactly as before.
+   */
+  readonly weatherHorizonSpreadLaps?: number;
 }
 export function defaultAiStrategyConfiguration(): AiStrategyConfiguration {
   return {
@@ -84,6 +91,22 @@ export function defaultAiStrategyConfiguration(): AiStrategyConfiguration {
 /** Race v8D (revision 4) strategy: the accepted configuration plus the wet-weather character fields (GAME TUNING). */
 export function v8dAiStrategyConfiguration(): AiStrategyConfiguration {
   return { ...defaultAiStrategyConfiguration(), weatherRiskSpreadPermille: 350, wetCompoundToleranceMs: 1500 };
+}
+/**
+ * Race v8E (revision 5) strategy — GAME TUNING (see docs/race-v8e-final-tuning.md). Rational diversity from each car's
+ * stable character, never per-decision randomness:
+ * - wet: the full weather-risk spread, a wider family-change gate spread and a character-dependent forecast horizon;
+ * - dry: a wider "sensible plan" tolerance (the compound preference then chooses among genuinely close plans) and a
+ *   slightly wider personal stop-point spread. A clearly better plan is still always taken.
+ */
+export const V8E_WEATHER_RISK_SPREAD_PERMILLE = 500;
+export const V8E_WEATHER_GATE_SPREAD_MS = 1000;
+export const V8E_WEATHER_HORIZON_SPREAD_LAPS = 4;
+export const V8E_COMPOUND_TOLERANCE_MS = 2500;
+export const V8E_PREFERENCE_SPREAD_PERMILLE = 180;
+export function v8eAiStrategyConfiguration(): AiStrategyConfiguration {
+  return { ...v8dAiStrategyConfiguration(), weatherRiskSpreadPermille: V8E_WEATHER_RISK_SPREAD_PERMILLE, weatherGateSpreadMs: V8E_WEATHER_GATE_SPREAD_MS,
+    weatherHorizonSpreadLaps: V8E_WEATHER_HORIZON_SPREAD_LAPS, compoundToleranceMs: V8E_COMPOUND_TOLERANCE_MS, preferenceSpreadPermille: V8E_PREFERENCE_SPREAD_PERMILLE };
 }
 export function validateAiStrategyConfiguration(c: AiStrategyConfiguration) {
   const integer = (n: number, min: number, max: number) => {
@@ -114,6 +137,8 @@ export function validateAiStrategyConfiguration(c: AiStrategyConfiguration) {
   if (c.weatherRiskSpreadPermille !== undefined && c.weatherGateMs === undefined) throw new RangeError("Invalid AI strategy configuration");
   if (c.weatherRiskSpreadPermille !== undefined) integer(c.weatherRiskSpreadPermille, 0, 500);
   if (c.wetCompoundToleranceMs !== undefined) integer(c.wetCompoundToleranceMs, 0, 10000);
+  if (c.weatherHorizonSpreadLaps !== undefined && c.weatherRiskSpreadPermille === undefined) throw new RangeError("Invalid AI strategy configuration");
+  if (c.weatherHorizonSpreadLaps !== undefined) integer(c.weatherHorizonSpreadLaps, 0, 10);
 }
 
 /** Stable per-car strategic character. Never exposed to the player; never derived from names. */
@@ -300,7 +325,12 @@ export function assessAiStop(ctx: StrategyContext, strategy: AiStrategyConfigura
   if (!isDry(e.stint!.tyre.compound) || !isDry(best.compound)) {
     const character = weatherCharacter(strategy, preference);
     const required = Math.round(effectiveThreshold * (1000 + character.bias * character.spreadPermille) / 1000);
-    return saving > required ? { ...hold("WEATHER"), compound: best.compound } : hold("NO_WINDOW");
+    // v8E: the same public forecast over the car's OWN planning horizon (character-dependent; see the config field).
+    const own = strategy.weatherHorizonSpreadLaps === undefined ? horizon
+      : Math.max(1, Math.min(remaining, c.strategy.horizonLaps - Math.round(preference.weatherRisk * strategy.weatherHorizonSpreadLaps)));
+    const weatherSaving = own === horizon ? saving
+      : stintCosts(current, own, lap, ctx.weather, c, tyres)[own] - stintCosts(fresh(best.compound, input), own, lap, ctx.weather, c, tyres)[own];
+    return weatherSaving > required ? { ...hold("WEATHER"), compound: best.compound } : hold("NO_WINDOW");
   }
   const gain = Math.round(saving * 1000 / greenThreshold);
   // Future stints are planned at standard wear: the current pace mode (e.g. nursing a worn tyre) says nothing about

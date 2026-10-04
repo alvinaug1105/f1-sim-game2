@@ -9,16 +9,32 @@ import { committedStops } from '../pits/model';
 import { getTyreProfile, type TyreState } from '../tyres/model';
 import { advanceWeather, advanceWeatherTyre, waterPenaltyMs } from '../weather/model';
 import { followingEffects, passProbability, attackEdge, type OvertakeCause } from '../traffic/model';
-import { lateRaceAttackWindow, progressionHeldRelease, EMPTY_HELD_LEDGER, type HeldLossLedger } from '../traffic/racecraft';
+import { lateRaceAttackWindow, progressionHeldRelease, EMPTY_HELD_LEDGER, attackOpen, heldLossAllowed, type HeldLossLedger } from '../traffic/racecraft';
 import { driverRiskPpm, mechanicalRiskPpm, effectivePitLaneLoss, validateIncidentState, type RaceEvent, type IncidentKind, type RaceControlMode } from '../incidents/model';
 import { closeRetiredStints } from '../incidents/engine';
 import { classifyProgress, physicalAhead, zonesAt, localProgress, LAP_UNITS, validateProgressionState, type CarProgression } from './model';
 import { tieOrderFor } from './tie-order';
-import { energyModelFor } from './revision';
+import { energyModelFor, hasV8eSemantics } from './revision';
 import { enforceFinalClassification } from '../regulations/tyres';
 /** Integration uses integer milliseconds and nanolaps/ms, carrying the sub-microlap remainder (0..999). */
 const QUANTUM_MS = 100;
 const emptyTrack = (e: RaceEntrantState) => ({ ...e.track!, drsEligible: false, drsBenefitMs: 0, dirtyAirMs: 0, trafficLossMs: 0, attempted: false, passed: false });
+/**
+ * Whether a completed physical pass is an on-track OVERTAKE. Revision ≥ 5 (v8E): only TRACK vs TRACK — once either car
+ * is committed to the pit route (ENTRY / LANE / SERVICE / EXIT, including a transition in the same slice, since routes
+ * are read after movement) the order change is a pit-cycle change: no OVERTAKE event or cause. Earlier revisions keep
+ * their accepted (route-blind) behaviour.
+ */
+export function passCreditable(v8e: boolean, attacker: CarProgression['route'], defender: CarProgression['route']): boolean {
+    return !v8e || (attacker === 'TRACK' && defender === 'TRACK');
+}
+/** v8E: the cause from the attacker's actual contribution at the attack (priority: Overtake Mode, Boost, tyre, pace). */
+export function attackCause(e: RaceEntrantState, d: RaceEntrantState, p: Pick<CarProgression, "assistance">, q: Pick<CarProgression, "assistance">): OvertakeCause {
+    const electrical = p.assistance!.electricalDeltaMs - q.assistance!.electricalDeltaMs;
+    if (electrical > 0 && p.assistance!.overtake === 'ACTIVE') return 'OVERTAKE_MODE';
+    if (electrical > 0 && p.assistance!.policy === 'BOOST') return 'BOOST';
+    return passCause(e, d);
+}
 function passCause(e: RaceEntrantState, d: RaceEntrantState): OvertakeCause {
     if (e.stint!.tyre.compound === d.stint!.tyre.compound && d.stint!.tyre.ageLaps - e.stint!.tyre.ageLaps >= 8) return 'TYRE';
     return 'PACE';
@@ -37,6 +53,8 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
     const tie = tieOrderFor(config);
     // Revision 3 (v8C): recovery by distance travelled after each slice's deployment; revision 2 keeps time recovery.
     const distanceRecovery = energyModelFor(config) === 'V8C';
+    // Revision 5 (v8E): pit-route pass credit, actual-contribution pass cause, attack-cadence state, normalised zero.
+    const v8e = hasV8eSemantics(config), racecraft = input.commands!.racecraft;
     const boundaries=[...new Set([0,LAP_UNITS,assistance.detection,assistance.deploymentStart,assistance.deploymentEnd,...config.segments.map(s=>s.end),...config.zones.flatMap(z=>[z.start,z.end])])].sort((a,b)=>a-b);
     const zoneTable=boundaries.slice(0,-1).map(p=>zonesAt(config,p));
     const interval=(total:number)=>{const local=localProgress(total);let lo=0,hi=boundaries.length-2;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(boundaries[mid]<=local)lo=mid;else hi=mid-1;}return lo;};
@@ -62,14 +80,14 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         const i = indexOf(id), e = entries[i]; if (e.incident!.status === 'RETIRED') return;
         emit({ type: 'RETIREMENT', entrantIds: [id], kind, severity: 'MAJOR', timeLossMs: 0 });
         entries[i] = { ...e, incident: { ...e.incident!, status: 'RETIRED', retiredLap: lap, retirementOrder: events.length }, pit: { ...e.pit!, pendingCompound: null, stints: closeRetiredStints(e.pit!.stints, e.completedLaps, e.stint!.tyre) }, track: emptyTrack(e) };
-        cars[id] = { ...cars[id], route: 'TRACK', compound: null, pitEntryLap: null, delayMs: 0, lappedAheadId: null, passingId: null };
+        cars[id] = { ...cars[id], route: 'TRACK', compound: null, pitEntryLap: null, delayMs: 0, lappedAheadId: null, passingId: null, ...(v8e ? { passingCause: null } : {}) };
     };
     // Retain one consistency draw-pair per car's own lap, in fixed grid order at shared boundaries.
     const plan = (id: string, fresh: boolean) => {
         const e = entries[indexOf(id)], p = cars[id]; if (!active(e)) return;
         const source = sourceOf(id);
         const r = calculateLapTime({ ...source, circuit: input.circuit, parameters: input.parameters, fuelMassKg: e.fuelMassKg, tyre: { state: e.stint!.tyre, profile: getTyreProfile(input.tyres!, e.stint!.tyre.compound) } }, fresh ? random : { next: () => .5 });
-        if (fresh) { p.variationMs = r.variationMs; p.lapCommands = { ...e.commands! }; }
+        if (fresh) { p.variationMs = v8e && Object.is(r.variationMs,-0) ? 0 : r.variationMs; p.lapCommands = { ...e.commands! }; }
         const effects = commandLapEffects({ ...e, commands: p.lapCommands! }, input.fuelBurnPerLapKg * (neutralProfile ? neutralProfile.fuelMultiplierPermille/1000 : 1), commands, neutral || p.route !== 'TRACK' || Boolean(p.compound));
         if (effects.starved && input.commands!.racecraft?.fuelStarvationRetirement === true) { retire(id,'FUEL_STARVATION'); return; }
         p.commandMs = neutral ? 0 : effects.commandMs;
@@ -84,7 +102,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         const i = indexOf(source.entrantId), e = entries[i], p = cars[source.entrantId];
         if (!active(e)) continue;
         p.lappedAheadId = null;
-        if (neutral) p.passingId = null;
+        if (neutral) { p.passingId = null; if (v8e) p.passingCause = null; }
         const compound = stops.get(e.entrantId);
         if (compound && p.route === 'TRACK' && !p.compound) {
             p.compound = compound; p.pitEntryLap = e.completedLaps + (localProgress(e.track!.progressMicrolaps) >= config.pit.entry ? 1 : 0);
@@ -122,6 +140,14 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         // No overshoot across lap, pit-entry/service/exit boundaries. All cars share this same elapsed time slice.
         let dt = QUANTUM_MS;
         const movement = new Map<string,{ rate: number; ahead: RaceEntrantState | null; distance: number; gapMs: number; effects: ReturnType<typeof followingEffects> }>();
+        // v8E Safety Car train: each car's catch-up toward its own train slot (distance behind the leader minus one queue
+        // interval per running car ahead), from the current slice's actual distances only.
+        const train = control.mode==='SAFETY_CAR' && input.incidents!.scTrainCatchupPermille!==undefined ? [...running].sort((a,b)=>b.track!.progressMicrolaps-a.track!.progressMicrolaps||a.position-b.position) : null;
+        const scTrainCatchupMs = (e: RaceEntrantState) => {
+            const rank = train!.findIndex(x=>x.entrantId===e.entrantId), behindMs = Math.round((train![0].track!.progressMicrolaps-e.track!.progressMicrolaps)*input.circuit.baseLapTimeMs/LAP_UNITS);
+            const excess = behindMs - rank*input.incidents!.queueIntervalMs;
+            return excess>0 ? Math.min(input.incidents!.maxCompressionMs,Math.round(excess*input.incidents!.scTrainCatchupPermille!/1000)) : 0;
+        };
         for (const e of running) {
             const p = cars[e.entrantId];let near:{entrant:RaceEntrantState;distance:number}|null=null;
             // Nearest car ahead on track; an exact distance tie uses the Race's frozen tie rule.
@@ -134,9 +160,12 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             const electrical=energyStep({...p.assistance!},assistance,{dt:QUANTUM_MS,lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight,safe});
             let duration = p.freeLapMs+effects.dirtyAirMs-electrical;
             if(p.route!=='TRACK')duration+=Math.round((p.pitLossMs-p.stationaryMs)*LAP_UNITS/(LAP_UNITS+config.pit.exit-config.pit.entry));
-            if (control.mode==='SAFETY_CAR' && near && gapMs>input.incidents!.queueIntervalMs && gapMs<input.circuit.baseLapTimeMs/3) duration -= Math.min(input.incidents!.maxCompressionMs,Math.round((gapMs-input.incidents!.queueIntervalMs)*input.incidents!.compressionPermille/1000));
+            if (control.mode==='SAFETY_CAR' && near && gapMs>input.incidents!.queueIntervalMs && input.incidents!.scTrainCatchupPermille!==undefined) duration -= scTrainCatchupMs(e);
+            else if (control.mode==='SAFETY_CAR' && near && gapMs>input.incidents!.queueIntervalMs && gapMs<input.circuit.baseLapTimeMs/3) duration -= Math.min(input.incidents!.maxCompressionMs,Math.round((gapMs-input.incidents!.queueIntervalMs)*input.incidents!.compressionPermille/1000));
             const rate = Math.max(1,Math.round(LAP_UNITS*1000/Math.max(1000,duration)));
             movement.set(e.entrantId,{rate,ahead:near?.entrant??null,distance:near?.distance??LAP_UNITS,gapMs,effects});
+            // v8E attack cadence: after an attempt the battle re-arms once the gap has re-opened (or there is no car ahead).
+            if (racecraft?.attackRearmGapMs !== undefined && p.attackArmed === false && (!near || gapMs >= racecraft.attackRearmGapMs)) p.attackArmed = true;
             if (p.launchDelayMs || p.delayMs) dt = Math.min(dt,p.launchDelayMs || p.delayMs);
             else {
                 const local = localProgress(e.track!.progressMicrolaps);
@@ -152,7 +181,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         // Attempt ordering is original grid order; no draw is consumed for distant / pit / retired cars.
         for (const source of grid) {
             const i = indexOf(source.entrantId), e = entries[i], p = cars[source.entrantId], m = movement.get(e.entrantId);
-            if (!m || neutral || p.route!=='TRACK' || p.launchDelayMs || p.delayMs || p.attemptedLap===lap || p.passedByLap===lap || !m.ahead || !localZones(e.track!.progressMicrolaps).some(z=>z.kind==='PASSING'||z.kind==='BRAKING')) continue;
+            if (!m || neutral || p.route!=='TRACK' || p.launchDelayMs || p.delayMs || !attackOpen(racecraft,p,lap,clock) || p.passedByLap===lap || !m.ahead || !localZones(e.track!.progressMicrolaps).some(z=>z.kind==='PASSING'||z.kind==='BRAKING')) continue;
             const d = m.ahead, defender = cars[d.entrantId];
             if (defender.launchDelayMs || defender.delayMs || defender.passedByLap===lap) continue;
             const lapping = e.track!.progressMicrolaps-d.track!.progressMicrolaps>LAP_UNITS/2;
@@ -167,6 +196,10 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             const ordinary = passProbability(edge,source.interaction!,sourceOf(d.entrantId).interaction!,source.car.performance-sourceOf(d.entrantId).car.performance,m.effects.drsEligible,input.interaction!);
             const probability = blueFlag ? Math.min(990,1000-Math.round((1000-ordinary)*config.lapping.resistancePermille/1000)) : ordinary;
             const draw = random.next(), success = draw*1000<probability;
+            if (v8e) { p.attacksThisLap = p.attemptedLap===lap ? p.attacksThisLap!+1 : 1; p.lastAttackAtMs = clock; p.attackArmed = false;
+                // The cause is the attacker's ACTUAL contribution at this attack (electrical delta over the defender's
+                // with Overtake Mode active / Boost policy deploying), else tyre or pace — never just a selected policy.
+                p.passingCause = success && !lapping ? attackCause(e,d,p,defender) : null; }
             p.attemptedLap = lap; p.passingId = success ? d.entrantId : null; p.lappingPass = lapping;
             p.delayMs += success ? lapping ? config.lapping.passingCostMs : input.interaction!.minimumGapMs : lapping ? config.lapping.failedCostMs : Math.max(input.interaction!.minimumGapMs,Math.round(draw*(input.commands!.racecraft?.failedAttackLossMaxMs??300)));
             entries[i] = { ...e,track:{ ...e.track!,attempted:true,passed:false } };
@@ -197,7 +230,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
                 // pass this lap (a failed attack already costs its own delay) owes part of the pace it could not use and
                 // gives it up as a real drop-back, so it falls off the floor instead of riding it exactly. Movement is only
                 // reduced (never negative); no draw is consumed; Active Aero / Overtake / Boost state is untouched.
-                if (held && !neutral && p.attemptedLap!==lap) {
+                if (held && !neutral && heldLossAllowed(racecraft,p,lap,clock)) {
                     const release = progressionHeldRelease(input.commands!.racecraft,heldLoss.get(e.entrantId)??EMPTY_HELD_LEDGER,held,floor,heldCapUnits,delta);
                     heldLoss.set(e.entrantId,release.ledger);
                     if (release.extraUnits) { delta -= release.extraUnits; lostMs += Math.round(release.extraUnits*input.circuit.baseLapTimeMs/LAP_UNITS); }
@@ -242,9 +275,12 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             if (!m) continue;
             if (p.passingId && m.ahead?.entrantId===p.passingId && e.track!.progressMicrolaps-running.find(x=>x.entrantId===e.entrantId)!.track!.progressMicrolaps>m.distance+(entries[indexOf(p.passingId)].track!.progressMicrolaps-running.find(x=>x.entrantId===p.passingId)!.track!.progressMicrolaps)) {
                 const d = entries[indexOf(p.passingId)];
+                // v8E: once either car is committed to the pit route (e.g. the defender turned into pit entry in this
+                // slice) the order change is a pit-cycle change, not an on-track pass: no OVERTAKE event or cause.
+                if (!passCreditable(v8e,p.route,cars[p.passingId].route)) { p.passingId=null; p.passingCause=null; p.lappedAheadId=null; continue; }
                 if (p.lappingPass) p.completedLappingPasses++;
-                else { emit({type:'OVERTAKE',entrantIds:[e.entrantId,p.passingId],kind:null,severity:null,timeLossMs:0,cause:p.assistance!.electricalDeltaMs>0?(p.assistance!.overtake==='ACTIVE'?'OVERTAKE_MODE':'BOOST'):passCause(e,d)}); entries[i]={...entries[i],track:{...entries[i].track!,overtakesCompleted:e.track!.overtakesCompleted+1,passed:true,attempted:true}}; }
-                cars[p.passingId].passedByLap=lap; p.passingId=null; p.lappedAheadId=null;
+                else { emit({type:'OVERTAKE',entrantIds:[e.entrantId,p.passingId],kind:null,severity:null,timeLossMs:0,cause:v8e?(p.passingCause ?? passCause(e,d)):p.assistance!.electricalDeltaMs>0?(p.assistance!.overtake==='ACTIVE'?'OVERTAKE_MODE':'BOOST'):passCause(e,d)}); entries[i]={...entries[i],track:{...entries[i].track!,overtakesCompleted:e.track!.overtakesCompleted+1,passed:true,attempted:true}}; }
+                cars[p.passingId].passedByLap=lap; p.passingId=null; if (v8e) p.passingCause=null; p.lappedAheadId=null;
             }
         }
         for (const source of grid) {
@@ -298,7 +334,7 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
     for (const e of entries) { const p=cars[e.entrantId];
         if(nextControl.mode!=='GREEN'||e.incident!.status!=='RUNNING'||p.route!=='TRACK') { clearEntitlement(p.assistance!);p.assistance!.aero='SAFE';p.assistance!.electricalDeltaMs=0; }
         refreshAssistance(p.assistance!,assistance,{lap:e.completedLaps,progress:localProgress(e.track!.progressMicrolaps),straight:localZones(e.track!.progressMicrolaps).some(z=>z.kind==='ASSISTANCE'),safe:nextControl.mode==='GREEN'&&e.incident!.status==='RUNNING'&&p.route==='TRACK'&&weather.trackWater<=assistance.maxWater});
-        observe(e.entrantId); if (p.passingId && !entries.some(x=>x.entrantId===p.passingId&&x.incident!.status==='RUNNING')) p.passingId=null; }
+        observe(e.entrantId); if (p.passingId && !entries.some(x=>x.entrantId===p.passingId&&x.incident!.status==='RUNNING')) { p.passingId=null; if (v8e) p.passingCause=null; } }
     let next:RaceSimulationState={...saved,lap,status:finished?'FINISHED':'RUNNING',weather,rngState:random.getState(),incidents:nextControl,progression:{elapsedTimeMs:clock,cars},entrants:classifyProgress(entries,input.circuit.baseLapTimeMs,tie,finished)};
     // v8C: the regulation is enforced once, at the flag, from the actual final tyre history (no random draw).
     if (finished && config.regulation) {

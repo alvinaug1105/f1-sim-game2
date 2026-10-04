@@ -35,7 +35,7 @@ const DRY = ["SOFT", "MEDIUM", "HARD"] as const;
 
 describe("revision 4: v8D is progression revision 4 of simulationVersion 8 (never 9)", () => {
     it("capability boundary: latest is 4; regulation from 3; v8D tuning only at 4; assistance and v8C energy kept", () => {
-        expect(LATEST_PROGRESSION_REVISION).toBe(4);
+        expect(LATEST_PROGRESSION_REVISION).toBe(5); // v8E is the latest; v8D stays revision 4
         for (const version of [1, 2, 3, 4] as const) {
             expect(hasV8dTuning({ version })).toBe(version === 4);
             expect(hasRegulation({ version })).toBe(version >= 3);

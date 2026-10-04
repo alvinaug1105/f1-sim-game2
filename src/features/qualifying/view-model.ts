@@ -11,6 +11,7 @@ import { QUALIFYING_PHASES, maxPushLaps, phaseFormat, phaseIndex, type Qualifyin
 import type { Setup } from "../../simulation/practice/model";
 import type { TyreCompound } from "../../simulation/race/tyres/model";
 import type { WeatherState } from "../../simulation/race/weather/model";
+import { assessTyreFamilies, type TyreFamilyAssessment } from "../../simulation/race/tyres/suitability";
 /** A moment on the session clock: time remaining in a phase, or (remainingMs null) the break before that phase. */
 export interface ForecastPoint { readonly phase: QualifyingPhase; readonly remainingMs: number | null }
 export interface QualifyingForecastWindow { readonly from: ForecastPoint; readonly to: ForecastPoint; readonly rainfallMin: number; readonly rainfallMax: number }
@@ -78,6 +79,11 @@ export interface QualifyingView {
     /** Number of cars that advance from the current phase when anyone can be eliminated; null otherwise (Q3, small fields). */
     readonly cutoff: number | null;
     readonly weather: WeatherState | null;
+    /**
+     * v8E: the Race's authoritative current-condition tyre-family assessment (SUITABLE / MARGINAL / POOR), computed on
+     * the server from CURRENT conditions only — the same evaluation the Race UI uses. Null when unavailable.
+     */
+    readonly tyreFit?: TyreFamilyAssessment | null;
     /** Approximate public windows, expressed on the session clock the player sees: a phase and its time remaining. */
     readonly forecast: readonly QualifyingForecastWindow[];
     readonly grip: GripBand | null;
@@ -153,7 +159,7 @@ export function qualifyingView(data: CareerQualifyingData): QualifyingView {
     if (!s) {
         const status = session.status === "COMPLETED" ? "LEGACY_COMPLETED" as const : "NOT_STARTED" as const;
         return { ...base, status, legacyInProgress: session.status === "IN_PROGRESS", phase: "Q1", phaseComplete: false, phaseElapsedMs: 0, phaseDurationMs: 0, sessionElapsedMs: 0, stepMs: 0, step: 0,
-            autoPlayer: false, format: [], cutoff: null, weather: null, forecast: [], grip: null, traffic: null,
+            autoPlayer: false, format: [], cutoff: null, weather: null, tyreFit: null, forecast: [], grip: null, traffic: null,
             entrants: data.roster.map((r, i) => ({ entrantId: r.driverId, driverId: r.driverId, teamId: r.teamId, name: r.driverName, abbreviation: r.abbreviation, team: r.teamName,
                 color: colour(r.teamColor), number: r.carNumber, player: r.teamId === team, location: "GARAGE", distance: 0, position: i + 1, eliminatedIn: null, bestMs: null, gapMs: null,
                 cutoffDeltaMs: null, lastLapMs: null, lastLapTraffic: false, attempts: 0, tyre: null, times: { Q1: null, Q2: null, Q3: null }, finalPosition: null, status: "NO_TIME", own: null })) };
@@ -164,7 +170,7 @@ export function qualifyingView(data: CareerQualifyingData): QualifyingView {
     return {
         ...base, status: s.status, legacyInProgress: false, phase: s.phase, phaseComplete: s.phaseStatus === "COMPLETE", phaseElapsedMs: s.phaseElapsedMs, phaseDurationMs: f.durationMs,
         sessionElapsedMs: s.sessionElapsedMs, stepMs: s.input.stepMs, step: Math.round(s.sessionElapsedMs / s.input.stepMs), autoPlayer: s.autoPlayer,
-        format: s.input.format.phases, cutoff, weather: s.weather,
+        format: s.input.format.phases, cutoff, weather: s.weather, tyreFit: assessTyreFamilies(s.weather, s.input.tyres, s.input.weather),
         // Approximate public windows only (never the truth timeline), on the phase clock.
         forecast: qualifyingForecast(s),
         grip: gripBand(s), traffic: s.status === "RUNNING" ? trafficBand(s) : null,
@@ -194,3 +200,4 @@ export function qualifyingView(data: CareerQualifyingData): QualifyingView {
         }),
     };
 }
+

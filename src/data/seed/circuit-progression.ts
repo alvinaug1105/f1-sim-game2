@@ -113,3 +113,13 @@ export function progressionDFrom(c: ProgressionConfiguration): ProgressionConfig
     return { ...c, version: 4 };
 }
 export function progressionDForCircuit(id: string | null | undefined, session: RegulatedSession) { return progressionDFrom(progressionCForCircuit(id, session)); }
+/**
+ * Revision-5 (v8E) configuration: the accepted revision-4 circuit content, energy and session regulation unchanged
+ * (no new geometry, pit anchors or presentation). v8E tuning is frozen in the Race's own snapshots at creation (see
+ * features/race/v8e-tuning.ts).
+ */
+export function progressionEFrom(d: ProgressionConfiguration): ProgressionConfiguration {
+    if (d.version !== 4) throw new RangeError('v8E derives from v8D circuit content');
+    return { ...d, version: 5 };
+}
+export function progressionEForCircuit(id: string | null | undefined, session: RegulatedSession) { return progressionEFrom(progressionDForCircuit(id, session)); }

@@ -30,7 +30,7 @@ import {
   type TyreCompoundProfile,
 } from "./tyres/model";
 import { createSeededRandom, type RandomSource } from "../core/random";
-import { hasAssistance } from "./progression/revision";
+import { hasAssistance, hasV8eSemantics } from "./progression/revision";
 import type {
   RaceSimulationInput,
   RaceSimulationState,
@@ -248,7 +248,7 @@ export function createRace(input: RaceSimulationInput): RaceSimulationState {
   return {
     ...(snapshot.weather ? { weather: structuredClone(snapshot.weather.initial) } : {}),
     ...(input.incidents ? { incidents: initialIncidentRace(input.seed) } : {}),
-    ...(input.progression ? { progression: { elapsedTimeMs: 0, cars: Object.fromEntries(snapshot.entrants.map(e => [e.entrantId,{...initialCarProgression(e.gridPosition,input.parameters.gridOffsetMs),...(hasAssistance(input.progression)?{assistance:initialAssistance(input.progression!.assistance!),observations:[{atMs:0,total:0,route:'TRACK' as const}]}:{})}])) } } : {}),
+    ...(input.progression ? { progression: { elapsedTimeMs: 0, cars: Object.fromEntries(snapshot.entrants.map(e => [e.entrantId,{...initialCarProgression(e.gridPosition,input.parameters.gridOffsetMs),...(hasAssistance(input.progression)?{assistance:initialAssistance(input.progression!.assistance!),observations:[{atMs:0,total:0,route:'TRACK' as const}]}:{}),...(hasV8eSemantics(input.progression)?{attacksThisLap:0,lastAttackAtMs:-1,attackArmed:true,passingCause:null}:{})}])) } } : {}),
     simulationVersion: input.progression ? 8 : input.incidents ? 7 : input.weather ? 6 : input.commands ? 5 : input.pits
       ? 4
       : input.interaction

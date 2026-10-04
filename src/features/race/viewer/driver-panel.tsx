@@ -3,7 +3,7 @@ import { ENERGY_POLICIES,type EnergyPolicy } from '../../../simulation/race/assi
 import { useState, type ReactNode } from 'react';
 import { formatRaceGap, formatRaceTime } from '../../../i18n/race-time';
 import { useI18n } from '../../../i18n/provider';
-import type { RaceViewData } from '../public-view';
+import type { RacePublicEntrant, RaceViewData } from '../public-view';
 import { timingRows } from './model';
 import { PACE_MODES, FUEL_MODES, ERS_MODES, type PaceMode, type FuelMode, type ErsMode } from '../../../simulation/race/commands/model';
 import { isTyreCompound, type TyreCompound } from '../../../simulation/race/tyres/model';
@@ -43,6 +43,20 @@ function TyreRule({ data, row }: { data: RaceViewData; row: Row }) {
             {row.entrant.pit?.pendingCompound && <p className="ops-muted">{t('regulation.pendingNote')}</p>}
         </>}
         {live && r.status === 'OUTSTANDING' && <p className="ops-muted">{t('regulation.requirement', { count: format.number(r.required) })}</p>}
+    </div>;
+}
+/**
+ * Why Overtake Mode / Active Aero are in their current state (server-derived for the player's own car). Text plus a
+ * glyph, never colour alone; Active Aero is explained as an automatic system, not as a chasing-car entitlement.
+ */
+function AssistanceReasons({ assistance: a }: { assistance: RacePublicEntrant['assistance'] }) {
+    const { t, format } = useI18n();
+    if (!a || !a.overtakeReason) return null;
+    const seconds = (ms: number) => format.number(ms / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const glyph = a.overtakeReason === 'ACTIVE' ? '▲ ' : a.overtakeReason === 'ELIGIBLE' ? '● ' : a.overtakeReason === 'ELIGIBLE_NO_ENERGY' ? '◐ ' : '○ ';
+    return <div className="assistance-reasons">
+        <p className={`overtake-reason reason-${a.overtakeReason}`}><span aria-hidden="true">{glyph}</span>{t(`assistance.overtakeReason.${a.overtakeReason}`, { gap: a.gapAheadMs != null ? seconds(a.gapAheadMs) : '', threshold: seconds(a.overtakeThresholdMs ?? 1000) })}</p>
+        {a.aeroReason && <p className="ops-muted aero-reason">{t(`assistance.aeroReason.${a.aeroReason}`)} {t(a.aeroStraightDeltaMs ? 'assistance.aeroEffect' : 'assistance.aeroEffectBaseline', { ms: format.number(a.aeroStraightDeltaMs ?? 0) })}</p>}
     </div>;
 }
 function Stat({ label, children, tone }: { label: string; children: ReactNode; tone?: string }) { return <div className={`stat ${tone ?? ''}`}><span>{label}</span><strong>{children}</strong></div>; }
@@ -90,7 +104,9 @@ export function DriverPanel({ data, row, busy, send, rows }: {
     {e.stint.tyre.wearPermille !== null && <progress max="1000" value={e.stint.tyre.wearPermille} aria-label={t('tyre.wear')}/>}
     {condition && (condition.wear !== 'OK' || condition.temperature !== 'OK') && <p className="tyre-warnings">{condition.wear !== 'OK' && <span className={`warn-${condition.wear}`}>⚠ {t(`viewer.warn.${condition.wear}`)}</span>}{condition.temperature !== 'OK' && <span className="warn-HIGH">⚠ {t(`viewer.warn.${condition.temperature}`)}</span>}</p>}
     {suitability && <p className={`tyre-suitability suit-${suitability.level}`}><span aria-hidden="true">{suitability.level === 'SUITABLE' ? '● ' : suitability.level === 'MARGINAL' ? '◐ ' : '○ '}</span><strong>{t(`viewer.suit.${suitability.level}`)}</strong> · {t(`viewer.suitNote.${suitability.note}`, { family: t(`viewer.family.${tyreFamily(e.stint!.tyre.compound)}`), best: t(`viewer.family.${suitability.best}`) })}</p>}
-    {estimate && row.status === 'RUNNING' && s.status === 'RUNNING' && condition?.wear !== 'CRITICAL' && <p className="tyre-estimate">{estimate.lapsToCliff <= RISK_LAPS ? t('viewer.tyreLifeRisk') : t('viewer.tyreLife', { count: format.number(estimate.lapsToCliff) })}<small>{t('viewer.estimateNote')}</small></p>}
+    {estimate && row.status === 'RUNNING' && s.status === 'RUNNING' && condition?.wear !== 'CRITICAL' && <p className="tyre-estimate">{estimate.lapsToCliff <= RISK_LAPS ? t('viewer.tyreLifeRisk') : estimate.paceMode ? t('viewer.tyreLifeAtPace', { count: format.number(estimate.lapsToCliff), pace: t(`command.${estimate.paceMode}`) }) : t('viewer.tyreLife', { count: format.number(estimate.lapsToCliff) })}
+     {estimate.lapsToCliffMin !== undefined && estimate.lapsToCliffMax !== undefined && estimate.lapsToCliffMin !== estimate.lapsToCliffMax && <small>{t('viewer.tyreLifeRange', { min: format.number(estimate.lapsToCliffMin), max: format.number(estimate.lapsToCliffMax) })}</small>}
+     <small>{t('viewer.estimateNote')}</small></p>}
    </div>}
   </div><div className="driver-resources">{c && s.input.commands ? <>
    {s.simulationVersion === 8 && editable && <p className="ops-muted">{t((s.input.modelRevision??1)>=2?'assistance.commandTiming':'viewer.commandTiming')}</p>}
@@ -98,7 +114,8 @@ export function DriverPanel({ data, row, busy, send, rows }: {
    <p className={`fuel-delta ${projection! < 0 ? 'fuel-warning' : 'fuel-ok'}`}>{t('command.projectedFuel')}: <strong>{kg(projection!, true)}</strong></p>
    {fuelCritical(s, e) && <p className="fuel-delta fuel-warning" role="status"><span aria-hidden="true">⚠ </span>{t('command.fuelCritical', { laps: format.number(e.insight!.fuelLapsRemaining!) })}</p>}
    <Modes fuel label={t('command.fuelMode')} modes={FUEL_MODES} active={c.fuelMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'fuelMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
-   {e.assistance ? <><div className="assistance-status"><Stat label={t('assistance.aero')}>{t(`assistance.aero.${e.assistance.aero}`)}</Stat><Stat label={t('assistance.overtake')}>{t(`assistance.overtake.${e.assistance.overtake}`)}</Stat></div><div className="resource-heading"><h3>{t('command.energy')}</h3><strong>{format.percentage(e.assistance.energy/e.assistance.capacity,{maximumFractionDigits:0})}</strong></div><progress max={e.assistance.capacity} value={e.assistance.energy} aria-label={t('command.energy')}/><Modes label={t('assistance.policy')} modes={ENERGY_POLICIES} active={e.assistance.policy} editable={editable} busy={busy} onPick={mode=>send({kind:'energyPolicy',entrantId:e.entrantId,revision:c.commandRevision,mode})}/><p className="ops-muted">{t('assistance.note')}</p></> : <><div className="resource-heading"><h3>{t('command.ersMode')}</h3><strong>{format.percentage(c.ersCharge / s.input.commands.capacity, { maximumFractionDigits: 0 })}</strong></div><progress max={s.input.commands.capacity} value={c.ersCharge} aria-label={t('command.energy')}/>
+   {e.assistance ? <><div className="assistance-status"><Stat label={t('assistance.aero')}><span title={t('assistance.aeroHelp')}>{t(`assistance.aero.${e.assistance.aero}`)}</span></Stat><Stat label={t('assistance.overtake')}>{t(`assistance.overtake.${e.assistance.overtake}`)}</Stat></div>
+   <AssistanceReasons assistance={e.assistance}/><div className="resource-heading"><h3>{t('command.energy')}</h3><strong>{format.percentage(e.assistance.energy/e.assistance.capacity,{maximumFractionDigits:0})}</strong></div><progress max={e.assistance.capacity} value={e.assistance.energy} aria-label={t('command.energy')}/><Modes label={t('assistance.policy')} modes={ENERGY_POLICIES} active={e.assistance.policy} editable={editable} busy={busy} onPick={mode=>send({kind:'energyPolicy',entrantId:e.entrantId,revision:c.commandRevision,mode})}/><p className="ops-muted">{t('assistance.note')}</p></> : <><div className="resource-heading"><h3>{t('command.ersMode')}</h3><strong>{format.percentage(c.ersCharge / s.input.commands.capacity, { maximumFractionDigits: 0 })}</strong></div><progress max={s.input.commands.capacity} value={c.ersCharge} aria-label={t('command.energy')}/>
    {ers && <p className="ers-outlook ops-muted">{ers.kind === 'LAPS' ? t('viewer.ersLaps', { count: format.number(ers.laps) }) : t(ers.kind === 'CHARGING' ? 'viewer.ersCharging' : 'viewer.ersSustainable')}</p>}
    <Modes label={t('viewer.ersDeployment')} modes={ERS_MODES} active={c.ersMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'ersMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
    </>}
@@ -108,7 +125,9 @@ export function DriverPanel({ data, row, busy, send, rows }: {
   {e.pit && e.stint && <div className="strategy-focus"><div className="resource-heading"><h3>{t('viewer.strategy')}</h3><span>{t('pit.stint')} {format.number(e.stint.number)} · {t('pit.stops')} {format.number(e.pit.stops.length)}</span></div>
    <div className="strategy-grid"><Stat label={t('viewer.currentTyre')}>{t(`tyre.${e.stint.tyre.compound}`)}</Stat><Stat label={t('viewer.stintAge')}>{t('viewer.age', { count: format.number(e.stint.tyre.ageLaps) })}</Stat>
     {lastStop && <Stat label={t('viewer.lastStop')}>{t('incident.lap', { lap: format.number(lastStop.lap) })} · {t('viewer.tyreChange', { old: t(`viewer.tyre.${lastStop.oldCompound}`), next: t(`viewer.tyre.${lastStop.newCompound}`) })}</Stat>}
-    {estimate && <Stat label={t('pit.loss')}>{format.number(estimate.minimumLossMs / 1000, { maximumFractionDigits: 1 })}–{format.number(estimate.maximumLossMs / 1000, { style: 'unit', unit: 'second', maximumFractionDigits: 1 })}</Stat>}</div>
+    {estimate && <Stat label={t('pit.loss')}>{format.number(estimate.minimumLossMs / 1000, { maximumFractionDigits: 1 })}–{format.number(estimate.maximumLossMs / 1000, { style: 'unit', unit: 'second', maximumFractionDigits: 1 })}</Stat>}
+    {estimate?.rejoin && editable && <Stat label={t('pit.rejoin')}>{estimate.rejoin.best === estimate.rejoin.worst ? t('pit.rejoinAt', { position: format.number(estimate.rejoin.best) }) : t('pit.rejoinRange', { best: format.number(estimate.rejoin.best), worst: format.number(estimate.rejoin.worst) })}</Stat>}</div>
+   {estimate?.rejoin && editable && <p className="ops-muted">{t('pit.rejoinNote')}</p>}
    {row.player && <TyreRule data={data} row={row}/>}
    <p className={e.pit.pendingCompound ? 'pit-pending' : 'ops-muted'}>{e.pit.pendingCompound ? <><span aria-hidden="true">↘ </span><strong>{row.abbreviation}</strong> — </> : null}{e.pit.committed ? t('pit.committed') : e.pit.pendingCompound ? t('pit.requested', { compound: t(`tyre.${e.pit.pendingCompound}`), lap: format.number(s.lap + 1) }) : t(row.status === 'RETIRED' ? 'incident.RETIRED' : row.status === 'FINISHED' ? 'pit.finished' : 'pit.onTrack')}</p>
    {editable && s.lap < s.input.totalLaps - 1 && s.input.tyres && <fieldset disabled={busy || e.pit.committed}><label>{t('pit.newTyre')}<select value={compound} onChange={event => { if (isTyreCompound(event.target.value))

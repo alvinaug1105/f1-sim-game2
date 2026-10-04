@@ -7,6 +7,9 @@ import { QUALIFYING_COMPOUNDS, type QualifyingPhase } from '../../simulation/qua
 import { compoundFit, SETUP_DIMENSIONS } from '../../simulation/practice/model';
 import type { TyreCompound } from '../../simulation/race/tyres/model';
 import type { QualifyingEntrantView, QualifyingView, DriverStatus } from './view-model';
+import { tyreFamily } from '../../simulation/race/tyres/family';
+/** v8E: graded suitability of a compound from the server's current-condition assessment (null when unavailable). */
+function qualifyingTyreFit(compound: TyreCompound, view: Pick<QualifyingView, 'tyreFit'>) { return view.tyreFit ? view.tyreFit.levels[tyreFamily(compound)] : null; }
 import type { QualifyingCommand } from './service';
 import { nextSessionPath, phaseKey, textKey } from './labels';
 /** A player command before it is addressed to a car (entrant id + command revision are added by the caller). */
@@ -65,11 +68,15 @@ function RunPlanner({ view, e, busy, send }: { view: QualifyingView; e: Qualifyi
     const [push, setPush] = useState(1);
     const max = own.maxPushLaps, ready = own.readyAtMs <= view.phaseElapsedMs, laps = Math.min(push, Math.max(1, max));
     const fit = view.weather ? FIT[compoundFit(compound, view.weather)] : 'SUITED';
+    // v8E: graded suitability from the Race's authoritative current-condition assessment (fallback: the coarse band).
+    const graded = qualifyingTyreFit(compound, view);
+    const option = (c: TyreCompound) => { const g = qualifyingTyreFit(c, view); return g ? t(`viewer.suit.${g}`) : t(`practice.fit.${view.weather ? FIT[compoundFit(c, view.weather)] : 'SUITED'}`); };
     return <div className="run-planner" data-testid="q-run-planner"><h3>{t('qualifying.plan')}</h3>
         {max < 1 ? <p className="ops-muted" role="status">{t('qualifying.noTimeForRun')}</p> : <>
             <label>{t('tyre.compound')}<select value={compound} onChange={ev => setCompound(ev.target.value as TyreCompound)} disabled={busy}>
-                {QUALIFYING_COMPOUNDS.map(c => <option key={c} value={c}>{t(`tyre.${c}`)} · {t(`practice.fit.${view.weather ? FIT[compoundFit(c, view.weather)] : 'SUITED'}`)}</option>)}</select></label>
-            <p className={`fit-note fit-${fit}`}><span aria-hidden="true">{fit === 'SUITED' ? '✓ ' : fit === 'MARGINAL' ? '~ ' : '✕ '}</span>{t(`practice.fitNote.${fit}`)}</p>
+                {QUALIFYING_COMPOUNDS.map(c => <option key={c} value={c}>{t(`tyre.${c}`)} · {option(c)}</option>)}</select></label>
+            {graded ? <p className={`fit-note suit-${graded}`}><span aria-hidden="true">{graded === 'SUITABLE' ? '✓ ' : graded === 'MARGINAL' ? '~ ' : '✕ '}</span>{t(`qualifying.fitNote.${graded}`)}</p>
+                : <p className={`fit-note fit-${fit}`}><span aria-hidden="true">{fit === 'SUITED' ? '✓ ' : fit === 'MARGINAL' ? '~ ' : '✕ '}</span>{t(`practice.fitNote.${fit}`)}</p>}
             <div className="mode-buttons" role="group" aria-label={t('qualifying.pushLaps')}>{[1, 2, 3].map(n => <button key={n} disabled={busy || n > max} aria-pressed={laps === n} onClick={() => setPush(n)}>{laps === n && <span aria-hidden="true">✓ </span>}{t('qualifying.pushCount', { count: format.number(n) })}</button>)}</div>
             <small className="ops-muted">{t('qualifying.fuelNote')}</small>
             <button className="send-out" disabled={busy || !ready} onClick={() => send({ kind: 'send', plan: { compound, pushLaps: laps } })}>{t('practice.sendOut')}</button>

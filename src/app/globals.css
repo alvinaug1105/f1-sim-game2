@@ -1082,3 +1082,16 @@ body:has(.race-ops) .sidebar .planned { display:none; }
 .tyre-rule-note { padding:6px 10px;border-left:3px solid #f3dc8a;background:#1d2830; }
 .driver-status.status-DSQ,.status-DSQ { color:#ff9c95; }.no-commands.status-DSQ { background:#3e1f22;color:#ffc9c5; }
 .dsq-row { opacity:.7; }.dsq-row .driver-select strong { text-decoration:line-through; }
+
+/* Race v8E presentation additions (text + glyphs carry the meaning; colour is only a secondary cue). */
+.leader-pit { font-weight: 600; }
+.feed-filters { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 14px; }
+.feed-filters button { font-size: 10px; padding: 2px 7px; }
+.feed-filters button[aria-pressed="true"] { font-weight: 700; }
+.events-panel li details { margin-top: 2px; padding: 0; font-size: 10px; }
+.assistance-reasons { margin: 6px 0; font-size: 11px; }
+.assistance-reasons p { margin: 0.15rem 0; }
+.overtake-reason.reason-ACTIVE, .overtake-reason.reason-ELIGIBLE { font-weight: 600; }
+.slick-warning { border: 2px solid currentColor; border-radius: 6px; padding: 0.5rem 0.75rem; margin: 0.75rem 0; }
+.slick-warning label { display: flex; gap: 0.5rem; align-items: center; }
+.fit-note.suit-POOR { font-weight: 700; }

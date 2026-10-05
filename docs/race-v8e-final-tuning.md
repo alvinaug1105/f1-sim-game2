@@ -305,8 +305,8 @@ Tester finding named, and all of them await independent retest.
 | Field | Where | v8E value | Purpose |
 |---|---|---|---|
 | `attackCadenceNeutralDifficulty` | racecraft | 35 | Circuit-scaled attack cadence |
-| `aiAttackPaceMode` | racecraft (Sprint only) | `true` | Sprint attacker pace policy |
-| `aiBoostReservePermille` / `aiRechargeBelowPermille` | racecraft (Sprint only) | 250 / 120 | Sprint energy reserves |
+| `aiAttackPaceMode` | racecraft (Sprint only) | `true` | Sprint attacker pace policy (removed in local fix 2) |
+| `aiBoostReservePermille` / `aiRechargeBelowPermille` | racecraft (Sprint only) | 250 / 120 | Sprint energy reserves (removed in local fix 2) |
 | `trackPositionValueSpreadPermille` | AI strategy | 400 | Per-character track-position value |
 | `wetRefreshNeutral` | AI strategy | `true` | Neutral same-family wet refresh |
 | fresh-tyre blanket temperature | revision-5 capability (`tyres/fresh.ts`) | ideal-window minimum | Undercut warm-up |
@@ -317,6 +317,9 @@ The blanket temperature and the starting plan are capabilities rather than field
 - the starting plan is computed once at Race creation, from data that is already frozen.
 
 ### Issue 2: Sprint processional
+
+> Superseded by local fix 2 (below): the independent retest found this policy spent tyres and energy without a
+> reliable gain.
 
 **Cause (reasoned).** The accepted AI assistance policy is symmetric. When cars fight, the attacker and the defender
 both choose PUSH and BOOST. Neither gains a tactical edge, so pass attempts depend only on the static probability.
@@ -421,3 +424,177 @@ These were deferred as the brief instructed:
 - The ATTACK pace policy could increase tyre-cliff exposure in Sprints.
 - Circuit-scaled cadence can lower total pass counts at hard circuits compared with the previous v8E build.
 - The starting plan uses the green pit-loss estimate, so it ignores SC probability.
+
+## Local fix pass 2 (targeted gameplay-tuning repair)
+
+This pass keeps simulation version 8 and progression revision 5; no new revision was created. Each change is a new
+optional field in the frozen v8E racecraft snapshot. Racecraft is stored as JSON, so the fields persist. Revision 4
+carries none of them, so every new code path falls back to the accepted rule.
+
+None of this has been validated by the Builder. Every statement below about cause and effect is reasoning from the
+code, not a measurement.
+
+Starting point (independent retest of the first local fix): code correctness was confirmed. Three tuning problems
+remained:
+- the Sprint policy cost more than it gained;
+- the circuit-identity mechanism was not proven;
+- the undercut gain was too small.
+
+### Issue 1: the Sprint policy cost resources without a reliable gain
+
+**Root cause (reasoned).**
+
+- **BOOST is expensive.** It deploys on every STRAIGHT / FAST segment, which is roughly 70 % of a lap, at 8,000
+  units/s, and recovers nothing. One BOOST lap therefore spends about half the store. The first local fix lowered the
+  BOOST reserve to 25 %, so a fighting car started a BOOST lap with too little charge, ran empty partway through it,
+  then sat at zero. This is the likely source of the zero-energy car-laps (681 → 6,066).
+- **The deployment was symmetric.** Attacker and defender both BOOSTed, so their electrical deltas cancelled.
+  Proximity alone (cars close without any real basis to attack) also triggered it, so trains of cars drained each
+  other.
+- **Sustained ATTACK pace converted poorly.** The pass edge counts only 35 % of a command-pace advantage
+  (`commandEdgePermille`). For a car already held at the floor, ATTACK added about 88 ms of counted edge (≈ +35 ‰ pass
+  probability) while paying the full 24 % extra wear on every lap. This is the likely source of the higher mean wear
+  and cliff exposure.
+
+**Mechanism selected.** The Sprint racecraft (`aiSprintTactics`, `aiFinalAttackLaps` = 3) replaces the first local
+fix's three fields, which are removed.
+
+- **Energy goes where it decides a battle.** An AI car with a genuine basis to attack the car ahead stays BALANCED.
+  The basis is the existing gate: held back last lap, or a tyre-age edge, within the attack gap. Staying BALANCED
+  preserves its charge for Overtake Mode, which already deploys automatically in the window for any non-RECHARGE
+  policy. That deployment is attacker-only (600 ms against the BOOST's 400 ms) and counts in full at an attempt made
+  there.
+- **Only a genuinely threatened defender BOOSTs.** "Threatened" means the car behind is within the defend gap and has
+  that same basis. Mere proximity spends nothing.
+- **The accepted energy thresholds are restored.** BOOST is allowed above ½ of capacity; RECHARGE applies below ¼.
+- **ATTACK pace is limited to the final laps.** It applies only in the last three laps, only with a genuine basis, and
+  only while the tyre's projected wear at the flag at ATTACK wear stays below its cliff. This is a resource limit, not
+  a bonus.
+
+**Why this should help short-race competition (reasoned).**
+- The defender spends its energy early, and is then exposed for the laps it needs to recharge.
+- The attacker keeps the one attacker-only tool charged for those laps.
+- Pace is spent only when it no longer costs the tyre anything that matters.
+
+Pass probability, the attack gate, the cadence and the energy model are unchanged. There is no Sprint multiplier or
+bonus.
+
+**Alternatives considered.**
+- *Hold every attack until the Overtake window.* Rejected: the entitlement is acquired at detection, just before the
+  window, so it would mostly just remove attempts.
+- *Keep the lower reserves but restrict them to attackers.* Rejected: a BOOST lap still empties a store started at
+  25 %.
+
+### Issue 2: the circuit-identity mechanism was not proven
+
+**Root cause (reasoned).** Overtaking difficulty enters the pass probability only as an additive offset (−3 ‰ per
+point). The pace edge converts at the same 0.4 ‰/ms everywhere. A large edge (a tyre offset, a pit cycle, a car out
+of position) therefore passes almost as readily at a hard circuit as at an easy one: one second of edge adds 400 ‰ at
+Monaco and at Spa alike. Scaling the cadence only changes how often a car may try. It cannot change what a genuine
+edge is worth, which is the dimension that compresses identity.
+
+Other circuit properties were checked:
+- **Segment geometry** varies little between circuits (41–55 of 64 segments are STRAIGHT / FAST everywhere). Every
+  segment is either a PASSING or a BRAKING zone, so the attack location is unconstrained.
+- **The DRS effectiveness field** is zeroed by the frozen DRS-inert rule.
+- **Dirty-air sensitivity** already gates whether a follower can close into attack range.
+
+**Mechanism selected.** Revision-5 racecraft `passEdgeNeutralDifficulty` = 35. For ordinary attacks (never lapping or
+blue flags), the edge counted by the pass probability is:
+
+```
+edge × 2 × 35 / (35 + difficulty)
+```
+
+| Difficulty | Example | Factor |
+|---|---|---|
+| 15 | Spa class | ≈ 1.40 |
+| 18 | Monza class | ≈ 1.32 |
+| 35 | neutral | 1.00 |
+| 65 | Hungaroring class | ≈ 0.70 |
+| 85 | Monaco class | ≈ 0.58 |
+
+- The attack gate still uses the raw edge.
+- The probability formula and its cap are unchanged.
+- No edge is created where none exists.
+- The circuit-scaled cadence from the first local fix is **retained**. It governs how often a car may try; the
+  conversion governs what a genuine edge is worth.
+- Everything comes from the circuit's own existing `overtakingDifficulty`. No circuit names are used and no circuit is
+  tuned to a ranking.
+
+**Trade-off.**
+- Easy circuits should see more conversions of real edges, including late-Race tyre offsets.
+- Hard circuits become harder even with a large edge.
+- The calendar mean of the factor is close to 1.0, so the total pass count should move less than the spread between
+  circuits.
+
+### Issue 3: the undercut benefit was too small
+
+**Pit-cycle analysis (reasoned).** The whole cycle was inspected:
+- **Pit entry / lane / service / exit:** symmetric for both cars.
+- **Pit loss:** circuit-derived and symmetric.
+- **Fitting temperature:** the first local fix's tyre blankets are physically sensible and stay as they are.
+- **Compound delta and degradation:** unchanged by design.
+
+The suppressing component is the **lap commands of the in-lap and out-lap**:
+- The AI chooses each lap's commands at the leader's line crossing, before the stop is committed in that same
+  checkpoint.
+- **LIGHT pace on a fresh tyre.** If the old tyre is worn past the high-wear line (700 ‰, typical at a stop), the AI
+  picks LIGHT (+300 ms) to nurse it. That choice then applies to the next lap, which is the out-lap on the fresh tyre.
+- **CONSERVE pace and RECHARGE.** A car in the pit route at the leader's crossing was treated as neutralised, exactly
+  like a Safety Car. It got CONSERVE pace (+650 ms) and RECHARGE for its next lap, which is its out-lap (or the first
+  lap after it).
+- **The effect.** These artefacts land on exactly the laps where the fresh tyre should be gaining time. They cancel
+  most of the undercut, while the car that stays out never pays them.
+
+**Mechanism selected.** Revision-5 racecraft `aiPitCyclePace`:
+- An AI car committed to a stop, or already in the pit lane, drives its in-lap and out-lap at PUSH. It no longer
+  nurses a tyre that is coming off, or treats a barely worn fresh tyre as worn.
+- The pit route is no longer a Race neutralisation for the lap choice. The lane itself stays speed-limited physics,
+  unchanged. A car in the lane is in no fight.
+- A car committed at the current checkpoint has its next lap's pace corrected at the moment of commitment. This uses
+  no RNG.
+- Real Safety Car / VSC neutralisation still selects CONSERVE.
+
+**Why this stays coherent.**
+- PUSH costs real tyre wear and temperature: on the old tyre that is being discarded, and for one lap on the new one.
+- No time is credited for stopping. There is no `undercutBonusMs`, fresh-tyre pass bonus or post-pit position bonus.
+
+**Why the overcut stays viable.**
+- The same rule applies to every AI car's pit cycle, so the car that stays out also pushes its own in-lap and out-lap
+  later.
+- A car on a healthy old tyre (below the high-wear line) still runs at full pace.
+- Pit loss, traffic at the rejoin and the AI's existing release-traffic, undercut and extension logic are unchanged.
+
+**Alternatives considered.**
+- *Raising the blanket temperature.* Rejected: already at the bottom of each ideal window, which is physically
+  sensible.
+- *Steeper degradation.* Rejected: excluded by the brief, and it would move stop counts.
+- *Reordering stop commitment before the command choice.* Rejected: the stop assessment reads the chosen pace mode for
+  its wear projection, so reordering would change stop timing.
+
+### Systems intentionally unchanged
+
+- The pass probability formula.
+- The attack gate, the +0.080 cadence (and its circuit scaling), the held-following drop-back and re-arm.
+- The energy model and accepted energy thresholds, Boost accounting and the Overtake Mode lifecycle.
+- Active Aero, DRS inertness.
+- Tyre profiles, cliff thresholds and blankets.
+- AI stop timing and compound choice, dry-start diversity, wet crossover / refresh.
+- SC / VSC rules and compression.
+- Lapping and blue flags.
+- Classification, DSQ, persistence and revision 4.
+
+### Risks for the retest
+
+- **More passes at easy circuits.** Pass counts at easy circuits may rise noticeably, possibly including re-pass
+  loops, which are out of scope.
+- **Fewer passes in the first lap of a Sprint battle.** The attacker no longer BOOSTs while the threatened defender
+  does, so the first lap of a battle may favour the defender before the energy positions swap.
+- **Slower Sprint closing without a basis.** A car that is close but has no basis no longer BOOSTs, so in a Sprint it
+  closes more slowly than under the GP policy.
+- **Pit-cycle effects.**
+  - Higher tyre wear on discarded tyres and on the first lap of a new stint.
+  - Pit-lane cars recover energy at BALANCED instead of RECHARGE rates.
+  - Undercut strength could overshoot, and stop counts could move if the AI's existing undercut trigger fires more
+    profitably.

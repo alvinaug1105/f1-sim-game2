@@ -4,8 +4,9 @@
  *
  * - tyres: v8D cliff thresholds kept; v8E pre-cliff degradation shape;
  * - AI pit strategy: v8E weather / dry strategy character;
- * - racecraft: attack cadence (cooldown + re-arm + per-lap cap, scaled by the circuit's overtaking difficulty), held-
- *   following drop-back, no late-Race window; a SPRINT session also freezes the Sprint tactical AI policy;
+ * - racecraft: attack cadence (cooldown + re-arm + per-lap cap, scaled by the circuit's overtaking difficulty), the
+ *   circuit pass conversion, pit-cycle lap pace, held-following drop-back, no late-Race window; a SPRINT session also
+ *   freezes the Sprint tactical AI policy (energy for the attacker's Overtake Mode, final-laps ATTACK within tyre life);
  * - interaction: the circuit's traffic identity with legacy DRS inert (as v8D);
  * - pit timing: circuit-derived (the v8D formula, unchanged);
  * - incidents: v8E Safety Car compression / duration, with the circuit's pit track section.

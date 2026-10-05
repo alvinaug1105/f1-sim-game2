@@ -1,22 +1,18 @@
 /**
- * Race v8E local fix pass (still progression revision 5): circuit-scaled attack cadence, the Sprint tactical AI policy,
+ * Race v8E local fix pass (still progression revision 5): circuit-scaled attack cadence,
  * tyre-blanket warm-up for fitted tyres, the per-car track-position value and dry-start plan, neutral wet-tyre refreshes,
  * and revision-4 isolation of every one of them. Mechanism / boundary tests only — no tuning-output assertions.
  */
 import { describe, expect, it } from "vitest";
 import { advanceRace, createRace } from "../src/simulation/race/engine";
 import { progressionDForCircuit, progressionEForCircuit } from "../src/data/seed/circuit-progression";
-import { LAP_UNITS, validateProgressionState } from "../src/simulation/race/progression/model";
-import { chooseAssistanceAi } from "../src/simulation/race/assistance/policy";
-import { v8eTuningBundle } from "../src/features/race/v8e-tuning";
-import { attackCadence, attackOpen, heldLossAllowed, v8dRacecraftConfiguration, v8eRacecraftConfiguration, v8eSprintRacecraftConfiguration, validateRacecraftConfiguration, V8E_ATTACK_COOLDOWN_MS, V8E_ATTACK_REARM_GAP_MS, V8E_CADENCE_NEUTRAL_DIFFICULTY } from "../src/simulation/race/traffic/racecraft";
+import { attackCadence, attackOpen, heldLossAllowed, v8dRacecraftConfiguration, v8eRacecraftConfiguration, validateRacecraftConfiguration, V8E_ATTACK_COOLDOWN_MS, V8E_ATTACK_REARM_GAP_MS, V8E_CADENCE_NEUTRAL_DIFFICULTY } from "../src/simulation/race/traffic/racecraft";
 import { aiDryStartingPlan, extraStopTrackPositionMs, v8dAiStrategyConfiguration, v8eAiStrategyConfiguration, validateAiStrategyConfiguration, type DryStartPlanInput } from "../src/simulation/race/pits/ai-strategy";
 import { freshTyreTemperatureMilliC } from "../src/simulation/race/tyres/fresh";
 import { startingTyre, v8eWeatherTyreConfiguration } from "../src/simulation/race/tyres/profiles";
 import { defaultPitConfiguration } from "../src/simulation/race/pits/profiles";
 import { defaultInteractionConfiguration } from "../src/simulation/race/traffic/profiles";
 import type { TyreCompound } from "../src/simulation/race/tyres/model";
-import type { RaceSimulationState } from "../src/simulation/race/types";
 import { assess, NEUTRAL } from "./helpers/race-dynamics";
 import { weatherField } from "./helpers/weather-overdelay";
 import { SUZUKA } from "./helpers/v8c";
@@ -61,48 +57,7 @@ describe("circuit identity: the attack cadence scales with the circuit's own ove
     });
 });
 
-/** Re-space car `behind` to run `gapMs` behind car `ahead` (same lap), coherently with the observed route. */
-function placeBehind(s: RaceSimulationState, aheadId: string, behindId: string, gapMs: number): RaceSimulationState {
-    const x = structuredClone(s) as RaceSimulationState, a = x.entrants.find(e => e.entrantId === aheadId)!;
-    const total = a.track!.progressMicrolaps - Math.round(gapMs * LAP_UNITS / x.input.circuit.baseLapTimeMs);
-    x.progression!.cars[behindId].observations = [{ atMs: x.progression!.elapsedTimeMs, total, route: "TRACK" }];
-    const out = { ...x, entrants: x.entrants.map(e => e.entrantId === behindId ? { ...e, completedLaps: Math.floor(total / LAP_UNITS), track: { ...e.track!, progressMicrolaps: total } } : e) };
-    validateProgressionState(out);
-    return out;
-}
-describe("Sprint tactical AI policy (Sprint sessions only)", () => {
-    const fight = (racecraft: ReturnType<typeof v8eRacecraftConfiguration>, energy: number, trafficLossMs: number) => {
-        const base = advanceRace(createRace(v8eInput({ count: 2, laps: 12, quiet: true, seed: 3 })), 3);
-        const [a, b] = [...base.entrants].sort((p, q) => p.position - q.position).map(e => e.entrantId);
-        const s = placeBehind(base, a, b, 500);
-        s.progression!.cars[b].assistance!.energy = energy;
-        const ready = { ...s, input: { ...s.input, commands: { ...s.input.commands!, racecraft } }, entrants: s.entrants.map(e => e.entrantId === b ? { ...e, track: { ...e.track!, trafficLossMs } } : e) };
-        const out = chooseAssistanceAi(ready);
-        const pick = (id: string) => ({ pace: out.entrants.find(e => e.entrantId === id)!.commands!.paceMode, policy: out.progression!.cars[id].assistance!.policy });
-        return { attacker: pick(b), defender: pick(a) };
-    };
-    it("a held-back AI attacker drives in ATTACK pace in a Sprint; the defender keeps PUSH; GP racecraft stays symmetric", () => {
-        const sprint = fight(v8eSprintRacecraftConfiguration(), 900000, 200), gp = fight(v8eRacecraftConfiguration(), 900000, 200);
-        expect(sprint.attacker.pace).toBe("ATTACK"); expect(sprint.defender.pace).toBe("PUSH");
-        expect(gp.attacker.pace).toBe("PUSH"); expect(gp.defender.pace).toBe("PUSH");
-    }, 60_000);
-    it("no genuine basis (not held, no tyre-age edge) → no ATTACK, even in a Sprint", () => {
-        expect(fight(v8eSprintRacecraftConfiguration(), 900000, 0).attacker.pace).toBe("PUSH");
-    }, 60_000);
-    it("a fighting Sprint car may BOOST down to the lower reserve; the GP thresholds are unchanged", () => {
-        expect(fight(v8eSprintRacecraftConfiguration(), 300000, 200).attacker.policy).toBe("BOOST");
-        expect(fight(v8eRacecraftConfiguration(), 300000, 200).attacker.policy).toBe("BALANCED");
-        expect(fight(v8eSprintRacecraftConfiguration(), 100000, 200).attacker.policy).toBe("RECHARGE");
-    }, 60_000);
-    it("the bundle freezes the Sprint policy only for SPRINT sessions; configuration is validated", () => {
-        expect(v8eTuningBundle(progressionEForCircuit(SUZUKA, "SPRINT"), 90000, true).racecraft).toEqual(v8eSprintRacecraftConfiguration());
-        expect(v8eTuningBundle(progressionEForCircuit(SUZUKA, "RACE"), 90000, true).racecraft).toEqual(v8eRacecraftConfiguration());
-        expect(v8eRacecraftConfiguration()).not.toHaveProperty("aiAttackPaceMode");
-        expect(() => validateRacecraftConfiguration(v8eSprintRacecraftConfiguration())).not.toThrow();
-        expect(() => validateRacecraftConfiguration({ ...v8eSprintRacecraftConfiguration(), aiRechargeBelowPermille: undefined })).toThrow();
-        expect(() => validateRacecraftConfiguration({ ...v8eSprintRacecraftConfiguration(), aiRechargeBelowPermille: 900 })).toThrow();
-    });
-});
+// The Sprint tactical AI policy of this pass was replaced by local fix 2: see tests/race-v8e-local-fix-2.test.ts.
 
 describe("tyre warm-up (undercut component): fitted tyres come off blankets in revision 5 only", () => {
     const tyres = v8eWeatherTyreConfiguration(), pits = defaultPitConfiguration();
@@ -164,7 +119,7 @@ describe("wet tyre refresh (Issue 7): a same-family refresh is a wear stop, not 
 describe("revision-4 isolation of every local-fix mechanism", () => {
     it("revision-4 snapshots carry none of the new fields, so every new code path falls back to the accepted rule", () => {
         const i = v8dInput({ count: 4, laps: 6, quiet: true });
-        for (const k of ["attackCadenceNeutralDifficulty", "aiAttackPaceMode", "aiBoostReservePermille", "aiRechargeBelowPermille"]) expect(i.commands!.racecraft).not.toHaveProperty(k);
+        for (const k of ["attackCadenceNeutralDifficulty", "passEdgeNeutralDifficulty", "aiPitCyclePace", "aiSprintTactics", "aiFinalAttackLaps"]) expect(i.commands!.racecraft).not.toHaveProperty(k);
         for (const k of ["trackPositionValueSpreadPermille", "wetRefreshNeutral"]) expect(i.pits!.strategy).not.toHaveProperty(k);
         expect(freshTyreTemperatureMilliC(i, "SOFT")).toBe(i.pits!.newTyreTemperatureMilliC);
     });

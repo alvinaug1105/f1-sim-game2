@@ -2,14 +2,14 @@ import type { RaceEntrantState, RaceSimulationState } from '../types';
 import { calculateLapTime } from '../engine';
 import { createSeededRandom } from '../../core/random';
 import { advanceLegacyProgressionLap } from './legacy';
-import { chooseAssistanceAi } from '../assistance/policy';
+import { chooseAssistanceAi, AI_PIT_CYCLE_PACE } from '../assistance/policy';
 import { energyStep, qualify, clearEntitlement, refreshAssistance, deploys, recoverByDistance } from '../assistance/model';
 import { commandLapEffects } from '../commands/model';
 import { committedStops } from '../pits/model';
 import { getTyreProfile, type TyreState } from '../tyres/model';
 import { advanceWeather, advanceWeatherTyre, waterPenaltyMs } from '../weather/model';
 import { followingEffects, passProbability, attackEdge, type OvertakeCause } from '../traffic/model';
-import { lateRaceAttackWindow, progressionHeldRelease, EMPTY_HELD_LEDGER, attackOpen, attackCadence, heldLossAllowed, type HeldLossLedger } from '../traffic/racecraft';
+import { lateRaceAttackWindow, progressionHeldRelease, EMPTY_HELD_LEDGER, attackOpen, attackCadence, heldLossAllowed, circuitPassEdge, type HeldLossLedger } from '../traffic/racecraft';
 import { driverRiskPpm, mechanicalRiskPpm, effectivePitLaneLoss, validateIncidentState, type RaceEvent, type IncidentKind, type RaceControlMode } from '../incidents/model';
 import { closeRetiredStints } from '../incidents/engine';
 import { classifyProgress, physicalAhead, zonesAt, localProgress, LAP_UNITS, validateProgressionState, type CarProgression } from './model';
@@ -110,6 +110,9 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
         if (compound && p.route === 'TRACK' && !p.compound) {
             p.compound = compound; p.pitEntryLap = e.completedLaps + (localProgress(e.track!.progressMicrolaps) >= config.pit.entry ? 1 : 0);
             entries[i] = { ...e, pit: { ...e.pit!, pendingCompound: null, commandRevision: e.pit!.commandRevision+1 } };
+            // v8E pit cycle (snapshotted racecraft): an AI car committed at THIS checkpoint runs its next lap — its out-lap,
+            // or its in-lap when already past pit entry — on the pit-cycle pace, not the worn-tyre mode just chosen for it.
+            if (racecraft?.aiPitCyclePace === true && !neutral && source.strategyController === 'DEVELOPMENT_AI') entries[i] = { ...entries[i], commands: { ...entries[i].commands!, paceMode: AI_PIT_CYCLE_PACE } };
         }
         plan(source.entrantId,p.freeLapMs === 0);
     }
@@ -196,7 +199,9 @@ export function advanceProgressionLap(saved: RaceSimulationState): RaceSimulatio
             const threshold = lapping ? config.lapping.thresholdMs : window ? window.attackThresholdMs : input.interaction!.attackThresholdMs;
             if (blueFlag && m.gapMs<=threshold) p.lappedAheadId = d.entrantId;
             if (m.gapMs>threshold || edge<(window ? window.minimumPaceAdvantageMs : input.interaction!.minimumPaceAdvantageMs)) continue;
-            const ordinary = passProbability(edge,source.interaction!,sourceOf(d.entrantId).interaction!,source.car.performance-sourceOf(d.entrantId).car.performance,m.effects.drsEligible,input.interaction!);
+            // v8E local fix 2: the circuit's difficulty also governs how much of a genuine pace edge converts (ordinary
+            // racing only; lapping keeps its own resistance rule). The attack gate above still uses the raw edge.
+            const ordinary = passProbability(lapping ? edge : circuitPassEdge(racecraft,edge,difficulty),source.interaction!,sourceOf(d.entrantId).interaction!,source.car.performance-sourceOf(d.entrantId).car.performance,m.effects.drsEligible,input.interaction!);
             const probability = blueFlag ? Math.min(990,1000-Math.round((1000-ordinary)*config.lapping.resistancePermille/1000)) : ordinary;
             const draw = random.next(), success = draw*1000<probability;
             if (v8e) { p.attacksThisLap = p.attemptedLap===lap ? p.attacksThisLap!+1 : 1; p.lastAttackAtMs = clock; p.attackArmed = false;

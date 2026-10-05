@@ -89,15 +89,38 @@ export interface RacecraftConfiguration {
    */
   readonly attackCadenceNeutralDifficulty?: number;
   /**
-   * Race v8E local fix — Sprint tactical AI policy (GAME TUNING; revision-5 SPRINT snapshots only). A short race needs
-   * little tyre / energy conservation, so an AI car with a genuine basis to attack the car directly ahead (held back last
-   * lap, or a clear tyre-age edge) drives in ATTACK pace instead of the symmetric PUSH both cars in a fight otherwise
-   * use, and a fighting AI car may deploy BOOST down to a lower energy reserve. Real costs (wear, fuel, energy, incident
-   * risk) still apply and the pass probability is unchanged. Absent = the accepted symmetric policy.
+   * Race v8E local fix 2 — circuit pass conversion (GAME TUNING; revision-5 snapshots only). The share of a genuine pace
+   * edge that converts into pass likelihood depends on the circuit's own overtaking difficulty (the Race's interaction
+   * snapshot): the edge counted by the pass probability is × 2 × neutral / (neutral + difficulty) — unchanged at this
+   * neutral difficulty, more where passing is easy, less where it is hard. Without it the difficulty was only an additive
+   * offset, so a large pace edge (tyre offset, pit cycle) passed almost as readily at a hard circuit as at an easy one,
+   * which compressed circuit identity. Ordinary on-track attacks only (never lapping / blue flags); the attack gate, the
+   * probability formula and its cap are unchanged; no edge is created. Absent = the edge counted in full.
    */
-  readonly aiAttackPaceMode?: boolean;
-  readonly aiBoostReservePermille?: number;
-  readonly aiRechargeBelowPermille?: number;
+  readonly passEdgeNeutralDifficulty?: number;
+  /**
+   * Race v8E local fix 2 — pit-cycle laps (revision-5 snapshots only). The AI chooses each lap's commands at the leader's
+   * line crossing; a car committed to a stop, or already in the pit lane, then runs its in-lap / out-lap with whatever
+   * that choice was made for: the worn tyre being discarded (LIGHT nursing) or the pit route treated as a Race
+   * neutralisation (CONSERVE). With this flag an AI car's in-lap / out-lap is driven at PUSH — nursing a tyre that is
+   * coming off, or a fresh one that is barely worn, saves nothing — and the pit route is no longer a neutralisation for
+   * the lap choice (the lane itself is speed-limited physics, unchanged). Real costs (wear, energy, fuel) apply. Absent
+   * = the accepted rule.
+   */
+  readonly aiPitCyclePace?: boolean;
+  /**
+   * Race v8E local fix 2 — Sprint tactical AI policy (GAME TUNING; revision-5 SPRINT snapshots only). Replaces the first
+   * local fix's sustained ATTACK pace and lowered energy reserves (which spent tyres and energy without reliable gain):
+   * - energy goes where it decides a battle: an AI car with a genuine basis to attack the car ahead stays BALANCED, which
+   *   keeps its charge for Overtake Mode (deployed automatically in the window and counted in full at an attempt); BOOST
+   *   is only used by a car defending against a genuine threat, above the accepted reserve. Mere proximity spends
+   *   nothing, so two cars no longer drain each other for no net gain;
+   * - ATTACK pace only in the final `aiFinalAttackLaps` laps, only with a genuine basis, and only while the tyre's
+   *   projected wear at the flag under ATTACK stays below its cliff (a resource limit, never attack spam).
+   * The accepted energy thresholds, pass probability and attack gate are unchanged. Absent = the GP policy.
+   */
+  readonly aiSprintTactics?: boolean;
+  readonly aiFinalAttackLaps?: number;
 }
 export function defaultRacecraftConfiguration(): RacecraftConfiguration {
   return {
@@ -141,24 +164,26 @@ export function lateRaceAttackWindow(racecraft: RacecraftConfiguration | undefin
  * Race v8E (revision 5) racecraft — GAME TUNING. The accepted racecraft plus:
  * - the attack cadence (re-attempt after a cooldown once the battle has re-armed; at most two attempts a lap);
  * - the v8D held-following drop-back (same mechanism);
- * - NO late-Race attack window: v8D's widening was measured ineffective (more failed attempts, no more passes).
+ * - NO late-Race attack window: v8D's widening was measured ineffective (more failed attempts, no more passes);
+ * - local fixes: the circuit-scaled cadence, the circuit pass conversion and the pit-cycle lap pace.
  */
 export const V8E_ATTACK_COOLDOWN_MS = 8000;
 export const V8E_ATTACK_REARM_GAP_MS = 300;
 export const V8E_MAX_ATTACKS_PER_LAP = 2;
 /** Neutral overtaking difficulty for the circuit-scaled cadence (the accepted neutral interaction default). */
 export const V8E_CADENCE_NEUTRAL_DIFFICULTY = 35;
+/** Neutral overtaking difficulty for the circuit pass conversion (the accepted neutral interaction default). */
+export const V8E_PASS_EDGE_NEUTRAL_DIFFICULTY = 35;
 export function v8eRacecraftConfiguration(): RacecraftConfiguration {
   return { ...defaultRacecraftConfiguration(), progressionHeldFollowingLossPermille: 500, progressionHeldFollowingLossMaxMs: 250,
     attackCooldownMs: V8E_ATTACK_COOLDOWN_MS, attackRearmGapMs: V8E_ATTACK_REARM_GAP_MS, maxAttacksPerLap: V8E_MAX_ATTACKS_PER_LAP,
-    attackCadenceNeutralDifficulty: V8E_CADENCE_NEUTRAL_DIFFICULTY };
+    attackCadenceNeutralDifficulty: V8E_CADENCE_NEUTRAL_DIFFICULTY, passEdgeNeutralDifficulty: V8E_PASS_EDGE_NEUTRAL_DIFFICULTY, aiPitCyclePace: true };
 }
-/** Sprint tactical AI policy (GAME TUNING): BOOST allowed above 25 % energy (GP: 50 %), RECHARGE below 12 % (GP: 25 %). */
-export const V8E_SPRINT_BOOST_RESERVE_PERMILLE = 250;
-export const V8E_SPRINT_RECHARGE_BELOW_PERMILLE = 120;
+/** Sprint tactical AI policy (GAME TUNING): ATTACK pace is reserved for the final laps of a Sprint. */
+export const V8E_SPRINT_FINAL_ATTACK_LAPS = 3;
 /** Race v8E Sprint racecraft: the revision-5 racecraft plus the Sprint tactical AI policy. */
 export function v8eSprintRacecraftConfiguration(): RacecraftConfiguration {
-  return { ...v8eRacecraftConfiguration(), aiAttackPaceMode: true, aiBoostReservePermille: V8E_SPRINT_BOOST_RESERVE_PERMILLE, aiRechargeBelowPermille: V8E_SPRINT_RECHARGE_BELOW_PERMILLE };
+  return { ...v8eRacecraftConfiguration(), aiSprintTactics: true, aiFinalAttackLaps: V8E_SPRINT_FINAL_ATTACK_LAPS };
 }
 function integer(n: number, lo: number, hi: number) {
   if (!Number.isSafeInteger(n) || n < lo || n > hi) throw new RangeError("Invalid racecraft configuration");
@@ -197,10 +222,9 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   if (c.attackRearmGapMs !== undefined) integer(c.attackRearmGapMs, 1, 5000);
   if (c.maxAttacksPerLap !== undefined) integer(c.maxAttacksPerLap, 1, 3);
   if (c.attackCadenceNeutralDifficulty !== undefined) { if (c.attackCooldownMs === undefined) throw new RangeError("Invalid racecraft configuration"); integer(c.attackCadenceNeutralDifficulty, 1, 100); }
-  if (c.aiAttackPaceMode !== undefined && typeof c.aiAttackPaceMode !== "boolean") throw new RangeError("Invalid racecraft configuration");
-  if ((c.aiBoostReservePermille === undefined) !== (c.aiRechargeBelowPermille === undefined)) throw new RangeError("Invalid racecraft configuration");
-  if (c.aiBoostReservePermille !== undefined) integer(c.aiBoostReservePermille, 0, 1000);
-  if (c.aiRechargeBelowPermille !== undefined) integer(c.aiRechargeBelowPermille, 0, c.aiBoostReservePermille!);
+  if (c.passEdgeNeutralDifficulty !== undefined) integer(c.passEdgeNeutralDifficulty, 1, 100);
+  for (const flag of [c.aiPitCyclePace, c.aiSprintTactics]) if (flag !== undefined && typeof flag !== "boolean") throw new RangeError("Invalid racecraft configuration");
+  if (c.aiFinalAttackLaps !== undefined) { if (c.aiSprintTactics !== true) throw new RangeError("Invalid racecraft configuration"); integer(c.aiFinalAttackLaps, 0, 20); }
 }
 
 /** Race v8D held-following ledger for one car within one checkpoint (local to the engine; never persisted). */
@@ -243,6 +267,14 @@ export function attackCadence(racecraft: RacecraftConfiguration | undefined, ove
   const neutral = racecraft.attackCadenceNeutralDifficulty;
   const scale = (n: number) => neutral === undefined || overtakingDifficulty === undefined ? n : Math.round(n * (neutral + overtakingDifficulty) / (2 * neutral));
   return { cooldownMs: scale(racecraft.attackCooldownMs), rearmGapMs: scale(racecraft.attackRearmGapMs!) };
+}
+/**
+ * Race v8E local fix 2: the pace edge counted by the pass probability at this circuit (see `passEdgeNeutralDifficulty`).
+ * Integer arithmetic only; without the field (or a difficulty) the edge is returned unchanged.
+ */
+export function circuitPassEdge(racecraft: RacecraftConfiguration | undefined, edgeMs: number, overtakingDifficulty: number | undefined): number {
+  const neutral = racecraft?.passEdgeNeutralDifficulty;
+  return neutral === undefined || overtakingDifficulty === undefined ? edgeMs : Math.round(edgeMs * 2 * neutral / (neutral + overtakingDifficulty));
 }
 export function attackOpen(racecraft: RacecraftConfiguration | undefined, car: { readonly attemptedLap: number; readonly attacksThisLap?: number; readonly lastAttackAtMs?: number; readonly attackArmed?: boolean }, lap: number, clockMs: number, overtakingDifficulty?: number): boolean {
   const cadence = attackCadence(racecraft, overtakingDifficulty);

@@ -487,6 +487,9 @@ bonus.
 
 ### Issue 2: the circuit-identity mechanism was not proven
 
+> The conversion curve below was recalibrated in local fix 3 (bounded, asymmetric response). The independent retest
+> found it suppressed hard circuits far too strongly.
+
 **Root cause (reasoned).** Overtaking difficulty enters the pass probability only as an additive offset (−3 ‰ per
 point). The pace edge converts at the same 0.4 ‰/ms everywhere. A large edge (a tyre offset, a pit cycle, a car out
 of position) therefore passes almost as readily at a hard circuit as at an easy one: one second of edge adds 400 ‰ at
@@ -598,3 +601,111 @@ The suppressing component is the **lap commands of the in-lap and out-lap**:
   - Pit-lane cars recover energy at BALANCED instead of RECHARGE rates.
   - Undercut strength could overshoot, and stop counts could move if the AI's existing undercut trigger fires more
     profitably.
+
+## Local fix pass 3 (circuit conversion calibration)
+
+This pass keeps simulation version 8 and progression revision 5; no new revision was created. Only the circuit pass
+conversion changes, through two new optional racecraft snapshot fields. A real-progression regression test is added
+for the pit-cycle correction.
+
+Nothing here has been validated by the Builder. Every statement about effects is reasoning from the code.
+
+### Why the local fix 2 conversion overshot
+
+The independent retest measured the overshoot:
+- Spearman: −0.666 → −0.872.
+- Hard circuits: 0.29 → 0.04 passes per race. Monaco and Marina Bay had 0 passes in 12 races each.
+- Hard-circuit Sprints: 2.76 → 1.30 passes.
+
+A circuit's `overtakingDifficulty` d now acts in four places in a revision-5 Race:
+
+1. **Pass probability, additive offset** (the accepted formula):
+   `30 + 0.4 × edge + 3 × (skill difference) + 3 × (car delta) − 3 × d`.
+   This sets how large an edge a circuit demands before any attempt can succeed. With neutral drivers and cars, the
+   break-even edge is about 40 ms at d = 15, 190 ms at d = 35 and 560 ms at d = 85.
+2. **Attack cadence** (local fix 1): cooldown and re-arm gap × (35 + d) / 70. This governs how often a car may try:
+   about 0.7× at d = 15, 1.7× at d = 85. It is bounded by the two-attempts-per-lap cap.
+3. **Pass-edge conversion** (local fix 2): the edge × 70 / (35 + d), which is the same scale inverted. This governs
+   what a genuine edge is worth.
+4. **Dirty air**, through each circuit's own sensitivity (850–1500 ‰, correlated with d). This governs whether a
+   follower can close into attack range at all.
+
+The local fix 2 conversion multiplied the edge, so it moved the break-even point instead of just the slope:
+`(3d − 30) / (0.4 × factor)`. At d = 85 the break-even rose from about 560 ms to about 970 ms. An edge that large is
+rare in green running, and the circuit-scaled cadence then cut how often such a car could try. Mechanisms 1 and 3
+compounded on the same property, so ordinary competitive passes on hard circuits became almost impossible. Easy
+circuits, where the additive offset says little, were amplified by up to 1.4×.
+
+### Solution selected
+
+**Kept:**
+- The local fix 2 mechanism (scale the counted edge by a circuit factor, ordinary attacks only, gate and probability
+  formula unchanged).
+- The neutral difficulty (35).
+- The circuit-scaled cadence (unchanged, as part of the accepted cadence / re-arm system).
+
+**Changed:** the factor is now a bounded, asymmetric response around neutral:
+
+```
+factor = 1 + response × (35 − d) / (35 + d)
+response = passEdgeEasyResponsePermille (750 ‰) when d ≤ 35, else passEdgeHardResponsePermille (300 ‰)
+```
+
+The term (35 − d) / (35 + d) lies in (−1, 1], so the factor always lies within [0.70, 1.75]. With full response
+(1000 / 1000) the formula is exactly the local fix 2 curve. A snapshot with only `passEdgeNeutralDifficulty` keeps that
+curve bit for bit.
+
+| Difficulty | Example | Local fix 2 factor | Local fix 3 factor | Neutral-skill break-even edge |
+|---|---|---|---|---|
+| 15 | Spa class | 1.40 | ≈ 1.30 | ≈ 30 ms |
+| 18 | Monza class | 1.32 | ≈ 1.24 | — |
+| 35 | neutral | 1.00 | 1.00 | — |
+| 45 | — | 0.875 | ≈ 0.96 | — |
+| 65 | Hungaroring class | 0.70 | ≈ 0.91 | ≈ 450 ms |
+| 85 | Monaco class | 0.58 | ≈ 0.875 | ≈ 640 ms (local fix 2: ≈ 970 ms; local fix 1: ≈ 560 ms) |
+
+### Why the response is asymmetric
+
+- **Hard circuits are already difficult without the conversion.** The additive offset, the longer cadence and stronger
+  dirty air together demand a large edge, allow fewer retries and make closing harder. The conversion therefore only
+  needs to be a gentle slope modifier there, not a second threshold.
+  - With the 30 % response, a large legitimate edge keeps most of its value. A 1.2 s edge at d = 85 gives about 195 ‰
+    per attempt (local fix 2: about 55 ‰; local fix 1: about 255 ‰).
+  - Hard circuits stay clearly harder than neutral and easy ones, but ordinary competitive passes with a real edge
+    remain possible.
+- **Easy circuits get their identity mostly from the conversion.** There the additive offset is small (−45 ‰ at d = 15
+  against −105 ‰ at neutral) and the break-even edge is already tiny, so most of their character comes from how
+  readily an edge converts. They keep most of the response.
+  - The cap is 1.75 even at d = 0, and about 1.30 at the easiest production circuits.
+  - The pass probability cap (950 ‰), the attack gate (raw edge ≥ the minimum) and the cadence are unchanged. A pass
+    still requires a genuine edge within the attack threshold, so easy circuits should not become arcade-like.
+- **Why not a floor on the local fix 2 curve?** A clamp would make every hard circuit identical in conversion and add
+  a kink. The asymmetric response keeps the conversion smooth and monotone across all difficulties.
+- **Why not remove the conversion?** That returns to local fix 1, whose circuit identity was judged unproven.
+
+### Expected trade-offs (reasoned)
+
+- Hard circuits should recover passes towards, but stay below, the local fix 1 level. The ordering against neutral and
+  easy circuits should be kept.
+- Easy circuits should give slightly fewer passes than local fix 2 (1.30 instead of 1.40 at the easiest), still more
+  than local fix 1.
+- The difficulty/pass rank correlation may weaken somewhat from local fix 2's −0.872.
+- Sprint pass counts at hard circuits should move with this recalibration. The Sprint policy itself is unchanged.
+
+### Pit-cycle regression coverage
+
+The independent QA gap is now covered. `tests/race-v8e-local-fix-3.test.ts`:
+- advances a real revision-5 Race lap by lap;
+- for every green-flag AI stop completed within a checkpoint, while the car is still on that fresh tyre's first lap,
+  reads the lap commands the engine froze at the lane crossing (`cars[id].lapCommands`);
+- requires them to be PUSH.
+
+### Intentionally frozen in this pass
+
+- The Sprint tactical / resource policy.
+- The pit-cycle mechanism and every undercut physics value (blankets, degradation, pit loss, out-lap pace, stop timing).
+- The attack cadence / re-arm system (including its circuit scaling).
+- The pass probability formula and attack gate.
+- Tyres, dry / wet strategy, SC / VSC, lapping / blue flags, regulation, classification, DSQ.
+- Boost / Overtake / Active Aero, DRS inertness, pit-entry pass semantics.
+- Persistence, RNG and revision 4.

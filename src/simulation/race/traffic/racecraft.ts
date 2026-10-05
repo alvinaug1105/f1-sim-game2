@@ -96,8 +96,19 @@ export interface RacecraftConfiguration {
    * offset, so a large pace edge (tyre offset, pit cycle) passed almost as readily at a hard circuit as at an easy one,
    * which compressed circuit identity. Ordinary on-track attacks only (never lapping / blue flags); the attack gate, the
    * probability formula and its cap are unchanged; no edge is created. Absent = the edge counted in full.
+   *
+   * Local fix 3 — bounded response (present together, require the neutral difficulty). The factor is
+   * 1 + response × (neutral − difficulty) / (neutral + difficulty), with `passEdgeEasyResponsePermille` as the response
+   * on circuits easier than neutral and `passEdgeHardResponsePermille` on harder ones; it is therefore always within
+   * [1 − hard response, 1 + easy response]. The pass probability already charges difficulty as an additive offset
+   * (−3 ‰ per point), which sets how large an edge a hard circuit demands; a full-strength conversion on top of it
+   * compounded the two and left ordinary hard-circuit passes almost impossible. The hard side is therefore a gentle
+   * slope modifier only, while the easy side (where the offset says little) keeps most of its response. Absent = full
+   * response on both sides (the local fix 2 curve, 2 × neutral / (neutral + difficulty), exactly).
    */
   readonly passEdgeNeutralDifficulty?: number;
+  readonly passEdgeEasyResponsePermille?: number;
+  readonly passEdgeHardResponsePermille?: number;
   /**
    * Race v8E local fix 2 — pit-cycle laps (revision-5 snapshots only). The AI chooses each lap's commands at the leader's
    * line crossing; a car committed to a stop, or already in the pit lane, then runs its in-lap / out-lap with whatever
@@ -174,10 +185,18 @@ export const V8E_MAX_ATTACKS_PER_LAP = 2;
 export const V8E_CADENCE_NEUTRAL_DIFFICULTY = 35;
 /** Neutral overtaking difficulty for the circuit pass conversion (the accepted neutral interaction default). */
 export const V8E_PASS_EDGE_NEUTRAL_DIFFICULTY = 35;
+/**
+ * Local fix 3 conversion response (GAME TUNING): easier-than-neutral circuits keep 75 % of the full response (factor ≤
+ * 1.75, Spa class ≈ 1.30); harder ones only 30 % (factor ≥ 0.70, Monaco class ≈ 0.875), the rest of their difficulty
+ * being the probability's own additive offset, the circuit-scaled cadence and dirty air.
+ */
+export const V8E_PASS_EDGE_EASY_RESPONSE_PERMILLE = 750;
+export const V8E_PASS_EDGE_HARD_RESPONSE_PERMILLE = 300;
 export function v8eRacecraftConfiguration(): RacecraftConfiguration {
   return { ...defaultRacecraftConfiguration(), progressionHeldFollowingLossPermille: 500, progressionHeldFollowingLossMaxMs: 250,
     attackCooldownMs: V8E_ATTACK_COOLDOWN_MS, attackRearmGapMs: V8E_ATTACK_REARM_GAP_MS, maxAttacksPerLap: V8E_MAX_ATTACKS_PER_LAP,
-    attackCadenceNeutralDifficulty: V8E_CADENCE_NEUTRAL_DIFFICULTY, passEdgeNeutralDifficulty: V8E_PASS_EDGE_NEUTRAL_DIFFICULTY, aiPitCyclePace: true };
+    attackCadenceNeutralDifficulty: V8E_CADENCE_NEUTRAL_DIFFICULTY, passEdgeNeutralDifficulty: V8E_PASS_EDGE_NEUTRAL_DIFFICULTY,
+    passEdgeEasyResponsePermille: V8E_PASS_EDGE_EASY_RESPONSE_PERMILLE, passEdgeHardResponsePermille: V8E_PASS_EDGE_HARD_RESPONSE_PERMILLE, aiPitCyclePace: true };
 }
 /** Sprint tactical AI policy (GAME TUNING): ATTACK pace is reserved for the final laps of a Sprint. */
 export const V8E_SPRINT_FINAL_ATTACK_LAPS = 3;
@@ -223,6 +242,12 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   if (c.maxAttacksPerLap !== undefined) integer(c.maxAttacksPerLap, 1, 3);
   if (c.attackCadenceNeutralDifficulty !== undefined) { if (c.attackCooldownMs === undefined) throw new RangeError("Invalid racecraft configuration"); integer(c.attackCadenceNeutralDifficulty, 1, 100); }
   if (c.passEdgeNeutralDifficulty !== undefined) integer(c.passEdgeNeutralDifficulty, 1, 100);
+  if ((c.passEdgeEasyResponsePermille === undefined) !== (c.passEdgeHardResponsePermille === undefined)) throw new RangeError("Invalid racecraft configuration");
+  if (c.passEdgeEasyResponsePermille !== undefined) {
+    if (c.passEdgeNeutralDifficulty === undefined) throw new RangeError("Invalid racecraft configuration");
+    // Bounded: the factor stays within [0, 2] — a conversion never inverts an edge or more than doubles it.
+    integer(c.passEdgeEasyResponsePermille, 0, 1000); integer(c.passEdgeHardResponsePermille!, 0, 1000);
+  }
   for (const flag of [c.aiPitCyclePace, c.aiSprintTactics]) if (flag !== undefined && typeof flag !== "boolean") throw new RangeError("Invalid racecraft configuration");
   if (c.aiFinalAttackLaps !== undefined) { if (c.aiSprintTactics !== true) throw new RangeError("Invalid racecraft configuration"); integer(c.aiFinalAttackLaps, 0, 20); }
 }
@@ -269,12 +294,17 @@ export function attackCadence(racecraft: RacecraftConfiguration | undefined, ove
   return { cooldownMs: scale(racecraft.attackCooldownMs), rearmGapMs: scale(racecraft.attackRearmGapMs!) };
 }
 /**
- * Race v8E local fix 2: the pace edge counted by the pass probability at this circuit (see `passEdgeNeutralDifficulty`).
- * Integer arithmetic only; without the field (or a difficulty) the edge is returned unchanged.
+ * Race v8E local fixes 2–3: the pace edge counted by the pass probability at this circuit (see
+ * `passEdgeNeutralDifficulty`): edge × (1 + response × (neutral − difficulty) / (neutral + difficulty)), the response
+ * being the easy or hard one by side of neutral (full response when the snapshot has none). Integer arithmetic only;
+ * without the field (or a difficulty) the edge is returned unchanged.
  */
 export function circuitPassEdge(racecraft: RacecraftConfiguration | undefined, edgeMs: number, overtakingDifficulty: number | undefined): number {
   const neutral = racecraft?.passEdgeNeutralDifficulty;
-  return neutral === undefined || overtakingDifficulty === undefined ? edgeMs : Math.round(edgeMs * 2 * neutral / (neutral + overtakingDifficulty));
+  if (neutral === undefined || overtakingDifficulty === undefined) return edgeMs;
+  const response = overtakingDifficulty <= neutral ? racecraft!.passEdgeEasyResponsePermille ?? 1000 : racecraft!.passEdgeHardResponsePermille ?? 1000;
+  const span = 1000 * (neutral + overtakingDifficulty);
+  return Math.round(edgeMs * (span + response * (neutral - overtakingDifficulty)) / span);
 }
 export function attackOpen(racecraft: RacecraftConfiguration | undefined, car: { readonly attemptedLap: number; readonly attacksThisLap?: number; readonly lastAttackAtMs?: number; readonly attackArmed?: boolean }, lap: number, clockMs: number, overtakingDifficulty?: number): boolean {
   const cadence = attackCadence(racecraft, overtakingDifficulty);

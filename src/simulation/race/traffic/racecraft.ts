@@ -80,6 +80,24 @@ export interface RacecraftConfiguration {
   readonly attackCooldownMs?: number;
   readonly attackRearmGapMs?: number;
   readonly maxAttacksPerLap?: number;
+  /**
+   * Race v8E local fix (GAME TUNING; revision-5 snapshots only, requires the cadence fields). The cooldown and re-arm
+   * gap scale with the circuit's own overtaking difficulty (the Race's interaction snapshot): × (neutral + difficulty) /
+   * (2 × neutral) — 1.0 at this neutral difficulty, shorter where passing is easy, longer where it is hard. Without it a
+   * fixed cadence gave hard circuits (many failed first attempts) proportionally more retries than easy ones, which
+   * compressed circuit identity. Absent = the fixed cadence.
+   */
+  readonly attackCadenceNeutralDifficulty?: number;
+  /**
+   * Race v8E local fix — Sprint tactical AI policy (GAME TUNING; revision-5 SPRINT snapshots only). A short race needs
+   * little tyre / energy conservation, so an AI car with a genuine basis to attack the car directly ahead (held back last
+   * lap, or a clear tyre-age edge) drives in ATTACK pace instead of the symmetric PUSH both cars in a fight otherwise
+   * use, and a fighting AI car may deploy BOOST down to a lower energy reserve. Real costs (wear, fuel, energy, incident
+   * risk) still apply and the pass probability is unchanged. Absent = the accepted symmetric policy.
+   */
+  readonly aiAttackPaceMode?: boolean;
+  readonly aiBoostReservePermille?: number;
+  readonly aiRechargeBelowPermille?: number;
 }
 export function defaultRacecraftConfiguration(): RacecraftConfiguration {
   return {
@@ -128,9 +146,19 @@ export function lateRaceAttackWindow(racecraft: RacecraftConfiguration | undefin
 export const V8E_ATTACK_COOLDOWN_MS = 8000;
 export const V8E_ATTACK_REARM_GAP_MS = 300;
 export const V8E_MAX_ATTACKS_PER_LAP = 2;
+/** Neutral overtaking difficulty for the circuit-scaled cadence (the accepted neutral interaction default). */
+export const V8E_CADENCE_NEUTRAL_DIFFICULTY = 35;
 export function v8eRacecraftConfiguration(): RacecraftConfiguration {
   return { ...defaultRacecraftConfiguration(), progressionHeldFollowingLossPermille: 500, progressionHeldFollowingLossMaxMs: 250,
-    attackCooldownMs: V8E_ATTACK_COOLDOWN_MS, attackRearmGapMs: V8E_ATTACK_REARM_GAP_MS, maxAttacksPerLap: V8E_MAX_ATTACKS_PER_LAP };
+    attackCooldownMs: V8E_ATTACK_COOLDOWN_MS, attackRearmGapMs: V8E_ATTACK_REARM_GAP_MS, maxAttacksPerLap: V8E_MAX_ATTACKS_PER_LAP,
+    attackCadenceNeutralDifficulty: V8E_CADENCE_NEUTRAL_DIFFICULTY };
+}
+/** Sprint tactical AI policy (GAME TUNING): BOOST allowed above 25 % energy (GP: 50 %), RECHARGE below 12 % (GP: 25 %). */
+export const V8E_SPRINT_BOOST_RESERVE_PERMILLE = 250;
+export const V8E_SPRINT_RECHARGE_BELOW_PERMILLE = 120;
+/** Race v8E Sprint racecraft: the revision-5 racecraft plus the Sprint tactical AI policy. */
+export function v8eSprintRacecraftConfiguration(): RacecraftConfiguration {
+  return { ...v8eRacecraftConfiguration(), aiAttackPaceMode: true, aiBoostReservePermille: V8E_SPRINT_BOOST_RESERVE_PERMILLE, aiRechargeBelowPermille: V8E_SPRINT_RECHARGE_BELOW_PERMILLE };
 }
 function integer(n: number, lo: number, hi: number) {
   if (!Number.isSafeInteger(n) || n < lo || n > hi) throw new RangeError("Invalid racecraft configuration");
@@ -168,6 +196,11 @@ export function validateRacecraftConfiguration(c: RacecraftConfiguration) {
   if (c.attackCooldownMs !== undefined) integer(c.attackCooldownMs, 1000, 120000);
   if (c.attackRearmGapMs !== undefined) integer(c.attackRearmGapMs, 1, 5000);
   if (c.maxAttacksPerLap !== undefined) integer(c.maxAttacksPerLap, 1, 3);
+  if (c.attackCadenceNeutralDifficulty !== undefined) { if (c.attackCooldownMs === undefined) throw new RangeError("Invalid racecraft configuration"); integer(c.attackCadenceNeutralDifficulty, 1, 100); }
+  if (c.aiAttackPaceMode !== undefined && typeof c.aiAttackPaceMode !== "boolean") throw new RangeError("Invalid racecraft configuration");
+  if ((c.aiBoostReservePermille === undefined) !== (c.aiRechargeBelowPermille === undefined)) throw new RangeError("Invalid racecraft configuration");
+  if (c.aiBoostReservePermille !== undefined) integer(c.aiBoostReservePermille, 0, 1000);
+  if (c.aiRechargeBelowPermille !== undefined) integer(c.aiRechargeBelowPermille, 0, c.aiBoostReservePermille!);
 }
 
 /** Race v8D held-following ledger for one car within one checkpoint (local to the engine; never persisted). */
@@ -201,14 +234,26 @@ export function progressionHeldRelease(racecraft: RacecraftConfiguration | undef
  * the first attempt of a lap needs only the cooldown; a further attempt in the same lap also needs the battle to have
  * re-armed and the per-lap cap not to be reached.
  */
-export function attackOpen(racecraft: RacecraftConfiguration | undefined, car: { readonly attemptedLap: number; readonly attacksThisLap?: number; readonly lastAttackAtMs?: number; readonly attackArmed?: boolean }, lap: number, clockMs: number): boolean {
-  if (racecraft?.attackCooldownMs === undefined) return car.attemptedLap !== lap;
-  if (car.lastAttackAtMs !== undefined && car.lastAttackAtMs >= 0 && clockMs - car.lastAttackAtMs < racecraft.attackCooldownMs) return false;
+/**
+ * Race v8E: this circuit's effective cooldown and re-arm gap. Fixed values unless the snapshot scales them with the
+ * circuit's overtaking difficulty (`attackCadenceNeutralDifficulty`); integer arithmetic only. Null = no cadence.
+ */
+export function attackCadence(racecraft: RacecraftConfiguration | undefined, overtakingDifficulty: number | undefined): { cooldownMs: number; rearmGapMs: number } | null {
+  if (racecraft?.attackCooldownMs === undefined) return null;
+  const neutral = racecraft.attackCadenceNeutralDifficulty;
+  const scale = (n: number) => neutral === undefined || overtakingDifficulty === undefined ? n : Math.round(n * (neutral + overtakingDifficulty) / (2 * neutral));
+  return { cooldownMs: scale(racecraft.attackCooldownMs), rearmGapMs: scale(racecraft.attackRearmGapMs!) };
+}
+export function attackOpen(racecraft: RacecraftConfiguration | undefined, car: { readonly attemptedLap: number; readonly attacksThisLap?: number; readonly lastAttackAtMs?: number; readonly attackArmed?: boolean }, lap: number, clockMs: number, overtakingDifficulty?: number): boolean {
+  const cadence = attackCadence(racecraft, overtakingDifficulty);
+  if (!racecraft || !cadence) return car.attemptedLap !== lap;
+  if (car.lastAttackAtMs !== undefined && car.lastAttackAtMs >= 0 && clockMs - car.lastAttackAtMs < cadence.cooldownMs) return false;
   if (car.attemptedLap !== lap) return true;
   return car.attackArmed === true && (car.attacksThisLap ?? 1) < racecraft.maxAttacksPerLap!;
 }
 /** Race v8E: a held / failed-attack car may give up held-following loss only outside its attack phase. */
-export function heldLossAllowed(racecraft: RacecraftConfiguration | undefined, car: { readonly attemptedLap: number; readonly lastAttackAtMs?: number }, lap: number, clockMs: number): boolean {
-  if (racecraft?.attackCooldownMs === undefined) return car.attemptedLap !== lap;
-  return car.lastAttackAtMs === undefined || car.lastAttackAtMs < 0 || clockMs - car.lastAttackAtMs >= racecraft.attackCooldownMs;
+export function heldLossAllowed(racecraft: RacecraftConfiguration | undefined, car: { readonly attemptedLap: number; readonly lastAttackAtMs?: number }, lap: number, clockMs: number, overtakingDifficulty?: number): boolean {
+  const cadence = attackCadence(racecraft, overtakingDifficulty);
+  if (!cadence) return car.attemptedLap !== lap;
+  return car.lastAttackAtMs === undefined || car.lastAttackAtMs < 0 || clockMs - car.lastAttackAtMs >= cadence.cooldownMs;
 }

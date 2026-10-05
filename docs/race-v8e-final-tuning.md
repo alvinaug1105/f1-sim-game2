@@ -275,3 +275,149 @@ The Tester should compare revision-4 final-state hashes between the base build `
 - The rejoin estimate ignores cars that will pit or be overtaken during the stop.
 - The LCG adjacent-seed note is unchanged by design. A dependency / security review is still required before the
   public-beta gate.
+
+## Local fix pass (post-independent-validation repair)
+
+Still simulation version 8 and progression revision 5. No new revision was created: every change below is a revision-5
+capability or a new optional field in the frozen v8E bundle. Revision 4 receives none of these fields, and none of
+the new code paths runs for it.
+
+No mechanism in this section has been validated by the Builder. Each one is a mechanism *intended* to address the
+Tester finding named, and all of them await independent retest.
+
+### Test-suite repairs
+
+- **Revision validation (`tests/race-v8d.test.ts`).** The stale "revision 5 is invalid" assertion now asserts that
+  revision 5 is accepted. It also asserts that unknown revisions (6 and 0) are still rejected, so nothing is silently
+  accepted.
+- **Safety Car compression (`tests/race-v8e.test.ts`).** The old fixture ran inside the queue interval, with a gap-sum
+  ratio of about 1.0, so it measured nothing. The new `withGaps` fixture re-spaces an eight-car field to 3 s between
+  cars (well above the 1 s queue interval) before neutralising. The assertions are stricter than before:
+  - every pair must lose more than 100 ms but stay at or above the queue interval;
+  - the gap-sum ratio must fall below 0.9;
+  - revision 5 must compress more than revision 4;
+  - the no-pass and position invariants are checked on every lap;
+  - the VSC must hold gaps (ratio between 0.9 and 1.1).
+- **i18n (`viewer.tyreLifeAtPace`).** The zh-TW string now uses the same `{count}` / `{pace}` placeholders as EN.
+
+### Changed / added frozen configuration
+
+| Field | Where | v8E value | Purpose |
+|---|---|---|---|
+| `attackCadenceNeutralDifficulty` | racecraft | 35 | Circuit-scaled attack cadence |
+| `aiAttackPaceMode` | racecraft (Sprint only) | `true` | Sprint attacker pace policy |
+| `aiBoostReservePermille` / `aiRechargeBelowPermille` | racecraft (Sprint only) | 250 / 120 | Sprint energy reserves |
+| `trackPositionValueSpreadPermille` | AI strategy | 400 | Per-character track-position value |
+| `wetRefreshNeutral` | AI strategy | `true` | Neutral same-family wet refresh |
+| fresh-tyre blanket temperature | revision-5 capability (`tyres/fresh.ts`) | ideal-window minimum | Undercut warm-up |
+| dry starting plan | revision-5 grid set-up (`aiDryStartingPlan`) | uses existing `compoundToleranceMs` | Dry strategy diversity |
+
+The blanket temperature and the starting plan are capabilities rather than fields:
+- the pit profile is stored in fixed database columns, so a new field there would not persist;
+- the starting plan is computed once at Race creation, from data that is already frozen.
+
+### Issue 2: Sprint processional
+
+**Cause (reasoned).** The accepted AI assistance policy is symmetric. When cars fight, the attacker and the defender
+both choose PUSH and BOOST. Neither gains a tactical edge, so pass attempts depend only on the static probability.
+Sprints also have no pit-strategy offsets to create pace differences.
+
+**Mechanism.** The Sprint bundle (`v8eSprintRacecraftConfiguration`) changes how the AI manages a fight. It does not
+change pass probability, and there is no Sprint pass multiplier.
+- An attacker uses ATTACK pace only when it has a real basis:
+  - it is being held up by at least `aiHeldEdgeMs`; or
+  - its tyres are at least `aiTyreAgeEdgeLaps` laps younger than the car ahead's.
+- An attacker with no such basis, and every defender, keeps PUSH.
+- Energy reserves are lower in a short race: Boost above 25 % of capacity, Recharge below 12 %.
+
+**Trade-off.** ATTACK pace costs extra tyre wear and temperature, so a Sprint attacker pays for its aggression. The
+Grand Prix policy is unchanged.
+
+### Issue 3: circuit identity compressed
+
+**Cause (reasoned).** The +0.080 cadence work gave every circuit the same retry rate. Extra retries mostly convert
+where first attempts fail, which is at hard circuits, so the spread between circuits shrank. Removing the late-Race
+window also took late passes away from easy circuits.
+
+**Mechanism.** The attack cooldown and the re-arm gap now scale with each circuit's existing
+`interaction.overtakingDifficulty`:
+
+```
+scale = (neutral + difficulty) / (2 × neutral)    with neutral = 35
+```
+
+- At difficulty 35 the accepted cadence is reproduced exactly.
+- Easy circuits re-arm sooner. For example, at Spa (15) the scale is about 0.71.
+- Hard circuits re-arm later. For example, at Monaco (85) the scale is about 1.71.
+
+No circuit names are used. The +0.080 cadence mechanism is kept and scaled, not replaced.
+
+### Issue 4: undercut leverage absent
+
+**Limiting component (reasoned).** Every new tyre was fitted at 80 °C, below the ideal window of all dry compounds
+(SOFT's starts at 90 °C). It then closed only 25 % of the gap to the window each lap. A fresh soft therefore spent
+about 3 laps cold, costing around 0.3 s, which cancelled most of the fresh-tyre gain the undercut depends on.
+Degradation was not increased again.
+
+**Mechanism.** Revision-5 tyres come off blankets at the bottom of their compound's ideal window (`tyres/fresh.ts`),
+and never above the top of it. The same function is used by:
+- the engine, when a car leaves the pit lane;
+- the AI planner (`ai-strategy.ts`);
+- the regulation fallback (`ai-compliance.ts`);
+- the dry starting plan.
+
+This keeps the planners' estimates consistent with what the engine actually does.
+
+**Hard constraint respected.** There is no `undercutBonusMs` or anything equivalent. No time is credited for stopping
+first.
+
+**Expected effect on stop counts.** Stopping becomes slightly cheaper, which could raise stop counts, so this must be
+retested. Two things limit that rise:
+- the stop decision still weighs pit loss and the extra-stop track-position cost;
+- the convex long-run degradation offset was left unchanged.
+
+### Issue 5: dry AI strategy homogeneity
+
+Revision-5 grids pick a starting compound from a costed one-stop plan (`aiDryStartingPlan`):
+- each plan pairs a starting compound with a different follow-up compound when the dry-tyre rule requires two;
+- only stints within each compound's tyre life count.
+
+Every plan within the existing `compoundToleranceMs` of the best counts as sensible. The car's frozen compound
+preference then picks among them, from softest to hardest. A tolerance of 0 makes every character choose the same plan,
+so variation only exists where the cost model says plans are close.
+
+The cost of an extra stop now also depends on each car's existing `trafficSensitivity`, spread by ±40 %. A
+traffic-averse character values track position more than a traffic-tolerant one.
+
+If no plan is finite, the accepted `aiDryStartingCompound` is used. Revision 4 keeps the accepted start-compound logic.
+
+### Issue 6: wet AI
+
+No separate change was made. The wet-refresh correction for Issue 7 removes one source of late, unsynchronised wet
+decisions. The v8E crossover horizon and the weather-risk character spread are otherwise unchanged.
+
+### Issue 7: wet-tyre beyond-cliff rows (0.88 % → 2.37 %)
+
+**Conclusion (reasoned, not measured).** The tyre-cliff system itself is unchanged. The likely cause is the v8E
+weather-character spread (350 → 500‰), which was meant for crossover timing between tyre families. It was also being
+applied to *same-family* refreshes, for example a worn INTER being replaced by a fresh INTER. A late-leaning character
+therefore delayed a refresh that had nothing to do with the weather crossing over, and so ran worn wets past the cliff.
+
+**Mechanism.** With `wetRefreshNeutral`, a same-family refresh uses the shared horizon with no character bias. The
+character spread still applies to crossovers between families.
+
+### Findings intentionally deferred
+
+These were deferred as the brief instructed:
+- residual re-arm;
+- re-pass loops;
+- modest SC compression beyond the test fixture;
+- SC pit-route ranking;
+- neighbour overlap.
+
+### Risks for the retest
+
+- Blankets make stopping cheaper and may raise stop counts above the accepted range of 1.72 to 1.75.
+- The ATTACK pace policy could increase tyre-cliff exposure in Sprints.
+- Circuit-scaled cadence can lower total pass counts at hard circuits compared with the previous v8E build.
+- The starting plan uses the green pit-loss estimate, so it ignores SC probability.

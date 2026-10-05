@@ -10,8 +10,13 @@ export function chooseAssistanceAi(s:RaceSimulationState):RaceSimulationState {
         const p=cars[e.entrantId],a=p.assistance!,ahead=physicalAhead(s.entrants,e,cars,tie),behind=physicalBehind(s.entrants,e,cars);
         const close=(n:typeof ahead)=>!!n&&n.distance*s.input.circuit.baseLapTimeMs/LAP_UNITS<=1200&&Math.abs(n.entrant.track!.progressMicrolaps-e.track!.progressMicrolaps)<LAP_UNITS/2;
         const fighting=close(ahead)||close(behind),neutral=s.incidents!.mode!=='GREEN'||p.route!=='TRACK';
-        a.policy=neutral||a.energy<cfg.capacity/4?'RECHARGE':fighting&&a.energy>cfg.capacity/2?'BOOST':'BALANCED';
-        return {...e,commands:{...e.commands!,paceMode:neutral?'CONSERVE' as const:e.stint!.tyre.wearPermille>=s.input.commands!.ai.highWear?'LIGHT' as const:fighting?'PUSH' as const:'STANDARD' as const,fuelMode:projectedFuelGrams(s,e,'BALANCED')<0?'CONSERVE' as const:'BALANCED' as const,ersMode:'NEUTRAL' as const,ersCharge:0}};
+        // v8E Sprint tactical policy (snapshotted racecraft; absent = the accepted symmetric thresholds exactly).
+        const rc=s.input.commands!.racecraft,rechargeBelow=rc?.aiRechargeBelowPermille===undefined?cfg.capacity/4:cfg.capacity*rc.aiRechargeBelowPermille/1000,boostAbove=rc?.aiBoostReservePermille===undefined?cfg.capacity/2:cfg.capacity*rc.aiBoostReservePermille/1000;
+        a.policy=neutral||a.energy<rechargeBelow?'RECHARGE':fighting&&a.energy>boostAbove?'BOOST':'BALANCED';
+        // A genuine basis to attack the car directly ahead: held back last lap (own traffic loss) or a clear tyre-age edge
+        // (public). Only then does the Sprint policy choose ATTACK pace; a defender keeps PUSH.
+        const attacking=rc?.aiAttackPaceMode===true&&close(ahead)&&(e.track!.trafficLossMs>=rc.aiHeldEdgeMs||ahead!.entrant.stint!.tyre.ageLaps-e.stint!.tyre.ageLaps>=rc.aiTyreAgeEdgeLaps);
+        return {...e,commands:{...e.commands!,paceMode:neutral?'CONSERVE' as const:e.stint!.tyre.wearPermille>=s.input.commands!.ai.highWear?'LIGHT' as const:attacking?'ATTACK' as const:fighting?'PUSH' as const:'STANDARD' as const,fuelMode:projectedFuelGrams(s,e,'BALANCED')<0?'CONSERVE' as const:'BALANCED' as const,ersMode:'NEUTRAL' as const,ersCharge:0}};
     });
     return {...s,entrants,progression:{...s.progression!,cars}};
 }

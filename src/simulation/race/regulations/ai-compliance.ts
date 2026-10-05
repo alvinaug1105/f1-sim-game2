@@ -23,6 +23,7 @@ import { tyreFamily } from '../tyres/family';
 import { dryCompound, publicWeather, type StrategyPreference } from '../pits/ai-strategy';
 import type { RaceEntrantState, RaceSimulationState } from '../types';
 import { assessTyreRule, compoundSatisfies } from './tyres';
+import { freshTyreTemperatureMilliC } from '../tyres/fresh';
 
 export function regulateAiStop(state: RaceSimulationState, e: RaceEntrantState, proposed: TyreCompound | null, greenPitLaneLossMs: number, preference: StrategyPreference | null): TyreCompound | null {
     const rule = state.input.progression?.regulation?.dryTyres;
@@ -55,7 +56,7 @@ function legalCompound(state: RaceSimulationState, e: RaceEntrantState, legal: (
         return dryCompound({ state, entrant: e, weather: w, publicWeather: pub, mode: state.incidents?.mode ?? 'GREEN', greenPitLaneLossMs },
             strategy, preference, tyres, remaining, legal);
     // Races without the snapshotted strategy: the cheapest legal dry compound over the remaining distance (tyre cost only).
-    const fresh = (compound: TyreCompound): TyreState => ({ compound, ageLaps: 0, wearPermille: 0, temperatureMilliC: input.pits!.newTyreTemperatureMilliC });
+    const fresh = (compound: TyreCompound): TyreState => ({ compound, ageLaps: 0, wearPermille: 0, temperatureMilliC: freshTyreTemperatureMilliC(input, compound) });
     const cost = (start: TyreState) => { let t = start, total = 0; for (let n = 0; n < remaining; n++) { const x = tyreContributions(t, tyres.profiles[t.compound]!); total += x.tyreCompoundMs + x.tyreWearMs + x.tyreTemperatureMs; t = advanceTyre(t, tyres); } return total; };
     return TYRE_COMPOUNDS.filter(legal).map(c => ({ c, cost: cost(fresh(c)) })).sort((x, y) => x.cost - y.cost || TYRE_COMPOUNDS.indexOf(x.c) - TYRE_COMPOUNDS.indexOf(y.c))[0].c;
 }

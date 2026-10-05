@@ -177,39 +177,68 @@ describe("serialization (Issue 23): revision-5 car state never holds -0", () => 
     }, 60_000);
 });
 
-/** Same-lap consecutive pair gaps (ms of distance) of running cars on track. */
-function pairGapSum(s: RaceSimulationState) {
-    const order = [...s.entrants].filter(e => e.incident!.status === "RUNNING").sort((a, b) => a.position - b.position);
-    let sum = 0;
-    for (let k = 1; k < order.length; k++) sum += Math.round((order[k - 1].track!.progressMicrolaps - order[k].track!.progressMicrolaps) * s.input.circuit.baseLapTimeMs / LAP_UNITS);
-    return sum;
+/**
+ * A valid SC fixture with a genuine EXCESS gap: the field (all on track, no pending stops) re-spaced so every car runs
+ * `gapMs` behind the car ahead — well beyond the 1 s Safety Car queue interval — behind the current leader. Distance,
+ * lap count and the current route observation are set coherently, so authoritative validation accepts the state.
+ */
+function withGaps(s: RaceSimulationState, gapMs: number): RaceSimulationState {
+    const x = structuredClone(s) as RaceSimulationState, order = [...x.entrants].sort((a, b) => a.position - b.position);
+    const lead = order[0].track!.progressMicrolaps, unit = Math.round(gapMs * LAP_UNITS / x.input.circuit.baseLapTimeMs);
+    const total = new Map(order.map((e, k) => [e.entrantId, lead - k * unit]));
+    for (const e of order) { const c = x.progression!.cars[e.entrantId]; expect(c.route).toBe("TRACK"); c.observations = [{ atMs: x.progression!.elapsedTimeMs, total: total.get(e.entrantId)!, route: "TRACK" }]; }
+    const out = { ...x, entrants: x.entrants.map(e => ({ ...e, completedLaps: Math.floor(total.get(e.entrantId)! / LAP_UNITS), track: { ...e.track!, progressMicrolaps: total.get(e.entrantId)! } })) };
+    validateProgressionState(out);
+    return out;
 }
+/** Consecutive pair gaps (ms of base-lap distance) in classification order, keyed by pair. */
+function pairGaps(s: RaceSimulationState) {
+    const order = [...s.entrants].filter(e => e.incident!.status === "RUNNING").sort((a, b) => a.position - b.position);
+    return order.slice(1).map((e, k) => ({ key: `${e.entrantId}>${order[k].entrantId}`, ms: Math.round((order[k].track!.progressMicrolaps - e.track!.progressMicrolaps) * s.input.circuit.baseLapTimeMs / LAP_UNITS) }));
+}
+const sum = (g: { ms: number }[]) => g.reduce((t, x) => t + x.ms, 0);
 describe("Safety Car train compression (Issue 6) and VSC gap retention (Issue 7)", () => {
-    const spread = (input = v8eInput({ count: 8, players: 8, laps: 30, quiet: true, seed: 7 })) => advanceRace(createRace(input), 8);
+    const GAP_MS = 3000; // three queue intervals: a real excess to close
+    const field = (input: ReturnType<typeof v8eInput>) => withGaps(advanceRace(createRace(input), 4), GAP_MS);
+    const rev5 = () => field(v8eInput({ count: 8, players: 8, laps: 30, quiet: true, seed: 7 }));
+    const rev4 = () => field(v8dInput({ count: 8, players: 8, laps: 30, quiet: true, seed: 7 }));
+    /** Three Safety Car checkpoints from `s`: real movement only (forward, lap counts kept, no passes, same order). */
+    function underSafetyCar(s: RaceSimulationState) {
+        let x = neutralise(s, "SAFETY_CAR", 4); const before = pairGaps(x), seen = x.incidents!.events.length;
+        for (let n = 0; n < 3; n++) {
+            const prev = x; x = advanceRaceLap(x);
+            expect(x.incidents!.mode).toBe("SAFETY_CAR");
+            for (const e of x.entrants) { const p = prev.entrants.find(y => y.entrantId === e.entrantId)!; expect(e.track!.progressMicrolaps).toBeGreaterThan(p.track!.progressMicrolaps); expect(e.completedLaps).toBeGreaterThanOrEqual(p.completedLaps); expect(e.position).toBe(p.position); }
+        }
+        expect(x.incidents!.events.slice(seen).some(ev => ev.type === "OVERTAKE")).toBe(false);
+        const after = pairGaps(x);
+        expect(after.map(g => g.key)).toEqual(before.map(g => g.key));
+        return { before, after };
+    }
     it("configuration: v8E SC fields bounded; minimum SC period of 3 laps; VSC profile unchanged", () => {
         const c = v8eIncidentConfiguration(12000);
         expect(c.scTrainCatchupPermille).toBeGreaterThan(0); expect(c.SAFETY_CAR.minLaps).toBeGreaterThanOrEqual(3);
         expect(c.VSC).toEqual(defaultIncidentConfiguration().VSC);
         expect(() => validateIncidentConfiguration({ ...c, scTrainCatchupPermille: 0 })).toThrow();
     });
-    it("under the Safety Car every car moves forward, keeps its lap count, and the field compresses more than revision 4", () => {
-        const run = (s: RaceSimulationState) => {
-            let x = neutralise(s, "SAFETY_CAR", 4); const before = pairGapSum(x), seen = x.incidents!.events.length;
-            for (let n = 0; n < 3; n++) {
-                const prev = x; x = advanceRaceLap(x);
-                for (const e of x.entrants) { const p = prev.entrants.find(y => y.entrantId === e.entrantId)!; expect(e.track!.progressMicrolaps).toBeGreaterThanOrEqual(p.track!.progressMicrolaps); expect(e.completedLaps).toBeGreaterThanOrEqual(p.completedLaps); }
-            }
-            expect(x.incidents!.events.slice(seen).some(ev => ev.type === "OVERTAKE")).toBe(false);
-            return pairGapSum(x) / before;
-        };
-        const five = run(spread()), four = run(spread(v8dInput({ count: 8, players: 8, laps: 30, quiet: true, seed: 7 })));
-        expect(five).toBeLessThan(1);
-        expect(five).toBeLessThan(four);
+    it("revision 5 closes EVERY excess pair gap at once through real movement, never below the queue interval", () => {
+        const { before, after } = underSafetyCar(rev5()), queue = v8eIncidentConfiguration(12000).queueIntervalMs;
+        for (const g of before) expect(g.ms).toBeGreaterThanOrEqual(GAP_MS - 2);
+        // Every pair — not only the front one — loses part of its excess, and nobody is pulled inside the queue interval.
+        for (const [k, g] of after.entries()) { expect(g.ms, g.key).toBeLessThan(before[k].ms - 100); expect(g.ms, g.key).toBeGreaterThanOrEqual(queue - 50); }
+        expect(sum(after) / sum(before)).toBeLessThan(0.9);
+    }, 60_000);
+    it("the accepted revision-4 rule (per-gap, equal for every follower) leaves the middle of the field almost unchanged", () => {
+        const five = underSafetyCar(rev5()), four = underSafetyCar(rev4());
+        expect(sum(five.after) / sum(five.before)).toBeLessThan(sum(four.after) / sum(four.before));
+        // Revision 4: followers with equal gaps speed up equally, so a middle pair barely closes; revision 5 closes it.
+        const mid = 4, change = (r: typeof five) => r.before[mid].ms - r.after[mid].ms;
+        expect(change(five)).toBeGreaterThan(change(four) + 100);
     }, 60_000);
     it("the VSC holds gaps (no bunching) in revision 5", () => {
-        let x = neutralise(spread(), "VSC", 4); const before = pairGapSum(x);
+        let x = neutralise(rev5(), "VSC", 4); const before = sum(pairGaps(x));
         for (let n = 0; n < 3; n++) x = advanceRaceLap(x);
-        const ratio = pairGapSum(x) / before;
+        const ratio = sum(pairGaps(x)) / before;
         expect(ratio).toBeGreaterThan(0.9); expect(ratio).toBeLessThan(1.1);
     }, 60_000);
 });

@@ -14,7 +14,8 @@ import {
   defaultInteractionConfiguration,
   developmentDriverInteraction,
 } from "../../simulation/race/traffic/profiles";
-import { aiDryStartingCompound, aiWetStartingCompound, defaultAiStrategyConfiguration, publicWeather, strategyPreference } from "../../simulation/race/pits/ai-strategy";
+import { aiDryStartingCompound, aiDryStartingPlan, aiWetStartingCompound, defaultAiStrategyConfiguration, publicWeather, strategyPreference, type DryStartPlanInput } from "../../simulation/race/pits/ai-strategy";
+import { freshTyreTemperatureMilliC } from "../../simulation/race/tyres/fresh";
 import { v8dTuningBundle } from "./v8d-tuning";
 import { v8eTuningBundle } from "./v8e-tuning";
 import {
@@ -112,6 +113,15 @@ export function startCareerRace(
       const v8d = progression && withProgression === 5
         ? v8eTuningBundle(progression, snapshot.input.circuit.baseLapTimeMs, !!withWeather, data.circuit.raceProfile)
         : progression && withProgression === 4 ? withSection(v8dTuningBundle(progression, snapshot.input.circuit.baseLapTimeMs, !!withWeather, data.circuit.raceProfile)) : null;
+      // v8E dry-start plan inputs: public, frozen-at-start values only (the bundle's tyres and pit timing, the public
+      // weather strategy limits, the session rule). Revision 5 only.
+      const v8eStart: DryStartPlanInput | null = withProgression === 5 && v8d && progression && weather ? {
+        tyres: v8d.tyres, totalLaps: snapshot.input.totalLaps, minimumStintLaps: weather.strategy.minimumStintLaps,
+        startTyre: (c) => startingTyre(c),
+        freshTyre: (c) => ({ compound: c, ageLaps: 0, wearPermille: 0, temperatureMilliC: freshTyreTemperatureMilliC({ pits: defaultPitConfiguration(), tyres: v8d.tyres, progression }, c) }),
+        stopBaseMs: v8d.pitTiming.pitLaneLossMs + defaultPitConfiguration().stationaryBaseMs + weather.strategy.marginMs,
+        distinctCompounds: !!progression.regulation?.dryTyres, interaction: v8d.interaction,
+      } : null;
       // AI teams pick starting tyres from current public grid conditions, never from player input or future weather.
       // Career Races (v7) also give each AI car its own stable strategic character: on a dry grid a strong soft
       // preference starts on the soft (never the hard). Wet or damp grids keep the current-conditions choice.
@@ -119,7 +129,9 @@ export function startCareerRace(
         // Auto-managed player cars (Simulate) start like any AI car: from current public conditions and character.
         if (!(withIncidents && weather && (autoPlayer || teamId !== data.progress.career.playerTeamId))) return tyreChoices?.[driverId] ?? "MEDIUM";
         const compound = aiStartingCompound(weather.initial), preference = strategyPreference(seed, gridPosition);
-        if (compound === "MEDIUM") return aiDryStartingCompound(preference);
+        // v8E (revision 5): a dry start is a whole-race plan choice (cost-based; the character only chooses among close
+        // plans). Earlier revisions keep the accepted character-only rule.
+        if (compound === "MEDIUM") return v8eStart ? aiDryStartingPlan(v8eStart, v8d!.strategy, preference) : aiDryStartingCompound(preference);
         // v8D: on a wet grid the car's own wet-compound trait may choose between two sensible wet tyres (current grid
         // conditions only). Earlier revisions keep the established current-conditions choice.
         return v8d ? aiWetStartingCompound(compound, weather.initial, v8d.tyres, publicWeather(weather), v8d.strategy, preference) : compound;

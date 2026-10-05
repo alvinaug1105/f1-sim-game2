@@ -1000,7 +1000,7 @@
   "assistance.aeroHelp": "主動空力會自動在彎道與直道模式間切換；在維修區通道、安全車／虛擬安全車期間及濕地賽道受限。它不是超車輔助。",
   "assistance.aeroEffect": "本場比賽於直道約可帶來 {ms} 毫秒。",
   "assistance.aeroEffectBaseline": "其效益已計入每輛車的基準速度：不另外提供圈速增益，受限時也不另扣時間。",
-  "viewer.tyreLifeAtPace": "預估輪胎壽命：以目前「{pace}」節奏約 {count} 圈後衰退",
+  "viewer.tyreLifeAtPace": "預估輪胎壽命：約 {count} 圈後衰退（以目前「{pace}」節奏估算）",
   "viewer.tyreLifeRange": "依節奏模式約 {min}–{max} 圈",
   "pit.rejoin": "預估回到賽道名次",
   "pit.rejoinAt": "第 {position} 名",

@@ -187,7 +187,8 @@ export const V8E_CADENCE_NEUTRAL_DIFFICULTY = 35;
 export const V8E_PASS_EDGE_NEUTRAL_DIFFICULTY = 35;
 /**
  * Local fix 3 conversion response (GAME TUNING): easier-than-neutral circuits keep 75 % of the full response (factor ≤
- * 1.75, Spa class ≈ 1.30); harder ones only 30 % (factor ≥ 0.70, Monaco class ≈ 0.875), the rest of their difficulty
+ * 1.75, a low-difficulty circuit at 15 ≈ 1.30); harder ones only 30 % (factor ≥ 0.70, a high-difficulty circuit at
+ * 85 ≈ 0.875), the rest of their difficulty
  * being the probability's own additive offset, the circuit-scaled cadence and dirty air.
  */
 export const V8E_PASS_EDGE_EASY_RESPONSE_PERMILLE = 750;

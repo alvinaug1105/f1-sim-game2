@@ -166,14 +166,14 @@ describe("catalogs and stylesheet boundary", () => {
     const holes = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
     for (const k of keys) expect(holes((zh as Record<string, string>)[k] ?? "MISSING")).toEqual(holes((en as Record<string, string>)[k]));
   });
-  it("layers the design system ahead of the unchanged live-session stylesheet and keeps its shell hooks", () => {
+  it("layers the design system (including the UIX-B live stylesheet) and keeps the live-mode shell rules", () => {
     const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
     const imports = [...css.matchAll(/@import "([^"]+)";/g)].map((m) => m[1]);
-    expect(imports).toEqual(["tailwindcss", "../styles/tokens.css", "../styles/primitives.css", "../styles/shell.css", "../styles/command-centre.css", "../styles/weekend-hub.css"]);
-    expect(css).toContain("body:has(.race-ops) .app-shell { grid-template-columns: 170px minmax(0,1fr); }");
-    expect(css.indexOf(".race-controls { margin: 1rem 0; }")).toBeGreaterThan(css.indexOf(".development-notice"));
-    const shell = readFileSync(new URL("../src/styles/shell.css", import.meta.url), "utf8");
-    expect(shell).toMatch(/body:has\(\.race-ops\) \.shell-bar \{\s*position: static;/);
+    expect(imports).toEqual(["tailwindcss", "../styles/tokens.css", "../styles/primitives.css", "../styles/shell.css", "../styles/command-centre.css", "../styles/weekend-hub.css", "../styles/live.css"]);
+    expect(css).not.toContain(".race-ops");
+    expect(css).toContain(".standings-table");
+    const live = readFileSync(new URL("../src/styles/live.css", import.meta.url), "utf8");
+    expect(live).toMatch(/body:has\(\.live\) \.shell-bar \{\s*position: static;/);
     const tokens = readFileSync(new URL("../src/styles/tokens.css", import.meta.url), "utf8");
     expect(tokens).toMatch(/prefers-reduced-motion: reduce/);
   });

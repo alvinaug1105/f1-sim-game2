@@ -98,21 +98,23 @@ describe('Race map markers: circular live-timing bubbles', () => {
 });
 
 describe('Race operations layout (CSS contract)', () => {
-    const css = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
-    const raceRules = [...css.matchAll(/\.race-track-view[^{]*\{[^}]*\}/g)].map(m => m[0]);
+    // UIX-B: the live-session screens are styled by src/styles/live.css (the legacy Race stylesheet was retired).
+    const css = readFileSync(new URL('../src/styles/live.css', import.meta.url), 'utf8');
+    const block = (query: string) => { const start = css.indexOf(query); expect(start).toBeGreaterThanOrEqual(0); let depth = 0, i = css.indexOf('{', start); const open = i; for (; i < css.length; i++) { if (css[i] === '{') depth++; else if (css[i] === '}' && --depth === 0) break; } return css.slice(open, i); };
     it('desktop Race grid has three tracks: timing | map | driver panel', () => {
-        const grids = raceRules.filter(r => /\.race-track-view \.ops-grid \{/.test(r) && r.includes('grid-template-columns'));
-        expect(grids.length).toBeGreaterThan(0);
-        for (const g of grids) expect(g.match(/grid-template-columns:([^;}]*)/)![1].trim().split(/\s+(?![^(]*\))/)).toHaveLength(3);
+        const desktop = block('@media (min-width: 1221px)');
+        const rule = desktop.match(/\.live-race \.live-grid \{[^}]*\}/)![0];
+        expect(rule.match(/grid-template-columns:([^;]*);/)![1].trim().split(/\s+(?![^(]*\))/)).toHaveLength(3);
+        expect(rule).toMatch(/"tower map switch"\s*"tower map panel"/);
     });
     it('the driver panel is never forced full-width under the map on desktop', () => {
-        for (const r of raceRules.filter(r => r.includes('.driver-focus'))) expect(r).not.toMatch(/grid-column:\s*1\s*\/\s*-1/);
-        expect(css).not.toMatch(/\.race-track-view \.ops-grid ?> ?\.driver-focus \{[^}]*grid-column:\s*1\s*\/\s*-1/);
+        expect(css).not.toMatch(/\.live-area-panel \{[^}]*grid-column:\s*1\s*\/\s*-1/);
+        expect(block('@media (min-width: 1221px)')).toContain('.live-area-panel');
     });
-    it('narrow viewports stack into one column (no forced three columns, no horizontal overflow source)', () => {
-        const narrow = css.match(/@media\(max-width:600px\) \{ \.ops-grid \{ grid-template-columns:minmax\(0,1fr\); \}/);
-        expect(narrow).not.toBeNull();
-        const desktopOnly = css.match(/@media \(min-width:1221px\) \{\s*\.race-track-view \.ops-grid/);
-        expect(desktopOnly).not.toBeNull();
+    it('narrow viewports show one pane at a time in a single column (no forced three columns)', () => {
+        const narrow = block('@media (max-width: 820px)');
+        expect(narrow).toMatch(/\.live-grid \{\s*grid-template-columns: minmax\(0, 1fr\);/);
+        expect(narrow).toContain('.live-panes');
+        expect(narrow).toMatch(/\[data-pane="always"\][^{]*\{\s*position: sticky;/);
     });
 });

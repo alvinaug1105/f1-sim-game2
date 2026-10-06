@@ -1,8 +1,7 @@
 /*
  * UIX-A REDO global shell: grouped navigation rail (Team HQ concept) + context bar.
- * The root keeps the historical `app-shell` / `sidebar` / `brand` / `main` hooks on purpose: the live session
- * screens (Race, Sprint, Practice, Qualifying — out of UIX-A scope) size the shell through
- * `body:has(.race-ops) .app-shell|.sidebar|main` rules in globals.css, and those must keep working unchanged.
+ * Live-session screens (UIX-B) switch the shell into live mode — slim icon rail, full-width content, static context
+ * bar — with `body:has(.live)` rules in live.css.
  */
 .app-shell {
   min-height: 100vh;
@@ -437,33 +436,5 @@ html[lang="zh-TW"] .shell-nav-label {
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
-  }
-}
-
-/* ---- Live session screens (out of UIX-A scope): compact rail, static bar under their own sticky race bar ---- */
-body:has(.race-ops) .shell-bar {
-  position: static;
-}
-body:has(.race-ops) .shell-rail {
-  gap: var(--sp-4);
-}
-body:has(.race-ops) .shell-brand-text small,
-body:has(.race-ops) .shell-team-text span,
-body:has(.race-ops) .shell-rail-foot,
-body:has(.race-ops) .shell-nav-live {
-  display: none;
-}
-body:has(.race-ops) .shell-team {
-  grid-template-columns: minmax(0, 1fr);
-  padding: var(--sp-2);
-}
-body:has(.race-ops) .shell-nav-label {
-  font-size: 0.5625rem;
-  letter-spacing: 0.08em;
-  padding-left: 8px;
-}
-@media (max-width: 820px) {
-  body:has(.race-ops) .shell-menu-btn {
-    display: none;
   }
 }

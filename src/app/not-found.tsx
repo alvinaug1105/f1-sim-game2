@@ -1,15 +1,7 @@
 "use client";
-import { useI18n, LocalizedPageTitle } from "@/i18n/provider";
-import Link from "next/link";
+import { AppShell } from "@/components/layout/app-shell";
+import { NotFoundContent } from "@/components/layout/status-pages";
+/** Root boundary (unknown URLs): rendered directly in the root layout, so it brings its own shell. */
 export default function NotFound() {
-  const { t } = useI18n();
-  return (
-    <section className="panel error-panel">
-      <p className="eyebrow">{t("errors.notFoundLabel")}</p>
-      <LocalizedPageTitle titleKey="metadata.notFound" />
-      <h1>{t("errors.notFoundHeading")}</h1>
-      <p>{t("errors.notFoundBody")}</p>
-      <Link href="/">{t("errors.return")}</Link>
-    </section>
-  );
+  return <AppShell><NotFoundContent /></AppShell>;
 }

@@ -1,0 +1,117 @@
+/*
+ * UIX-A design tokens — "Pit Wall" direction (see docs/uix-a-design-system.md).
+ *
+ * Semantic roles only: components never use raw hex values. Team colours contribute identity through
+ * --team-accent (set per Career on the shell) and never carry text or status meaning.
+ * The legacy variables at the end keep every existing screen (Race, Practice, Qualifying, Standings) on the same
+ * palette without touching their layout rules.
+ */
+:root {
+  color-scheme: dark;
+
+  /* ── Surfaces: base page → section → panel → interactive → selected → overlay ───────────────── */
+  --color-bg: #0d0f12;
+  --color-rail: #111418;
+  --color-surface-1: #15181d;
+  --color-surface-2: #1b1f25;
+  --color-surface-3: #222730;
+  --color-surface-selected: #252b1c;
+  --color-surface-overlay: #262b33;
+
+  /* ── Borders ─────────────────────────────────────────────────────────────────────────────────── */
+  --color-border-subtle: #252a31;
+  --color-border: #2f353e;
+  --color-border-strong: #454d58;
+
+  /* ── Text (contrast ≥ 4.5:1 on every surface above) ─────────────────────────────────────────── */
+  --color-text-primary: #eeece6;
+  --color-text-secondary: #b8bcc3;
+  --color-text-muted: #8d949e;
+  --color-text-inverse: #12150e;
+
+  /* ── Signal: the product's single action / current-state colour (continuity with the Race UI) ─ */
+  --color-signal: #d7ee69;
+  --color-signal-strong: #e6f78f;
+  --color-signal-soft: rgba(215, 238, 105, 0.12);
+  --color-signal-line: rgba(215, 238, 105, 0.45);
+
+  /* ── Status (always paired with an icon or text, never colour alone) ────────────────────────── */
+  --color-positive: #63d297;
+  --color-positive-soft: rgba(99, 210, 151, 0.12);
+  --color-warning: #f2b84b;
+  --color-warning-soft: rgba(242, 184, 75, 0.12);
+  --color-critical: #ff7a6b;
+  --color-critical-soft: rgba(255, 122, 107, 0.12);
+  --color-info: #7cbcff;
+  --color-info-soft: rgba(124, 188, 255, 0.12);
+
+  /* ── Identity: overridden per Career from the player team's colour (decorative only) ────────── */
+  --team-accent: #8d949e;
+
+  /* ── Typography ──────────────────────────────────────────────────────────────────────────────── */
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "Noto Sans Mono", monospace;
+  --text-hero: 2.5rem;      /* 40px — one per screen: the current mission */
+  --text-page: 1.75rem;     /* 28px — page title */
+  --text-section: 1.125rem; /* 18px — section heading */
+  --text-card: 0.9375rem;   /* 15px — card heading */
+  --text-body: 0.875rem;    /* 14px — body */
+  --text-meta: 0.75rem;     /* 12px — metadata */
+  --text-label: 0.6875rem;  /* 11px — uppercase labels */
+  --text-figure: 3rem;      /* 48px — headline figures (championship position) */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-heavy: 800;
+  --tracking-label: 0.12em;
+  --tracking-tight: -0.02em;
+  --leading-tight: 1.15;
+  --leading-body: 1.5;
+
+  /* ── Spacing (4px base) ─────────────────────────────────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ── Shape & elevation ──────────────────────────────────────────────────────────────────────── */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --cut: 14px; /* angled section corner — the "pit wall" signature, used sparingly */
+  --shadow-raised: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.5);
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-signal);
+
+  /* ── Motion ─────────────────────────────────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* ── Layout ─────────────────────────────────────────────────────────────────────────────────── */
+  --rail-width: 248px;
+  --topbar-height: 60px;
+  --content-max: 1440px;
+
+  /* ── Legacy aliases (existing screens keep their rules; only the palette is shared) ─────────── */
+  --bg: var(--color-bg);
+  --panel: var(--color-surface-1);
+  --line: var(--color-border);
+  --border: var(--color-border);
+  --muted: var(--color-text-muted);
+  --accent: var(--color-signal);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

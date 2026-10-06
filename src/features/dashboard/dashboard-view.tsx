@@ -1,33 +1,32 @@
 "use client";
-import Link from "next/link";
-import { Panel } from "../../components/ui/panel";
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
+import { ButtonLink } from "../../components/ui/primitives";
+import { Icon } from "../../components/ui/icon";
+/** Home (outside any Career): the two real ways in — continue a saved Career or start a new one. */
 export function DashboardView() {
   const { t } = useI18n();
   return (
-    <>
+    <div className="home">
       <LocalizedPageTitle titleKey="metadata.title" />
-      <div className="page-header">
-        <div>
-          <p className="eyebrow accent">{t("dashboard.section")}</p>
-          <h1>{t("dashboard.heading")}</h1>
-          <p>{t("dashboard.subtitle")}</p>
-        </div>
+      <header className="home-hero ui-surface ui-surface--raised ui-surface--cut ui-enter">
+        <p className="ui-label">{t("dashboard.section")}</p>
+        <h1>{t("dashboard.heading")}</h1>
+        <p className="home-lead">{t("dashboard.subtitle")}</p>
+      </header>
+      <div className="home-grid">
+        <section className="home-card ui-surface" aria-labelledby="home-continue">
+          <span className="home-card-icon" aria-hidden="true"><Icon name="list" /></span>
+          <h2 id="home-continue">{t("career.browse")}</h2>
+          <p>{t("career.selectSaved")}</p>
+          <ButtonLink href="/careers" icon="arrowRight">{t("career.browse")}</ButtonLink>
+        </section>
+        <section className="home-card ui-surface" aria-labelledby="home-new">
+          <span className="home-card-icon" aria-hidden="true"><Icon name="flag" /></span>
+          <h2 id="home-new">{t("career.new")}</h2>
+          <p>{t("dashboard.newCareerBody")}</p>
+          <ButtonLink href="/careers/new" variant="secondary" icon="arrowRight">{t("career.new")}</ButtonLink>
+        </section>
       </div>
-      <div className="dashboard-grid">
-        <Panel title={t("career.browse")}>
-          <div className="career-content">
-            <p>{t("career.selectSaved")}</p>
-            <Link className="button-link" href="/careers">{t("career.browse")}</Link>
-          </div>
-        </Panel>
-        <Panel title={t("career.new")}>
-          <div className="career-content">
-            <p>{t("dashboard.newCareerBody")}</p>
-            <Link className="button-link" href="/careers/new">{t("career.new")}</Link>
-          </div>
-        </Panel>
-      </div>
-    </>
+    </div>
   );
 }

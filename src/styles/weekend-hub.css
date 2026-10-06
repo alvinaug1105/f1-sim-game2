@@ -1,0 +1,368 @@
+/*
+ * UIX-A Race Weekend Hub. One weekend as one journey: briefing header → session progression track (completed /
+ * current / upcoming are distinct in shape, weight and text, not only colour) → next mission + context → schedule.
+ */
+.wh {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+}
+.wh-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: var(--space-8);
+  padding: var(--space-8);
+  background:
+    linear-gradient(110deg, var(--color-signal-soft) 0%, transparent 34%),
+    var(--color-surface-2);
+}
+.wh-header-main {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.wh-header-main h1 {
+  margin: 0;
+  font-size: var(--text-hero);
+  font-weight: var(--weight-heavy);
+  letter-spacing: var(--tracking-tight);
+  overflow-wrap: anywhere;
+}
+.weekend-format {
+  color: var(--color-text-primary);
+}
+.wh-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  color: var(--color-text-secondary);
+  font-size: var(--text-card);
+}
+.wh-header-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.wh-header-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+.wh-header-side {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--color-border);
+}
+.wh-back {
+  margin: calc(-1 * var(--space-2)) 0 0 calc(-1 * var(--space-2));
+}
+
+/* ── Progression track ───────────────────────────────────────────────────────────────────────────── */
+.wh-track-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(150px, 1fr);
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+.wh-node {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  justify-items: start;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-subtle);
+  border-top: 3px solid var(--color-border);
+}
+/* Connector to the next session. */
+.wh-node:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 26px;
+  right: calc(-1 * var(--space-3));
+  width: var(--space-3);
+  height: 2px;
+  background: var(--color-border);
+}
+.wh-node-marker {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  font-size: 15px;
+}
+.wh-node-index {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+}
+.wh-node-name {
+  font-size: var(--text-card);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+.wh-node[data-status="COMPLETED"],
+.wh-node[data-status="SKIPPED"] {
+  border-top-color: var(--color-text-muted);
+}
+.wh-node[data-status="COMPLETED"] .wh-node-marker {
+  background: var(--color-surface-3);
+  color: var(--color-text-secondary);
+}
+.wh-node[data-status="COMPLETED"]::after {
+  background: var(--color-text-muted);
+}
+.wh-node[data-status="LOCKED"] {
+  background: transparent;
+  border-style: dashed;
+  border-top-style: solid;
+}
+.wh-node[data-status="LOCKED"] .wh-node-name {
+  color: var(--color-text-muted);
+}
+.wh-node[aria-current="step"] {
+  background: var(--color-surface-selected);
+  border-color: var(--color-signal-line);
+  border-top-color: var(--color-signal);
+  box-shadow: var(--shadow-raised);
+}
+.wh-node[aria-current="step"] .wh-node-marker {
+  background: var(--color-signal);
+  border-color: var(--color-signal);
+  color: var(--color-text-inverse);
+}
+
+/* ── Next mission + side ─────────────────────────────────────────────────────────────────────────── */
+.wh-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: var(--space-5);
+  align-items: start;
+}
+.wh-next {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-6);
+}
+.wh-next-title {
+  font-size: var(--text-page);
+  font-weight: var(--weight-heavy);
+  letter-spacing: var(--tracking-tight);
+}
+.wh-next-hint {
+  max-width: 62ch;
+}
+.wh-next-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+/* The existing session controls: the "Manage / Open" link reads as the primary action next to Simulate. */
+.wh-next-actions > .text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--color-signal);
+  color: var(--color-text-inverse);
+  font-weight: var(--weight-bold);
+}
+.wh-next-actions > .text-link:hover {
+  background: var(--color-signal-strong);
+  text-decoration: none;
+}
+.wh-next-actions .transition-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.wh-next-actions .transition-form > button:not(.secondary) {
+  background: transparent;
+  color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
+}
+.wh-next-actions .transition-form > button:not(.secondary):hover:not(:disabled) {
+  background: var(--color-surface-3);
+}
+.wh-next-actions .transition-form [role="status"],
+.wh-next-secondary .transition-form [role="status"] {
+  flex-basis: 100%;
+  color: var(--color-warning);
+}
+.wh-next-secondary {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+  width: 100%;
+}
+.wh-next-secondary .transition-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.wh-next-secondary .transition-form > button:not(.secondary) {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+.weekend-result-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+  margin-top: var(--space-2);
+}
+.wh-side {
+  display: grid;
+  gap: var(--space-4);
+}
+.wh-side-panel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+.wh-side-title {
+  font-size: var(--text-card);
+  font-weight: var(--weight-bold);
+}
+.wh-side-panel .development-notice {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: var(--text-meta);
+}
+
+/* ── Schedule ────────────────────────────────────────────────────────────────────────────────────── */
+.wh-schedule {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+}
+.wh-schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.wh-row {
+  display: grid;
+  grid-template-columns: 32px minmax(140px, 1fr) auto minmax(0, auto);
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.wh-row:first-child {
+  border-top: 0;
+}
+.wh-row-marker {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+.wh-row-text p {
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+}
+.wh-row[data-status="AVAILABLE"] .wh-row-marker,
+.wh-row[data-status="IN_PROGRESS"] .wh-row-marker {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+}
+.wh-row[data-status="LOCKED"] .wh-row-text strong {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+}
+.session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .wh-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 860px) {
+  .wh-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+    padding: var(--space-6) var(--space-5);
+  }
+  .wh-header-main h1 {
+    font-size: 2rem;
+  }
+  .wh-header-side {
+    padding: var(--space-4) 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .wh-header-side .cc-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* The track becomes a vertical list: completed → current → upcoming reads top to bottom. */
+  .wh-track-list {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    overflow: visible;
+  }
+  .wh-node {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+  }
+  .wh-node .ui-finishes {
+    grid-column: 2 / -1;
+  }
+  .wh-node-index,
+  .wh-node:not(:last-child)::after {
+    display: none;
+  }
+  .wh-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .wh-row .ui-finishes,
+  .wh-row .session-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 560px) {
+  .wh-header-main h1 {
+    font-size: 1.75rem;
+  }
+  .wh-header-side .cc-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wh-next {
+    padding: var(--space-5) var(--space-4);
+  }
+  .wh-schedule {
+    padding: var(--space-4);
+  }
+}

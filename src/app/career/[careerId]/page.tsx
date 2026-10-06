@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
-import {
-  getChampionshipRepository,
-  getProgressionRepository,
-  loadCareerData,
-} from "@/features/career/server";
-import { championshipSummary } from "@/features/championship/model";
-import { CareerOverviewView, CareerUnavailable } from "@/features/career/views";
+import { readCareerOverview, readCareerProgress, readChampionshipSource } from "@/features/career/cached-reads";
+import { commandCentreModel } from "@/features/career/command-centre";
+import { CommandCentreView } from "@/features/career/command-centre-view";
+import { CareerUnavailable } from "@/features/career/views";
 import { assertContentId } from "@/game/domain/content-repository";
 export const dynamic = "force-dynamic";
+/** Career Command Centre. Reads are shared with the Career layout (request-scoped cache), never duplicated. */
 export default async function CareerPage({
   params,
 }: {
@@ -19,30 +17,14 @@ export default async function CareerPage({
   } catch {
     notFound();
   }
-  const result = await loadCareerData((repository) =>
-    repository.getCareerOverview(careerId),
-  );
+  const result = await readCareerOverview(careerId);
   if (!result.ok)
     return <CareerUnavailable titleKey="metadata.career" code={result.code} />;
   if (!result.data) notFound();
-  const progress = await loadCareerData(() =>
-    getProgressionRepository().getProgress(careerId),
-  );
+  const progress = await readCareerProgress(careerId);
   if (!progress.ok) return <CareerUnavailable titleKey="metadata.career" />;
   if (!progress.data) notFound();
-  // The dashboard still renders if the standings cannot be read; the panel simply falls back to its link.
-  const championship = await getChampionshipRepository()
-    .load(careerId)
-    .then((source) => (source ? championshipSummary(source) : null))
-    .catch((error) => {
-      console.error("Championship summary read failed", error);
-      return null;
-    });
-  return (
-    <CareerOverviewView
-      overview={result.data}
-      progress={progress.data}
-      championship={championship}
-    />
-  );
+  // The Command Centre still renders if the Championship cannot be read: its panels fall back to links.
+  const source = await readChampionshipSource(careerId);
+  return <CommandCentreView model={commandCentreModel(result.data, progress.data, source)} />;
 }

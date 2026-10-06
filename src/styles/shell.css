@@ -1,0 +1,418 @@
+/*
+ * UIX-A global application shell: persistent rail (identity + navigation) and a slim context top bar.
+ * Desktop (≥ 960px): rail always visible. Narrower: the rail becomes an off-canvas drawer behind a menu button, and the
+ * top bar keeps location + language; season detail collapses to the essentials.
+ */
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  background: var(--color-bg);
+}
+
+/* ── Rail ────────────────────────────────────────────────────────────────────────────────────────── */
+.shell-rail {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-4) var(--space-5);
+  background: var(--color-rail);
+  border-right: 1px solid var(--color-border-subtle);
+}
+.shell-brand {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 0 var(--space-2);
+  font-size: 15px;
+  font-weight: var(--weight-heavy);
+  letter-spacing: 0.14em;
+}
+.shell-brand small {
+  display: block;
+  font-size: 9px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.3em;
+  color: var(--color-text-muted);
+}
+.shell-brand-mark {
+  font-size: 26px;
+  font-style: italic;
+  font-weight: var(--weight-heavy);
+  letter-spacing: -0.12em;
+  color: var(--color-signal);
+  width: 34px;
+}
+/* Team identity: team colour as a stripe and mark border only — text stays on neutral surfaces. */
+.shell-team {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid var(--team-accent);
+}
+.shell-team-mark {
+  display: grid;
+  place-items: center;
+  height: 46px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-3);
+  border-top: 3px solid var(--team-accent);
+  font-size: 13px;
+  font-weight: var(--weight-heavy);
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+.shell-team-text {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.shell-team-text strong {
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.shell-team-career {
+  font-size: var(--text-meta);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shell-nav {
+  display: grid;
+  gap: 2px;
+}
+.shell-nav-group {
+  margin: var(--space-4) var(--space-3) var(--space-2);
+}
+.shell-nav-group:first-child {
+  margin-top: 0;
+}
+/* Specific selector: the legacy `.active` rule is for other screens' selected items. */
+.shell-nav .nav-item {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  min-height: 42px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border-left: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-semibold);
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.shell-nav .nav-item .ui-icon {
+  font-size: 18px;
+  color: var(--color-text-muted);
+}
+.shell-nav .nav-item:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+.shell-nav .nav-item.active {
+  background: var(--color-surface-selected);
+  color: var(--color-text-primary);
+  border-left-color: var(--color-signal);
+}
+.shell-nav .nav-item.active .ui-icon {
+  color: var(--color-signal);
+}
+/* Neutralise the legacy `.active > span` sizing used by other screens. */
+.shell-nav .nav-item.active > span {
+  font-size: inherit;
+  line-height: inherit;
+}
+.shell-rail-foot {
+  margin-top: auto;
+  padding: 0 var(--space-3);
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+}
+
+/* ── Main column + top bar ───────────────────────────────────────────────────────────────────────── */
+.shell-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.shell-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-height: var(--topbar-height);
+  padding: 0 var(--space-8);
+  background: rgba(13, 15, 18, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.shell-location {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+}
+.shell-location-root {
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shell-location-sep {
+  color: var(--color-text-muted);
+}
+.shell-location-section {
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+.shell-season {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.shell-season-text {
+  display: grid;
+  line-height: 1.25;
+  text-align: right;
+}
+.shell-season .ui-meter {
+  width: 120px;
+}
+.shell-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.shell-menu-button,
+.shell-scrim {
+  display: none;
+}
+.shell-content {
+  width: 100%;
+  min-width: 0;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-8) var(--space-12);
+  flex: 1;
+}
+.page-footer {
+  border-top: 1px solid var(--color-border-subtle);
+  padding: var(--space-4) var(--space-8);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 15px;
+  z-index: 100;
+  padding: 10px;
+  background: var(--color-signal);
+  color: var(--color-text-inverse);
+}
+.skip-link:focus {
+  top: 10px;
+}
+
+/* ── Language control (topbar) ───────────────────────────────────────────────────────────────────── */
+.language-control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  position: relative;
+  flex-shrink: 0;
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+}
+.language-control select {
+  font: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+.language-warning {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 260px;
+  padding: 12px;
+  background: var(--color-surface-overlay);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-overlay);
+  z-index: 30;
+}
+
+/* ── Live session screens (Practice / Qualifying / Race / Sprint: `.race-ops`) ─────────────────────────
+ * Unchanged geometry from before UIX-A: a compact rail and full-width content so the timing tower, track map and
+ * driver panel keep their space. These screens are redesigned in a later stage; here they only inherit the palette. */
+body:has(.race-ops) .shell {
+  --rail-width: 170px;
+}
+body:has(.race-ops) .shell-rail {
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-3);
+}
+body:has(.race-ops) .shell-brand {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+body:has(.race-ops) .shell-team {
+  grid-template-columns: minmax(0, 1fr);
+  padding: var(--space-2) var(--space-3);
+}
+body:has(.race-ops) .shell-team-mark,
+body:has(.race-ops) .shell-team-text .ui-label,
+body:has(.race-ops) .shell-team-career {
+  display: none;
+}
+body:has(.race-ops) .shell-team-text strong {
+  font-size: 12px;
+}
+body:has(.race-ops) .shell-nav .nav-item {
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+body:has(.race-ops) .shell-content {
+  max-width: none;
+  padding: 22px;
+}
+/* Their own race bar sticks to the top of the viewport; the shell top bar scrolls away as it always did. */
+body:has(.race-ops) .shell-topbar {
+  position: static;
+  backdrop-filter: none;
+}
+@media (max-width: 1220px) {
+  body:has(.race-ops) .shell {
+    --rail-width: 140px;
+  }
+  body:has(.race-ops) .shell-content {
+    padding: 16px;
+  }
+}
+@media (min-width: 1221px) {
+  body:has(.race-track-view) .shell {
+    --rail-width: 140px;
+  }
+  body:has(.race-track-view) .shell-content {
+    padding: 16px 18px;
+  }
+}
+@media (min-width: 1600px) {
+  body:has(.race-track-view) .shell {
+    --rail-width: 170px;
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 1240px) {
+  .shell-season .ui-meter,
+  .shell-season-text .ui-label {
+    display: none;
+  }
+  .shell-content {
+    padding: var(--space-6) var(--space-6) var(--space-10);
+  }
+  .shell-topbar {
+    padding: 0 var(--space-6);
+  }
+}
+@media (max-width: 959px) {
+  .shell {
+    display: block;
+  }
+  .shell-rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    width: min(300px, 86vw);
+    transform: translateX(-102%);
+    /* Hidden from keyboard and assistive tech while closed; visibility flips after the slide-out. */
+    visibility: hidden;
+    transition: transform var(--duration-base) var(--ease-out), visibility 0s linear var(--duration-base);
+    box-shadow: var(--shadow-overlay);
+  }
+  .shell[data-menu-open] .shell-rail {
+    transform: none;
+    visibility: visible;
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+  .shell-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.55);
+  }
+  .shell[data-menu-open] .shell-scrim {
+    display: block;
+  }
+  .shell-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    flex-shrink: 0;
+    background: transparent;
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-strong);
+    font-size: 20px;
+  }
+  .shell-menu-button:hover:not(:disabled) {
+    background: var(--color-surface-2);
+  }
+  .shell-topbar {
+    gap: var(--space-3);
+    padding: 0 var(--space-4);
+  }
+  .shell-date {
+    display: none;
+  }
+  .shell-content {
+    padding: var(--space-5) var(--space-4) var(--space-10);
+  }
+  .page-footer {
+    padding: var(--space-4);
+  }
+}
+@media (max-width: 560px) {
+  .shell-season,
+  .shell-location-root,
+  .shell-location-sep {
+    display: none;
+  }
+  .language-control label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}

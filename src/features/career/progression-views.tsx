@@ -2,10 +2,9 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
-import { Panel } from "../../components/ui/panel";
 import {
-  progressSummary,
   type CareerProgress,
+  type CareerSession,
   type ProgressionErrorCode,
   type SessionIntent,
 } from "../../game/domain/progression";
@@ -17,7 +16,12 @@ import {
   SimulateAllPractice,
 } from "../practice/weekend-controls";
 import { QualifyingSessionControls } from "../qualifying/weekend-controls";
-function TransitionControl({
+import { Icon } from "../../components/ui/icon";
+import { Alert, ButtonLink, StatusBadge } from "../../components/ui/primitives";
+import type { WeekendHubExtras } from "./weekend-hub";
+import { CircuitFacts, dateRange, Finishes, sessionIcon, sessionTone } from "./presentation";
+/** A Career progression transition (today: "advance" to the next event). */
+export function TransitionControl({
   careerId,
   eventId,
   sessionId = "",
@@ -38,64 +42,13 @@ function TransitionControl({
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="sessionId" value={sessionId} />
       <input type="hidden" name="intent" value={intent} />
-      <button disabled={pending} type="submit">
+      <button disabled={pending} type="submit" className="ui-button ui-button--primary ui-button--large">
         {t(pending ? "progression.pending" : `progression.${intent}`)}
       </button>
       {state.error && (
-        <p role="alert">{t(`progression.error.${state.error}`)}</p>
+        <p role="alert" className="form-error">{t(`progression.error.${state.error}`)}</p>
       )}
     </form>
-  );
-}
-export function ProgressPanel({ progress }: { progress: CareerProgress }) {
-  const { t, format } = useI18n();
-  const { active, next, completed, total, calendarComplete } =
-    progressSummary(progress);
-  const current = active?.weekend?.sessions.find(
-    (s) => s.status === "AVAILABLE" || s.status === "IN_PROGRESS",
-  );
-  return (
-    <Panel title={t("progression.progress")}>
-      <div className="career-content">
-        <p>
-          {t("progression.count", {
-            completed: format.number(completed),
-            total: format.number(total),
-          })}
-        </p>
-        {active ? (
-          <>
-            <h3>{t("progression.active")}</h3>
-            <p>{active.name}</p>
-            {current && (
-              <p>
-                {t(`progression.${current.type}`)} ·{" "}
-                {t(`progression.${current.status}`)}
-              </p>
-            )}
-            <Link
-              className="text-link"
-              href={`/career/${progress.career.id}/events/${active.id}`}
-            >
-              {t("progression.open")}
-            </Link>
-          </>
-        ) : calendarComplete ? (
-          <>
-            <h3>{t("progression.calendarComplete")}</h3>
-            <p>{t("progression.calendarBody")}</p>
-          </>
-        ) : (
-          next && (
-            <TransitionControl
-              careerId={progress.career.id}
-              eventId={next.id}
-              intent="advance"
-            />
-          )
-        )}
-      </div>
-    </Panel>
   );
 }
 /** After the Grand Prix: the weekend's results and the championship. A finished Sprint already has results to show. */
@@ -128,123 +81,183 @@ function WeekendResultLinks({
     </div>
   );
 }
+/** The existing Manage / Simulate / View controls of one session (unchanged behaviour, per session type). */
+function SessionControls({ careerId, eventId, session }: { careerId: string; eventId: string; session: CareerSession }) {
+  const { t } = useI18n();
+  if (session.type === "RACE")
+    return session.status !== "LOCKED" ? (
+      <Link className="text-link" href={`/career/${careerId}/events/${eventId}/race`}>{t("race.open")}</Link>
+    ) : null;
+  // The Sprint runs on the Race v7 engine: managed, or simulated with both cars auto-managed.
+  if (session.type === "SPRINT") return <SprintSessionControls careerId={careerId} eventId={eventId} session={session} />;
+  // Practice is never bypassed: not managing it yourself means simulating it.
+  if (isPractice(session.type)) return <PracticeSessionControls careerId={careerId} eventId={eventId} session={session} />;
+  // Qualifying is managed or simulated on the real engine; there is no development completion.
+  return <QualifyingSessionControls careerId={careerId} eventId={eventId} session={session} />;
+}
+/** The existing per-session guidance, shown with the session it explains. */
+function sessionHint(session: CareerSession) {
+  if (session.status !== "AVAILABLE") return null;
+  if (isPractice(session.type)) return "practice.simulateHint" as const;
+  if (session.type === "QUALIFYING") return "qualifying.simulateHint" as const;
+  if (session.type === "SPRINT_QUALIFYING") return "sprintQualifying.simulateHint" as const;
+  if (session.type === "SPRINT") return "sprint.simulateHint" as const;
+  return null;
+}
+/**
+ * Race Weekend Hub (UIX-A). One weekend as one journey: the event briefing, the session progression track
+ * (completed → current → upcoming), the next mission with its existing Manage / Simulate controls, the full schedule
+ * with results, and the scoring note. `extras` (circuit, results, drivers) is optional presentation context.
+ */
 export function WeekendView({
   progress,
   eventId,
+  extras = null,
 }: {
   progress: CareerProgress;
   eventId: string;
+  extras?: WeekendHubExtras | null;
 }) {
-  const { t, format } = useI18n();
+  const i18n = useI18n();
+  const { t, format } = i18n;
   const event = progress.events.find((e) => e.id === eventId)!;
+  const careerId = progress.career.id;
+  const sessions = [...(event.weekend?.sessions ?? [])].sort((a, b) => a.order - b.order);
+  const current = sessions.find((s) => s.status === "AVAILABLE" || s.status === "IN_PROGRESS") ?? null;
+  const done = sessions.filter((s) => s.status === "COMPLETED" || s.status === "SKIPPED").length;
+  const weekendActive = event.weekend?.status === "ACTIVE";
+  const practiceOpen = weekendActive && sessions.some((s) => isPractice(s.type) && (s.status === "AVAILABLE" || s.status === "IN_PROGRESS"));
+  const dates = dateRange(i18n, event.startDate, event.endDate);
+  const hint = current ? sessionHint(current) : null;
   return (
-    <>
+    <div className="wh">
       <LocalizedPageTitle titleKey="progression.weekend" />
-      <div className="page-header">
-        <div>
-          <p className="eyebrow">{t("progression.weekend")} · <strong className="weekend-format">{t(`progression.format.${weekendFormatOf(event)}`)}</strong></p>
+      <header className="wh-header ui-surface ui-surface--raised ui-surface--cut ui-enter">
+        <div className="wh-header-main">
+          <p className="ui-label">
+            {t("progression.weekend")} · <strong className="weekend-format">{t(`progression.format.${weekendFormatOf(event)}`)}</strong>
+          </p>
           <h1>{event.name}</h1>
-          <p>
-            {event.circuitName} ·{" "}
-            {t("career.round", { round: format.number(event.round) })}
+          <p className="wh-header-meta">
+            <span><Icon name="pin" /> {event.circuitName}</span>
+            <span>{t("career.round", { round: format.number(event.round) })}</span>
+            <span><Icon name="calendar" /> {dates}</span>
           </p>
-          <p>
-            {t("career.currentDate")}:{" "}
-            {format.date(new Date(progress.career.currentDate), {
-              dateStyle: "long",
-            })}
-          </p>
+          <div className="wh-header-tags">
+            {event.status === "COMPLETED" || event.weekend?.status === "COMPLETED"
+              ? <StatusBadge tone="positive" icon="check">{t("progression.done")}</StatusBadge>
+              : event.weekend
+                ? <StatusBadge tone="signal" icon="play">{t("commandCentre.liveWeekend")}</StatusBadge>
+                : <StatusBadge icon="lock">{t("weekendHub.notEnteredBadge")}</StatusBadge>}
+            {event.weekend && (
+              <span className="ui-meta num">{t("weekendHub.sessionsDone", { done: format.number(done), total: format.number(sessions.length) })}</span>
+            )}
+            <span className="ui-meta">{t("career.currentDate")}: {format.date(new Date(progress.career.currentDate), { dateStyle: "long" })}</span>
+          </div>
         </div>
-        <Link className="text-link" href={`/career/${progress.career.id}`}>
-          {t("progression.back")}
-        </Link>
-      </div>
-      <p className="development-notice">{t("progression.notice")}</p>
-      <Panel title={t("progression.sessions")}>
-        <div className="career-content">
-          {!event.weekend ? (
-            <p>{t("progression.notEntered")}</p>
-          ) : (
-            <>
-              <ol className="session-list">
-                {event.weekend.sessions.map((session) => (
-                  <li key={session.id}>
-                    <div>
-                      <strong>{t(`progression.${session.type}`)}</strong>
-                      <p>{t(`progression.${session.status}`)}</p>
+        {extras?.circuit && (
+          <aside className="wh-header-side" aria-label={t("commandCentre.circuit")}>
+            <p className="ui-label">{t("commandCentre.circuit")}</p>
+            <CircuitFacts circuit={extras.circuit} />
+          </aside>
+        )}
+      </header>
+      <p className="wh-back">
+        <Link className="ui-button ui-button--ghost" href={`/career/${careerId}`}><Icon name="arrowLeft" /> {t("progression.back")}</Link>
+      </p>
+      {!event.weekend ? (
+        <Alert>{t("progression.notEntered")}</Alert>
+      ) : (
+        <>
+          <section className="wh-track ui-enter" aria-labelledby="wh-track-title">
+            <h2 id="wh-track-title" className="sr-only">{t("progression.sessions")}</h2>
+            <ol className="wh-track-list">
+              {sessions.map((s, i) => (
+                <li key={s.id} className="wh-node" data-status={s.status} aria-current={current?.id === s.id ? "step" : undefined}>
+                  <span className="wh-node-marker" aria-hidden="true"><Icon name={sessionIcon(s.status)} /></span>
+                  <span className="wh-node-index ui-label num">{format.number(i + 1)}</span>
+                  <span className="wh-node-name">{t(`progression.${s.type}`)}</span>
+                  <StatusBadge tone={sessionTone(s.status)}>{t(`progression.${s.status}`)}</StatusBadge>
+                  <Finishes finishes={extras?.results[s.type]} />
+                </li>
+              ))}
+            </ol>
+          </section>
+          <div className="wh-grid">
+            <section className="wh-next ui-surface ui-surface--raised" aria-labelledby="wh-next-title">
+              {current ? (
+                <>
+                  <p className="ui-label">{t("commandCentre.nextSession")}</p>
+                  <h2 id="wh-next-title" className="wh-next-title">{t(`progression.${current.type}`)}</h2>
+                  <StatusBadge tone="signal" icon={sessionIcon(current.status)}>{t(`progression.${current.status}`)}</StatusBadge>
+                  {hint && <p className="ui-meta wh-next-hint">{t(hint)}</p>}
+                  <div className="session-actions wh-next-actions">
+                    <SessionControls careerId={careerId} eventId={event.id} session={current} />
+                  </div>
+                  {practiceOpen && (
+                    <div className="wh-next-secondary">
+                      <SimulateAllPractice careerId={careerId} eventId={event.id} />
                     </div>
-                    <div className="session-actions">
-                      {session.type === "RACE" ? (
-                        session.status !== "LOCKED" && (
-                          <Link
-                            className="text-link"
-                            href={`/career/${progress.career.id}/events/${event.id}/race`}
-                          >
-                            {t("race.open")}
-                          </Link>
-                        )
-                      ) : session.type === "SPRINT" ? (
-                        // The Sprint runs on the Race v7 engine: managed, or simulated with both cars auto-managed.
-                        <SprintSessionControls
-                          careerId={progress.career.id}
-                          eventId={event.id}
-                          session={session}
-                        />
-                      ) : isPractice(session.type) ? (
-                        // Practice is never bypassed: not managing it yourself means simulating it.
-                        <PracticeSessionControls
-                          careerId={progress.career.id}
-                          eventId={event.id}
-                          session={session}
-                        />
-                      ) : (
-                        // Qualifying is managed or simulated on the real engine; there is no development completion.
-                        <QualifyingSessionControls
-                          careerId={progress.career.id}
-                          eventId={event.id}
-                          session={session}
-                        />
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-              {event.weekend.status === "ACTIVE" &&
-                event.weekend.sessions.some(
-                  (s) => isPractice(s.type) && s.status === "AVAILABLE",
-                ) && <p className="ops-muted">{t("practice.simulateHint")}</p>}
-              {event.weekend.status === "ACTIVE" &&
-                event.weekend.sessions.some(
-                  (s) =>
-                    isPractice(s.type) &&
-                    (s.status === "AVAILABLE" || s.status === "IN_PROGRESS"),
-                ) && (
-                  <SimulateAllPractice
-                    careerId={progress.career.id}
-                    eventId={event.id}
-                  />
-                )}
-              {event.weekend.sessions.some(
-                (s) => s.type === "QUALIFYING" && s.status === "AVAILABLE",
-              ) && <p className="ops-muted">{t("qualifying.simulateHint")}</p>}
-              {event.weekend.sessions.some(
-                (s) => s.type === "SPRINT_QUALIFYING" && s.status === "AVAILABLE",
-              ) && <p className="ops-muted">{t("sprintQualifying.simulateHint")}</p>}
-              {event.weekend.sessions.some(
-                (s) => s.type === "SPRINT" && s.status === "AVAILABLE",
-              ) && <p className="ops-muted">{t("sprint.simulateHint")}</p>}
-              {event.weekend.status === "COMPLETED" && (
-                <p role="status">{t("progression.done")}</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="ui-label">{t("commandCentre.nextSession")}</p>
+                  <h2 id="wh-next-title" className="wh-next-title">
+                    {event.weekend.status === "COMPLETED" ? t("progression.done") : t("commandCentre.weekendDone")}
+                  </h2>
+                  {event.weekend.status === "COMPLETED" && <p role="status" className="ui-meta">{t("weekendHub.completeBody")}</p>}
+                  <ButtonLink href={`/career/${careerId}`} variant="secondary" icon="home">{t("progression.back")}</ButtonLink>
+                </>
               )}
-              <WeekendResultLinks
-                careerId={progress.career.id}
-                eventId={event.id}
-                sessions={event.weekend.sessions}
-              />
-            </>
-          )}
-        </div>
-      </Panel>
-    </>
+              <WeekendResultLinks careerId={careerId} eventId={event.id} sessions={sessions} />
+            </section>
+            <aside className="wh-side">
+              {extras && extras.drivers.length > 0 && (
+                <section className="wh-side-panel ui-surface" aria-labelledby="wh-drivers-title">
+                  <h2 id="wh-drivers-title" className="wh-side-title">{t("championship.playerDrivers")}</h2>
+                  <ul className="cc-driver-list">
+                    {extras.drivers.map((d) => (
+                      <li key={d.id} className="cc-driver">
+                        <span className="cc-driver-number num" aria-hidden="true">{d.carNumber ?? "—"}</span>
+                        <span className="cc-driver-text"><strong>{d.name}</strong><span className="ui-meta">{d.abbreviation}</span></span>
+                        <span className="cc-driver-standing">
+                          <strong className="num">{d.scored ? t("championship.positionValue", { position: format.number(d.position) }) : "—"}</strong>
+                          <span className="ui-meta num">{t("championship.pointsValue", { points: format.number(d.units / 2, { maximumFractionDigits: 1 }) })}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              <section className="wh-side-panel ui-surface" aria-labelledby="wh-rules-title">
+                <h2 id="wh-rules-title" className="wh-side-title">{t("weekendHub.rules")}</h2>
+                <p className="development-notice">{t("progression.notice")}</p>
+              </section>
+            </aside>
+          </div>
+          <section className="wh-schedule ui-surface" aria-labelledby="wh-schedule-title">
+            <div className="ui-section-head"><h2 id="wh-schedule-title">{t("weekendHub.schedule")}</h2></div>
+            <ol className="wh-schedule-list">
+              {sessions.map((s) => (
+                <li key={s.id} className="wh-row" data-status={s.status}>
+                  <span className="wh-row-marker" aria-hidden="true"><Icon name={sessionIcon(s.status)} /></span>
+                  <div className="wh-row-text">
+                    <strong>{t(`progression.${s.type}`)}</strong>
+                    <p>{t(`progression.${s.status}`)}</p>
+                  </div>
+                  <Finishes finishes={extras?.results[s.type]} />
+                  <div className="session-actions">
+                    {current?.id === s.id
+                      ? <span className="ui-meta">{t("weekendHub.currentAbove")}</span>
+                      : <SessionControls careerId={careerId} eventId={event.id} session={s} />}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        </>
+      )}
+    </div>
   );
 }

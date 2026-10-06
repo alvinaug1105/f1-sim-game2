@@ -115,6 +115,8 @@ describe('Race operations layout (CSS contract)', () => {
         const narrow = block('@media (max-width: 820px)');
         expect(narrow).toMatch(/\.live-grid \{\s*grid-template-columns: minmax\(0, 1fr\);/);
         expect(narrow).toContain('.live-panes');
-        expect(narrow).toMatch(/\[data-pane="always"\][^{]*\{\s*position: sticky;/);
+        // Named desktop areas are dropped so no pane creates an implicit extra column.
+        expect(narrow).toMatch(/\.live-grid > \* \{\s*grid-area: auto;/);
+        expect(narrow).toMatch(/\.live-grid > \[data-pane\]:not\(\[data-pane="always"\]\) \{\s*display: none;/);
     });
 });

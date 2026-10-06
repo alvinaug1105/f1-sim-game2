@@ -3,7 +3,8 @@
  * committed public Race view at every checkpoint. Unlike the transition-based attention line (attention.ts), an issue
  * stays listed for as long as its condition is true, so a tyre-cliff or fuel warning can no longer flash past at 8×
  * with auto-pause off. Presentation only: reads existing public state and helpers, never changes Race rules, timing or
- * auto-pause behaviour.
+ * auto-pause behaviour. The dry-tyre rule is listed only once it is URGENT (the panel explains it in full the rest of the
+ * race), so the rail stays about decisions rather than standing reminders.
  */
 import type { RacePublicState } from "../public-view";
 import type { timingRows } from "./model";
@@ -14,7 +15,7 @@ type Row = ReturnType<typeof timingRows>[number];
 export type IssueSeverity = "CRITICAL" | "WARNING" | "OPPORTUNITY" | "INFO";
 export type IssueKind =
     | "FUEL_CRITICAL" | "TYRE_PAST_CLIFF" | "TYRE_RULE_URGENT" | "TYRE_POOR"
-    | "TYRE_CLIFF_SOON" | "FUEL_SHORT" | "TYRE_HIGH" | "TYRE_RULE_OUTSTANDING" | "BATTLE_BEHIND"
+    | "TYRE_CLIFF_SOON" | "FUEL_SHORT" | "TYRE_HIGH" | "BATTLE_BEHIND"
     | "BATTLE_AHEAD" | "OVERTAKE_AVAILABLE"
     | "BOX_REQUESTED" | "NEUTRALISED";
 export interface StrategicIssue {
@@ -49,7 +50,6 @@ export function strategicIssues(rows: readonly Row[], s: RacePublicState): Strat
         else if (tyre?.wear === "HIGH") add("TYRE_HIGH", "INFO", row.id, { wear: e.stint!.tyre.wearPermille ?? 0 });
         if (family && s.tyreFit && s.tyreFit.levels[family] === "POOR") add("TYRE_POOR", "CRITICAL", row.id, { best: s.tyreFit.best });
         if (rule?.status === "URGENT") add("TYRE_RULE_URGENT", "CRITICAL", row.id, { lap: rule.deadlineLap === null ? "" : rule.deadlineLap + 1 });
-        else if (rule?.status === "OUTSTANDING") add("TYRE_RULE_OUTSTANDING", "INFO", row.id, { count: rule.required });
         if (e.pit?.pendingCompound) add("BOX_REQUESTED", "INFO", row.id, { compound: e.pit.pendingCompound });
         const battle = battleContext(rows, row.id, s);
         if (battle.battleBehind && battle.behind && battle.gapBehindMs !== null) add("BATTLE_BEHIND", "WARNING", row.id, { rival: battle.behind.abbreviation, ms: battle.gapBehindMs });

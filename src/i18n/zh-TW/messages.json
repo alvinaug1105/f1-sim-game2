@@ -1102,7 +1102,6 @@
   "issues.TYRE_CLIFF_SOON": "{driver}：約 {laps} 圈後抵達輪胎性能懸崖（估計）",
   "issues.FUEL_SHORT": "{driver}：預計完賽時短少 {kg} 公斤燃油",
   "issues.TYRE_HIGH": "{driver}：輪胎性能衰退中・磨耗 {wear}",
-  "issues.TYRE_RULE_OUTSTANDING": "{driver}：乾胎規則・尚需使用 {count} 種乾胎配方",
   "issues.BATTLE_BEHIND": "{driver}：{rival} 在後方 {gap}",
   "issues.BATTLE_AHEAD": "{driver}：距前方 {gap}（{rival}）",
   "issues.OVERTAKE_AVAILABLE": "{driver}：可使用超車模式",

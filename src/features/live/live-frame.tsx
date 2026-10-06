@@ -35,7 +35,7 @@ export function LiveHeader({ kind, kindLabel, title, circuit, backHref, backLabe
     return <header className="live-head" data-kind={kind}>
         <div className="live-head-id">
             <Link className="live-back" href={backHref}><Icon name="back" size={14}/>{backLabel}</Link>
-            <p className="live-kind"><span className="ui-label">{kindLabel}</span>{badge}</p>
+            <div className="live-kind"><span className="ui-label">{kindLabel}</span>{badge}</div>
             <h1 className="ui-display live-title">{title} <span className="live-circuit">{circuit}</span></h1>
         </div>
         {nav}
@@ -49,7 +49,7 @@ export interface ConditionItem { key: string; icon: IconName; label: string; val
 /** Current conditions as labelled chips (each concept separate: rain, track water, temperatures). */
 export function ConditionChips({ items, forecast, label }: { items: readonly ConditionItem[]; forecast?: ConditionItem | null; label: string }) {
     return <section className="live-conditions weather-strip" aria-label={label}>
-        {items.map(item => <span key={item.key} className="live-chip" data-tone={item.tone} title={item.title}><Icon name={item.icon} size={15}/><span className="live-chip-text"><span className="live-chip-label">{item.label}</span><strong>{item.value}</strong>{item.note && <em>{item.note}</em>}</span></span>)}
+        {items.map(item => <span key={item.key} className="live-chip" data-key={item.key} data-tone={item.tone} title={item.title}><Icon name={item.icon} size={15}/><span className="live-chip-text"><span className="live-chip-label">{item.label}</span><strong>{item.value}</strong>{item.note && <em>{item.note}</em>}</span></span>)}
         {forecast && <span className="live-chip live-forecast forecast-next" title={forecast.title}><Icon name={forecast.icon} size={15}/><span className="live-chip-text"><span className="live-chip-label">{forecast.label}</span><strong>{forecast.value}</strong>{forecast.note && <em>{forecast.note}</em>}</span></span>}
     </section>;
 }
@@ -73,14 +73,14 @@ export function PlaybackControls({ playback, done, onToggle, onStep, stepLabel, 
             <button className="play-toggle" data-playing={playback.playing} onClick={onToggle} disabled={done} aria-label={t(playback.playing ? "viewer.pause" : "viewer.play")}>
                 <Icon name={playback.playing ? "pause" : "play"} size={16}/><span>{t(playback.playing ? "viewer.pause" : "viewer.play")}</span>
             </button>
-            <button className="live-tool" onClick={onStep} disabled={playback.busy || done}><Icon name="step" size={14}/>{stepLabel}</button>
+            <button className="live-tool" onClick={onStep} disabled={playback.busy || done}><Icon name="step" size={14}/><span className="live-tool-text">{stepLabel}</span></button>
             <div className="live-speed" role="group" aria-label={t("viewer.speed")}>{PLAYBACK_SPEEDS.map(speed => <button className="speed-button" key={speed} onClick={() => onSpeed(speed)} aria-pressed={playback.speed === speed} disabled={done}>{format.number(speed)}×</button>)}</div>
-            <button className="live-tool" onClick={onSkip} disabled={done || playback.skipping} aria-pressed={playback.skipping}><Icon name="simulate" size={14}/>{skipLabel}</button>
+            <button className="live-tool" onClick={onSkip} disabled={done || playback.skipping} aria-pressed={playback.skipping}><Icon name="simulate" size={14}/><span className="live-tool-text">{skipLabel}</span></button>
             {extra}
         </div>
         <div className="viewer-settings">
-            <label className="live-switch"><input type="checkbox" role="switch" checked={playback.autoPause} onChange={e => onAutoPause(e.target.checked)} disabled={done}/><span className="live-switch-track" aria-hidden="true"/><span>{t("viewer.autoPause")}</span><strong className="live-switch-state" aria-hidden="true">{t(playback.autoPause ? "live.on" : "live.off")}</strong></label>
-            {onReduceMotion && <label className="live-switch"><input type="checkbox" role="switch" checked={!!reduceMotion} onChange={e => onReduceMotion(e.target.checked)}/><span className="live-switch-track" aria-hidden="true"/><span>{t("viewer.reduceMotion")}</span></label>}
+            <label className="live-switch"><input type="checkbox" role="switch" checked={playback.autoPause} onChange={e => onAutoPause(e.target.checked)} disabled={done}/><span className="live-switch-track" aria-hidden="true"/><span className="live-switch-label">{t("viewer.autoPause")}</span><strong className="live-switch-state" aria-hidden="true">{t(playback.autoPause ? "live.on" : "live.off")}</strong></label>
+            {onReduceMotion && <label className="live-switch"><input type="checkbox" role="switch" checked={!!reduceMotion} onChange={e => onReduceMotion(e.target.checked)}/><span className="live-switch-track" aria-hidden="true"/><span className="live-switch-label">{t("viewer.reduceMotion")}</span></label>}
             <span role="status" className={`playback-phase phase-${playback.phase}`}><Icon name={playback.phase === "paused" ? "pause" : playback.phase === "finished" ? "flag" : "play"} size={12}/>{status}</span>
         </div>
     </div>;

@@ -127,7 +127,7 @@ export function DriverPanel({ data, row, busy, send, rows }: {
         <div className="dp-statusline">
             <span className={`driver-status status-${row.disqualified ? 'DSQ' : status}`}><Icon name={row.disqualified || status === 'RETIRED' ? 'ban' : status === 'PIT' ? 'wrench' : status === 'FINISHED' ? 'flag' : 'play'} size={12}/>{row.disqualified ? t('classification.DISQUALIFIED') : t(status === 'PIT' ? 'viewer.pit' : `incident.${status}`)}</span>
             <span className="status-pill">{t(row.player ? 'viewer.player' : 'viewer.readOnly')}</span>
-            <span className="dp-leader">{t('viewer.toLeader')}: <strong>{officialLeaderId(s) === row.id ? t('race.leader') : row.disqualified ? t('classification.DISQUALIFIED') : gap(row.gap)}</strong></span>
+            <span className="dp-leader">{t('viewer.toLeader')}: {officialLeaderId(s) === row.id ? t('race.leader') : row.disqualified ? t('classification.DISQUALIFIED') : gap(row.gap)}</span>
         </div>
         {row.status !== 'RUNNING' && <p className={`no-commands status-${row.status}`} role="status">{row.status === 'RETIRED' ? t('viewer.noCommands.RETIRED', { lap: format.number(e.incident?.retiredLap ?? s.lap) }) : t('viewer.noCommands.FINISHED')}</p>}
         {row.disqualified && <p className="no-commands status-DSQ" role="status">{t('classification.reason.DRY_TYRE_SPECIFICATIONS')} {t('classification.consequence')} {(() => { const road = s.classification?.find(x => x.entrantId === row.id)?.roadPosition; return road ? t('classification.roadPosition', { position: format.number(road) }) : null; })()}</p>}

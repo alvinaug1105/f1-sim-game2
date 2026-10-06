@@ -1102,7 +1102,6 @@
   "issues.TYRE_CLIFF_SOON": "{driver}: tyre cliff in about {laps} laps (estimate)",
   "issues.FUEL_SHORT": "{driver}: projected {kg} kg short at the flag",
   "issues.TYRE_HIGH": "{driver}: tyre degrading — wear {wear}",
-  "issues.TYRE_RULE_OUTSTANDING": "{driver}: dry-tyre rule — {count} more dry compound required",
   "issues.BATTLE_BEHIND": "{driver}: {rival} is {gap} behind",
   "issues.BATTLE_AHEAD": "{driver}: {gap} to {rival} ahead",
   "issues.OVERTAKE_AVAILABLE": "{driver}: Overtake Mode available",

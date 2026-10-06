@@ -1,5 +1,5 @@
 import { ENERGY_POLICIES, type EnergyPolicy } from '../../simulation/race/assistance/model';
-import { progressionForCircuit, progressionBForCircuit, progressionCForCircuit, progressionDForCircuit } from '../../data/seed/circuit-progression';
+import { progressionForCircuit, progressionBForCircuit, progressionCForCircuit, progressionDForCircuit, progressionEForCircuit } from '../../data/seed/circuit-progression';
 import { hasAssistance, type ProgressionRevision } from '../../simulation/race/progression/revision';
 import { defaultRacecraftConfiguration } from "../../simulation/race/traffic/racecraft";
 import { defaultIncidentConfiguration, defaultReliability } from "../../simulation/race/incidents/model";
@@ -14,8 +14,10 @@ import {
   defaultInteractionConfiguration,
   developmentDriverInteraction,
 } from "../../simulation/race/traffic/profiles";
-import { aiDryStartingCompound, aiWetStartingCompound, defaultAiStrategyConfiguration, publicWeather, strategyPreference } from "../../simulation/race/pits/ai-strategy";
+import { aiDryStartingCompound, aiDryStartingPlan, aiWetStartingCompound, defaultAiStrategyConfiguration, publicWeather, strategyPreference, type DryStartPlanInput } from "../../simulation/race/pits/ai-strategy";
+import { freshTyreTemperatureMilliC } from "../../simulation/race/tyres/fresh";
 import { v8dTuningBundle } from "./v8d-tuning";
+import { v8eTuningBundle } from "./v8e-tuning";
 import {
   defaultTyreConfiguration,
   startingTyre,
@@ -37,6 +39,10 @@ import {
 import { developmentRaceInput, developmentCommandFuelKg } from "./development-profiles";
 import type { RaceSimulationState } from "../../simulation/race/types";
 import { careerRaceWeather, aiStartingCompound } from "./weather-scenarios";
+/** The v8D bundle with the incident configuration it has always frozen (accepted defaults + the circuit's pit section). */
+function withSection<T extends { readonly pitTiming: { readonly pitTrackSectionMs: number } }>(b: T) {
+  return { ...b, incidents: { ...defaultIncidentConfiguration(), pitTrackSectionMs: b.pitTiming.pitTrackSectionMs } };
+}
 export function startCareerRace(
   repository: CareerRaceRepository,
   careerId: string,
@@ -49,7 +55,7 @@ export function startCareerRace(
   withWeather = false,
   withIncidents = false,
   autoPlayer = false,
-  /** Progression revision to freeze: true = 1 (v8A), 2 = v8B, 3 = v8C, 4 = v8D (production). */
+  /** Progression revision to freeze: true = 1 (v8A), 2 = v8B, 3 = v8C, 4 = v8D, 5 = v8E (production). */
   withProgression: boolean | Exclude<ProgressionRevision, 1> = false,
 ) {
   // An explicit seed (tests, development tooling) keeps the legacy development weather so historical fixtures stay
@@ -96,13 +102,26 @@ export function startCareerRace(
       // The progression revision is chosen explicitly and frozen; a saved Race is never upgraded. Revision 3+ snapshots
       // the regulation of THIS session (Grand Prix or Sprint), never inferred from the circuit.
       const progression = withTraffic && withProgression
-        ? withProgression === 4 ? progressionDForCircuit(data.circuit.sourceCircuitId, data.kind ?? 'RACE')
+        ? withProgression === 5 ? progressionEForCircuit(data.circuit.sourceCircuitId, data.kind ?? 'RACE')
+          : withProgression === 4 ? progressionDForCircuit(data.circuit.sourceCircuitId, data.kind ?? 'RACE')
           : withProgression === 3 ? progressionCForCircuit(data.circuit.sourceCircuitId, data.kind ?? 'RACE')
           : withProgression === 2 ? progressionBForCircuit(data.circuit.sourceCircuitId)
           : progressionForCircuit(data.circuit.sourceCircuitId)
         : undefined;
-      // Revision 4 (v8D) freezes ONE coherent tuning bundle; revisions 1–3 keep their accepted configurations exactly.
-      const v8d = progression && withProgression === 4 ? v8dTuningBundle(progression, snapshot.input.circuit.baseLapTimeMs, !!withWeather, data.circuit.raceProfile) : null;
+      // Revisions 4 (v8D) and 5 (v8E) each freeze ONE coherent tuning bundle; revisions 1–3 keep their accepted
+      // configurations exactly. A bundle's incident configuration carries the circuit's pit track section.
+      const v8d = progression && withProgression === 5
+        ? v8eTuningBundle(progression, snapshot.input.circuit.baseLapTimeMs, !!withWeather, data.circuit.raceProfile)
+        : progression && withProgression === 4 ? withSection(v8dTuningBundle(progression, snapshot.input.circuit.baseLapTimeMs, !!withWeather, data.circuit.raceProfile)) : null;
+      // v8E dry-start plan inputs: public, frozen-at-start values only (the bundle's tyres and pit timing, the public
+      // weather strategy limits, the session rule). Revision 5 only.
+      const v8eStart: DryStartPlanInput | null = withProgression === 5 && v8d && progression && weather ? {
+        tyres: v8d.tyres, totalLaps: snapshot.input.totalLaps, minimumStintLaps: weather.strategy.minimumStintLaps,
+        startTyre: (c) => startingTyre(c),
+        freshTyre: (c) => ({ compound: c, ageLaps: 0, wearPermille: 0, temperatureMilliC: freshTyreTemperatureMilliC({ pits: defaultPitConfiguration(), tyres: v8d.tyres, progression }, c) }),
+        stopBaseMs: v8d.pitTiming.pitLaneLossMs + defaultPitConfiguration().stationaryBaseMs + weather.strategy.marginMs,
+        distinctCompounds: !!progression.regulation?.dryTyres, interaction: v8d.interaction,
+      } : null;
       // AI teams pick starting tyres from current public grid conditions, never from player input or future weather.
       // Career Races (v7) also give each AI car its own stable strategic character: on a dry grid a strong soft
       // preference starts on the soft (never the hard). Wet or damp grids keep the current-conditions choice.
@@ -110,7 +129,9 @@ export function startCareerRace(
         // Auto-managed player cars (Simulate) start like any AI car: from current public conditions and character.
         if (!(withIncidents && weather && (autoPlayer || teamId !== data.progress.career.playerTeamId))) return tyreChoices?.[driverId] ?? "MEDIUM";
         const compound = aiStartingCompound(weather.initial), preference = strategyPreference(seed, gridPosition);
-        if (compound === "MEDIUM") return aiDryStartingCompound(preference);
+        // v8E (revision 5): a dry start is a whole-race plan choice (cost-based; the character only chooses among close
+        // plans). Earlier revisions keep the accepted character-only rule.
+        if (compound === "MEDIUM") return v8eStart ? aiDryStartingPlan(v8eStart, v8d!.strategy, preference) : aiDryStartingCompound(preference);
         // v8D: on a wet grid the car's own wet-compound trait may choose between two sensible wet tyres (current grid
         // conditions only). Earlier revisions keep the established current-conditions choice.
         return v8d ? aiWetStartingCompound(compound, weather.initial, v8d.tyres, publicWeather(weather), v8d.strategy, preference) : compound;
@@ -131,7 +152,7 @@ export function startCareerRace(
             ? {
                 ...input,
                 // v8D: the incident model's pit track section is the circuit's own (SC/VSC reduced stops).
-                ...(withIncidents ? { incidents: v8d ? { ...defaultIncidentConfiguration(), pitTrackSectionMs: v8d.pitTiming.pitTrackSectionMs } : defaultIncidentConfiguration() } : {}),
+                ...(withIncidents ? { incidents: v8d ? v8d.incidents : defaultIncidentConfiguration() } : {}),
                 ...(progression ? { progression } : {}),
                 ...(weather ? { weather } : {}),
                 // Career Races (v7) also freeze the racecraft tuning (close-racing pressure, selective AI aggression).
@@ -140,7 +161,7 @@ export function startCareerRace(
                 // (neutral defaults when the Career predates it). Older Race versions keep their historical inputs.
                 // v8D: circuit-derived green pit-lane loss and the v8D strategy (wet character); earlier revisions: 19.5 s.
                 ...(withPits ? { pits: withIncidents ? v8d ? { ...defaultPitConfiguration(), pitLaneLossMs: v8d.pitTiming.pitLaneLossMs, strategy: v8d.strategy } : { ...defaultPitConfiguration(), strategy: defaultAiStrategyConfiguration() } : defaultPitConfiguration() } : {}),
-                // v8D: legacy DRS is inert in the revision-4 snapshot (2026: Active Aero / Overtake Mode / Boost).
+                // v8D / v8E: legacy DRS is inert in the revision-4/5 snapshot (2026: Active Aero / Overtake Mode / Boost).
                 interaction: withIncidents ? v8d ? v8d.interaction : circuitInteractionConfiguration(data.circuit.raceProfile) : defaultInteractionConfiguration(),
                 entrants: input.entrants.map((e) => ({
                   ...e,
@@ -364,10 +385,16 @@ export function simulateCareerRaceRemainder(repository: CareerRaceRepository, ca
   });
 }
 
-/** Production creation entry point: new Race / Sprint sessions freeze v8 progression revision 4 (v8D) — the v8C
- * regulation and energy plus the v8D tuning bundle. Explicit historical helpers remain for fixtures and compatibility
- * tooling (revisions 3 and 2 below, revision 1 / v7 through `startCareerRace`); an existing Race is never upgraded. */
+/** Production creation entry point: new Race / Sprint sessions freeze v8 progression revision 5 (v8E) — the v8C
+ * regulation and energy plus the v8E tuning bundle. Explicit historical helpers remain for fixtures and compatibility
+ * tooling (revisions 4, 3 and 2 below, revision 1 / v7 through `startCareerRace`); an existing Race is never upgraded. */
 export function startProgressionCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
+  return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,5);
+}
+/** Historical (accepted v8D) revision-4 creation, for compatibility fixtures and tests only — never production. It
+ * freezes the accepted v8D bundle exactly (tyres, strategy, racecraft incl. the late window, pit timing, DRS-inert
+ * interaction). */
+export function startRevision4CareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, choices: Readonly<Record<string, TyreCompound>> = {}, seed?: number) {
   return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,4);
 }
 /** Historical (accepted v8C) revision-3 creation, for compatibility fixtures and tests only — never production. It
@@ -380,7 +407,7 @@ export function startRevision2CareerRace(repository: CareerRaceRepository, caree
   return startCareerRace(repository,careerId,eventId,seed,choices,true,true,true,true,true,false,2);
 }
 export async function simulateProgressionCareerRace(repository: CareerRaceRepository, careerId: string, eventId: string, seed?: number) {
-  await startCareerRace(repository,careerId,eventId,seed,{},true,true,true,true,true,true,4);
+  await startCareerRace(repository,careerId,eventId,seed,{},true,true,true,true,true,true,5);
   const data=await repository.getRace(careerId,eventId);
   if(!data?.state) throw new RaceError('NOT_FOUND');
   return advanceCareerRace(repository,careerId,eventId,data.state.lap,'finish');

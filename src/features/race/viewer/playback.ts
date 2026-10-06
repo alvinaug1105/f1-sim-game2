@@ -33,6 +33,8 @@ export function raceAdapter(playerTeamId: string): PlaybackAdapter<RacePublicSta
         assess: (memory, s) => assessCheckpoint(memory, s, playerTeamId),
     };
 }
+/** v8E: simultaneous strategic items named alongside the one that stopped playback (the rest are counted). */
+export const ALSO_SHOWN = 3;
 export type PlaybackSnapshot<A extends { reason: string } = Attention, C = CommandInfo> = {
     phase: PlaybackPhase;
     playing: boolean;
@@ -48,6 +50,8 @@ export type PlaybackSnapshot<A extends { reason: string } = Attention, C = Comma
     attention: A | null;
     /** Further strategic items detected at the same checkpoint. */
     moreAttention: number;
+    /** v8E: the first few of those further items, so simultaneous events are named rather than only counted. */
+    alsoAttention?: A[];
     /** Most recent strategic item, shown even when auto-pause is off and playback continued. */
     lastAttention: A | null;
     /** Last successfully saved player command, identifying its driver (cleared when playback resumes). */
@@ -97,7 +101,7 @@ export class PlaybackController<S = RacePublicState, M = AttentionMemory, A exte
         this.adapter = typeof adapter === 'string' ? raceAdapter(adapter) as unknown as PlaybackAdapter<S, M, A> : adapter;
         this.memory = this.adapter.initialMemory(state);
         const finished = this.adapter.finished(state);
-        this.snapshot = { phase: finished ? 'finished' : 'paused', playing: false, motion: 'paused', latencyMs: 0, busy: false, speed: 1, autoPause: true, skipping: false, reason: finished ? 'FINISH' : null, attention: null, moreAttention: 0, lastAttention: null, confirmation: null, error: null };
+        this.snapshot = { phase: finished ? 'finished' : 'paused', playing: false, motion: 'paused', latencyMs: 0, busy: false, speed: 1, autoPause: true, skipping: false, reason: finished ? 'FINISH' : null, attention: null, moreAttention: 0, alsoAttention: [], lastAttention: null, confirmation: null, error: null };
     }
     getSnapshot = () => this.snapshot;
     subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
@@ -131,7 +135,7 @@ export class PlaybackController<S = RacePublicState, M = AttentionMemory, A exte
     }
     private start(seeking: boolean) {
         const before = this.interval();
-        this.emit({ playing: true, skipping: seeking, phase: seeking ? 'seeking' : 'running', motion: 'playing', reason: null, attention: null, moreAttention: 0, confirmation: null, error: null });
+        this.emit({ playing: true, skipping: seeking, phase: seeking ? 'seeking' : 'running', motion: 'playing', reason: null, attention: null, moreAttention: 0, alsoAttention: [], confirmation: null, error: null });
         this.rescale(before, this.interval());
         this.budgetSince ??= this.now();
         this.schedule();
@@ -158,7 +162,7 @@ export class PlaybackController<S = RacePublicState, M = AttentionMemory, A exte
     step = async () => {
         this.pause();
         if (this.snapshot.busy || this.finished) return;
-        this.emit({ motion: 'settle', reason: null, attention: null, moreAttention: 0, confirmation: null });
+        this.emit({ motion: 'settle', reason: null, attention: null, moreAttention: 0, alsoAttention: [], confirmation: null });
         await this.tick();
     };
     /** Runs `work` strictly after any in-flight mutation; `busy` stays true until every accepted mutation has finished. */
@@ -192,19 +196,19 @@ export class PlaybackController<S = RacePublicState, M = AttentionMemory, A exte
                 if (this.adapter.finished(after)) {
                     const settle = this.snapshot.motion !== 'paused';
                     this.pause();
-                    this.emit({ phase: 'finished', reason: 'FINISH', attention: top, moreAttention: Math.max(0, items.length - 1), motion: settle ? 'settle' : 'paused' });
+                    this.emit({ phase: 'finished', reason: 'FINISH', attention: top, moreAttention: Math.max(0, items.length - 1), alsoAttention: items.slice(1, 1 + ALSO_SHOWN), motion: settle ? 'settle' : 'paused' });
                 }
                 else if (top && !this.snapshot.playing && !this.snapshot.skipping) {
                     // Single step (or a pause that arrived mid-request): explain, without touching the settle budget.
-                    this.emit({ reason: top.reason, attention: top, moreAttention: items.length - 1 });
+                    this.emit({ reason: top.reason, attention: top, moreAttention: items.length - 1, alsoAttention: items.slice(1, 1 + ALSO_SHOWN) });
                 }
                 else if (top && (this.snapshot.autoPause || this.snapshot.skipping)) {
                     this.pause();
-                    this.emit({ reason: top.reason, attention: top, moreAttention: items.length - 1 });
+                    this.emit({ reason: top.reason, attention: top, moreAttention: items.length - 1, alsoAttention: items.slice(1, 1 + ALSO_SHOWN) });
                 }
                 else if (this.snapshot.skipping && this.seekRemaining <= 0) {
                     this.pause();
-                    this.emit({ reason: 'LIMIT', attention: null, moreAttention: 0 });
+                    this.emit({ reason: 'LIMIT', attention: null, moreAttention: 0, alsoAttention: [] });
                 }
             }
             catch (error) {
@@ -224,7 +228,7 @@ export class PlaybackController<S = RacePublicState, M = AttentionMemory, A exte
             if (this.finished) return false;
             try {
                 this.state = await work(this.state);
-                this.emit({ confirmation: info, ...(interrupted ? { reason: 'COMMAND' as const, attention: null, moreAttention: 0 } : {}) });
+                this.emit({ confirmation: info, ...(interrupted ? { reason: 'COMMAND' as const, attention: null, moreAttention: 0, alsoAttention: [] } : {}) });
                 return true;
             }
             catch (error) {

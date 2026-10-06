@@ -10,7 +10,7 @@ import type { EnergyPolicy } from '../../simulation/race/assistance/model';
  */
 import type { CareerProgress } from "../../game/domain/progression";
 import type { RaceKind, RaceLabel } from "../../game/domain/race-repository";
-import type { CommandState } from "../../simulation/race/commands/model";
+import type { CommandState, PaceMode } from "../../simulation/race/commands/model";
 import type { EntrantIncidentState, RaceControlMode, RaceEvent } from "../../simulation/race/incidents/model";
 import type { RacePitStop } from "../../simulation/race/pits/types";
 import type { TyreCompound } from "../../simulation/race/tyres/model";
@@ -85,9 +85,24 @@ export interface PlayerCarInsight {
   /** Whole laps the car's own fuel lasts in its current fuel mode; null when the Race has no commands. */
   readonly fuelLapsRemaining?: number | null;
   readonly ers: ErsOutlook | null;
-  /** Presentation-only pit window estimate (laps to the current compound's cliff and the current stop cost). */
-  readonly pitEstimate: { readonly lapsToCliff: number; readonly minimumLossMs: number; readonly maximumLossMs: number } | null;
+  /**
+   * Presentation-only pit window estimate: laps to the current compound's cliff at the car's CURRENT pace mode (and the
+   * range over every pace mode), the current stop cost, and the estimated rejoin region from current public gaps.
+   */
+  readonly pitEstimate: {
+    readonly lapsToCliff: number; readonly minimumLossMs: number; readonly maximumLossMs: number;
+    readonly lapsToCliffMin?: number; readonly lapsToCliffMax?: number; readonly paceMode?: PaceMode | null;
+    readonly rejoin?: { readonly best: number; readonly worst: number } | null;
+  } | null;
 }
+/**
+ * Why the player's own car does / does not have Overtake Mode right now (its own state + public facts only):
+ * ACTIVE, ELIGIBLE (energy available), ELIGIBLE_NO_ENERGY (eligible, but no energy for a useful deployment), or a
+ * not-eligible reason.
+ */
+export type OvertakeReason = "ACTIVE" | "ELIGIBLE" | "ELIGIBLE_NO_ENERGY" | "NOT_RUNNING" | "PIT_LANE" | "SAFETY_CAR" | "VSC" | "WET" | "NO_CAR_AHEAD" | "LAPPING" | "GAP" | "AWAITING_DETECTION";
+/** Why Active Aero is in its current state (automatic system; never a chasing-car entitlement). */
+export type AeroReason = "STRAIGHT" | "CORNER" | "NOT_RUNNING" | "PIT_LANE" | "SAFETY_CAR" | "VSC" | "WET";
 export interface RacePublicEntrant {
   readonly entrantId: string;
   readonly completedLaps: number;
@@ -107,7 +122,11 @@ export interface RacePublicEntrant {
   readonly commands?: CommandState;
   /** v8C, player cars only. */
   readonly regulation?: PublicTyreRuleStatus;
-  readonly assistance?: {readonly energy:number;readonly capacity:number;readonly policy:EnergyPolicy;readonly aero:'CORNER'|'STRAIGHT'|'SAFE';readonly overtake:'NOT_ELIGIBLE'|'AVAILABLE'|'ACTIVE'};
+  readonly assistance?: {readonly energy:number;readonly capacity:number;readonly policy:EnergyPolicy;readonly aero:'CORNER'|'STRAIGHT'|'SAFE';readonly overtake:'NOT_ELIGIBLE'|'AVAILABLE'|'ACTIVE';
+    /** Player cars: why Overtake Mode is (not) available, the current gap to the car physically ahead and the threshold. */
+    readonly overtakeReason?: OvertakeReason; readonly gapAheadMs?: number | null; readonly overtakeThresholdMs?: number;
+    /** Player cars: why Active Aero is in this state, and its direct lap-time effect on straights in this Race (ms). */
+    readonly aeroReason?: AeroReason; readonly aeroStraightDeltaMs?: number};
   /** Player cars only. */
   readonly insight?: PlayerCarInsight;
 }
@@ -132,7 +151,7 @@ export interface RacePublicState {
   readonly status: "RUNNING" | "FINISHED";
   readonly input: {
     readonly totalLaps: number;
-    readonly modelRevision?: 1 | 2 | 3 | 4;
+    readonly modelRevision?: 1 | 2 | 3 | 4 | 5;
     /** v8C: the session's frozen regulation (null dry rule = not applicable, e.g. the Sprint). */
     readonly regulation?: { readonly session: "RACE" | "SPRINT"; readonly dryTyres: PublicTyreRule | null };
     /** Revision 2: the Race's frozen pit progress anchors (static, public). The drawn lane comes from the circuit catalogue. */
@@ -175,6 +194,11 @@ export interface RacePreparationView {
   readonly compounds: readonly TyreCompound[];
   readonly mine: readonly { readonly driverId: string; readonly driverName: string }[];
   readonly rivals: readonly { readonly driverId: string; readonly driverName: string; readonly teamName: string }[];
+  /**
+   * v8E: the authoritative tyre-family assessment of the CURRENT grid conditions (the Race's own tyre model), so a dry
+   * start on a grid that strongly favours wet-weather tyres can be warned about. Never the weather timeline.
+   */
+  readonly gridTyreFit?: TyreFamilyAssessment | null;
 }
 export interface RaceViewData {
   readonly visibility: "PUBLIC";

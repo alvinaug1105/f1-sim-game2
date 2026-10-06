@@ -28,7 +28,11 @@ export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduce
     if (playback.error) attention = null;
     else if (playback.reason === 'FINISH') attention = { tone: 'finish', text: t('viewer.reason.FINISH') };
     else if (playback.reason === 'COMMAND') attention = { tone: 'command', text: confirm ? `${confirmText} · ${t('viewer.resumeHint')}` : t('viewer.reason.COMMAND') };
-    else if (playback.reason && playback.attention) attention = { tone: 'stopped', text: `${t('viewer.stoppedFor')} ${describe(playback.attention)}${playback.moreAttention ? ` · ${t('viewer.moreAttention', { count: format.number(playback.moreAttention) })}` : ''}` };
+    else if (playback.reason && playback.attention) {
+        // v8E: simultaneous items are named (grouped on one line); only what does not fit is counted.
+        const also = playback.alsoAttention ?? [], rest = Math.max(0, playback.moreAttention - also.length);
+        attention = { tone: 'stopped', text: `${t('viewer.stoppedFor')} ${describe(playback.attention)}${also.length ? ` · ${t('viewer.alsoAttention', { items: also.map(describe).join('; ') })}` : ''}${rest ? ` · ${t('viewer.moreAttention', { count: format.number(rest) })}` : ''}` };
+    }
     else if (playback.reason) attention = { tone: 'stopped', text: t(`viewer.reason.${playback.reason}`) };
     else if (confirm) attention = { tone: 'command', text: confirmText };
     else if (playback.playing && playback.lastAttention) attention = { tone: 'info', text: `${t('viewer.latestAttention', { lap: format.number(playback.lastAttention.lap) })} ${describe(playback.lastAttention)}` };

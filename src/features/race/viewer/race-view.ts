@@ -89,7 +89,35 @@ export function driverSnapshot(row: Row, s: RacePublicState) {
 }
 export type { ErsOutlook };
 export type FeedCategory = "CONTROL" | "INCIDENT" | "RETIREMENT" | "PIT" | "OVERTAKE";
-export interface FeedItem { key: string; lap: number; category: FeedCategory; important: boolean; player: boolean; entrantIds: readonly string[]; event?: RaceEvent; stop?: NonNullable<RacePublicEntrant["pit"]>["stops"][number] }
+export interface FeedItem { key: string; lap: number; category: FeedCategory; important: boolean; player: boolean; entrantIds: readonly string[]; event?: RaceEvent; stop?: NonNullable<RacePublicEntrant["pit"]>["stops"][number];
+    /** v8E: several rival stops on the same lap onto the same compound, shown as one expandable line. */
+    group?: { readonly compound: TyreCompound; readonly items: readonly FeedItem[] } }
+/** v8E: at least this many rival stops in one lap onto the same compound are grouped (player stops never are). */
+export const FEED_GROUP_MIN = 3;
+/**
+ * v8E: collapse simultaneous rival pit stops (same lap, same new compound) into one item, so a wet crossover does not
+ * flood the feed. Player-car items, passes and Race Control events are never grouped; nothing is dropped.
+ */
+export function groupFeed(items: readonly FeedItem[]): FeedItem[] {
+    const out: FeedItem[] = [], buckets = new Map<string, FeedItem[]>();
+    for (const item of items) if (item.stop && !item.player) { const k = `${item.lap}:${item.stop.newCompound}`; buckets.set(k, [...(buckets.get(k) ?? []), item]); }
+    const done = new Set<string>();
+    for (const item of items) {
+        const k = item.stop && !item.player ? `${item.lap}:${item.stop.newCompound}` : null, bucket = k ? buckets.get(k)! : null;
+        if (!k || bucket!.length < FEED_GROUP_MIN) { out.push(item); continue; }
+        if (done.has(k)) continue;
+        done.add(k);
+        out.push({ key: `g${k}`, lap: item.lap, category: "PIT", important: false, player: false, entrantIds: bucket!.flatMap(x => x.entrantIds), group: { compound: item.stop!.newCompound, items: bucket! } });
+    }
+    return out;
+}
+/** v8E feed filters (presentation only). */
+export const FEED_FILTERS = ["ALL", "PLAYER", "OVERTAKE", "STRATEGY", "CONTROL"] as const;
+export type FeedFilter = typeof FEED_FILTERS[number];
+export function feedMatches(item: FeedItem, filter: FeedFilter) {
+    return filter === "ALL" || (filter === "PLAYER" && item.player) || (filter === "OVERTAKE" && item.category === "OVERTAKE") || (filter === "STRATEGY" && item.category === "PIT")
+        || (filter === "CONTROL" && (item.category === "CONTROL" || item.category === "INCIDENT" || item.category === "RETIREMENT"));
+}
 const CATEGORY: Record<RaceEvent["type"], FeedCategory> = { INCIDENT: "INCIDENT", RETIREMENT: "RETIREMENT", VSC_START: "CONTROL", VSC_END: "CONTROL", SAFETY_CAR_START: "CONTROL", SAFETY_CAR_END: "CONTROL", OVERTAKE: "OVERTAKE" };
 /**
  * Structured feed from persisted Race records only (Race Control events plus pit-stop history), newest first.
@@ -149,4 +177,12 @@ export function driverFlags(row: Row, rows: readonly Row[], s: RacePublicState, 
     if (fuelShort(s, e)) flags.push("FUEL");
     if (battle.battleAhead || battle.battleBehind) flags.push("BATTLE");
     return flags;
+}
+
+/**
+ * v8E wet-grid warning rule (presentation only): a player car would start on a DRY tyre while the CURRENT grid
+ * assessment says dry tyres are POOR (wet-weather tyres strongly favoured). A warning, never a prohibition.
+ */
+export function slickStartRisk(fit: { readonly levels: Readonly<Record<TyreFamily, Suitability>> } | null | undefined, choices: readonly TyreCompound[]): boolean {
+    return !!fit && fit.levels.DRY === "POOR" && choices.some(c => tyreFamily(c) === "DRY");
 }

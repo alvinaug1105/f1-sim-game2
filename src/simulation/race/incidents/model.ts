@@ -82,6 +82,15 @@ export interface IncidentConfiguration {
     drsRestartLaps: number;
     /** Green travel time through the circuit section bypassed by the pit route. */
     pitTrackSectionMs: number;
+    /**
+     * Race v8E Safety Car train compression (GAME TUNING; revision-5 snapshots only). Each running car on track catches
+     * up toward ITS OWN slot in the Safety Car train (its distance behind the leader minus `queueIntervalMs` per running
+     * car ahead), closing this share (‰) of that excess per lap, capped at `maxCompressionMs` a lap, and only while the
+     * physical gap to the car directly ahead exceeds `queueIntervalMs`. Every pair therefore closes at once instead of
+     * only the front pair (the accepted per-gap rule speeds every car up equally). Actual movement only: no reset,
+     * teleport, lap-deficit change or unlapping. Absent = the accepted per-gap compression exactly.
+     */
+    scTrainCatchupPermille?: number;
 }
 export const INCIDENT_STREAM_CONSTANT = 0x5a17c9e3;
 export function defaultReliability(): ReliabilityProfile { return { reliability: 97, powerUnitCondition: 95, gearboxCondition: 95, control: 85 }; }
@@ -96,6 +105,19 @@ export function defaultIncidentConfiguration(): IncidentConfiguration {
         VSC: { lapMultiplierPermille: 1350, fuelMultiplierPermille: 750, wearMultiplierPermille: 600, energyMultiplierPermille: 400, minLaps: 1, maxLaps: 3 },
         SAFETY_CAR: { lapMultiplierPermille: 1650, fuelMultiplierPermille: 500, wearMultiplierPermille: 350, energyMultiplierPermille: 200, minLaps: 2, maxLaps: 5 },
         queueIntervalMs: 1000, compressionPermille: 400, maxCompressionMs: 5000, drsRestartLaps: 2, pitTrackSectionMs: 12000 };
+}
+/**
+ * Race v8E (revision 5) Race Control — GAME TUNING: Safety Car train compression and a minimum Safety Car period long
+ * enough to deploy, gather and restart the field (3–5 laps, still ended early by the flag). VSC is unchanged: it holds
+ * gaps and never bunches the field.
+ */
+export const V8E_SC_TRAIN_CATCHUP_PERMILLE = 180;
+export const V8E_SC_MAX_COMPRESSION_MS = 8000;
+export const V8E_SC_MIN_LAPS = 3;
+export function v8eIncidentConfiguration(pitTrackSectionMs: number): IncidentConfiguration {
+    const base = defaultIncidentConfiguration();
+    return { ...base, pitTrackSectionMs, maxCompressionMs: V8E_SC_MAX_COMPRESSION_MS, scTrainCatchupPermille: V8E_SC_TRAIN_CATCHUP_PERMILLE,
+        SAFETY_CAR: { ...base.SAFETY_CAR, minLaps: Math.max(base.SAFETY_CAR.minLaps, V8E_SC_MIN_LAPS) } };
 }
 function integer(n: number, min: number, max: number) { if (!Number.isSafeInteger(n) || n < min || n > max)
     throw new RangeError("Invalid incident configuration/state"); }
@@ -128,6 +150,7 @@ export function validateIncidentConfiguration(c: IncidentConfiguration) {
     integer(c.maxCompressionMs, 1, 10000);
     integer(c.drsRestartLaps, 0, 10);
     integer(c.pitTrackSectionMs, 0, 60000);
+    if (c.scTrainCatchupPermille !== undefined) integer(c.scTrainCatchupPermille, 1, 1000);
     for (const k of ["DRIVER_MISTAKE", "SPIN", "LOCK_UP", "CONTACT", "MECHANICAL_PROBLEM", "MECHANICAL_RETIREMENT"] as const) {
         integer(c.losses[k].minimumMs, 0, 60000);
         integer(c.losses[k].maximumMs, c.losses[k].minimumMs, 60000);

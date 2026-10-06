@@ -105,3 +105,29 @@ export function v8dWeatherTyreConfiguration(): TyreConfiguration {
     WET: { ...accepted.profiles.WET!, degradationStartWear: 450, cliffWear: 850, progressivePenaltyMs: 1200, cliffPenaltyMs: 6500 },
   } };
 }
+
+/**
+ * Race v8E (progression revision 5) dry tyres — GAME TUNING. The v8D cliff thresholds and post-cliff penalties are kept
+ * (the cliff stays strategically active). What changes is the GRADUAL degradation before the cliff: a worn-but-healthy
+ * tyre now costs noticeably more than a fresh one (linear loss to degradation onset, a steeper progressive phase), so
+ * stopping earlier onto fresh tyres (undercut) gains real time, while the existing cold out-lap, pit loss and traffic
+ * still make an overcut viable when the old tyre is healthy. Base grip, base wear and temperatures are unchanged.
+ */
+const V8E_DRY_SHAPE: Readonly<Record<DryTyreCompound, Pick<TyreCompoundProfile, "stablePenaltyMs" | "progressivePenaltyMs">>> = Object.freeze({
+  SOFT: Object.freeze({ stablePenaltyMs: 300, progressivePenaltyMs: 2000 }),
+  MEDIUM: Object.freeze({ stablePenaltyMs: 250, progressivePenaltyMs: 1550 }),
+  HARD: Object.freeze({ stablePenaltyMs: 200, progressivePenaltyMs: 1200 }),
+});
+export function v8eTyreConfiguration(): TyreConfiguration {
+  const d = v8dTyreConfiguration();
+  return { ...d, profiles: {
+    SOFT: { ...d.profiles.SOFT, ...V8E_DRY_SHAPE.SOFT },
+    MEDIUM: { ...d.profiles.MEDIUM, ...V8E_DRY_SHAPE.MEDIUM },
+    HARD: { ...d.profiles.HARD, ...V8E_DRY_SHAPE.HARD },
+  } };
+}
+/** Race v8E weather tyres: the v8E dry shape plus the accepted v8D intermediate / full-wet profiles (unchanged). */
+export function v8eWeatherTyreConfiguration(): TyreConfiguration {
+  const w = v8dWeatherTyreConfiguration(), dry = v8eTyreConfiguration();
+  return { ...w, profiles: { ...w.profiles, SOFT: dry.profiles.SOFT, MEDIUM: dry.profiles.MEDIUM, HARD: dry.profiles.HARD } };
+}

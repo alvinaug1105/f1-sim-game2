@@ -1,5 +1,5 @@
 /**
- * Race v8D (progression revision 4) on real PostgreSQL: production creation freezes revision 4 with the v8D tuning
+ * Race v8D (progression revision 4) on real PostgreSQL: revision-4 creation freezes the v8D tuning
  * bundle, the explicit revision-3 helper freezes the accepted v8C configuration, and both survive reload exactly
  * (no migration: every v8D value lives in existing columns / JSON profiles).
  */
@@ -15,7 +15,7 @@ import { PrismaRaceRepository } from '../src/data/repositories/prisma-race';
 import { PrismaProgressionRepository } from '../src/data/repositories/prisma-progression';
 import { createCareer } from '../src/features/career/create-career';
 import { advanceToNextEvent, runSessionAction } from '../src/features/career/progression';
-import { startProgressionCareerRace, startRevision3CareerRace, advanceCareerRace } from '../src/features/race/service';
+import { startRevision4CareerRace, startRevision3CareerRace, advanceCareerRace } from '../src/features/race/service';
 import { advanceRace } from '../src/simulation/race/engine';
 import { v8dAiStrategyConfiguration, defaultAiStrategyConfiguration } from '../src/simulation/race/pits/ai-strategy';
 import { v8dRacecraftConfiguration, defaultRacecraftConfiguration } from '../src/simulation/race/traffic/racecraft';
@@ -45,8 +45,9 @@ afterAll(async () => { await client.$disconnect(); await admin.query(`DROP SCHEM
 const get = async () => (await races.getRace(career.id, eventId))!;
 
 describe('PostgreSQL v8D revision 4', () => {
-    it('production Race creation freezes revision 4 and the whole v8D bundle; reload is exact', async () => {
-        await startProgressionCareerRace(races, career.id, eventId, {}, 42);
+    it('revision-4 (accepted v8D) Race creation freezes revision 4 and the whole v8D bundle; reload is exact', async () => {
+        // Production now freezes revision 5 (tests/race-v8e.integration.test.ts); the v8D bundle stays reachable explicitly.
+        await startRevision4CareerRace(races, career.id, eventId, {}, 42);
         const s = (await get()).state!, timing = circuitPitTiming(s.input.progression!.pit, s.input.circuit.baseLapTimeMs);
         expect(s.simulationVersion).toBe(8); expect(s.input.progression!.version).toBe(4);
         expect(s.input.progression!.regulation).toMatchObject({ session: 'RACE', dryTyres: { article: 'B6.3.6' } });

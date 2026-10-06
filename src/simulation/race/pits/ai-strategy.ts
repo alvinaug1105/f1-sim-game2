@@ -9,10 +9,11 @@
  * the lap/traffic/incident streams; the per-car preferences are a pure hash of the Race seed and the car's frozen grid slot.
  */
 import type { RaceEntrantState, RaceSimulationInput, RaceSimulationState } from "../types";
-import { TYRE_COMPOUNDS, WEATHER_TYRE_COMPOUNDS, tyreContributions, type TyreCompound, type TyreState, type TyreConfiguration } from "../tyres/model";
+import { TYRE_COMPOUNDS, WEATHER_TYRE_COMPOUNDS, advanceTyre, tyreContributions, type TyreCompound, type TyreState, type TyreConfiguration } from "../tyres/model";
 import { advanceWeatherTyre, evolveWeather, forecastRain, waterPenaltyMs, type WeatherConfiguration, type WeatherState } from "../weather/model";
 import { createSeededRandom } from "../../core/random";
 import { assessTyreFamilies, currentCompoundCostMs, familyCostsMs, tyreFamily } from "../tyres/suitability";
+import { freshTyreTemperatureMilliC } from "../tyres/fresh";
 
 /** Snapshotted game tuning (integers). Not real-world strategy data. */
 export interface AiStrategyConfiguration {
@@ -72,6 +73,27 @@ export interface AiStrategyConfiguration {
    */
   readonly weatherRiskSpreadPermille?: number;
   readonly wetCompoundToleranceMs?: number;
+  /**
+   * Race v8E (GAME TUNING; revision-5 snapshots only, requires the v8D weather fields). How far ahead each car plans a
+   * change of tyre family on the PUBLIC forecast: the established horizon ± this many laps from its own `weatherRisk`
+   * (early committers plan further ahead and anticipate; cautious cars weigh nearer laps and react to the track). Same
+   * public information for every car; only the stable character differs. Absent = one shared horizon, exactly as before.
+   */
+  readonly weatherHorizonSpreadLaps?: number;
+  /**
+   * Race v8E local fix (GAME TUNING; revision-5 snapshots only). How much each car values the track position an EXTRA
+   * stop gives up, from its existing `trafficSensitivity` trait: ×(1 ± this ‰) around the shared value. Cars that hate
+   * traffic lean to fewer, longer stints; others accept another stop — but only between plans that are genuinely close,
+   * because a clearly cheaper plan still wins. Absent = one shared value, exactly as before.
+   */
+  readonly trackPositionValueSpreadPermille?: number;
+  /**
+   * Race v8E local fix (revision-5 snapshots only). A same-family wet tyre refresh (worn intermediate → fresh
+   * intermediate, worn wet → fresh wet) is a wear decision, not a weather crossover: it uses the neutral stop threshold
+   * and the shared horizon instead of the car's weather character. Absent = the earlier rule (the weather character also
+   * delayed refreshes, which the wider v8E spread turned into more laps run past the wet-tyre cliff).
+   */
+  readonly wetRefreshNeutral?: boolean;
 }
 export function defaultAiStrategyConfiguration(): AiStrategyConfiguration {
   return {
@@ -84,6 +106,24 @@ export function defaultAiStrategyConfiguration(): AiStrategyConfiguration {
 /** Race v8D (revision 4) strategy: the accepted configuration plus the wet-weather character fields (GAME TUNING). */
 export function v8dAiStrategyConfiguration(): AiStrategyConfiguration {
   return { ...defaultAiStrategyConfiguration(), weatherRiskSpreadPermille: 350, wetCompoundToleranceMs: 1500 };
+}
+/**
+ * Race v8E (revision 5) strategy — GAME TUNING (see docs/race-v8e-final-tuning.md). Rational diversity from each car's
+ * stable character, never per-decision randomness:
+ * - wet: the full weather-risk spread, a wider family-change gate spread and a character-dependent forecast horizon;
+ * - dry: a wider "sensible plan" tolerance (the compound preference then chooses among genuinely close plans) and a
+ *   slightly wider personal stop-point spread. A clearly better plan is still always taken.
+ */
+export const V8E_WEATHER_RISK_SPREAD_PERMILLE = 500;
+export const V8E_WEATHER_GATE_SPREAD_MS = 1000;
+export const V8E_WEATHER_HORIZON_SPREAD_LAPS = 4;
+export const V8E_COMPOUND_TOLERANCE_MS = 2500;
+export const V8E_PREFERENCE_SPREAD_PERMILLE = 180;
+export const V8E_TRACK_POSITION_VALUE_SPREAD_PERMILLE = 400;
+export function v8eAiStrategyConfiguration(): AiStrategyConfiguration {
+  return { ...v8dAiStrategyConfiguration(), weatherRiskSpreadPermille: V8E_WEATHER_RISK_SPREAD_PERMILLE, weatherGateSpreadMs: V8E_WEATHER_GATE_SPREAD_MS,
+    weatherHorizonSpreadLaps: V8E_WEATHER_HORIZON_SPREAD_LAPS, compoundToleranceMs: V8E_COMPOUND_TOLERANCE_MS, preferenceSpreadPermille: V8E_PREFERENCE_SPREAD_PERMILLE,
+    trackPositionValueSpreadPermille: V8E_TRACK_POSITION_VALUE_SPREAD_PERMILLE, wetRefreshNeutral: true };
 }
 export function validateAiStrategyConfiguration(c: AiStrategyConfiguration) {
   const integer = (n: number, min: number, max: number) => {
@@ -114,6 +154,10 @@ export function validateAiStrategyConfiguration(c: AiStrategyConfiguration) {
   if (c.weatherRiskSpreadPermille !== undefined && c.weatherGateMs === undefined) throw new RangeError("Invalid AI strategy configuration");
   if (c.weatherRiskSpreadPermille !== undefined) integer(c.weatherRiskSpreadPermille, 0, 500);
   if (c.wetCompoundToleranceMs !== undefined) integer(c.wetCompoundToleranceMs, 0, 10000);
+  if (c.weatherHorizonSpreadLaps !== undefined && c.weatherRiskSpreadPermille === undefined) throw new RangeError("Invalid AI strategy configuration");
+  if (c.weatherHorizonSpreadLaps !== undefined) integer(c.weatherHorizonSpreadLaps, 0, 10);
+  if (c.trackPositionValueSpreadPermille !== undefined) integer(c.trackPositionValueSpreadPermille, 0, 1000);
+  if (c.wetRefreshNeutral !== undefined && typeof c.wetRefreshNeutral !== "boolean") throw new RangeError("Invalid AI strategy configuration");
 }
 
 /** Stable per-car strategic character. Never exposed to the player; never derived from names. */
@@ -185,7 +229,16 @@ export function publicWeather(c: WeatherConfiguration): PublicWeather {
   return rest;
 }
 /** 1.0 at the neutral overtaking difficulty (35); higher where passing is harder. */
-const passingFactor = (input: RaceSimulationInput) => 0.5 + (input.interaction?.overtakingDifficulty ?? 35) / 70;
+const passingFactor = (input: Pick<RaceSimulationInput, "interaction">) => 0.5 + (input.interaction?.overtakingDifficulty ?? 35) / 70;
+/**
+ * Track position an extra stop gives up (ms): the shared value scaled by the circuit's passing difficulty and — in v8E
+ * snapshots — by this car's own value of track position (`trafficSensitivity`, see `trackPositionValueSpreadPermille`).
+ */
+export function extraStopTrackPositionMs(strategy: AiStrategyConfiguration, preference: StrategyPreference | null, input: Pick<RaceSimulationInput, "interaction">): number {
+  const shared = Math.round(strategy.extraStopTrackPositionMs * passingFactor(input));
+  if (strategy.trackPositionValueSpreadPermille === undefined || !preference) return shared;
+  return Math.round(shared * (1000 + Math.round((preference.trafficSensitivity - 1) * 2 * strategy.trackPositionValueSpreadPermille)) / 1000);
+}
 const isDry = (c: TyreCompound) => (TYRE_COMPOUNDS as readonly string[]).includes(c);
 
 /**
@@ -206,8 +259,9 @@ function stintCosts(initial: TyreState, laps: number, lap: number, weather: Weat
   }
   return Object.assign(out, { life });
 }
-function fresh(compound: TyreCompound, input: Pick<RaceSimulationInput, "pits">): TyreState {
-  return { compound, ageLaps: 0, wearPermille: 0, temperatureMilliC: input.pits!.newTyreTemperatureMilliC };
+/** A new tyre exactly as the engine fits it (see tyres/fresh.ts — the planner never assumes a different warm-up). */
+function fresh(compound: TyreCompound, input: Pick<RaceSimulationInput, "pits" | "tyres" | "progression">): TyreState {
+  return { compound, ageLaps: 0, wearPermille: 0, temperatureMilliC: freshTyreTemperatureMilliC(input, compound) };
 }
 
 export interface StrategyContext {
@@ -298,9 +352,16 @@ export function assessAiStop(ctx: StrategyContext, strategy: AiStrategyConfigura
   // Weather crossover (dry ↔ wet family, or intermediate ↔ full wet): the established weather rule and compound
   // choice, with each car's own commitment point spread a little around it.
   if (!isDry(e.stint!.tyre.compound) || !isDry(best.compound)) {
-    const character = weatherCharacter(strategy, preference);
+    // v8E: a same-family wet refresh is a wear stop — no weather character, shared horizon (see `wetRefreshNeutral`).
+    const refresh = strategy.wetRefreshNeutral === true && tyreFamily(e.stint!.tyre.compound) === tyreFamily(best.compound);
+    const character = refresh ? { bias: 0, spreadPermille: 0 } : weatherCharacter(strategy, preference);
     const required = Math.round(effectiveThreshold * (1000 + character.bias * character.spreadPermille) / 1000);
-    return saving > required ? { ...hold("WEATHER"), compound: best.compound } : hold("NO_WINDOW");
+    // v8E: the same public forecast over the car's OWN planning horizon (character-dependent; see the config field).
+    const own = strategy.weatherHorizonSpreadLaps === undefined || refresh ? horizon
+      : Math.max(1, Math.min(remaining, c.strategy.horizonLaps - Math.round(preference.weatherRisk * strategy.weatherHorizonSpreadLaps)));
+    const weatherSaving = own === horizon ? saving
+      : stintCosts(current, own, lap, ctx.weather, c, tyres)[own] - stintCosts(fresh(best.compound, input), own, lap, ctx.weather, c, tyres)[own];
+    return weatherSaving > required ? { ...hold("WEATHER"), compound: best.compound } : hold("NO_WINDOW");
   }
   const gain = Math.round(saving * 1000 / greenThreshold);
   // Future stints are planned at standard wear: the current pace mode (e.g. nursing a worn tyre) says nothing about
@@ -359,7 +420,7 @@ export function dryCompound(ctx: StrategyContext, strategy: AiStrategyConfigurat
   const prefix = new Map(dry.map(x => [x, stintCosts(fresh(x, input), remaining, lap, ctx.weather, ctx.publicWeather, tyres)]));
   // A further stop costs the pit loss, the strategy margin and the track position given up (harder to recover where
   // passing is difficult).
-  const stop = ctx.greenPitLaneLossMs + input.pits!.stationaryBaseMs + ctx.publicWeather.strategy.marginMs + Math.round(strategy.extraStopTrackPositionMs * passingFactor(input)),
+  const stop = ctx.greenPitLaneLossMs + input.pits!.stationaryBaseMs + ctx.publicWeather.strategy.marginMs + extraStopTrackPositionMs(strategy, preference, input),
     minimum = ctx.publicWeather.strategy.minimumStintLaps;
   // Only plans the car can actually drive: a stint never runs past its compound's cliff (where the stop rule would
   // force an unplanned extra stop). If no compound can finish within one further stop, the constraint is relaxed.
@@ -386,6 +447,60 @@ export function dryCompound(ctx: StrategyContext, strategy: AiStrategyConfigurat
  */
 export function aiDryStartingCompound(preference: StrategyPreference): TyreCompound {
   return preference.compound <= -0.55 ? "SOFT" : "MEDIUM";
+}
+
+/** Inputs of the v8E dry-start plan: everything public and frozen at the Race start (grid conditions are dry). */
+export interface DryStartPlanInput {
+  readonly tyres: TyreConfiguration;
+  /** The tyre each compound starts on (grid temperature) and is fitted at in a stop (the engine's own rule). */
+  readonly startTyre: (compound: TyreCompound) => TyreState;
+  readonly freshTyre: (compound: TyreCompound) => TyreState;
+  readonly totalLaps: number;
+  readonly minimumStintLaps: number;
+  /** Green pit-lane loss + stationary time + strategy margin (ms); the car's own track-position value is added here. */
+  readonly stopBaseMs: number;
+  /** The session's dry-tyre rule needs a second dry specification (Grand Prix): a no-stop plan is not legal. */
+  readonly distinctCompounds: boolean;
+  readonly interaction: RaceSimulationInput["interaction"];
+}
+/**
+ * Race v8E local fix (revision 5, dry grid only): the starting compound from the same whole-race plan logic the car uses
+ * at its stops — each dry compound is costed as a start stint plus (at most) one stop onto the best follow-up compound
+ * (a different specification where the Grand Prix rule needs one), using standard wear and only stints the compound
+ * can actually drive. Every plan within `compoundToleranceMs` of the best is sensible and the car's own compound
+ * preference chooses among them (softest → hardest); a clearly worse start is never chosen. Pure and deterministic.
+ */
+export function aiDryStartingPlan(o: DryStartPlanInput, strategy: AiStrategyConfiguration, preference: StrategyPreference): TyreCompound {
+  const dry: TyreCompound[] = TYRE_COMPOUNDS.filter(x => o.tyres.profiles[x]);
+  const stint = (initial: TyreState) => {
+    const out = [0]; let t = initial, total = 0, life = o.totalLaps;
+    for (let n = 1; n <= o.totalLaps; n++) {
+      if (life === o.totalLaps && t.wearPermille >= o.tyres.profiles[t.compound].cliffWear) life = n - 1;
+      const x = tyreContributions(t, o.tyres.profiles[t.compound]); total += x.tyreCompoundMs + x.tyreWearMs + x.tyreTemperatureMs; out.push(total);
+      t = advanceTyre(t, o.tyres);
+    }
+    return Object.assign(out, { life });
+  };
+  const first = new Map(dry.map(x => [x, stint(o.startTyre(x))])), later = new Map(dry.map(x => [x, stint(o.freshTyre(x))]));
+  const stop = o.stopBaseMs + extraStopTrackPositionMs(strategy, preference, o);
+  const n = o.totalLaps, minimum = o.minimumStintLaps;
+  const plan = (x: TyreCompound, feasibleOnly: boolean) => {
+    const a = first.get(x)!, fits = (laps: number, life: number) => !feasibleOnly || laps <= life;
+    let best = !o.distinctCompounds && fits(n, a.life) ? a[n] : Infinity;
+    for (let k = minimum; k <= n - minimum; k++) for (const y of dry) {
+      if (o.distinctCompounds && y === x) continue;
+      const b = later.get(y)!;
+      if (fits(k, a.life) && fits(n - k, b.life)) best = Math.min(best, a[k] + stop + b[n - k]);
+    }
+    return best;
+  };
+  const feasible = dry.map(compound => ({ compound, cost: plan(compound, true) }));
+  const plans = feasible.some(p => Number.isFinite(p.cost)) ? feasible : dry.map(compound => ({ compound, cost: plan(compound, false) }));
+  const best = Math.min(...plans.map(p => p.cost));
+  if (!Number.isFinite(best)) return aiDryStartingCompound(preference);
+  const sensible = plans.filter(p => p.cost - best <= strategy.compoundToleranceMs).map(p => p.compound); // softest → hardest
+  const index = Math.min(sensible.length - 1, Math.max(0, Math.round((preference.compound + 1) / 2 * (sensible.length - 1))));
+  return sensible[index];
 }
 
 /**

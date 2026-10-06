@@ -35,7 +35,7 @@ const DRY = ["SOFT", "MEDIUM", "HARD"] as const;
 
 describe("revision 4: v8D is progression revision 4 of simulationVersion 8 (never 9)", () => {
     it("capability boundary: latest is 4; regulation from 3; v8D tuning only at 4; assistance and v8C energy kept", () => {
-        expect(LATEST_PROGRESSION_REVISION).toBe(4);
+        expect(LATEST_PROGRESSION_REVISION).toBe(5); // v8E is the latest; v8D stays revision 4
         for (const version of [1, 2, 3, 4] as const) {
             expect(hasV8dTuning({ version })).toBe(version === 4);
             expect(hasRegulation({ version })).toBe(version >= 3);
@@ -64,7 +64,10 @@ describe("revision 4: v8D is progression revision 4 of simulationVersion 8 (neve
         expect(() => validateProgressionConfiguration({ ...d, regulation: undefined })).toThrow(/regulation/);
         expect(() => validateProgressionConfiguration({ ...progressionBForCircuit(SUZUKA), regulation: d.regulation })).toThrow();
         expect(() => validateProgressionConfiguration({ ...progressionForCircuit(SUZUKA), regulation: d.regulation })).toThrow();
-        expect(() => validateProgressionConfiguration({ ...d, version: 5 as never })).toThrow();
+        // Revision 5 (v8E) is now a known revision; an unknown future revision is still rejected (no silent acceptance).
+        expect(() => validateProgressionConfiguration({ ...d, version: 5 })).not.toThrow();
+        expect(() => validateProgressionConfiguration({ ...d, version: 6 as never })).toThrow();
+        expect(() => validateProgressionConfiguration({ ...d, version: 0 as never })).toThrow();
         const done = advanceRace(v8dRace({ count: 4, laps: 3, quiet: true }), 3);
         expect(done.status).toBe("FINISHED");
         expect(done.input.progression!.version).toBe(4);

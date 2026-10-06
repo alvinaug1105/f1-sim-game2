@@ -4,7 +4,7 @@ import { validateCommandState, type CommandState } from '../commands/model';
 import type { RaceEntrantState, RaceSimulationState } from '../types';
 import type { TieOrder } from './tie-order';
 import { validateClassificationRecord, validateRegulationConfiguration, type RaceClassificationRecord, type RaceRegulationConfiguration } from '../regulations/tyres';
-import { energyModelFor, hasAssistance, hasRegulation } from './revision';
+import { energyModelFor, hasAssistance, hasRegulation, hasV8eSemantics } from './revision';
 /** One microlap = 1 / 1,000,000 lap. Integer total distance is canonical (track.progressMicrolaps). */
 export const LAP_UNITS = 1_000_000;
 export type SegmentKind = 'STRAIGHT' | 'FAST' | 'MEDIUM' | 'SLOW' | 'PIT_ENTRY' | 'PIT_LANE' | 'PIT_EXIT';
@@ -13,7 +13,7 @@ export interface LocalSegment { id: string; kind: SegmentKind; start: number; en
 export interface InteractionZone { id: string; kind: ZoneKind; start: number; end: number }
 export interface ProgressionConfiguration {
     /** Progression revision (simulationVersion stays 8): 1 = v8A, 2 = v8B, 3 = v8C, 4 = v8D. See revision.ts. */
-    version: 1 | 2 | 3 | 4;
+    version: 1 | 2 | 3 | 4 | 5;
     assistance?: AssistanceConfiguration;
     /** Revision ≥ 3: the Race's snapshotted sporting regulation (FIA 2026 Section B Issue 09, B6.3.6). */
     regulation?: RaceRegulationConfiguration;
@@ -49,6 +49,15 @@ export interface CarProgression {
     compound: import('../tyres/model').TyreCompound | null;
     stationaryMs: number;
     pitLossMs: number;
+    /**
+     * Revision ≥ 5 (v8E attack cadence; present exactly in revision-5 state): attempts made in `attemptedLap`, the Race
+     * clock of the last attempt, and whether the battle has re-armed (the gap re-opened after a failed attempt).
+     */
+    attacksThisLap?: number;
+    lastAttackAtMs?: number;
+    attackArmed?: boolean;
+    /** Revision ≥ 5: the cause frozen from the attacker's actual contribution when its pass attempt succeeded. */
+    passingCause?: import('../traffic/model').OvertakeCause | null;
 }
 export interface ProgressionState {
     elapsedTimeMs: number;
@@ -88,13 +97,13 @@ export function initialCarProgression(gridPosition: number, gridOffsetMs: number
 }
 function integer(n: number, lo: number, hi: number) { if (!Number.isSafeInteger(n) || n < lo || n > hi) throw new RangeError('Invalid v8 progression integer'); }
 export function validateProgressionConfiguration(c: ProgressionConfiguration) {
-    if (!c || ![1,2,3,4].includes(c.version) || c.resolution !== LAP_UNITS || !Array.isArray(c.segments) || !c.segments.length || !Array.isArray(c.zones)) throw new RangeError('Missing v8 circuit progression');
+    if (!c || ![1,2,3,4,5].includes(c.version) || c.resolution !== LAP_UNITS || !Array.isArray(c.segments) || !c.segments.length || !Array.isArray(c.zones)) throw new RangeError('Missing v8 circuit progression');
     // Revision 2 holds pit PROGRESS anchors only; the drawn lane is presentation content. Pre-release candidate saves
     // that still carry the former drawn route keep validating it (it is never read by the simulation).
     const v8bSystems: boolean = hasAssistance(c);
     if(v8bSystems) { validateAssistanceConfiguration(c.assistance!,energyModelFor(c));if(c.pit.geometry)validatePitGeometry(c.pit.geometry,c.pit.entry,c.pit.service,c.pit.exit); }
     else if(c.assistance||c.pit.geometry) throw new RangeError('v8A cannot acquire v8B content');
-    // Revisions 3 and 4 snapshot their regulation; revisions 1 and 2 can never acquire one (no silent upgrade).
+    // Revisions 3–5 snapshot their regulation; revisions 1 and 2 can never acquire one (no silent upgrade).
     if(hasRegulation(c)!==(c.regulation!==undefined)) throw new RangeError(hasRegulation(c)?'Missing v8C regulation snapshot':'Historical revisions cannot acquire a v8C regulation');
     let end = 0;
     const ids = new Set<string>();
@@ -151,6 +160,13 @@ export function validateProgressionState(s: RaceSimulationState) {
         integer(c.stationaryMs, 0, 60000); integer(c.pitLossMs, 0, 1_000_000);
         if (c.route !== 'TRACK' && (c.pitEntryLap === null || !c.compound || !s.input.tyres?.profiles[c.compound])) throw new RangeError('Missing v8 pit commitment');
         if (c.pitEntryLap !== null) integer(c.pitEntryLap, 0, s.input.totalLaps - 1);
+        // v8E attack-cadence / pass-cause state: exactly in revision ≥ 5, never acquired by an older Race.
+        const cadence = [c.attacksThisLap, c.lastAttackAtMs, c.attackArmed, c.passingCause];
+        if (hasV8eSemantics(s.input.progression)) {
+            if (cadence.some(x => x === undefined)) throw new RangeError('Missing v8E attack state');
+            integer(c.attacksThisLap!, 0, 100); integer(c.lastAttackAtMs!, -1, p.elapsedTimeMs);
+            if (typeof c.attackArmed !== 'boolean' || (c.passingCause !== null && !['TYRE','PACE','OVERTAKE_MODE','BOOST'].includes(c.passingCause!)) || (c.passingCause !== null && c.passingId === null)) throw new RangeError('Invalid v8E attack state');
+        } else if (cadence.some(x => x !== undefined)) throw new RangeError('Historical revisions cannot acquire v8E attack state');
     }
     // The final classification record exists exactly for a finished revision-3/4 Race and must match its tyre history.
     if (p.classification !== undefined && (!regulation || s.status !== 'FINISHED')) throw new RangeError('Unexpected final classification record');

@@ -8,6 +8,8 @@ import type { RacePreparationView, RaceViewData } from "./public-view";
 import { raceAction } from "./actions";
 import { useState } from "react";
 import { forecastItems, quietForecastKey } from "./forecast-copy";
+import { isTyreCompound, type TyreCompound } from "../../simulation/race/tyres/model";
+import { slickStartRisk } from "./viewer/race-view";
 
 /** Receives only the server's public projection (public-view.ts), never the authoritative Race state. */
 export function RaceView({ data }: { data: RaceViewData }) {
@@ -21,6 +23,10 @@ function RacePreparation({ data, prep }: { data: RaceViewData; prep: RacePrepara
   // Built on the server from the configuration the Race will freeze at start: only the grid conditions and the
   // approximate forecast are sent — the weather generator and its timeline never reach the browser.
   const laps = prep.laps, grid = prep.conditions, mine = prep.mine, rivals = prep.rivals;
+  // v8E: warn (never forbid) when a player car would start on slicks while the grid strongly favours wet-weather tyres.
+  const [choices, setChoices] = useState<Record<string, TyreCompound>>(() => Object.fromEntries(mine.map((r) => [r.driverId, prep.defaultCompound])));
+  const [slickConfirmed, setSlickConfirmed] = useState(false);
+  const slickRisk = slickStartRisk(prep.gridTyreFit, mine.map((r) => choices[r.driverId] ?? prep.defaultCompound));
   const percent = (n: number) => format.percentage(n / 1000, { maximumFractionDigits: 0 });
   const event = progress.events.find((e) => e.id === eventId)!;
   const session = event.weekend!.sessions.find((s) => s.id === data.sessionId)!;
@@ -56,13 +62,15 @@ function RacePreparation({ data, prep }: { data: RaceViewData; prep: RacePrepara
             <h3>{t("prep.yourDrivers")}</h3>
             {mine.map((row) => <label key={row.driverId} htmlFor={`tyre-${row.driverId}`}>
               {row.driverName}
-              <select id={`tyre-${row.driverId}`} name={`tyre:${row.driverId}`} defaultValue={prep.defaultCompound}>
+              <select id={`tyre-${row.driverId}`} name={`tyre:${row.driverId}`} value={choices[row.driverId] ?? prep.defaultCompound} onChange={(ev) => { if (isTyreCompound(ev.target.value)) { const next = ev.target.value; setChoices((c) => ({ ...c, [row.driverId]: next })); setSlickConfirmed(false); } }}>
                 {prep.compounds.map((compound) => <option key={compound} value={compound}>{t(`tyre.${compound}`)}</option>)}
               </select>
             </label>)}
             {rivals.length > 0 && <><h3>{t("prep.rivals")}</h3><p className="ops-muted">{t("prep.rivalNote")}</p><ul className="rival-list">{rivals.map((row) => <li key={row.driverId}>{row.driverName} <span>{row.teamName}</span></li>)}</ul></>}
           </div>
-          <button name="intent" value="start">{t(sprint ? "sprint.manage" : "race.start")}</button>
+          {slickRisk && <div className="slick-warning" role="alert"><p><span aria-hidden="true">⚠ </span>{t("prep.slickWarning")}</p>
+            <label><input type="checkbox" checked={slickConfirmed} onChange={(ev) => setSlickConfirmed(ev.target.checked)} />{t("prep.slickConfirm")}</label></div>}
+          <button name="intent" value="start" disabled={slickRisk && !slickConfirmed}>{t(sprint ? "sprint.manage" : "race.start")}</button>
           {/* Sprint: Manage or Simulate — never a plain skip. Simulate runs the same v7 engine with both cars auto-managed. */}
           {sprint && <SimulateSubmit disabled={pending} />}
         </>}

@@ -1,5 +1,6 @@
 "use client";
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
+import { teamStyle } from '../../components/ui/team-color';
 import { useI18n } from '../../i18n/provider';
 import type { Locale } from '../../i18n/catalog';
 import { formatRaceGap, formatRaceTime } from '../../i18n/race-time';
@@ -36,17 +37,17 @@ export function ConfirmButton({ label, confirmText, confirmLabel, disabled, onCo
 export function PracticeTiming({ view, selected, onSelect }: { view: PracticeView; selected: string; onSelect: (id: string) => void }) {
     const { t, format, locale } = useI18n(), lap = (ms: number | null) => ms === null ? t('race.noTime') : formatRaceTime(ms, locale);
     const title = t(view.status === 'FINISHED' ? 'practice.classification' : 'practice.timing');
-    return <section className="ops-panel timing-panel" aria-label={title}>
-        <div className="ops-panel-title"><h2>{title}</h2><span className="ops-muted">{t('practice.byBest')}</span></div>
+    return <section className="ops-panel timing-panel live-panel" aria-label={title}>
+        <div className="ops-panel-title live-panel-head"><h2>{title}</h2><span className="ops-muted">{t('practice.byBest')}</span></div>
         <div className="timing-scroll"><table className="timing-tower practice-timing"><caption className="sr-only">{title}</caption>
-            <thead><tr><th><span aria-hidden="true">{t('practice.posShort')}</span><span className="sr-only">{t('race.position')}</span></th><th>{t('race.driver')}</th><th>{t('race.best')}</th><th>{t('practice.laps')}</th><th>{t('practice.where')}</th></tr></thead>
+            <thead><tr><th scope="col"><span aria-hidden="true">{t('practice.posShort')}</span><span className="sr-only">{t('race.position')}</span></th><th scope="col">{t('race.driver')}</th><th scope="col" className="num">{t('race.best')}</th><th scope="col" className="num">{t('practice.laps')}</th><th scope="col">{t('practice.where')}</th></tr></thead>
             <tbody>{view.entrants.map(e => {
                 const chosen = e.entrantId === selected;
-                return <tr key={e.entrantId} onClick={() => onSelect(e.entrantId)} data-entrant={e.entrantId} className={['tower-row', chosen && 'selected-row', e.player && 'player-row', e.location === 'GARAGE' && 'garage-row'].filter(Boolean).join(' ')} style={e.player ? { ['--team' as string]: e.color } : undefined}>
-                    <td>{e.bestLapMs === null ? '—' : format.number(e.position)}</td>
-                    <th scope="row"><button onClick={() => onSelect(e.entrantId)} aria-pressed={chosen} className="driver-select" style={{ borderColor: e.color }} title={e.name}><strong>{e.player && <span className="player-mark" aria-hidden="true">◆</span>}{e.abbreviation}{chosen && <span className="selected-mark" aria-hidden="true"> ◂</span>}</strong><small>{e.team}</small>{e.player && <span className="sr-only">{t('viewer.player')}</span>}</button></th>
-                    <td>{lap(e.bestLapMs)}{e.gapToBestMs !== null && e.gapToBestMs > 0 && <small>{formatRaceGap(e.gapToBestMs, locale)}</small>}{e.bestLapCompound && <small className={`tyre-token tyre-${e.bestLapCompound}`} title={t(`tyre.${e.bestLapCompound}`)}>{t(`viewer.tyre.${e.bestLapCompound}`)}</small>}</td>
-                    <td>{format.number(e.lapsCompleted)}</td>
+                return <tr key={e.entrantId} onClick={() => onSelect(e.entrantId)} data-entrant={e.entrantId} className={['tower-row', chosen && 'selected-row', e.player && 'player-row', e.location === 'GARAGE' && 'garage-row'].filter(Boolean).join(' ')} style={{ ['--row-team' as string]: e.color }}>
+                    <td className="tower-pos">{e.bestLapMs === null ? '—' : format.number(e.position)}</td>
+                    <th scope="row"><button onClick={() => onSelect(e.entrantId)} aria-pressed={chosen} className="driver-select" title={e.name}><span className="tower-team" aria-hidden="true"/><strong>{e.player && <span className="player-mark" aria-hidden="true">◆</span>}{e.abbreviation}{chosen && <span className="selected-mark" aria-hidden="true"> ◂</span>}</strong><small>{e.team}</small>{e.player && <span className="sr-only">{t('viewer.player')}</span>}</button></th>
+                    <td className="num">{lap(e.bestLapMs)}{e.gapToBestMs !== null && e.gapToBestMs > 0 && <small>{formatRaceGap(e.gapToBestMs, locale)}</small>}{e.bestLapCompound && <small className={`tyre-token tyre-${e.bestLapCompound}`} title={t(`tyre.${e.bestLapCompound}`)}>{t(`viewer.tyre.${e.bestLapCompound}`)}</small>}</td>
+                    <td className="num">{format.number(e.lapsCompleted)}</td>
                     <td><span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span>{e.tyre && e.location !== 'GARAGE' && <small className={`tyre-token tyre-${e.tyre.compound}`} title={t(`tyre.${e.tyre.compound}`)}>{t(`viewer.tyre.${e.tyre.compound}`)}</small>}</td>
                 </tr>;
             })}</tbody></table></div>
@@ -69,9 +70,9 @@ function RunPlanner({ view, e, busy, send }: { view: PracticeView; e: PracticeEn
             <p className={`fit-note fit-${fit}`}><span aria-hidden="true">{fit === 'SUITED' ? '✓ ' : fit === 'MARGINAL' ? '~ ' : '✕ '}</span>{t(`practice.fitNote.${fit}`)}</p>
             <label>{t('practice.targetLaps')}<input type="number" min={1} max={max} step={1} value={Number.isFinite(laps) ? laps : ''} onChange={ev => setLaps(Math.trunc(Number(ev.target.value)))} disabled={busy} aria-describedby={`laps-${e.entrantId}`}/></label>
             <small id={`laps-${e.entrantId}`} className={valid ? 'ops-muted' : 'field-error'} role={valid ? undefined : 'alert'}>{t(valid ? 'practice.lapsFit' : 'practice.lapsInvalid', { max: format.number(max) })}</small>
-            <div className="mode-buttons" role="group" aria-label={t('practice.pace')}>{PACE_EMPHASES.map(p => <button key={p} disabled={busy} aria-pressed={pace === p} onClick={() => setPace(p)}>{pace === p && <span aria-hidden="true">✓ </span>}{t(`practice.pace.${p}`)}</button>)}</div>
+            <div className="mode-buttons live-segmented" role="group" aria-label={t('practice.pace')}>{PACE_EMPHASES.map(p => <button key={p} disabled={busy} aria-pressed={pace === p} onClick={() => setPace(p)}>{t(`practice.pace.${p}`)}</button>)}</div>
             <small className="ops-muted">{t(`practice.paceNote.${pace}`)}</small>
-            <button className="send-out" disabled={busy || !ready || !valid} onClick={() => send({ kind: 'send', plan })}>{t('practice.sendOut')}</button>
+            <button className="send-out live-primary" disabled={busy || !ready || !valid} onClick={() => send({ kind: 'send', plan })}>{t('practice.sendOut')}</button>
             {!ready && <small role="status">{t('practice.garageWork', { time: sessionClock(own.readyAtMs - view.elapsedMs, locale) })}</small>}
         </>}
     </div>;
@@ -99,28 +100,50 @@ function SetupEditor({ e, busy, editable, send }: { e: PracticeEntrantView; busy
         </div>}
     </div>;
 }
+type EngineeringTab = 'plan' | 'setup' | 'knowledge' | 'runs';
+/**
+ * Practice engineering panel (UIX-B): identity and run status first, then the player's engineering tools as tabs —
+ * Run plan, Setup, Knowledge, Runs. Every tab panel stays mounted (hidden when inactive) so the editors keep their
+ * drafts and nothing re-mounts while the session advances. Rival cars show only public timing.
+ */
 export function PracticeDriverPanel({ view, e, busy, send }: { view: PracticeView; e: PracticeEntrantView; busy: boolean; send: (entrantId: string, revision: number, c: Command) => void }) {
     const { t, format, locale } = useI18n(), own = e.own, lap = (ms: number | null) => ms === null ? t('race.noTime') : formatRaceTime(ms, locale);
     const running = view.status === 'RUNNING', commandable = !!own && running && !view.autoPlayer;
     const act = (c: Command) => own && send(e.entrantId, own.commandRevision, c);
-    return <section className="ops-panel driver-focus practice-driver" aria-label={t('viewer.selectedDriver')}>
-        <div className="ops-panel-title"><span>{t('viewer.selectedDriver')}</span><span className="status-pill">{t(own ? 'viewer.player' : 'viewer.readOnly')}</span></div>
-        <div className="driver-body">
-            <div className="driver-identity" style={{ borderColor: e.color }}><strong className="driver-position"><small>P</small>{e.bestLapMs === null ? '—' : format.number(e.position)}</strong><div><h2>{e.name}</h2><p><strong>{e.abbreviation}</strong>{e.number !== null && <> · #{format.number(e.number, { useGrouping: false })}</>} · {e.team}</p></div><span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span></div>
-            <div className="stat-grid">
-                <Stat label={t('race.best')}>{lap(e.bestLapMs)}</Stat><Stat label={t('viewer.lastLap')}>{lap(e.lastLapMs)}</Stat>
-                <Stat label={t('practice.laps')}>{format.number(e.lapsCompleted)}</Stat><Stat label={t('practice.timedLaps')}>{format.number(e.timedLaps)}</Stat>
-                {e.tyre && <Stat label={t('viewer.tyre')}>{t(`tyre.${e.tyre.compound}`)} · {t('viewer.ageShort', { count: format.number(e.tyre.ageLaps) })} · {format.percentage(e.tyre.wearPermille / 1000, { maximumFractionDigits: 0 })}</Stat>}
-            </div>
-            {!own ? <p className="ops-muted">{t('practice.rivalNote')}</p> : <>
-                {view.autoPlayer && <p className="ops-muted" role="status">{t('practice.autoManaged')}</p>}
-                {own.run && <div className="run-status"><h3>{t('practice.currentRun', { number: format.number(own.run.number) })}</h3>
-                    <p>{t(`tyre.${own.run.plan.compound}`)} · {t(`practice.pace.${own.run.plan.pace}`)} · {t('practice.runProgress', { done: format.number(own.run.timedLaps), target: format.number(own.run.plan.targetLaps) })} · {t('race.best')} {lap(own.run.bestLapMs)}</p>
-                    {commandable && <button disabled={busy || own.run.callIn || e.location === 'IN_LAP'} onClick={() => act({ kind: 'callIn' })}>{t(own.run.callIn || e.location === 'IN_LAP' ? 'practice.comingIn' : 'practice.callIn')}</button>}
-                </div>}
+    const [tab, setTab] = useState<EngineeringTab>('plan'), base = useId();
+    const tabs: { id: EngineeringTab; label: string }[] = [{ id: 'plan', label: t('practice.plan') }, { id: 'setup', label: t('practice.setup') }, { id: 'knowledge', label: t('practice.knowledge') }, { id: 'runs', label: t('practice.runs') }];
+    return <section className="ops-panel driver-focus practice-driver dp" aria-label={t('viewer.selectedDriver')} style={teamStyle(e.color) as CSSProperties}>
+        <header className="dp-head driver-identity">
+            <span className="dp-number" aria-hidden="true">{e.number !== null ? format.number(e.number, { useGrouping: false }) : e.abbreviation}</span>
+            <div className="dp-id"><p className="ui-label">{e.abbreviation}{e.number !== null && <span className="visually-hidden"> · #{format.number(e.number, { useGrouping: false })}</span>} · {e.team}</p><h2 className="ui-display dp-name">{e.name}</h2></div>
+            <strong className="dp-pos driver-position">{e.bestLapMs === null ? '—' : t('commandCentre.position', { position: e.position })}</strong>
+        </header>
+        <div className="dp-statusline">
+            <span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span>
+            <span className="status-pill">{t(own ? 'viewer.player' : 'viewer.readOnly')}</span>
+        </div>
+        <div className="stat-grid dp-stats">
+            <Stat label={t('race.best')}>{lap(e.bestLapMs)}</Stat><Stat label={t('viewer.lastLap')}>{lap(e.lastLapMs)}</Stat>
+            <Stat label={t('practice.laps')}>{format.number(e.lapsCompleted)}</Stat><Stat label={t('practice.timedLaps')}>{format.number(e.timedLaps)}</Stat>
+            {e.tyre && <Stat label={t('viewer.tyre')}>{t(`tyre.${e.tyre.compound}`)} · {t('viewer.ageShort', { count: format.number(e.tyre.ageLaps) })} · {format.percentage(e.tyre.wearPermille / 1000, { maximumFractionDigits: 0 })}</Stat>}
+        </div>
+        {!own ? <p className="ops-muted">{t('practice.rivalNote')}</p> : <>
+            {view.autoPlayer && <p className="ops-muted" role="status">{t('practice.autoManaged')}</p>}
+            {own.run && <div className="run-status"><h3>{t('practice.currentRun', { number: format.number(own.run.number) })}</h3>
+                <p>{t(`tyre.${own.run.plan.compound}`)} · {t(`practice.pace.${own.run.plan.pace}`)} · {t('practice.runProgress', { done: format.number(own.run.timedLaps), target: format.number(own.run.plan.targetLaps) })} · {t('race.best')} {lap(own.run.bestLapMs)}</p>
+                {commandable && <button disabled={busy || own.run.callIn || e.location === 'IN_LAP'} onClick={() => act({ kind: 'callIn' })}>{t(own.run.callIn || e.location === 'IN_LAP' ? 'practice.comingIn' : 'practice.callIn')}</button>}
+            </div>}
+            <div className="dp-tabs" role="tablist" aria-label={t('live.engineering')}>{tabs.map(x => <button key={x.id} role="tab" id={`${base}-${x.id}-tab`} aria-controls={`${base}-${x.id}`} aria-selected={tab === x.id} tabIndex={tab === x.id ? 0 : -1} onClick={() => setTab(x.id)}>{x.label}</button>)}</div>
+            <div role="tabpanel" id={`${base}-plan`} aria-labelledby={`${base}-plan-tab`} hidden={tab !== 'plan'} className="dp-tabpanel">
                 {/* Sibling keys are namespaced per component: a bare revision number collided (both revisions start at 0), which made
                     React reconcile the wrong sibling and leave orphaned planners behind. A new revision resets the form's draft. */}
-                {e.location === 'GARAGE' && commandable && <RunPlanner key={`run-plan:${e.entrantId}:${own.commandRevision}`} view={view} e={e} busy={busy} send={act}/>}
+                {e.location === 'GARAGE' && commandable ? <RunPlanner key={`run-plan:${e.entrantId}:${own.commandRevision}`} view={view} e={e} busy={busy} send={act}/>
+                    : <p className="ops-muted">{t(commandable ? 'live.planInGarage' : 'practice.setupLocked')}</p>}
+            </div>
+            <div role="tabpanel" id={`${base}-setup`} aria-labelledby={`${base}-setup-tab`} hidden={tab !== 'setup'} className="dp-tabpanel">
+                <SetupEditor key={`setup-editor:${e.entrantId}:${own.preparation.setupRevision}`} e={e} busy={busy} editable={commandable && e.location === 'GARAGE'} send={act}/>
+            </div>
+            <div role="tabpanel" id={`${base}-knowledge`} aria-labelledby={`${base}-knowledge-tab`} hidden={tab !== 'knowledge'} className="dp-tabpanel">
                 <div className="knowledge"><h3>{t('practice.knowledge')}</h3>
                     <Meter label={t('practice.confidence')} value={own.preparation.confidence} hint={t('practice.confidenceHint')}/>
                     <Meter label={t('practice.acclimatisation')} value={own.preparation.acclimatisation}/>
@@ -128,10 +151,41 @@ export function PracticeDriverPanel({ view, e, busy, send }: { view: PracticeVie
                     <h3>{t('practice.tyreKnowledge')}</h3>
                     {PRACTICE_COMPOUNDS.map(c => <Meter key={c} label={t(`tyre.${c}`)} value={own.preparation.tyreKnowledge[c]}/>)}
                 </div>
-                <SetupEditor key={`setup-editor:${e.entrantId}:${own.preparation.setupRevision}`} e={e} busy={busy} editable={commandable && e.location === 'GARAGE'} send={act}/>
-                {own.runs.length > 0 && <div className="run-history"><h3>{t('practice.runs')}</h3><ol>{own.runs.map(r => <li key={r.number}>{t('practice.runLine', { number: format.number(r.number), laps: format.number(r.timedLaps) })} · {t(`tyre.${r.plan.compound}`)} · {t(`practice.pace.${r.plan.pace}`)} · {lap(r.bestLapMs)}</li>)}</ol></div>}
-            </>}
-        </div>
+            </div>
+            <div role="tabpanel" id={`${base}-runs`} aria-labelledby={`${base}-runs-tab`} hidden={tab !== 'runs'} className="dp-tabpanel">
+                {own.runs.length > 0 ? <div className="run-history"><h3>{t('practice.runs')}</h3><ol>{own.runs.map(r => <li key={r.number}>{t('practice.runLine', { number: format.number(r.number), laps: format.number(r.timedLaps) })} · {t(`tyre.${r.plan.compound}`)} · {t(`practice.pace.${r.plan.pace}`)} · {lap(r.bestLapMs)}</li>)}</ol></div>
+                    : <p className="ops-muted">{t('live.noRuns')}</p>}
+            </div>
+        </>}
+    </section>;
+}
+/** Quick switch between the two player cars: position, location and current run at a glance. */
+export function PracticeSwitch({ view, selected, onSelect }: { view: PracticeView; selected: string; onSelect: (id: string) => void }) {
+    const { t, format } = useI18n();
+    const mine = view.entrants.filter(e => e.player);
+    if (!mine.length) return null;
+    return <div className="player-switch-wrap"><div className="player-switch" role="group" aria-label={t('viewer.playerCars')}>{mine.map(e => <button key={e.entrantId} aria-pressed={e.entrantId === selected} onClick={() => onSelect(e.entrantId)} title={e.name} style={teamStyle(e.color) as CSSProperties}>
+        <span className="switch-abbr">{e.abbreviation}</span>
+        <strong className="switch-pos">{e.bestLapMs === null ? '—' : t('commandCentre.position', { position: e.position })}</strong>
+        <span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span>
+        {e.own?.run && <small className="switch-run">{t('practice.currentRun', { number: format.number(e.own.run.number) })}</small>}
+    </button>)}</div></div>;
+}
+/** Both player cars' runs this session (current run first), from the session's own run records. */
+export function PracticeRunLog({ view }: { view: PracticeView }) {
+    const { t, format, locale } = useI18n(), lap = (ms: number | null) => ms === null ? t('race.noTime') : formatRaceTime(ms, locale);
+    const mine = view.entrants.filter(e => e.own);
+    if (!mine.length) return null;
+    return <section className="ops-panel live-panel run-log" aria-labelledby="run-log-title">
+        <div className="ops-panel-title live-panel-head"><h2 id="run-log-title">{t('live.runLog')}</h2></div>
+        <div className="run-log-body">{mine.map(e => <div key={e.entrantId} className="run-log-driver" style={teamStyle(e.color) as CSSProperties}>
+            <p className="run-log-name"><span className="tower-team" aria-hidden="true"/><strong>{e.abbreviation}</strong> <span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span></p>
+            <ol className="run-log-runs">
+                {e.own!.run && <li data-current="true"><span className="run-log-no">{format.number(e.own!.run.number)}</span><span className={`tyre-token tyre-${e.own!.run.plan.compound}`} title={t(`tyre.${e.own!.run.plan.compound}`)}>{t(`viewer.tyre.${e.own!.run.plan.compound}`)}</span><span>{t(`practice.pace.${e.own!.run.plan.pace}`)}</span><span>{t('practice.runProgress', { done: format.number(e.own!.run.timedLaps), target: format.number(e.own!.run.plan.targetLaps) })}</span><strong>{lap(e.own!.run.bestLapMs)}</strong></li>}
+                {[...e.own!.runs].reverse().map(r => <li key={r.number}><span className="run-log-no">{format.number(r.number)}</span><span className={`tyre-token tyre-${r.plan.compound}`} title={t(`tyre.${r.plan.compound}`)}>{t(`viewer.tyre.${r.plan.compound}`)}</span><span>{t(`practice.pace.${r.plan.pace}`)}</span><span>{t('practice.lapsCount', { count: format.number(r.timedLaps) })}</span><strong>{lap(r.bestLapMs)}</strong></li>)}
+                {!e.own!.run && e.own!.runs.length === 0 && <li className="ops-muted">{t('live.noRuns')}</li>}
+            </ol>
+        </div>)}</div>
     </section>;
 }
 /** End-of-session summary: classification head, the player's cars and what they learned. */
@@ -139,14 +193,14 @@ export function PracticeSummary({ view, weekendHref }: { view: PracticeView; wee
     const { t, format, locale } = useI18n(), lap = (ms: number | null) => ms === null ? t('race.noTime') : formatRaceTime(ms, locale);
     const top = view.entrants.filter(e => e.bestLapMs !== null).slice(0, 3), mine = view.entrants.filter(e => e.own);
     const next = view.sessions.find(s => s.status === 'AVAILABLE');
-    return <section className="ops-panel practice-summary" aria-labelledby="practice-summary-title">
+    return <section className="ops-panel practice-summary live-panel live-summary" aria-labelledby="practice-summary-title">
         <div className="ops-panel-title"><h2 id="practice-summary-title">{t('practice.summary', { session: t(`progression.${view.sessionType}`) })}</h2><span className="status-pill">■ {t('practice.finished')}</span></div>
         <div className="summary-body">
             <div><h3>{t('practice.fastest')}</h3><ol>{top.map(e => <li key={e.entrantId}><strong style={{ borderColor: e.color }}>{e.abbreviation}</strong> {lap(e.bestLapMs)}{e.gapToBestMs ? <small> {formatRaceGap(e.gapToBestMs, locale)}</small> : null}</li>)}</ol></div>
             <div><h3>{t('prep.yourDrivers')}</h3><ul>{mine.map(e => <li key={e.entrantId}><strong>{e.abbreviation}</strong> · P{e.bestLapMs === null ? '—' : format.number(e.position)} · {lap(e.bestLapMs)} · {t('practice.lapsCount', { count: format.number(e.lapsCompleted) })}
                 <small>{t('practice.learned', { confidence: format.percentage(e.own!.preparation.confidence / 1000, { maximumFractionDigits: 0 }), acclimatisation: format.percentage(e.own!.preparation.acclimatisation / 1000, { maximumFractionDigits: 0 }) })}</small></li>)}</ul></div>
             <div><p>{t('practice.carryOver')}</p>{next && <p>{t('practice.nextAvailable', { session: t(`progression.${next.type}`) })}</p>}
-                <a className="button-link" href={weekendHref}>{t('practice.continue')}</a></div>
+                <a className="button-link live-primary" href={weekendHref}>{t('practice.continue')}</a></div>
         </div>
     </section>;
 }

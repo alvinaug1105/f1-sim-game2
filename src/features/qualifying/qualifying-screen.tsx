@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore, useTransition } fro
 import { useI18n, LocalizedPageTitle } from '../../i18n/provider';
 import { formatRaceTime } from '../../i18n/race-time';
 import { layoutForCircuit } from '../../data/seed/circuit-layouts';
-import { PlaybackController, PLAYBACK_SPEEDS, type PlaybackSnapshot } from '../race/viewer/playback';
+import { PlaybackController, type PlaybackSnapshot } from '../race/viewer/playback';
 import { TrackMap, type MapRow } from '../race/viewer/track-map';
 import { LABEL_TIER } from '../race/viewer/labels';
 import { waterBand } from '../../simulation/practice/model';
@@ -16,9 +16,12 @@ import {
 } from './actions';
 import { qualifyingAdapter, type QualifyingAttention, type QualifyingAttentionMemory, type QualifyingCommandInfo } from './playback';
 import type { QualifyingView } from './view-model';
-import { PhaseCompletePanel, QualifyingDriverPanel, QualifyingSummary, QualifyingTower, type QualifyingUiCommand } from './components';
+import { CutoffDelta, PhaseCompletePanel, QualifyingDriverPanel, QualifyingSummary, QualifyingTower, StatusChip, type QualifyingUiCommand } from './components';
+import { ConditionChips, LiveClock, LiveHeader, PaneSwitch, PlaybackControls, SessionNav, rainKey, type ConditionItem } from '../live/live-frame';
+import { Icon } from '../../components/ui/icon';
+import { teamStyle } from '../../components/ui/team-color';
+import type { CSSProperties } from 'react';
 import { forecastText, nextSessionPath, phaseKey, textKey } from './labels';
-import { sessionHref } from '../career/session-links';
 type Controller = PlaybackController<QualifyingView, QualifyingAttentionMemory, QualifyingAttention, QualifyingCommandInfo>;
 type Snapshot = PlaybackSnapshot<QualifyingAttention, QualifyingCommandInfo>;
 const weekendHref = (v: QualifyingView) => `/career/${v.careerId}/events/${v.eventId}`;
@@ -29,35 +32,36 @@ export function QualifyingScreen({ initial }: { initial: QualifyingView }) {
     // One controller per phase: a completed phase is "finished" for its controller; Continue mounts the next one.
     return <QualifyingOperations key={`${view.phase}:${view.phaseComplete}:${view.status}`} initial={view} onView={setView}/>;
 }
+/** Q1 → Q2 → Q3 as a stepper: completed (tick), current (ring), still to come (lock) — icon + text. */
+function PhaseStepper({ view }: { view: QualifyingView }) {
+    const { t } = useI18n();
+    const phases = view.format.length ? view.format.map(f => f.phase) : (['Q1', 'Q2', 'Q3'] as const);
+    const current = phases.indexOf(view.phase);
+    return <ol className="live-phases" aria-label={t('live.phases')}>{phases.map((p, i) => {
+        const state = view.status === 'FINISHED' || i < current || (i === current && view.phaseComplete) ? 'done' : i === current ? 'current' : 'locked';
+        return <li key={p} data-state={state} aria-current={state === 'current' ? 'step' : undefined}><Icon name={state === 'done' ? 'check' : state === 'current' ? 'current' : 'lock'} size={12}/>{t(phaseKey(view.kind, p))}<span className="visually-hidden"> · {t(`live.phaseState.${state}`)}</span></li>;
+    })}</ol>;
+}
 function QualifyingHeader({ view }: { view: QualifyingView }) {
     const { t } = useI18n();
-    const glyph = { LOCKED: '🔒︎', AVAILABLE: '○', IN_PROGRESS: '▶', COMPLETED: '✓', SKIPPED: '–' } as const;
-    return <header className="ops-header practice-header"><div>
-        <Link className="ops-back" href={weekendHref(view)}>← {t('practice.back')}</Link>
-        <p className="eyebrow">{t(`progression.${view.kind}`)}</p>
-        <h1>{view.eventName} <span className="ops-muted">· {view.circuitName}</span></h1></div>
-        <nav aria-label={t('progression.sessions')} className="session-tabs"><ol>{view.sessions.map(s => {
-            const current = s.type === view.kind, reachable = s.status !== 'LOCKED' && s.status !== 'SKIPPED';
-            const href = sessionHref(weekendHref(view), s);
-            const label = <><span aria-hidden="true">{glyph[s.status as keyof typeof glyph]} </span>{t(`progression.${s.type as 'QUALIFYING'}`)}<span className="sr-only"> · {t(`progression.${s.status as 'AVAILABLE'}`)}</span></>;
-            return <li key={s.id} className={`session-tab status-${s.status} ${current ? 'current' : ''}`}>{reachable && !current && href ? <Link href={href}>{label}</Link> : <span aria-current={current ? 'page' : undefined}>{label}</span>}</li>;
-        })}</ol></nav>
-    </header>;
+    return <LiveHeader kind="QUALIFYING" kindLabel={t(`progression.${view.kind}`)} title={view.eventName} circuit={view.circuitName}
+        backHref={weekendHref(view)} backLabel={t('practice.back')} badge={view.status !== 'NOT_STARTED' && view.status !== 'LEGACY_COMPLETED' ? <PhaseStepper view={view}/> : null}
+        nav={<SessionNav sessions={view.sessions} isCurrent={s => s.type === view.kind} weekendHref={weekendHref(view)}/>}/>;
 }
 function QualifyingStart({ view, onView }: { view: QualifyingView; onView: (v: QualifyingView) => void }) {
     const { t } = useI18n(), [pending, start] = useTransition(), [error, setError] = useState<QualifyingErrorCode | null>(null);
     const available = view.sessionStatus === 'AVAILABLE' || view.legacyInProgress;
     const run = (action: () => Promise<QualifyingActionResult>) => start(async () => { const result = await action(); if (result.view) onView(result.view); setError(result.error); });
     const message = view.status === 'LEGACY_COMPLETED' ? 'qualifying.legacyCompleted' : view.legacyInProgress ? 'qualifying.legacyInProgress' : textKey(view.kind, available ? 'ready' : 'unavailable');
-    return <div className="race-ops practice-ops qualifying-ops">
+    return <div className="live live-qualifying live-start" data-kind="QUALIFYING">
         <LocalizedPageTitle titleKey={textKey(view.kind, 'title')}/>
         <QualifyingHeader view={view}/>
-        <section className="ops-panel practice-start"><div className="ops-panel-title"><h2>{t(`progression.${view.kind}`)}</h2><span className="status-pill">{t(`progression.${view.sessionStatus}`)}</span></div>
+        <section className="ops-panel practice-start live-panel"><div className="ops-panel-title"><h2>{t(`progression.${view.kind}`)}</h2><span className="status-pill">{t(`progression.${view.sessionStatus}`)}</span></div>
             <div className="summary-body">
                 <p>{t(message)}</p>
                 {available && <><p className="ops-muted">{t(textKey(view.kind, 'intro'))}</p>
                     <div className="setup-actions">
-                        <button disabled={pending} onClick={() => run(() => qualifyingStartAction(view.careerId, view.eventId, view.kind))}>{t(view.legacyInProgress ? 'practice.resume' : textKey(view.kind, 'manage'))}</button>
+                        <button className="live-primary" disabled={pending} onClick={() => run(() => qualifyingStartAction(view.careerId, view.eventId, view.kind))}>{t(view.legacyInProgress ? 'practice.resume' : textKey(view.kind, 'manage'))}</button>
                         <ConfirmButton className="ops-secondary" disabled={pending} label={t(textKey(view.kind, 'simulate'))} confirmText={t(textKey(view.kind, 'simulateConfirm'))} confirmLabel={t('practice.confirm')} onConfirm={() => run(() => qualifyingSimulateAction(view.careerId, view.eventId, view.kind))}/>
                     </div></>}
                 {view.status === 'LEGACY_COMPLETED' && <Link className="button-link" href={`${weekendHref(view)}/${nextSessionPath(view.kind)}`}>{t(textKey(view.kind, 'continueToRace'))}</Link>}
@@ -68,12 +72,11 @@ function QualifyingStart({ view, onView }: { view: QualifyingView; onView: (v: Q
         </section>
     </div>;
 }
-function QualifyingBar({ controller, playback, view, onRemainder }: { controller: Controller; playback: Snapshot; view: QualifyingView; onRemainder: () => void }) {
+function QualifyingBar({ controller, playback, view, onRemainder, selected, onSelect }: { controller: Controller; playback: Snapshot; view: QualifyingView; onRemainder: () => void; selected: string; onSelect: (id: string) => void }) {
     const { t, format, locale } = useI18n(), done = playback.phase === 'finished';
     const who = (id: string | null) => view.entrants.find(e => e.entrantId === id)?.abbreviation ?? '';
     const w = view.weather, percent = (n: number) => format.percentage(n / 1000, { maximumFractionDigits: 0 });
     const remaining = view.phaseDurationMs - view.phaseElapsedMs, next = view.forecast[0], frozen = view.phaseComplete || view.status === 'FINISHED';
-    const cutoffCar = view.cutoff === null ? null : view.entrants.find(e => e.position === view.cutoff && e.eliminatedIn === null);
     let line: string | null = null, tone = 'none';
     if (playback.error) line = null;
     else if (view.status === 'FINISHED') { line = t(textKey(view.kind, 'finished')); tone = 'finish'; }
@@ -81,37 +84,48 @@ function QualifyingBar({ controller, playback, view, onRemainder }: { controller
     else if (playback.reason === 'COMMAND' || playback.confirmation) { const c = playback.confirmation; line = c ? `${who(c.entrantId)} — ${t(`practice.confirm.${c.kind}`)}` : t('viewer.reason.COMMAND'); tone = 'command'; }
     else if (playback.reason === 'LIMIT') { line = t('qualifying.reason.LIMIT'); tone = 'stopped'; }
     else if (playback.reason && playback.attention) { const a = playback.attention; line = t(`qualifying.reason.${a.reason}`, { driver: who(a.entrantId), time: a.lapMs ? formatRaceTime(a.lapMs, locale) : '' }); tone = 'stopped'; }
-    return <div className="race-bar practice-bar qualifying-bar">
-        <div className="race-bar-top">
-            <div className="race-clock"><span>{t(phaseKey(view.kind, view.phase))}</span><strong>{sessionClock(Math.max(0, remaining), locale)}</strong>
-                <span className="control-state" role="status"><span aria-hidden="true">{frozen ? '■' : remaining <= 0 ? '⚑' : '●'}</span> {frozen ? t('qualifying.frozen') : t(remaining <= 0 ? 'qualifying.flag' : 'qualifying.remaining')}</span></div>
-            <section className="weather-strip" aria-label={t('weather.title')}>
-                {cutoffCar && <span className="cutoff-info">{t('qualifying.cutoffAt', { position: format.number(view.cutoff!) })}: <strong>{cutoffCar.bestMs === null ? t('race.noTime') : formatRaceTime(cutoffCar.bestMs, locale)}</strong></span>}
-                {w && <span>{t(w.rainfallIntensity === 0 ? 'weather.dry' : w.rainfallIntensity < 650 ? 'weather.light' : 'weather.heavy')} · {t('weather.water')} {percent(w.trackWater)} ({t((['weather.dry', 'weather.damp', 'weather.wet'] as const)[waterBand(w)])})</span>}
-                {view.grip && <span>{t('qualifying.grip')}: <strong>{t(`qualifying.grip.${view.grip}`)}</strong></span>}
-                {view.traffic && <span>{t('qualifying.traffic')}: <strong>{t(`qualifying.traffic.${view.traffic}`)}</strong></span>}
-                <span title={t('weather.uncertainty')}>{t('weather.forecast')}: {next ? forecastText(next, view.kind, t, ms => sessionClock(ms, locale), percent, w?.rainfallIntensity ?? 0) : t('prep.noRain')}</span>
-            </section>
+    const state = frozen ? 'FINISHED' : remaining <= 0 ? 'CHEQUERED' : 'GREEN';
+    const items: ConditionItem[] = [];
+    if (w) items.push({ key: 'water', icon: w.trackWater >= 100 ? 'waves' : 'drop', label: t(rainKey(w.rainfallIntensity)), value: percent(w.trackWater), note: t((['weather.dry', 'weather.damp', 'weather.wet'] as const)[waterBand(w)]), tone: waterBand(w) > 0 ? 'wet' : undefined, title: t('weather.water') });
+    if (view.grip) items.push({ key: 'grip', icon: 'tyre', label: t('qualifying.grip'), value: t(`qualifying.grip.${view.grip}`) });
+    if (view.traffic) items.push({ key: 'traffic', icon: 'battle', label: t('qualifying.traffic'), value: t(`qualifying.traffic.${view.traffic}`), tone: view.traffic === 'BUSY' ? 'warn' : undefined });
+    const forecast: ConditionItem = { key: 'forecast', icon: 'cloud', label: t('weather.forecast'), value: next ? forecastText(next, view.kind, t, ms => sessionClock(ms, locale), percent, w?.rainfallIntensity ?? 0) : t('prep.noRain'), tone: next ? 'info' : undefined, title: t('weather.uncertainty') };
+    return <div className="live-bar race-bar practice-bar qualifying-bar">
+        <div className="live-bar-row">
+            <LiveClock caption={t(phaseKey(view.kind, view.phase))} value={sessionClock(Math.max(0, remaining), locale)}>
+                <span className="control-state live-flag" data-state={state} role="status"><Icon name={state === 'GREEN' ? 'play' : 'flag'} size={14}/>{frozen ? t('qualifying.frozen') : t(remaining <= 0 ? 'qualifying.flag' : 'qualifying.remaining')}</span>
+            </LiveClock>
+            <ConditionChips items={items} forecast={forecast} label={t('weather.title')}/>
         </div>
         <section className="playback-bar" aria-label={t('viewer.playback')}>
-            {done ? null : <>
-                <div className="playback-buttons">
-                    <button className="play-toggle" onClick={playback.playing ? controller.pause : controller.play}><span aria-hidden="true">{playback.playing ? '❚❚ ' : '▶ '}</span>{t(playback.playing ? 'viewer.pause' : 'viewer.play')}</button>
-                    <button className="ops-secondary" onClick={() => void controller.step()} disabled={playback.busy}>{t('practice.step', { seconds: format.number(view.stepMs / 1000) })}</button>
-                    <div role="group" aria-label={t('viewer.speed')}>{PLAYBACK_SPEEDS.map(speed => <button className="speed-button" key={speed} onClick={() => controller.setSpeed(speed)} aria-pressed={playback.speed === speed}>{format.number(speed)}×</button>)}</div>
-                    <button className="ops-secondary" onClick={controller.skip} disabled={playback.skipping} aria-pressed={playback.skipping}><span aria-hidden="true">▶▶ </span>{t('practice.nextEvent')}</button>
-                    <ConfirmButton className="ops-secondary" disabled={playback.busy} label={t('practice.simulateRemainder')} confirmText={t(textKey(view.kind, 'remainderConfirm'))} confirmLabel={t('practice.confirm')} onConfirm={onRemainder}/>
-                </div>
-                <div className="viewer-settings">
-                    <label><input type="checkbox" checked={playback.autoPause} onChange={e => controller.setAutoPause(e.target.checked)}/>{t('viewer.autoPause')}</label>
-                    <span role="status" className={`playback-phase phase-${playback.phase}`}>{playback.busy ? t('viewer.saving') : t(`practice.phase.${playback.phase}`, { speed: format.number(playback.speed) })}</span>
-                </div>
-            </>}
+            {done ? null : <PlaybackControls playback={playback} done={done} onToggle={playback.playing ? controller.pause : controller.play} onStep={() => void controller.step()} stepLabel={t('practice.step', { seconds: format.number(view.stepMs / 1000) })}
+                onSpeed={controller.setSpeed} onSkip={controller.skip} skipLabel={t('practice.nextEvent')} onAutoPause={controller.setAutoPause}
+                extra={<ConfirmButton className="live-tool" disabled={playback.busy} label={t('practice.simulateRemainder')} confirmText={t(textKey(view.kind, 'remainderConfirm'))} confirmLabel={t('practice.confirm')} onConfirm={onRemainder}/>}
+                status={playback.busy ? t('viewer.saving') : t(`practice.phase.${playback.phase}`, { speed: format.number(playback.speed) })}/>}
             <div className="race-status-line">
-                <p className={`attention-line attention-${tone}`} role="status" aria-live="polite">{line && <><span aria-hidden="true">{tone === 'finish' ? '■ ' : tone === 'command' ? '✓ ' : '⚑ '}</span>{line}</>}</p>
+                <p className={`attention-line attention-${tone}`} role="status" aria-live="polite">{line && <><Icon name={tone === 'finish' ? 'flag' : tone === 'command' ? 'check' : 'alert'} size={14}/>{line}</>}</p>
                 {playback.error && <p role="alert" className="attention-line attention-error">{t(`qualifying.error.${playback.error as QualifyingErrorCode}`, {})}</p>}
             </div>
         </section>
+        <CutoffStrip view={view} selected={selected} onSelect={onSelect}/>
+    </div>;
+}
+/**
+ * The question qualifying is about — who is safe, who is at risk: the cutoff (position + the time to beat) and each
+ * player car's status and margin. Each car is also the quick switch to its panel (the parent wires selection).
+ */
+function CutoffStrip({ view, selected, onSelect }: { view: QualifyingView; selected?: string; onSelect?: (id: string) => void }) {
+    const { t, format, locale } = useI18n();
+    const cutoffCar = view.cutoff === null ? null : view.entrants.find(e => e.position === view.cutoff && e.eliminatedIn === null);
+    const mine = view.entrants.filter(e => e.player);
+    return <div className="live-cutoff" data-live={view.cutoff !== null || undefined}>
+        {cutoffCar ? <p className="live-cutoff-line cutoff-info"><Icon name="flag" size={14}/>{t('qualifying.cutoffAt', { position: format.number(view.cutoff!) })}: <strong>{cutoffCar.bestMs === null ? t('race.noTime') : formatRaceTime(cutoffCar.bestMs, locale)}</strong></p>
+            : <p className="live-cutoff-line ops-muted">{t('live.noCutoff')}</p>}
+        <div className="live-cutoff-cars">{mine.map(e => {
+            const content = <><span className="tower-team" aria-hidden="true"/><strong className="cutoff-abbr">{e.abbreviation}</strong><span className="cutoff-pos">{t('commandCentre.position', { position: e.position })}</span><StatusChip status={e.status}/>{e.eliminatedIn === null && <CutoffDelta ms={e.cutoffDeltaMs}/>}</>;
+            return onSelect ? <button key={e.entrantId} type="button" className="live-cutoff-car" aria-pressed={selected === e.entrantId} onClick={() => onSelect(e.entrantId)} style={teamStyle(e.color) as CSSProperties} title={e.name}>{content}</button>
+                : <span key={e.entrantId} className="live-cutoff-car" style={teamStyle(e.color) as CSSProperties}>{content}</span>;
+        })}</div>
     </div>;
 }
 function QualifyingOperations({ initial, onView }: { initial: QualifyingView; onView: (v: QualifyingView) => void }) {
@@ -123,6 +137,7 @@ function QualifyingOperations({ initial, onView }: { initial: QualifyingView; on
     const playback = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
     useEffect(() => () => controller.pause(), [controller]);
     const [selected, setSelected] = useState(() => initial.entrants.find(e => e.player && e.eliminatedIn === null)?.entrantId ?? initial.entrants.find(e => e.player)?.entrantId ?? initial.entrants[0].entrantId);
+    const [pane, setPane] = useState<'strategy' | 'timing' | 'track'>('strategy');
     const [reduceMotion, setReduceMotion] = useState(false), [pending, startContinue] = useTransition(), [continueError, setContinueError] = useState<QualifyingErrorCode | null>(null);
     const layout = layoutForCircuit(view.sourceCircuitId), chosen = view.entrants.find(e => e.entrantId === selected) ?? view.entrants[0];
     // Map rows keep a stable order (entrant id) so markers never re-key when the classification changes.
@@ -139,20 +154,21 @@ function QualifyingOperations({ initial, onView }: { initial: QualifyingView; on
     };
     const remainder = () => { void controller.command(async v => { const next = unwrap(await qualifyingRemainderAction(...ids, v.sessionElapsedMs)); setView(next); return next; }, null); };
     const continuePhase = () => startContinue(async () => { const result = await qualifyingContinueAction(...ids, view.sessionElapsedMs, view.phase); setContinueError(result.error); if (result.view) setView(result.view); });
-    return <div className="race-ops practice-ops qualifying-ops">
+    return <div className="live live-qualifying" data-kind="QUALIFYING" data-pane={pane}>
         <LocalizedPageTitle titleKey={textKey(view.kind, 'title')}/>
         <QualifyingHeader view={view}/>
-        <QualifyingBar controller={controller} playback={playback} view={view} onRemainder={remainder}/>
+        <QualifyingBar controller={controller} playback={playback} view={view} onRemainder={remainder} selected={chosen.entrantId} onSelect={id => { setSelected(id); setPane('strategy'); }}/>
         {view.status === 'FINISHED' && <QualifyingSummary view={view}/>}
         {view.status === 'RUNNING' && view.phaseComplete && <PhaseCompletePanel view={view} pending={pending} onContinue={continuePhase}/>}
         {continueError && <p role="alert">{t(`qualifying.error.${continueError}`)}</p>}
-        <div className="ops-grid">
-            <QualifyingTower view={view} selected={chosen.entrantId} onSelect={setSelected}/>
-            <div className="map-column"><section className="ops-panel track-panel"><div className="ops-panel-title"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div>
+        <PaneSwitch label={t('live.panes')} active={pane} onPick={setPane} panes={[{ id: 'strategy', label: t('live.pane.runs') }, { id: 'timing', label: t('live.pane.timing') }, { id: 'track', label: t('live.pane.track') }]}/>
+        <div className="live-grid ops-grid">
+            <div className="live-area-tower" data-pane="timing"><QualifyingTower view={view} selected={chosen.entrantId} onSelect={setSelected}/></div>
+            <div className="live-area-map" data-pane="track"><section className="ops-panel track-panel live-panel"><div className="ops-panel-title live-panel-head"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div>
                 <TrackMap key={layout.id} layout={layout} rows={rows} selected={chosen.entrantId} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={view.step} skipping={playback.skipping} latencyMs={playback.latencyMs} tiers={tiers}/>
-                <p className="map-notice">{t('practice.mapNote')} <label><input type="checkbox" checked={reduceMotion} onChange={e => setReduceMotion(e.target.checked)}/>{t('viewer.reduceMotion')}</label></p></section>
+                <p className="map-notice">{t('practice.mapNote')} <label className="live-switch"><input type="checkbox" role="switch" checked={reduceMotion} onChange={e => setReduceMotion(e.target.checked)}/><span className="live-switch-track" aria-hidden="true"/><span>{t('viewer.reduceMotion')}</span></label></p></section>
             </div>
-            <QualifyingDriverPanel key={chosen.entrantId} view={view} e={chosen} busy={playback.busy} send={send} onSelect={setSelected}/>
+            <div className="live-area-panel" data-pane="strategy"><QualifyingDriverPanel key={chosen.entrantId} view={view} e={chosen} busy={playback.busy} send={send} onSelect={setSelected}/></div>
         </div>
     </div>;
 }

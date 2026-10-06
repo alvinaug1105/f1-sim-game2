@@ -1,6 +1,7 @@
 "use client";
 import Link from 'next/link';
-import { Fragment, useState, type ReactNode } from 'react';
+import { Fragment, useState, type CSSProperties, type ReactNode } from 'react';
+import { teamStyle } from '../../components/ui/team-color';
 import { useI18n } from '../../i18n/provider';
 import { formatRaceGap, formatRaceTime } from '../../i18n/race-time';
 import { QUALIFYING_COMPOUNDS, type QualifyingPhase } from '../../simulation/qualifying/model';
@@ -31,24 +32,24 @@ export function CutoffDelta({ ms }: { ms: number | null }) {
 export function QualifyingTower({ view, selected, onSelect }: { view: QualifyingView; selected: string; onSelect: (id: string) => void }) {
     const { t, format, locale } = useI18n(), lap = (ms: number | null) => ms === null ? t('race.noTime') : formatRaceTime(ms, locale);
     const finished = view.status === 'FINISHED', title = finished ? t(textKey(view.kind, 'classification')) : t('qualifying.timing', { phase: t(phaseKey(view.kind, view.phase)) });
-    return <section className="ops-panel timing-panel" aria-label={title}>
-        <div className="ops-panel-title"><h2>{title}</h2>{view.cutoff !== null && <span className="ops-muted">{t('qualifying.cutoffAt', { position: format.number(view.cutoff) })}</span>}</div>
+    return <section className="ops-panel timing-panel live-panel" aria-label={title}>
+        <div className="ops-panel-title live-panel-head"><h2>{title}</h2>{view.cutoff !== null && <span className="ops-muted">{t('qualifying.cutoffAt', { position: format.number(view.cutoff) })}</span>}</div>
         <div className="timing-scroll"><table className="timing-tower qualifying-tower"><caption className="sr-only">{title}</caption>
-            <thead><tr><th><span aria-hidden="true">{t('practice.posShort')}</span><span className="sr-only">{t('race.position')}</span></th><th>{t('race.driver')}</th><th>{t(finished ? 'qualifying.result' : 'race.best')}</th><th>{t('practice.where')}</th></tr></thead>
+            <thead><tr><th scope="col"><span aria-hidden="true">{t('practice.posShort')}</span><span className="sr-only">{t('race.position')}</span></th><th scope="col">{t('race.driver')}</th><th scope="col" className="num">{t(finished ? 'qualifying.result' : 'race.best')}</th><th scope="col">{t('practice.where')}</th></tr></thead>
             <tbody>{view.entrants.map(e => {
                 const chosen = e.entrantId === selected, out = e.eliminatedIn !== null;
                 const time = finished ? e.times.Q3 ?? e.times.Q2 ?? e.times.Q1 : e.bestMs;
                 return <Fragment key={e.entrantId}>
-                    <tr onClick={() => onSelect(e.entrantId)} data-entrant={e.entrantId} className={['tower-row', chosen && 'selected-row', e.player && 'player-row', out && 'eliminated-row', e.location === 'GARAGE' && 'garage-row'].filter(Boolean).join(' ')} style={e.player ? { ['--team' as string]: e.color } : undefined}>
-                        <td>{format.number(e.position)}</td>
-                        <th scope="row"><button onClick={() => onSelect(e.entrantId)} aria-pressed={chosen} className="driver-select" style={{ borderColor: e.color }} title={e.name}><strong>{e.player && <span className="player-mark" aria-hidden="true">◆</span>}{e.abbreviation}{chosen && <span className="selected-mark" aria-hidden="true"> ◂</span>}</strong><small>{e.team}</small>{e.player && <span className="sr-only">{t('viewer.player')}</span>}</button></th>
-                        <td>{out && !finished ? <small className="out-label">{t('qualifying.outIn', { phase: t(phaseKey(view.kind, e.eliminatedIn!)) })}</small> : <>{lap(time)}{!finished && e.gapMs !== null && e.gapMs > 0 && <small>{formatRaceGap(e.gapMs, locale)}</small>}{!finished && e.player && <CutoffDelta ms={e.cutoffDeltaMs}/>}</>}</td>
+                    <tr onClick={() => onSelect(e.entrantId)} data-entrant={e.entrantId} className={['tower-row', chosen && 'selected-row', e.player && 'player-row', out && 'eliminated-row', e.location === 'GARAGE' && 'garage-row', e.player && (e.status === 'AT_RISK' || e.status === 'DANGER') && 'risk-row'].filter(Boolean).join(' ')} style={{ ['--row-team' as string]: e.color }}>
+                        <td className="tower-pos">{format.number(e.position)}</td>
+                        <th scope="row"><button onClick={() => onSelect(e.entrantId)} aria-pressed={chosen} className="driver-select" title={e.name}><span className="tower-team" aria-hidden="true"/><strong>{e.player && <span className="player-mark" aria-hidden="true">◆</span>}{e.abbreviation}{chosen && <span className="selected-mark" aria-hidden="true"> ◂</span>}</strong><small>{e.team}</small>{e.player && <span className="sr-only">{t('viewer.player')}</span>}</button></th>
+                        <td className="num">{out && !finished ? <small className="out-label">{t('qualifying.outIn', { phase: t(phaseKey(view.kind, e.eliminatedIn!)) })}</small> : <>{lap(time)}{!finished && e.gapMs !== null && e.gapMs > 0 && <small>{formatRaceGap(e.gapMs, locale)}</small>}{!finished && e.player && <CutoffDelta ms={e.cutoffDeltaMs}/>}</>}</td>
                         <td>{finished || out ? (e.player ? <StatusChip status={e.status}/> : e.eliminatedIn ? <small>{t('qualifying.outIn', { phase: t(phaseKey(view.kind, e.eliminatedIn)) })}</small> : null) : <>
                             <span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span>
                             {e.player && <StatusChip status={e.status}/>}
                             {e.tyre && <small className={`tyre-token tyre-${e.tyre.compound}`} title={t(`tyre.${e.tyre.compound}`)}>{t(`viewer.tyre.${e.tyre.compound}`)}</small>}</>}</td>
                     </tr>
-                    {view.cutoff !== null && e.position === view.cutoff && !out && <tr className="cutoff-row" aria-label={t('qualifying.cutoffLine', { position: format.number(view.cutoff) })}><td colSpan={4}><span aria-hidden="true">✂ </span>{t('qualifying.cutoffLine', { position: format.number(view.cutoff) })}</td></tr>}
+                    {view.cutoff !== null && e.position === view.cutoff && !out && <tr className="cutoff-row" aria-label={t('qualifying.cutoffLine', { position: format.number(view.cutoff) })}><td colSpan={4}><span className="cutoff-rule" aria-hidden="true"/><span className="cutoff-text">{t('qualifying.cutoffLine', { position: format.number(view.cutoff) })}</span></td></tr>}
                 </Fragment>;
             })}</tbody></table></div>
         <p className="tower-note">{t('qualifying.towerNote')}</p>
@@ -58,8 +59,8 @@ export function QualifyingTower({ view, selected, onSelect }: { view: Qualifying
 export function PlayerSwitch({ view, selected, onSelect }: { view: QualifyingView; selected: string; onSelect: (id: string) => void }) {
     const { t, format } = useI18n();
     return <div className="player-switch q-player-switch" role="group" aria-label={t('viewer.playerCars')}>{view.entrants.filter(e => e.player).map(e =>
-        <button key={e.entrantId} aria-pressed={e.entrantId === selected} onClick={() => onSelect(e.entrantId)} style={{ borderColor: e.color }}>
-            <strong>{e.abbreviation}{e.entrantId === selected && <span aria-hidden="true"> ◂</span>}</strong> <span>P{format.number(e.position)}</span> <StatusChip status={e.status}/>
+        <button key={e.entrantId} aria-pressed={e.entrantId === selected} onClick={() => onSelect(e.entrantId)} style={teamStyle(e.color) as CSSProperties} title={e.name}>
+            <span className="switch-abbr">{e.abbreviation}</span><strong className="switch-pos">{t('commandCentre.position', { position: format.number(e.position) })}</strong><StatusChip status={e.status}/>
         </button>)}</div>;
 }
 function RunPlanner({ view, e, busy, send }: { view: QualifyingView; e: QualifyingEntrantView; busy: boolean; send: (c: QualifyingUiCommand) => void }) {
@@ -77,9 +78,9 @@ function RunPlanner({ view, e, busy, send }: { view: QualifyingView; e: Qualifyi
                 {QUALIFYING_COMPOUNDS.map(c => <option key={c} value={c}>{t(`tyre.${c}`)} · {option(c)}</option>)}</select></label>
             {graded ? <p className={`fit-note suit-${graded}`}><span aria-hidden="true">{graded === 'SUITABLE' ? '✓ ' : graded === 'MARGINAL' ? '~ ' : '✕ '}</span>{t(`qualifying.fitNote.${graded}`)}</p>
                 : <p className={`fit-note fit-${fit}`}><span aria-hidden="true">{fit === 'SUITED' ? '✓ ' : fit === 'MARGINAL' ? '~ ' : '✕ '}</span>{t(`practice.fitNote.${fit}`)}</p>}
-            <div className="mode-buttons" role="group" aria-label={t('qualifying.pushLaps')}>{[1, 2, 3].map(n => <button key={n} disabled={busy || n > max} aria-pressed={laps === n} onClick={() => setPush(n)}>{laps === n && <span aria-hidden="true">✓ </span>}{t('qualifying.pushCount', { count: format.number(n) })}</button>)}</div>
+            <div className="mode-buttons live-segmented" role="group" aria-label={t('qualifying.pushLaps')}>{[1, 2, 3].map(n => <button key={n} disabled={busy || n > max} aria-pressed={laps === n} onClick={() => setPush(n)}>{t('qualifying.pushCount', { count: format.number(n) })}</button>)}</div>
             <small className="ops-muted">{t('qualifying.fuelNote')}</small>
-            <button className="send-out" disabled={busy || !ready} onClick={() => send({ kind: 'send', plan: { compound, pushLaps: laps } })}>{t('practice.sendOut')}</button>
+            <button className="send-out live-primary" disabled={busy || !ready} onClick={() => send({ kind: 'send', plan: { compound, pushLaps: laps } })}>{t('practice.sendOut')}</button>
             {!ready && <small role="status">{t('qualifying.garageWork')}</small>}
         </>}
     </div>;
@@ -88,14 +89,16 @@ export function QualifyingDriverPanel({ view, e, busy, send, onSelect }: { view:
     const { t, format, locale } = useI18n(), own = e.own, lap = (ms: number | null) => ms === null ? t('race.noTime') : formatRaceTime(ms, locale);
     const live = view.status === 'RUNNING' && !view.phaseComplete, commandable = !!own && live && !view.autoPlayer && e.eliminatedIn === null;
     const act = (c: QualifyingUiCommand) => own && send(e.entrantId, own.commandRevision, c);
-    return <section className="ops-panel driver-focus practice-driver qualifying-driver" aria-label={t('viewer.selectedDriver')}>
-        <div className="ops-panel-title"><span>{t('viewer.selectedDriver')}</span><span className="status-pill">{t(own ? 'viewer.player' : 'viewer.readOnly')}</span></div>
+    return <section className="ops-panel driver-focus practice-driver qualifying-driver dp" aria-label={t('viewer.selectedDriver')} style={teamStyle(e.color) as CSSProperties}>
         <div className="driver-body">
             <PlayerSwitch view={view} selected={e.entrantId} onSelect={onSelect}/>
-            <div className="driver-identity" style={{ borderColor: e.color }}><strong className="driver-position"><small>P</small>{format.number(e.position)}</strong><div><h2>{e.name}</h2><p><strong>{e.abbreviation}</strong>{e.number !== null && <> · #{format.number(e.number, { useGrouping: false })}</>} · {e.team}</p></div>
-                {e.eliminatedIn === null && <span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span>}</div>
-            <StatusChip status={e.status}/>
-            <div className="stat-grid">
+            <header className="dp-head driver-identity">
+                <span className="dp-number" aria-hidden="true">{e.number !== null ? format.number(e.number, { useGrouping: false }) : e.abbreviation}</span>
+                <div className="dp-id"><p className="ui-label">{e.abbreviation}{e.number !== null && <span className="visually-hidden"> · #{format.number(e.number, { useGrouping: false })}</span>} · {e.team}</p><h2 className="ui-display dp-name">{e.name}</h2></div>
+                <strong className="dp-pos driver-position">{t('commandCentre.position', { position: format.number(e.position) })}</strong>
+            </header>
+            <div className="dp-statusline"><StatusChip status={e.status}/>{e.eliminatedIn === null && <span className={`location-chip location-${e.location}`}><span aria-hidden="true">{LOCATION_GLYPH[e.location]} </span>{t(`practice.location.${e.location}`)}</span>}<span className="status-pill">{t(own ? 'viewer.player' : 'viewer.readOnly')}</span></div>
+            <div className="stat-grid dp-stats">
                 <Stat label={t('qualifying.bestPhase', { phase: t(phaseKey(view.kind, view.phase)) })}>{lap(e.bestMs)}</Stat><Stat label={t('viewer.lastLap')}>{lap(e.lastLapMs)}{e.lastLapTraffic && <small className="traffic-note">{t('qualifying.lastLapTraffic')}</small>}</Stat>
                 <Stat label={t('qualifying.cutoff')}><CutoffDelta ms={e.cutoffDeltaMs}/>{e.cutoffDeltaMs === null && t('race.noTime')}</Stat><Stat label={t('qualifying.runs')}>{format.number(e.attempts)}</Stat>
                 {(['Q1', 'Q2', 'Q3'] as QualifyingPhase[]).map(p => <Stat key={p} label={t(phaseKey(view.kind, p))}>{lap(e.times[p])}</Stat>)}
@@ -121,12 +124,12 @@ export function QualifyingDriverPanel({ view, e, busy, send, onSelect }: { view:
 export function PhaseCompletePanel({ view, pending, onContinue }: { view: QualifyingView; pending: boolean; onContinue: () => void }) {
     const { t } = useI18n(), next = view.phase === 'Q1' ? 'Q2' : 'Q3';
     const out = view.entrants.filter(e => e.eliminatedIn === view.phase), mine = view.entrants.filter(e => e.player);
-    return <section className="ops-panel phase-complete" aria-labelledby="phase-complete-title">
+    return <section className="ops-panel phase-complete live-panel live-summary" aria-labelledby="phase-complete-title">
         <div className="ops-panel-title"><h2 id="phase-complete-title">{t('qualifying.phaseComplete', { phase: t(phaseKey(view.kind, view.phase)) })}</h2><span className="status-pill">■ {t('qualifying.frozen')}</span></div>
         <div className="summary-body">
             <div><h3>{t('qualifying.eliminated')}</h3>{out.length ? <ol>{out.map(e => <li key={e.entrantId}><strong style={{ borderColor: e.color }}>{e.abbreviation}</strong> P{e.position}</li>)}</ol> : <p className="ops-muted">{t('qualifying.noEliminations')}</p>}</div>
             <div><h3>{t('prep.yourDrivers')}</h3><ul>{mine.map(e => <li key={e.entrantId}><strong>{e.abbreviation}</strong> P{e.position} <StatusChip status={e.status}/></li>)}</ul></div>
-            <div><p>{t('qualifying.breakNote')}</p><button className="send-out" disabled={pending} onClick={onContinue}>{t('qualifying.continueTo', { phase: t(phaseKey(view.kind, next)) })}</button></div>
+            <div><p>{t('qualifying.breakNote')}</p><button className="send-out live-primary" disabled={pending} onClick={onContinue}>{t('qualifying.continueTo', { phase: t(phaseKey(view.kind, next)) })}</button></div>
         </div>
     </section>;
 }
@@ -135,7 +138,7 @@ export function QualifyingSummary({ view }: { view: QualifyingView }) {
     const { t, format, locale } = useI18n(), lap = (ms: number | null) => ms === null ? '—' : formatRaceTime(ms, locale);
     const pole = view.entrants.find(e => e.position === 1);
     const raceHref = `/career/${view.careerId}/events/${view.eventId}/${nextSessionPath(view.kind)}`;
-    return <section className="ops-panel qualifying-summary" aria-labelledby="q-summary-title">
+    return <section className="ops-panel qualifying-summary live-panel live-summary" aria-labelledby="q-summary-title">
         <div className="ops-panel-title"><h2 id="q-summary-title">{t(textKey(view.kind, 'summary'))}</h2>{pole && <span className="status-pill">◆ {t('qualifying.pole', { driver: pole.abbreviation })}</span>}</div>
         <div className="summary-scroll"><table className="timing-tower qualifying-result">
             <caption className="sr-only">{t(textKey(view.kind, 'summary'))}</caption>
@@ -145,7 +148,7 @@ export function QualifyingSummary({ view }: { view: QualifyingView }) {
                 <td>{lap(e.times.Q1)}</td><td>{lap(e.times.Q2)}</td><td>{lap(e.times.Q3)}</td><td>{t(phaseKey(view.kind, e.eliminatedIn ?? 'Q3'))}</td>
             </tr>)}</tbody>
         </table></div>
-        <div className="summary-actions"><p>{t(textKey(view.kind, 'gridNote'))}</p><Link className="button-link" href={raceHref}>{t(textKey(view.kind, 'continueToRace'))}</Link></div>
+        <div className="summary-actions"><p>{t(textKey(view.kind, 'gridNote'))}</p><Link className="button-link live-primary" href={raceHref}>{t(textKey(view.kind, 'continueToRace'))}</Link></div>
     </section>;
 }
 export { LOCATION_GLYPH };

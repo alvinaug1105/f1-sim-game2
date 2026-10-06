@@ -573,15 +573,6 @@ html[lang="zh-TW"] .cc-hero-title {
   gap: var(--sp-3);
   margin-top: var(--sp-3);
 }
-.status-loading {
-  display: grid;
-  gap: var(--sp-4);
-}
-.status-loading-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--sp-4);
-}
 
 /* ---- Responsive ---- */
 @media (max-width: 1220px) {
@@ -635,8 +626,7 @@ html[lang="zh-TW"] .cc-hero-title {
     align-items: flex-start;
     gap: var(--sp-2);
   }
-  .home-grid,
-  .status-loading-grid {
+  .home-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

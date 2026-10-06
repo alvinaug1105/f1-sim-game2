@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
 import { Icon } from "../ui/icon";
-import { Skeleton } from "../ui/primitives";
 /** UIX-A REDO status states. Content only — the route boundary decides whether the global shell surrounds them. */
 export function ErrorContent({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const { t } = useI18n();
@@ -36,20 +35,5 @@ export function NotFoundContent() {
         <Link className="ui-btn ui-btn-primary" href="/">{t("errors.return")}</Link>
       </div>
     </section>
-  );
-}
-export function LoadingContent() {
-  const { t } = useI18n();
-  return (
-    <div className="status-loading" role="status" aria-live="polite">
-      <span className="visually-hidden">{t("shell.loading")}</span>
-      <Skeleton height={14} width="22%" />
-      <Skeleton height={56} width="55%" />
-      <div className="status-loading-grid">
-        <Skeleton height={260} />
-        <Skeleton height={260} />
-      </div>
-      <Skeleton height={140} />
-    </div>
   );
 }

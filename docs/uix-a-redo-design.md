@@ -130,8 +130,10 @@ the URL alone.
 **Boundaries.**
 
 - Root `error.tsx` / `not-found.tsx` wrap their own shell.
-- The Career-level `error.tsx` / `not-found.tsx` / `loading.tsx` render content only.
-- The loading state is a skeleton, announced with `role="status"`.
+- The Career-level `error.tsx` / `not-found.tsx` render content only.
+- There is deliberately no Career-level `loading.tsx` (UIXA2-REG-001): a loading boundary is a Suspense boundary, so
+  the response starts streaming with HTTP 200 before a page can call `notFound()`, and invalid Career / event URLs
+  showed the not-found UI with status 200. Without it they return 404.
 
 **Live-session compatibility.** The shell keeps the `app-shell` / `sidebar` / `brand` / `main` hooks the frozen Race
 stylesheet sizes (170px / 140px rail, 22px content padding, no max width, rail hidden ≤ 820px). On `.race-ops` pages:
@@ -229,7 +231,7 @@ horizontally (checked at 390, 1024 and 1440).
 - Targets are 44–48px on primary actions and nav.
 - Amber focus ring on every interactive element.
 - Reduced-motion support.
-- Errors use `role="alert"`; loading uses `role="status"`.
+- Errors use `role="alert"`.
 
 ## 10. Frozen boundary
 

@@ -3,26 +3,29 @@ import type { ReactNode } from 'react';
 import { useI18n } from '../../../i18n/provider';
 import type { timingRows } from './model';
 import type { PlaybackController, PlaybackSnapshot } from './playback';
-import { PLAYBACK_SPEEDS, SEEK_LIMIT } from './playback';
+import { SEEK_LIMIT } from './playback';
 import type { Attention } from './attention';
 import type { TyreCompound } from '../../../simulation/race/tyres/model';
 import type { PaceMode, FuelMode, ErsMode } from '../../../simulation/race/commands/model';
+import { PlaybackControls } from '../../live/live-frame';
+import { Icon, type IconName } from '../../../components/ui/icon';
 type Rows = ReturnType<typeof timingRows>;
-const PHASE_GLYPH = { paused: '❚❚', running: '▶', seeking: '▶▶', finished: '■' } as const;
+const TONE_ICON: Record<string, IconName> = { info: 'info', finish: 'flag', command: 'check', stopped: 'alert' };
 /** Translated one-line description of an attention item; the driver is identified by abbreviation (data, not logic). */
-export function useAttentionText(rows: Rows) {
+export function useAttentionText(rows: readonly Rows[number][]) {
     const { t } = useI18n();
     return (a: Attention) => t(`viewer.attention.${a.kind}`, { driver: rows.find(r => r.id === a.entrantId)?.abbreviation ?? '' });
 }
 /**
- * Playback controls plus the strategic-attention line: why playback stopped (auto-pause / Next Strategic Event / a
- * command / the finish), or — with auto-pause off — the latest strategic change while playback continues.
+ * Race-control tools (shared live frame) plus the strategic-attention line: why playback stopped (auto-pause / Next
+ * Strategic Event / a command / the finish), or — with auto-pause off — the latest strategic change while playback
+ * continues. Persistent strategic issues live in the issues rail (UX-RACE-001); this line explains the moment.
  */
-export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduceMotion, alerts }: { controller: PlaybackController; playback: PlaybackSnapshot; rows: Rows; reduceMotion: boolean; onReduceMotion: (value: boolean) => void; alerts?: ReactNode }) {
+export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduceMotion, alerts, extra }: { controller: PlaybackController; playback: PlaybackSnapshot; rows: Rows; reduceMotion: boolean; onReduceMotion: (value: boolean) => void; alerts?: ReactNode; extra?: ReactNode }) {
     const { t, format } = useI18n(), describe = useAttentionText(rows), done = playback.phase === 'finished';
     // Command confirmations always name the driver the command targeted (from the command itself, not the selection).
     const confirm = playback.confirmation, confirmDriver = confirm ? rows.find(r => r.id === confirm.entrantId)?.abbreviation ?? '' : '';
-    const confirmText = confirm ? `${confirmDriver} — ${confirm.kind === 'pit' ? (confirm.value ? t('viewer.confirm.pit', { compound: t(`tyre.${confirm.value as TyreCompound}`) }) : t('viewer.confirm.pitCancel')) : t(`viewer.confirm.${confirm.kind}`, { mode: confirm.kind==='energyPolicy'?t(`command.${confirm.value as 'RECHARGE'|'BALANCED'|'BOOST'}`):confirm.kind === 'fuelMode' ? t(`command.fuel.${confirm.value as FuelMode}`) : t(`command.${confirm.value as PaceMode | ErsMode}`) })}` : '';
+    const confirmText = confirm ? `${confirmDriver} — ${confirm.kind === 'pit' ? (confirm.value ? t('viewer.confirm.pit', { compound: t(`tyre.${confirm.value as TyreCompound}`) }) : t('viewer.confirm.pitCancel')) : t(`viewer.confirm.${confirm.kind}`, { mode: confirm.kind === 'energyPolicy' ? t(`command.${confirm.value as 'RECHARGE' | 'BALANCED' | 'BOOST'}`) : confirm.kind === 'fuelMode' ? t(`command.fuel.${confirm.value as FuelMode}`) : t(`command.${confirm.value as PaceMode | ErsMode}`) })}` : '';
     const status = playback.busy && playback.phase !== 'finished' ? t('viewer.saving') : t(`viewer.phase.${playback.phase}`, { speed: format.number(playback.speed), limit: format.number(SEEK_LIMIT) });
     let attention: { tone: string; text: string } | null = null;
     if (playback.error) attention = null;
@@ -37,21 +40,13 @@ export function PlaybackBar({ controller, playback, rows, reduceMotion, onReduce
     else if (confirm) attention = { tone: 'command', text: confirmText };
     else if (playback.playing && playback.lastAttention) attention = { tone: 'info', text: `${t('viewer.latestAttention', { lap: format.number(playback.lastAttention.lap) })} ${describe(playback.lastAttention)}` };
     return <section className="playback-bar" aria-label={t('viewer.playback')}>
-        <div className="playback-buttons">
-            <button className="play-toggle" onClick={playback.playing ? controller.pause : controller.play} disabled={done} aria-label={t(playback.playing ? 'viewer.pause' : 'viewer.play')}><span aria-hidden="true">{playback.playing ? '❚❚ ' : '▶ '}</span>{t(playback.playing ? 'viewer.pause' : 'viewer.play')}</button>
-            <button className="ops-secondary" onClick={() => void controller.step()} disabled={playback.busy || done}>{t('race.lap')}</button>
-            <div role="group" aria-label={t('viewer.speed')}>{PLAYBACK_SPEEDS.map(speed => <button className="speed-button" key={speed} onClick={() => controller.setSpeed(speed)} aria-pressed={playback.speed === speed} disabled={done}>{format.number(speed)}×</button>)}</div>
-            <button className="ops-secondary" onClick={controller.skip} disabled={done || playback.skipping} aria-pressed={playback.skipping}><span aria-hidden="true">▶▶ </span>{t('viewer.nextEvent')}</button>
-        </div>
-        <div className="viewer-settings">
-            <label><input type="checkbox" checked={playback.autoPause} onChange={e => controller.setAutoPause(e.target.checked)} disabled={done}/>{t('viewer.autoPause')}</label>
-            <label><input type="checkbox" checked={reduceMotion} onChange={e => onReduceMotion(e.target.checked)}/>{t('viewer.reduceMotion')}</label>
-            <span role="status" className={`playback-phase phase-${playback.phase}`}><span aria-hidden="true">{PHASE_GLYPH[playback.phase]} </span>{status}</span>
-        </div>
+        <PlaybackControls playback={playback} done={done} onToggle={playback.playing ? controller.pause : controller.play} onStep={() => void controller.step()} stepLabel={t('race.lap')}
+            onSpeed={controller.setSpeed} onSkip={controller.skip} skipLabel={t('viewer.nextEvent')} onAutoPause={controller.setAutoPause}
+            reduceMotion={reduceMotion} onReduceMotion={onReduceMotion} extra={extra} status={status}/>
         {/* Fixed-height status line: alerts and attention never push the Race layout up or down. */}
         <div className="race-status-line">
             {alerts}
-            <p className={`attention-line attention-${attention?.tone ?? 'none'}`} role="status" aria-live="polite">{attention && <><span aria-hidden="true">{attention.tone === 'info' ? 'ⓘ ' : attention.tone === 'finish' ? '■ ' : attention.tone === 'command' ? '✓ ' : '⚑ '}</span>{attention.text}</>}</p>
+            <p className={`attention-line attention-${attention?.tone ?? 'none'}`} role="status" aria-live="polite">{attention && <><Icon name={TONE_ICON[attention.tone] ?? 'info'} size={14}/>{attention.text}</>}</p>
             {playback.error && playback.error !== 'STALE' && <p role="alert" className="attention-line attention-error">{t('viewer.error')}</p>}
         </div>
     </section>;

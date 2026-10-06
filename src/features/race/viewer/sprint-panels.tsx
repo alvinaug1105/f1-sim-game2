@@ -9,7 +9,7 @@ type Rows = ReturnType<typeof timingRows>;
 /** Live Sprint: Simulate Remainder (confirmed) — both player cars are auto-managed to the flag on the same engine. */
 export function SprintRemainder({ busy, onConfirm }: { busy: boolean; onConfirm: () => void }) {
     const { t } = useI18n();
-    return <div className="sprint-remainder"><ConfirmButton className="ops-secondary" disabled={busy} label={t('sprint.remainder')} confirmText={t('sprint.remainderConfirm')} confirmLabel={t('practice.confirm')} onConfirm={onConfirm}/></div>;
+    return <div className="sprint-remainder"><ConfirmButton className="live-tool" disabled={busy} label={t('sprint.remainder')} confirmText={t('sprint.remainderConfirm')} confirmLabel={t('practice.confirm')} onConfirm={onConfirm}/></div>;
 }
 /** Sprint Result: P1–P22 with gap/status and stops; player cars highlighted; the way on is Grand Prix Qualifying. */
 export function SprintSummary({ data, rows }: { data: RaceViewData; rows: Rows }) {
@@ -18,7 +18,7 @@ export function SprintSummary({ data, rows }: { data: RaceViewData; rows: Rows }
     const gap = (r: Rows[number]) => r.status === 'RETIRED' ? t('incident.RETIRED')
         : r.entrant.position === 1 ? '—' : r.entrant.completedLaps < leaderLaps ? t('sprint.lapsDown', { count: format.number(leaderLaps - r.entrant.completedLaps) })
             : r.gap === null ? '—' : formatRaceGap(r.gap, locale);
-    return <section className="ops-panel qualifying-summary sprint-summary" aria-labelledby="sprint-summary-title">
+    return <section className="ops-panel qualifying-summary sprint-summary live-panel live-summary" aria-labelledby="sprint-summary-title">
         <div className="ops-panel-title"><h2 id="sprint-summary-title">{t('sprint.result')}</h2>{winner && <span className="status-pill">◆ {t('sprint.winner', { driver: winner.abbreviation })}</span>}</div>
         <div className="summary-scroll"><table className="timing-tower qualifying-result">
             <caption className="sr-only">{t('sprint.result')}</caption>
@@ -30,6 +30,6 @@ export function SprintSummary({ data, rows }: { data: RaceViewData; rows: Rows }
                 <td>{format.number(r.entrant.pit?.stops.length ?? 0)}{r.entrant.pit?.stints.length ? <small> · {r.entrant.pit.stints.map(x => t(`viewer.tyre.${x.startingTyre.compound}`)).join('–')}</small> : null}</td>
             </tr>)}</tbody>
         </table></div>
-        <div className="summary-actions"><p>{t('sprint.resultNote')}</p><Link className="button-link" href={`/career/${data.progress.career.id}/events/${data.eventId}/qualifying`}>{t('sprint.continueToQualifying')}</Link></div>
+        <div className="summary-actions"><p>{t('sprint.resultNote')}</p><Link className="button-link live-primary" href={`/career/${data.progress.career.id}/events/${data.eventId}/qualifying`}>{t('sprint.continueToQualifying')}</Link></div>
     </section>;
 }

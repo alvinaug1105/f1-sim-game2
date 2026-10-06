@@ -1,19 +1,21 @@
 "use client";
-import { useId, useState } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
 import { useI18n } from '../../../i18n/provider';
 import { formatRaceGap, formatRaceTime } from '../../../i18n/race-time';
 import type { RacePublicState } from '../public-view';
 import type { timingRows } from './model';
 import { driverSnapshot, driverFlags, officialLeaderId } from './race-view';
+import type { IssueSeverity } from './issues';
 import { FlagChips } from './flags';
+import { teamStyle } from '../../../components/ui/team-color';
 type Rows = ReturnType<typeof timingRows>;
-/** Persistent two-car switch plus a lightweight side-by-side comparison. Viewer state only; never persisted. */
 /**
+ * Persistent two-car switch (UIX-B driver tabs) plus a lightweight side-by-side comparison. Viewer state only.
  * `attentionId`: player car named by the current strategic stop — flagged (text + glyph), never auto-selected.
- * Each tab carries compact decision flags (BOX, PIT, tyre, fuel, battle, attention) so both cars can be monitored
- * without switching.
+ * Each tab carries the car's position, tyre and compact decision flags (BOX, PIT, tyre, fuel, battle, attention) and,
+ * when given, its most severe current strategic issue, so both cars are monitored without switching.
  */
-export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId = null }: { state: RacePublicState; rows: Rows; selected: string; onSelect: (id: string) => void; attentionId?: string | null }) {
+export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId = null, severity = {} }: { state: RacePublicState; rows: Rows; selected: string; onSelect: (id: string) => void; attentionId?: string | null; severity?: Readonly<Record<string, IssueSeverity | null>> }) {
     const { t, format, locale } = useI18n(), [open, setOpen] = useState(false), panel = useId();
     // Entry order, not race order, so the two buttons never swap places when positions change.
     const players = s.input.entrants.map(e => rows.find(r => r.id === e.entrantId)!).filter(r => r?.player);
@@ -37,10 +39,11 @@ export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId =
     ];
     return <div className="player-switch-wrap">
         <div className="player-switch" role="group" aria-label={t('viewer.playerCars')}>
-            {snaps.map(({ r, v }) => { const flags = driverFlags(r, rows, s, attentionId); return <button key={r.id} onClick={() => onSelect(r.id)} aria-pressed={r.id === selected} style={{ borderColor: r.color }} title={r.name} className={r.id === attentionId ? 'attention' : undefined}>
-                <span className="switch-abbr">{r.abbreviation}{r.id === selected && <span aria-hidden="true"> ◂</span>}</span>
-                <strong className="switch-pos">{r.disqualified ? t('classification.dsq') : <>P{format.number(v.position)}</>}</strong>
+            {snaps.map(({ r, v }) => { const flags = driverFlags(r, rows, s, attentionId), worst = severity[r.id] ?? null; return <button key={r.id} onClick={() => onSelect(r.id)} aria-pressed={r.id === selected} style={teamStyle(r.color) as CSSProperties} title={r.name} className={r.id === attentionId ? 'attention' : undefined} data-severity={worst ?? undefined}>
+                <span className="switch-abbr">{r.abbreviation}</span>
+                <strong className="switch-pos">{r.disqualified ? t('classification.dsq') : t('commandCentre.position', { position: v.position })}</strong>
                 {v.compound && <span className={`tyre-token tyre-${v.compound}`} title={t(`tyre.${v.compound}`)}>{t(`viewer.tyre.${v.compound}`)}</span>}
+                {worst && worst !== 'INFO' && <span className="switch-issue" data-severity={worst}>{t(`issues.severity.${worst}`)}</span>}
                 <FlagChips flags={flags} compact/>
             </button>; })}
             {snaps.length > 1 && <button className="compare-toggle ops-secondary" aria-expanded={open} aria-controls={panel} onClick={() => setOpen(!open)}>{t('viewer.compare')}</button>}

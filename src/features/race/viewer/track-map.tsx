@@ -161,18 +161,18 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             {/* Racing line: dark casing, light kerb edge, darker surface (amber edge under Safety Car / VSC as a supplementary cue). */}
             <g className="race-track" pointerEvents="none">
                 <path d={d} fill="none" stroke="#04070a" strokeWidth={svgNumber(style.casing)} strokeLinejoin="round"/>
-                <path className="track-edge" d={d} fill="none" stroke={neutralised ? '#c9a227' : '#6d7b87'} strokeWidth={svgNumber(style.surface)} strokeLinejoin="round"/>
-                <path className="track-surface" d={d} fill="none" stroke="#2f3a44" strokeWidth={svgNumber(style.surface - 2 * style.edge)} strokeLinejoin="round"/>
+                <path className="track-edge" d={d} fill="none" stroke={neutralised ? '#c9a227' : '#55687e'} strokeWidth={svgNumber(style.surface)} strokeLinejoin="round"/>
+                <path className="track-surface" d={d} fill="none" stroke="#1d2a3a" strokeWidth={svgNumber(style.surface - 2 * style.edge)} strokeLinejoin="round"/>
             </g>
             {/* Compact chequered line across the track; no text label over the field. */}
             <g className="start-finish compact" transform={`translate(${svgNumber(start.x)} ${svgNumber(start.y)}) rotate(${svgNumber(angle)})`} pointerEvents="none" role="img" aria-label={startText}><title>{startText}</title>
                 {(() => { const cell = style.startWidth / 2, n = Math.max(4, Math.round(style.startLength / cell)), top = -n * cell / 2;
                     return <><rect x={svgNumber(-cell - .75)} y={svgNumber(top - .75)} width={svgNumber(2 * cell + 1.5)} height={svgNumber(n * cell + 1.5)} fill="#04070a"/>{Array.from({ length: n }, (_, i) => <g key={i}><rect x={svgNumber(-cell)} y={svgNumber(top + i * cell)} width={svgNumber(cell)} height={svgNumber(cell)} fill={i % 2 ? '#04070a' : '#f2f5f7'}/><rect x="0" y={svgNumber(top + i * cell)} width={svgNumber(cell)} height={svgNumber(cell)} fill={i % 2 ? '#f2f5f7' : '#04070a'}/></g>)}</>; })()}</g>
         </> : <>
-        <defs><pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#242c32" strokeWidth="1"/></pattern></defs>
+        <defs><pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#16212e" strokeWidth="1"/></pattern></defs>
         <rect width={MAP.width} height={MAP.height} fill="url(#map-grid)" opacity=".55"/>
         <path d={d} fill="none" stroke="#070b0e" strokeWidth="30" strokeLinejoin="round"/>
-        <path d={d} fill="none" stroke="#53606c" strokeWidth="18" strokeLinejoin="round"/>
+        <path d={d} fill="none" stroke="#3a4d63" strokeWidth="18" strokeLinejoin="round"/>
         <path d={d} fill="none" stroke="#a6b4bf" strokeWidth="1.5" strokeDasharray="5 13" opacity=".4"/>
         <g className="start-finish" transform={`translate(${svgNumber(start.x)} ${svgNumber(start.y)})`} pointerEvents="none"><path transform={`rotate(${svgNumber(angle)})`} d="M 0 -12 L 0 12" stroke="white" strokeWidth="4"/><text x={svgNumber(startTextX)} y={startTextY} textAnchor="middle" fill="#dfe8ee" fontSize="13" fontWeight="700" stroke="#0b1116" strokeWidth="3" paintOrder="stroke">{startText}</text></g>
         </>}
@@ -180,20 +180,20 @@ export function TrackMap({ layout, rows, selected, onSelect, speed, reduceMotion
             <title>{`${r.name} · ${r.team} · ${t('race.position')} ${r.entrant.position}`}</title>
             {raceViewer ? <g className="badge-content bubble" transform={`scale(${svgNumber(packScale)})`}>
             <circle className="hit-area" r={RACE_BUBBLE.r+5} fill="transparent"/>
-            {chosen && <circle className="selected-ring" r={RACE_BUBBLE.r+5} fill="none" stroke="#ffffff" strokeWidth="2.6"/>}
+            {chosen && <circle className="selected-ring" r={RACE_BUBBLE.r+5} fill="none" stroke="#f5a524" strokeWidth="2.6"/>}
             {r.player && <circle className="player-ring" r={RACE_BUBBLE.r+2.3} fill="#0b1116" stroke="#ffffff" strokeWidth="1.5"/>}
             <circle className="driver-bubble" r={RACE_BUBBLE.r} fill={r.color} stroke={r.lapsDown ? '#f1dc9a' : '#0b1116'} strokeWidth={r.lapsDown ? 1.6 : 1.2} strokeDasharray={r.lapsDown ? '2.6 2' : undefined}/>
             <text className="bubble-label" textAnchor="middle" dominantBaseline="central" y="0.4" fill={badgeText(r.color)} fontSize="8.8" fontWeight="800" letterSpacing="-0.3">{r.abbreviation}</text>
             {r.status === 'RETIRED' && <path className="retired-mark" d="M 8 -13 L 13 -8 M 8 -8 L 13 -13" stroke="#fff" strokeWidth="1.8"/>}
-            {r.pitting && <text className="pit-mark" x="0" y={-(RACE_BUBBLE.r+6)} textAnchor="middle" fill="#e8c86b" fontSize="7.5" fontWeight="800" stroke="#0b1116" strokeWidth="2.2" paintOrder="stroke">{t('viewer.pit')}</text>}
+            {r.pitting && <text className="pit-mark" x="0" y={-(RACE_BUBBLE.r+6)} textAnchor="middle" fill="#f5a524" fontSize="7.5" fontWeight="800" stroke="#0b1116" strokeWidth="2.2" paintOrder="stroke">{t('viewer.pit')}</text>}
             </g> : <g className="badge-content">
             <rect x={-BADGE.w/2-4} y={-BADGE.h/2-4} width={BADGE.w+8} height={BADGE.h+8} rx={16} fill="transparent"/>
-            {chosen && <rect className="selected-ring" x={-BADGE.w/2-3} y={-BADGE.h/2-3} width={BADGE.w+6} height={BADGE.h+6} rx={15} fill="none" stroke="white" strokeWidth="2"/>}
+            {chosen && <rect className="selected-ring" x={-BADGE.w/2-3} y={-BADGE.h/2-3} width={BADGE.w+6} height={BADGE.h+6} rx={15} fill="none" stroke="#f5a524" strokeWidth="2"/>}
             <rect className="driver-badge" x={-BADGE.w/2} y={-BADGE.h/2} width={BADGE.w} height={BADGE.h} rx={BADGE.h/2} fill={r.color} stroke={r.player ? '#ffffff' : '#101820'} strokeWidth={r.player ? 1.8 : 1.4} strokeDasharray={r.lapsDown ? '3 2' : undefined}/>
             <text textAnchor="middle" y={4.5} fill={badgeText(r.color)} fontSize={14} fontWeight="800">{r.abbreviation}</text>
             {!!r.lapsDown && <text className="lapped-mark" x="13" y="-9" textAnchor="end" fill="#e4d195" fontSize="8" stroke="#0b1116" strokeWidth="2" paintOrder="stroke">−{format.number(r.lapsDown)}</text>}
             {r.status === 'RETIRED' && <path className="retired-mark" d="M 14 -17 L 20 -11 M 14 -11 L 20 -17" stroke="#fff" strokeWidth="1.8"/>}
-            {r.pitting && <text className="pit-mark" x="0" y="-16" textAnchor="middle" fill="#e8c86b" fontSize="9" fontWeight="800" stroke="#0b1116" strokeWidth="2.5" paintOrder="stroke">{t('viewer.pit')}</text>}
+            {r.pitting && <text className="pit-mark" x="0" y="-16" textAnchor="middle" fill="#f5a524" fontSize="9" fontWeight="800" stroke="#0b1116" strokeWidth="2.5" paintOrder="stroke">{t('viewer.pit')}</text>}
             </g>}
         </g>; })}
 

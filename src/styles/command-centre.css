@@ -1,0 +1,682 @@
+/*
+ * UIX-A REDO — Career Command Centre (Hybrid concept composition), Home, status pages and the shared circuit card.
+ */
+.cc-head {
+  align-items: flex-end;
+}
+.cc-head h1 {
+  font-size: clamp(1.6rem, 1.2rem + 1vw, 2.1rem);
+  margin-bottom: 0;
+}
+.cc-head-progress {
+  font-size: var(--fs-meta);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.cc-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--sp-5);
+}
+.cc-area-hero {
+  grid-column: span 8;
+}
+.cc-area-champ {
+  grid-column: span 4;
+}
+.cc-area-drivers,
+.cc-area-form {
+  grid-column: span 6;
+}
+.cc-area-season {
+  grid-column: 1 / -1;
+}
+
+/* ---- Mission hero ---- */
+.cc-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 340px;
+  padding: var(--sp-6) var(--sp-8) var(--sp-8);
+  border-radius: var(--radius-3);
+  border: 1px solid var(--line-subtle);
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--team) 14%, transparent) 0%, transparent 38%),
+    linear-gradient(180deg, var(--surface-2), var(--surface-1));
+  box-shadow: var(--shadow-1);
+}
+.cc-hero::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--team);
+}
+.cc-hero-ghost {
+  position: absolute;
+  right: -0.04em;
+  bottom: -0.2em;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-style: italic;
+  font-size: clamp(9rem, 6rem + 9vw, 15rem);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  user-select: none;
+}
+.cc-hero > :not(.cc-hero-ghost) {
+  position: relative;
+}
+.cc-hero[data-circuit="true"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.55fr);
+  gap: var(--sp-6);
+}
+.cc-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.cc-hero-circuit {
+  align-self: center;
+  padding-left: var(--sp-6);
+  border-left: 1px solid var(--line-subtle);
+}
+.cc-hero .circuit-facts {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+}
+.cc-hero .circuit-outline {
+  max-height: 170px;
+}
+.cc-hero-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.cc-hero-round {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-meta);
+  font-weight: 800;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.cc-hero-title {
+  font-size: var(--fs-hero);
+  max-width: 16ch;
+}
+html[lang="zh-TW"] .cc-hero-title {
+  max-width: none;
+}
+.cc-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  color: var(--text-2);
+}
+.cc-hero-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cc-hero-meta svg {
+  color: var(--text-3);
+}
+.cc-sessions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cc-sessions li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 10px;
+  border-radius: var(--radius-2);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-env) 55%, transparent);
+  color: var(--text-3);
+  font-size: var(--fs-meta);
+  font-weight: 650;
+}
+.cc-sessions li[data-status="COMPLETED"] {
+  color: var(--text-2);
+}
+.cc-sessions li[data-status="COMPLETED"] svg {
+  color: var(--ok);
+}
+.cc-sessions li[data-status="AVAILABLE"],
+.cc-sessions li[data-status="IN_PROGRESS"] {
+  color: var(--text-1);
+  border-color: var(--signal-line);
+  background: var(--signal-tint);
+}
+.cc-sessions li[data-status="AVAILABLE"] svg,
+.cc-sessions li[data-status="IN_PROGRESS"] svg {
+  color: var(--signal);
+}
+.cc-hero-actions {
+  margin-top: auto;
+  padding-top: var(--sp-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-5);
+}
+.cc-hero-actions .ui-btn {
+  min-height: 48px;
+  padding: 12px 24px;
+}
+.cc-hero-next {
+  color: var(--text-2);
+  font-size: var(--fs-meta);
+}
+.cc-advance .transition-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.cc-advance .transition-form button {
+  min-height: 48px;
+  padding: 12px 24px;
+  border-radius: var(--radius-2);
+  background: var(--signal);
+  color: var(--text-on-signal);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cc-advance .transition-form button:hover {
+  background: var(--signal-strong);
+}
+.cc-advance [role="alert"] {
+  color: var(--bad);
+  font-size: var(--fs-meta);
+}
+
+/* ---- Championship ---- */
+.cc-champ-figure {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-6);
+}
+.cc-champ-figure .ui-figure {
+  color: var(--text-1);
+}
+.cc-champ-facts {
+  display: grid;
+  gap: var(--sp-2);
+  margin: 0 0 4px;
+}
+.cc-champ-facts dt {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.cc-champ-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cc-champ-facts div:first-child dd {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.cc-through {
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+.cc-pos {
+  width: 3.5em;
+  text-align: left;
+  color: var(--text-2);
+  font-weight: 700;
+}
+.cc-you {
+  display: inline-block;
+  margin-left: var(--sp-2);
+  padding: 1px 6px;
+  border-radius: var(--radius-1);
+  background: var(--team);
+  color: var(--team-ink);
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+/* ---- Drivers ---- */
+.cc-drivers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+}
+.cc-driver {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  border-radius: var(--radius-2);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--line-subtle);
+}
+.cc-driver-number {
+  display: grid;
+  place-items: center;
+  background: var(--team);
+  color: var(--team-ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 2.75rem;
+  line-height: 1;
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--slant)) 100%, 0 100%);
+  padding-right: 8px;
+}
+.cc-driver-body {
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  min-width: 0;
+}
+.cc-driver-name {
+  font-size: 1.55rem;
+  margin: 2px 0 var(--sp-3);
+  overflow-wrap: anywhere;
+}
+.cc-driver-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2) var(--sp-3);
+}
+.cc-driver-stats .ui-stat dd {
+  font-size: 1.2rem;
+}
+
+/* ---- Recent form ---- */
+.cc-table-scroll {
+  overflow-x: auto;
+}
+.cc-form-table td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.cc-form-event {
+  min-width: 10em;
+}
+.cc-form-link {
+  color: var(--text-1);
+  font-weight: 600;
+}
+.cc-form-link:hover {
+  color: var(--signal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.cc-form-cell {
+  white-space: nowrap;
+}
+.cc-finish {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 2.75em;
+  justify-content: center;
+  padding: 2px 7px;
+  margin-right: 4px;
+  border-radius: var(--radius-1);
+  border: 1px solid transparent;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-weight: 750;
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+}
+.cc-finish abbr {
+  text-decoration: none;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.cc-finish[data-kind="sprint"] {
+  background: transparent;
+  border-color: var(--line);
+}
+.cc-finish[data-tone="win"] {
+  background: var(--signal);
+  color: var(--text-on-signal);
+}
+.cc-finish[data-tone="win"] abbr {
+  color: inherit;
+}
+.cc-finish[data-tone="podium"] {
+  border-color: var(--signal-line);
+  color: var(--signal);
+}
+.cc-finish[data-tone="points"] {
+  color: var(--text-1);
+}
+.cc-finish[data-tone="out"] {
+  background: var(--bad-tint);
+  color: var(--bad);
+}
+
+/* ---- Season ---- */
+.cc-season {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cc-season li {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: var(--radius-1);
+  border: 1px solid var(--line-subtle);
+  background: var(--surface-inset);
+  color: var(--text-3);
+}
+.cc-season-num {
+  font-size: 0.8125rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.cc-season-mark {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  line-height: 0;
+}
+.cc-season-sprint {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 0.5625rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--signal);
+}
+.cc-season li[data-state="done"] {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.cc-season li[data-state="done"] .cc-season-mark {
+  color: var(--ok);
+}
+.cc-season li[data-state="current"] {
+  border-color: var(--signal);
+  background: var(--signal-tint);
+  color: var(--text-1);
+}
+.cc-season li[data-state="current"] .cc-season-mark,
+.cc-season li[data-state="next"] .cc-season-mark {
+  color: var(--signal);
+}
+.cc-season li[data-state="next"] {
+  border: 1px dashed var(--signal-line);
+  color: var(--text-1);
+}
+.cc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin: var(--sp-4) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-meta);
+  color: var(--text-3);
+}
+.cc-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cc-legend li[data-state="done"] svg {
+  color: var(--ok);
+}
+.cc-legend li[data-state="current"] svg,
+.cc-legend li[data-state="next"] svg {
+  color: var(--signal);
+}
+.cc-legend .cc-season-sprint {
+  position: static;
+  font-size: var(--fs-label);
+}
+.cc-legend-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  background: var(--surface-inset);
+}
+
+/* ---- Circuit card (Command Centre focus round + Weekend Hub) ---- */
+.circuit-facts {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.1fr);
+  gap: var(--sp-5);
+  align-items: center;
+}
+.circuit-outline {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.circuit-outline-base {
+  fill: none;
+  stroke: var(--surface-3);
+  stroke-width: 9;
+  stroke-linejoin: round;
+}
+.circuit-outline-line {
+  fill: none;
+  stroke: var(--text-1);
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+}
+.circuit-outline-start {
+  fill: var(--signal);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+}
+.circuit-facts-name {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.circuit-facts-stats {
+  margin-top: var(--sp-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.circuit-facts-stats .ui-stat dd {
+  font-size: 1.15rem;
+  white-space: nowrap;
+}
+
+/* ---- Home ---- */
+.home-head {
+  margin-bottom: var(--sp-8);
+}
+.home-title {
+  font-size: var(--fs-hero);
+}
+.home-head p:not(.ui-label) {
+  max-width: 60ch;
+  margin-top: var(--sp-2);
+}
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-5);
+  max-width: 980px;
+}
+.home-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-6);
+}
+.home-card h2 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.home-card p {
+  color: var(--text-2);
+  flex: 1;
+}
+.home-card-icon {
+  color: var(--text-3);
+}
+.home-card[data-primary="true"] {
+  border-color: var(--signal-line);
+  background: linear-gradient(160deg, var(--signal-tint), var(--surface-1) 55%);
+}
+.home-card[data-primary="true"] .home-card-icon {
+  color: var(--signal);
+}
+
+/* ---- Status pages ---- */
+.status-page {
+  max-width: 620px;
+  padding: var(--sp-8);
+  display: grid;
+  gap: var(--sp-3);
+}
+.status-page p {
+  color: var(--text-2);
+}
+.status-page-icon {
+  color: var(--bad);
+}
+.status-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+.status-loading {
+  display: grid;
+  gap: var(--sp-4);
+}
+.status-loading-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--sp-4);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1220px) {
+  .cc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cc-area-hero,
+  .cc-area-form,
+  .cc-area-season {
+    grid-column: 1 / -1;
+  }
+  .cc-area-champ,
+  .cc-area-drivers {
+    grid-column: span 1;
+  }
+  .cc-driver-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 541px) and (max-width: 820px) {
+  .cc-driver-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 820px) {
+  .cc-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+  .cc-grid > * {
+    grid-column: 1 / -1;
+  }
+  .cc-hero[data-circuit="true"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cc-hero-circuit {
+    padding: var(--sp-4) 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line-subtle);
+  }
+  .cc-hero .circuit-facts {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+  .cc-hero {
+    min-height: 0;
+    padding: var(--sp-5) var(--sp-5) var(--sp-6);
+  }
+  .cc-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
+  }
+  .home-grid,
+  .status-loading-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 540px) {
+  .cc-hero-actions .ui-btn,
+  .cc-advance,
+  .cc-advance .transition-form button {
+    width: 100%;
+  }
+  .circuit-facts,
+  .cc-hero .circuit-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .circuit-facts-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .cc-form-event {
+    min-width: 0;
+  }
+  .cc-form-cell .cc-finish {
+    display: flex;
+    width: max-content;
+    margin: 2px 0;
+  }
+  .cc-form-table th,
+  .cc-form-table td {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .circuit-outline {
+    max-width: 260px;
+    margin: 0 auto;
+  }
+  .cc-driver {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .cc-driver-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cc-driver-number {
+    font-size: 2.1rem;
+  }
+}

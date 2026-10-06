@@ -1,0 +1,114 @@
+/*
+ * UIX-A REDO design tokens — direction "Paddock Hybrid" (docs/uix-a-redo-design.md).
+ * Synthesised from the reviewed OpenArt concepts: Hybrid (composition, display moments, amber signal), Broadcast
+ * (weekend progression), Team HQ (grouped navigation, calm tables, status rows).
+ *
+ * Semantic roles only. Team colour is identity (stripes, number blocks, the player's row) and never carries text or
+ * status meaning; the amber signal means "your next action / the current state" everywhere in the product.
+ * Legacy aliases at the end keep every not-yet-redesigned screen (Race, Practice, Qualifying, Standings…) on the same
+ * palette without touching their layout rules.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces: environment → operating surface → primary module → interactive → overlay */
+  --surface-env: #0a0f16;
+  --surface-rail: #0d141d;
+  --surface-1: #111a25;
+  --surface-2: #16212e;
+  --surface-3: #1d2a3a;
+  --surface-overlay: #1f2d3e;
+  --surface-inset: #0c131c;
+
+  /* Separation (used sparingly: tables, dividers, interactive outlines) */
+  --line-subtle: #1c2836;
+  --line: #273647;
+  --line-strong: #3a4d63;
+
+  /* Text — ≥ 4.5:1 on every surface above */
+  --text-1: #eef2f6;
+  --text-2: #b4c0cd;
+  --text-3: #8798ab;
+  --text-on-signal: #1b1203;
+
+  /* Signal: primary action + current state (one colour, product-wide) */
+  --signal: #f5a524;
+  --signal-strong: #ffb93f;
+  --signal-tint: rgba(245, 165, 36, 0.13);
+  --signal-line: rgba(245, 165, 36, 0.55);
+
+  /* Status — always paired with an icon and/or text */
+  --ok: #3fd08f;
+  --ok-tint: rgba(63, 208, 143, 0.13);
+  --warn: #ffd166;
+  --warn-tint: rgba(255, 209, 102, 0.13);
+  --bad: #ff6464;
+  --bad-tint: rgba(255, 100, 100, 0.13);
+  --info: #64b5ff;
+  --info-tint: rgba(100, 181, 255, 0.13);
+
+  /* Identity: overridden per Career from the player team colour; `--team-ink` is the readable text on it */
+  --team: #5b7cfa;
+  --team-ink: #ffffff;
+  --team-tint: color-mix(in srgb, var(--team) 16%, transparent);
+
+  /* Typography */
+  --font-ui: "Inter Variable", "Inter", "Segoe UI", system-ui, -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-display: "Barlow Condensed", "Bahnschrift", "Roboto Condensed", "Arial Narrow", "Noto Sans TC", "PingFang TC", sans-serif;
+  --fs-hero: clamp(2.25rem, 1.4rem + 2.6vw, 4rem);
+  --fs-figure: clamp(3rem, 2.2rem + 2.6vw, 4.75rem);
+  --fs-title: 1.75rem;
+  --fs-section: 1.0625rem;
+  --fs-card: 0.9375rem;
+  --fs-body: 0.875rem;
+  --fs-meta: 0.75rem;
+  --fs-label: 0.6875rem;
+  --track-label: 0.12em;
+  --track-display: 0.01em;
+
+  /* Spacing — 4px base */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* Shape, elevation, focus */
+  --radius-1: 3px;
+  --radius-2: 6px;
+  --radius-3: 10px;
+  --slant: 14px; /* broadcast slant on identity strips and the hero tag */
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.025) inset, 0 10px 30px rgba(0, 0, 0, 0.32);
+  --shadow-overlay: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --focus: 2px solid var(--signal);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 360ms;
+
+  /* Layout */
+  --rail-w: 252px;
+  --shell-bar-h: 58px;
+  --content-max: 1600px;
+
+  /* Legacy aliases — shared palette for screens outside UIX-A */
+  --bg: var(--surface-env);
+  --panel: var(--surface-1);
+  --line-legacy: var(--line);
+  --border: var(--line);
+  --muted: var(--text-3);
+  --accent: var(--signal);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-base: 0ms;
+    --t-slow: 0ms;
+  }
+}

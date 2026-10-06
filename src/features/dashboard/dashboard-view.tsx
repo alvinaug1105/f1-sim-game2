@@ -1,32 +1,33 @@
 "use client";
 import Link from "next/link";
-import { Panel } from "../../components/ui/panel";
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
+import { Icon } from "../../components/ui/icon";
+/** Home (no Career selected): continue a saved Career or start a new one. */
 export function DashboardView() {
   const { t } = useI18n();
   return (
     <>
       <LocalizedPageTitle titleKey="metadata.title" />
-      <div className="page-header">
+      <header className="ui-page-head home-head">
         <div>
-          <p className="eyebrow accent">{t("dashboard.section")}</p>
-          <h1>{t("dashboard.heading")}</h1>
+          <p className="ui-label">{t("dashboard.section")}</p>
+          <h1 className="ui-display home-title">{t("dashboard.heading")}</h1>
           <p>{t("dashboard.subtitle")}</p>
         </div>
-      </div>
-      <div className="dashboard-grid">
-        <Panel title={t("career.browse")}>
-          <div className="career-content">
-            <p>{t("career.selectSaved")}</p>
-            <Link className="button-link" href="/careers">{t("career.browse")}</Link>
-          </div>
-        </Panel>
-        <Panel title={t("career.new")}>
-          <div className="career-content">
-            <p>{t("dashboard.newCareerBody")}</p>
-            <Link className="button-link" href="/careers/new">{t("career.new")}</Link>
-          </div>
-        </Panel>
+      </header>
+      <div className="home-grid">
+        <section className="ui-module home-card" aria-labelledby="home-browse">
+          <Icon name="saves" size={28} className="home-card-icon" />
+          <h2 id="home-browse">{t("career.browse")}</h2>
+          <p>{t("career.selectSaved")}</p>
+          <Link className="ui-btn ui-btn-outline" href="/careers">{t("career.browse")} <Icon name="arrow" /></Link>
+        </section>
+        <section className="ui-module home-card" data-primary="true" aria-labelledby="home-new">
+          <Icon name="flag" size={28} className="home-card-icon" />
+          <h2 id="home-new">{t("career.new")}</h2>
+          <p>{t("dashboard.newCareerBody")}</p>
+          <Link className="ui-btn ui-btn-primary" href="/careers/new">{t("career.new")} <Icon name="arrow" /></Link>
+        </section>
       </div>
     </>
   );

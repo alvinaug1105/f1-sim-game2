@@ -1,11 +1,6 @@
 "use client";
 import Link from "next/link";
-import {
-  progressSummary,
-  type CareerProgress,
-} from "../../game/domain/progression";
 import { TeamSelection } from "./team-selection";
-import { ProgressPanel } from "./progression-views";
 import { useActionState, useState } from "react";
 import { useI18n, LocalizedPageTitle } from "../../i18n/provider";
 import type { TranslationKey } from "../../i18n/catalog";
@@ -13,14 +8,11 @@ import { Panel, EmptyState } from "../../components/ui/panel";
 import type {
   CareerCreationOptions,
   CareerErrorCode,
-  CareerOverview,
   CareerSummary,
   CareerStatus,
 } from "../../game/domain/career";
 import { CAREER_NAME_LIMIT } from "../../game/domain/career-snapshot";
 import { createCareerAction } from "./actions";
-import { ChampionshipSummaryPanel } from "../championship/views";
-import type { ChampionshipSummary } from "../championship/model";
 import type { CareerActionState } from "./form-state";
 const statuses: Record<CareerStatus, TranslationKey> = {
   ACTIVE: "career.active",
@@ -225,102 +217,6 @@ export function NewCareerView({ options }: { options: CareerCreationOptions }) {
           </form>
         )}
       </Panel>
-    </>
-  );
-}
-export function CareerOverviewView({
-  overview,
-  progress,
-  championship = null,
-}: {
-  overview: CareerOverview;
-  progress: CareerProgress;
-  championship?: ChampionshipSummary | null;
-}) {
-  const { t, format } = useI18n();
-  const { playerTeam, season } = overview;
-  const career = progress.career;
-  const { active, next } = progressSummary(progress);
-  const nextEvent =
-    !active && next
-      ? { event: next, circuit: { name: next.circuitName } }
-      : null;
-  return (
-    <>
-      <LocalizedPageTitle titleKey="metadata.career" />
-      <div className="page-header">
-        <div>
-          <p className="eyebrow accent">{t("career.overview")}</p>
-          <h1>{career.name}</h1>
-          <p>{t("career.worldNotice")}</p>
-        </div>
-        <Link className="text-link" href="/careers">
-          {t("career.back")}
-        </Link>
-      </div>
-      <ProgressPanel progress={progress} />
-      <div className="dashboard-grid">
-        <Panel
-          title={t("dashboard.currentTeam")}
-          label={t(statuses[career.status])}
-        >
-          <div className="career-content">
-            <h3>{playerTeam.name}</h3>
-            <p>{playerTeam.shortName}</p>
-            <Link className="text-link" href={`/career/${career.id}/car`}>{t("car.heading")} →</Link>
-          </div>
-        </Panel>
-        <Panel title={t("career.currentSeason")}>
-          <div className="career-content">
-            <h3>{season.name}</h3>
-            <dl className="career-facts">
-              <div>
-                <dt>{t("career.currentDate")}</dt>
-                <dd>
-                  {format.date(new Date(career.currentDate), {
-                    dateStyle: "long",
-                  })}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </Panel>
-        {!active && (
-          <Panel title={t("dashboard.nextEvent")}>
-            {nextEvent ? (
-              <div className="career-content">
-                <p className="eyebrow">
-                  {t("career.round", {
-                    round: format.number(nextEvent.event.round),
-                  })}
-                </p>
-                <h3>{nextEvent.event.name}</h3>
-                <p>{nextEvent.circuit.name}</p>
-                <p>
-                  {format.date(new Date(nextEvent.event.startDate), {
-                    dateStyle: "long",
-                  })}
-                </p>
-              </div>
-            ) : (
-              <EmptyState title={t("career.noEvent")}>
-                {t("career.noEventBody")}
-              </EmptyState>
-            )}
-          </Panel>
-        )}
-        {championship ? (
-          <ChampionshipSummaryPanel summary={championship} />
-        ) : (
-          <Panel title={t("dashboard.championship")}>
-            <div className="career-content">
-              <Link className="text-link" href={`/career/${career.id}/standings`}>
-                {t("championship.open")} →
-              </Link>
-            </div>
-          </Panel>
-        )}
-      </div>
     </>
   );
 }

@@ -1139,5 +1139,18 @@
   "live.phaseState.current": "Current",
   "live.phaseState.locked": "Still to come",
   "live.noCutoff": "No elimination in this phase",
-  "live.pane.runs": "Runs"
+  "live.pane.runs": "Runs",
+  "operations.cliff": "Cliff ~{count} laps",
+  "operations.driverDetails": "Context & strategy details",
+  "operations.box": "Box this lap",
+  "operations.updatePit": "Update BOX",
+  "operations.cancelPit": "Cancel BOX",
+  "operations.atFlag": "At flag",
+  "operations.context": "Live context",
+  "operations.fuelLeft": "~{laps} fuel laps",
+  "operations.rule.OUTSTANDING": "Outstanding",
+  "operations.rule.URGENT": "Final safe stop",
+  "operations.rule.SATISFIED": "Satisfied",
+  "operations.rule.EXEMPT": "Exempt",
+  "operations.rule.VIOLATED": "Violated"
 }

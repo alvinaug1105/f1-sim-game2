@@ -14,6 +14,7 @@ import { strategicIssues } from './issues';
 import { SEVERITY_ICONS, useIssueText } from './issues-rail';
 import { Icon, type IconName } from '../../../components/ui/icon';
 import { teamStyle } from '../../../components/ui/team-color';
+import { RaceDetails } from './race-details';
 type Row = ReturnType<typeof timingRows>[number];
 /** Laps-to-cliff at or below this reads as "high wear risk soon". Presentation wording only. */
 const RISK_LAPS = 3;
@@ -67,14 +68,15 @@ function AssistanceCards({ assistance: a }: { assistance: NonNullable<RacePublic
     const seconds = (ms: number) => format.number(ms / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     return <div className="dp-assist assistance-status">
         <div className="dp-assist-card" data-state={a.overtake}>
-            <Icon name={OVERTAKE_ICON[a.overtakeReason ?? ''] ?? 'ban'} size={20}/>
-            <div><span className="ui-label">{t('assistance.overtake')}</span><strong>{t(`assistance.overtake.${a.overtake}`)}</strong>
-                {a.overtakeReason && <p className={`overtake-reason reason-${a.overtakeReason}`}>{t(`assistance.overtakeReason.${a.overtakeReason}`, { gap: a.gapAheadMs != null ? seconds(a.gapAheadMs) : '', threshold: seconds(a.overtakeThresholdMs ?? 1000) })}</p>}</div>
+            <RaceDetails title={<><Icon name={OVERTAKE_ICON[a.overtakeReason ?? ''] ?? 'ban'} size={15}/><span className="ui-label">{t('assistance.overtake')}</span><strong>{t(`assistance.overtake.${a.overtake}`)}</strong></>}>
+                {a.overtakeReason && <p className={`overtake-reason reason-${a.overtakeReason}`}>{t(`assistance.overtakeReason.${a.overtakeReason}`, { gap: a.gapAheadMs != null ? seconds(a.gapAheadMs) : '', threshold: seconds(a.overtakeThresholdMs ?? 1000) })}</p>}
+            </RaceDetails>
         </div>
         <div className="dp-assist-card" data-state={a.aero}>
-            <Icon name="aero" size={20}/>
-            <div><span className="ui-label">{t('assistance.aero')}</span><strong title={t('assistance.aeroHelp')}>{t(`assistance.aero.${a.aero}`)} <small className="dp-auto">{t('live.automatic')}</small></strong>
-                {a.aeroReason && <p className="aero-reason">{t(`assistance.aeroReason.${a.aeroReason}`)} {t(a.aeroStraightDeltaMs ? 'assistance.aeroEffect' : 'assistance.aeroEffectBaseline', { ms: format.number(a.aeroStraightDeltaMs ?? 0) })}</p>}</div>
+            <RaceDetails title={<><Icon name="aero" size={15}/><span className="ui-label">{t('assistance.aero')}</span><strong>{t(`assistance.aero.${a.aero}`)} <small className="dp-auto">{t('live.automatic')}</small></strong></>}>
+                <p>{t('live.automatic')} · {t('assistance.aeroHelp')}</p>
+                {a.aeroReason && <p className="aero-reason">{t(`assistance.aeroReason.${a.aeroReason}`)} {t(a.aeroStraightDeltaMs ? 'assistance.aeroEffect' : 'assistance.aeroEffectBaseline', { ms: format.number(a.aeroStraightDeltaMs ?? 0) })}</p>}
+            </RaceDetails>
         </div>
     </div>;
 }
@@ -96,7 +98,7 @@ export function DriverPanel({ data, row, busy, send, rows }: {
     rows?: readonly Row[];
 }) {
     const { t, format, locale } = useI18n(), e = row.entrant, s = data.state!, c = e.commands;
-    const [compound, setCompound] = useState<TyreCompound>('HARD');
+    const [compound, setCompound] = useState<TyreCompound>(e.pit?.pendingCompound ?? 'HARD');
     const all = rows ?? timingRows(data), issueText = useIssueText(all);
     const editable = row.player && s.status === 'RUNNING' && row.status === 'RUNNING';
     const battle = battleContext(all, row.id, s), drs = drsState(s), condition = tyreCondition(s, e);
@@ -115,12 +117,12 @@ export function DriverPanel({ data, row, busy, send, rows }: {
     const suitability = e.stint && row.status === 'RUNNING' ? tyreSuitability(e.stint.tyre.compound, s) : null, ers = row.status === 'RUNNING' ? ersOutlook(e) : null;
     const lastStop = e.pit?.stops.at(-1);
     const wearTone = condition?.wear === 'CRITICAL' ? 'bad' : condition?.wear === 'HIGH' ? 'warn' : undefined;
-    return <section className="ops-panel driver-focus dp" aria-label={t('viewer.selectedDriver')} style={teamStyle(row.color) as CSSProperties}>
+    return <section className="ops-panel driver-focus dp race-command" aria-label={t('viewer.selectedDriver')} style={teamStyle(row.color) as CSSProperties}>
         <header className="dp-head driver-identity">
             <span className="dp-number" aria-hidden="true">{row.number !== null ? format.number(row.number, { useGrouping: false }) : row.abbreviation}</span>
             <div className="dp-id">
-                <p className="ui-label">{row.abbreviation}{row.number !== null && <span className="visually-hidden"> · #{format.number(row.number, { useGrouping: false })}</span>} · {row.team}</p>
-                <h2 className="ui-display dp-name">{row.name}</h2>
+                <p className="ui-label" title={row.team}>{row.abbreviation}{row.number !== null && <span className="visually-hidden"> · #{format.number(row.number, { useGrouping: false })}</span>} · {row.team}</p>
+                <h2 className="ui-display dp-name" title={row.name}>{row.name}</h2>
             </div>
             <strong className="dp-pos driver-position">{row.disqualified ? t('classification.dsq') : t('commandCentre.position', { position: e.position })}</strong>
         </header>
@@ -129,59 +131,67 @@ export function DriverPanel({ data, row, busy, send, rows }: {
             <span className="status-pill">{t(row.player ? 'viewer.player' : 'viewer.readOnly')}</span>
             <span className="dp-leader">{t('viewer.toLeader')}: {officialLeaderId(s) === row.id ? t('race.leader') : row.disqualified ? t('classification.DISQUALIFIED') : gap(row.gap)}</span>
         </div>
-        {row.status !== 'RUNNING' && <p className={`no-commands status-${row.status}`} role="status">{row.status === 'RETIRED' ? t('viewer.noCommands.RETIRED', { lap: format.number(e.incident?.retiredLap ?? s.lap) }) : t('viewer.noCommands.FINISHED')}</p>}
-        {row.disqualified && <p className="no-commands status-DSQ" role="status">{t('classification.reason.DRY_TYRE_SPECIFICATIONS')} {t('classification.consequence')} {(() => { const road = s.classification?.find(x => x.entrantId === row.id)?.roadPosition; return road ? t('classification.roadPosition', { position: format.number(road) }) : null; })()}</p>}
-        {issues.length > 0 && <ul className="dp-issues" aria-label={t('issues.title')}>{issues.map(i => <li key={i.key} data-severity={i.severity}><Icon name={SEVERITY_ICONS[i.severity]} size={14}/><span className="issue-severity">{t(`issues.severity.${i.severity}`)}</span><span>{issueText(i)}</span></li>)}</ul>}
-        {row.status !== 'RETIRED' && <div className="dp-context gap-block">
-            <div className="neighbours">{neighbour('ahead')}{neighbour('behind')}</div>
-            <div className="lap-times"><Stat label={t('viewer.lastLap')}>{lap(e.lastLapTimeMs)}{e.lastLapTimeMs !== null && e.lastLapTimeMs === e.bestLapTimeMs && <small className="pb-mark">{t('viewer.personalBest')}</small>}</Stat><Stat label={t('viewer.bestLap')}>{lap(e.bestLapTimeMs)}</Stat></div>
-            {drs !== 'UNAVAILABLE' && drs !== 'FINISHED' && <p className={`drs-line ${drs === 'ENABLED' && e.track?.drsEligible ? 'drs-on' : 'drs-off'}`}>{drs === 'ENABLED' ? t(e.track?.drsEligible ? 'viewer.drsEligible' : 'viewer.drsNotEligible') : t(`viewer.drs.${drs}`, { count: format.number(s.incidents?.drsDelay ?? 0) })}</p>}
-        </div>}
-        {e.stint && <Section icon="tyre" title={t('live.tyres')} className="tyre-focus" tone={wearTone}
-            aside={<span className="dp-aside">{t('viewer.age', { count: format.number(e.stint.tyre.ageLaps) })}</span>}>
-            <div className="dp-tyre">
-                <span className={`tyre-token tyre-token-lg tyre-${e.stint.tyre.compound}`} title={t(`tyre.${e.stint.tyre.compound}`)}>{t(`viewer.tyre.${e.stint.tyre.compound}`)}</span>
-                <div className="dp-tyre-main"><strong>{t(`tyre.${e.stint.tyre.compound}`)}</strong>
-                    {suitability && <p className={`tyre-suitability suit-${suitability.level}`}><Icon name={suitability.level === 'SUITABLE' ? 'check' : suitability.level === 'MARGINAL' ? 'alert' : 'ban'} size={13}/><strong>{t(`viewer.suit.${suitability.level}`)}</strong> · {t(`viewer.suitNote.${suitability.note}`, { family: t(`viewer.family.${tyreFamily(e.stint.tyre.compound)}`), best: t(`viewer.family.${suitability.best}`) })}</p>}</div>
-            </div>
-            <div className="tyre-stats dp-stats"><Stat label={t('viewer.wear')} tone={condition?.wear !== 'OK' ? `warn-${condition?.wear}` : ''}>{e.stint.tyre.wearPermille === null ? t('race.noTime') : format.percentage(e.stint.tyre.wearPermille / 1000, { maximumFractionDigits: 0 })}</Stat><Stat label={t('viewer.temp')} tone={condition?.temperature !== 'OK' ? 'warn-HIGH' : ''}>{e.stint.tyre.temperatureMilliC === null ? t('race.noTime') : format.number(e.stint.tyre.temperatureMilliC / 1000, { style: 'unit', unit: 'celsius', maximumFractionDigits: 0 })}</Stat></div>
-            {e.stint.tyre.wearPermille !== null && <Bar max={1000} value={e.stint.tyre.wearPermille} label={t('tyre.wear')} tone={wearTone}/>}
-            {condition && (condition.wear !== 'OK' || condition.temperature !== 'OK') && <p className="tyre-warnings">{condition.wear !== 'OK' && <span className={`warn-${condition.wear}`}><Icon name="alert" size={12}/>{t(`viewer.warn.${condition.wear}`)}</span>}{condition.temperature !== 'OK' && <span className="warn-HIGH"><Icon name="thermo" size={12}/>{t(`viewer.warn.${condition.temperature}`)}</span>}</p>}
-            {estimate && row.status === 'RUNNING' && s.status === 'RUNNING' && condition?.wear !== 'CRITICAL' && <p className="tyre-estimate" data-risk={estimate.lapsToCliff <= RISK_LAPS || undefined}>{estimate.lapsToCliff <= RISK_LAPS ? t('viewer.tyreLifeRisk') : estimate.paceMode ? t('viewer.tyreLifeAtPace', { count: format.number(estimate.lapsToCliff), pace: t(`command.${estimate.paceMode}`) }) : t('viewer.tyreLife', { count: format.number(estimate.lapsToCliff) })}
-                {estimate.lapsToCliffMin !== undefined && estimate.lapsToCliffMax !== undefined && estimate.lapsToCliffMin !== estimate.lapsToCliffMax && <small>{t('viewer.tyreLifeRange', { min: format.number(estimate.lapsToCliffMin), max: format.number(estimate.lapsToCliffMax) })}</small>}
-                <small>{t('viewer.estimateNote')}</small></p>}
-        </Section>}
-        <div className="driver-resources">{c && s.input.commands ? <>
-            {s.simulationVersion === 8 && editable && <p className="ops-muted dp-timing-note">{t((s.input.modelRevision ?? 1) >= 2 ? 'assistance.commandTiming' : 'viewer.commandTiming')}</p>}
-            <Section icon="fuel" title={t('race.fuel')} tone={fuelCritical(s, e) ? 'bad' : projection !== null && projection < 0 ? 'warn' : undefined} aside={<strong className="dp-aside-value">{e.fuelMassKg === null ? t('race.noTime') : kg(e.fuelMassKg)}</strong>}>
-                <p className={`fuel-delta ${projection! < 0 ? 'fuel-warning' : 'fuel-ok'}`}>{t('command.projectedFuel')}: <strong>{kg(projection!, true)}</strong></p>
-                {fuelCritical(s, e) && <p className="fuel-delta fuel-warning" role="status"><Icon name="alert" size={12}/>{t('command.fuelCritical', { laps: format.number(e.insight!.fuelLapsRemaining!) })}</p>}
-                <Modes fuel label={t('command.fuelMode')} modes={FUEL_MODES} active={c.fuelMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'fuelMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
-            </Section>
-            {e.assistance ? <>
-                <Section icon="bolt" title={t('command.energy')} aside={<strong className="dp-aside-value">{format.percentage(e.assistance.energy / e.assistance.capacity, { maximumFractionDigits: 0 })}</strong>}>
-                    <Bar max={e.assistance.capacity} value={e.assistance.energy} label={t('command.energy')}/>
-                    <Modes label={t('assistance.policy')} modes={ENERGY_POLICIES} active={e.assistance.policy} editable={editable} busy={busy} onPick={mode => send({ kind: 'energyPolicy', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
-                    <p className="ops-muted">{t('assistance.note')}</p>
-                </Section>
-                <AssistanceCards assistance={e.assistance}/>
-            </> : <Section icon="bolt" title={t('command.ersMode')} aside={<strong className="dp-aside-value">{format.percentage(c.ersCharge / s.input.commands.capacity, { maximumFractionDigits: 0 })}</strong>}>
-                <Bar max={s.input.commands.capacity} value={c.ersCharge} label={t('command.energy')}/>
-                {ers && <p className="ers-outlook ops-muted">{ers.kind === 'LAPS' ? t('viewer.ersLaps', { count: format.number(ers.laps) }) : t(ers.kind === 'CHARGING' ? 'viewer.ersCharging' : 'viewer.ersSustainable')}</p>}
-                <Modes label={t('viewer.ersDeployment')} modes={ERS_MODES} active={c.ersMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'ersMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+        <div className="race-command-primary">
+            {e.stint && <Section icon="tyre" title={t('live.tyres')} className="tyre-focus" tone={wearTone}
+                aside={<span className="dp-aside">{t('viewer.age', { count: format.number(e.stint.tyre.ageLaps) })}</span>}>
+                <div className="race-tyre-line">
+                    <span className={`tyre-token tyre-token-lg tyre-${e.stint.tyre.compound}`} title={t(`tyre.${e.stint.tyre.compound}`)}>{t(`viewer.tyre.${e.stint.tyre.compound}`)}</span>
+                    <strong>{t(`tyre.${e.stint.tyre.compound}`)}<small className="race-tyre-age">{t('viewer.age', { count: format.number(e.stint.tyre.ageLaps) })}</small></strong>
+                    <Stat label={t('viewer.wear')} tone={condition?.wear !== 'OK' ? `warn-${condition?.wear}` : ''}>{e.stint.tyre.wearPermille === null ? t('race.noTime') : format.percentage(e.stint.tyre.wearPermille / 1000, { maximumFractionDigits: 0 })}</Stat>
+                    <Stat label={t('viewer.temp')} tone={condition?.temperature !== 'OK' ? 'warn-HIGH' : ''}>{e.stint.tyre.temperatureMilliC === null ? t('race.noTime') : format.number(e.stint.tyre.temperatureMilliC / 1000, { style: 'unit', unit: 'celsius', maximumFractionDigits: 0 })}</Stat>
+                </div>
+                <div className="race-tyre-health">
+                    {suitability && <span className={`tyre-suitability suit-${suitability.level}`}><Icon name={suitability.level === 'SUITABLE' ? 'check' : suitability.level === 'MARGINAL' ? 'alert' : 'ban'} size={12}/>{t(`viewer.suit.${suitability.level}`)}</span>}
+                    {condition?.wear === 'CRITICAL' ? <strong className="warn-CRITICAL">{t('viewer.warn.CRITICAL')}</strong> : estimate && row.status === 'RUNNING' && s.status === 'RUNNING' ? <span data-risk={estimate.lapsToCliff <= RISK_LAPS || undefined}>{t('operations.cliff', { count: format.number(estimate.lapsToCliff) })}</span> : null}
+                    {condition?.temperature !== 'OK' && condition && <span className="warn-HIGH">{t(`viewer.warn.${condition.temperature}`)}</span>}
+                </div>
             </Section>}
-            <Section icon="gauge" title={t('command.paceMode')}>
-                <Modes label={t('command.paceMode')} modes={PACE_MODES} active={c.paceMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'paceMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
-            </Section>
-        </> : e.fuelMassKg !== null ? <Section icon="fuel" title={t('race.fuel')} aside={<strong className="dp-aside-value">{kg(e.fuelMassKg)}</strong>}>{null}</Section> : null}
+            <div className="driver-resources">{c && s.input.commands ? <>
+                <Section icon="fuel" title={t('race.fuel')} className="race-fuel" tone={fuelCritical(s, e) ? 'bad' : projection !== null && projection < 0 ? 'warn' : undefined}
+                    aside={<><strong className="dp-aside-value">{e.fuelMassKg === null ? t('race.noTime') : kg(e.fuelMassKg)}</strong>{projection !== null && <span className={`race-fuel-delta ${projection < 0 ? 'fuel-warning' : 'fuel-ok'}`} title={t('command.projectedFuel')}>{t('operations.atFlag')} {kg(projection, true)}</span>}{fuelCritical(s, e) && <span className="fuel-warning">{t('operations.fuelLeft', { laps: format.number(e.insight!.fuelLapsRemaining!) })}</span>}</>}>
+                    <Modes fuel label={t('command.fuelMode')} modes={FUEL_MODES} active={c.fuelMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'fuelMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+                </Section>
+                {e.assistance ? <Section icon="bolt" title={t('command.energy')} className="race-energy" aside={<strong className="dp-aside-value">{format.percentage(e.assistance.energy / e.assistance.capacity, { maximumFractionDigits: 0 })}</strong>}>
+                    <Modes label={t('assistance.policy')} modes={ENERGY_POLICIES} active={e.assistance.policy} editable={editable} busy={busy} onPick={mode => send({ kind: 'energyPolicy', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+                    <Bar max={e.assistance.capacity} value={e.assistance.energy} label={t('command.energy')}/>
+                </Section> : <Section icon="bolt" title={t('command.ersMode')} className="race-energy" aside={<strong className="dp-aside-value">{format.percentage(c.ersCharge / s.input.commands.capacity, { maximumFractionDigits: 0 })}</strong>}>
+                    <Modes label={t('viewer.ersDeployment')} modes={ERS_MODES} active={c.ersMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'ersMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+                    <Bar max={s.input.commands.capacity} value={c.ersCharge} label={t('command.energy')}/>
+                </Section>}
+                <Section icon="gauge" title={t('command.paceMode')} className="race-pace">
+                    <Modes label={t('command.paceMode')} modes={PACE_MODES} active={c.paceMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'paceMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+                </Section>
+            </> : e.fuelMassKg !== null ? <Section icon="fuel" title={t('race.fuel')} aside={<strong className="dp-aside-value">{kg(e.fuelMassKg)}</strong>}>{null}</Section> : null}</div>
+            {e.assistance && <AssistanceCards assistance={e.assistance}/>}
         </div>
-        {e.pit && e.stint && <Section icon="wrench" title={t('viewer.strategy')} className="strategy-focus" tone={e.pit.pendingCompound ? 'signal' : undefined}
+        {row.status !== 'RETIRED' && <div className="race-context-peek" aria-label={t('operations.context')}><span className="ui-label">{t('operations.context')}</span><div className="neighbours">{neighbour('ahead')}{neighbour('behind')}</div><div className="lap-times"><Stat label={t('viewer.lastLap')}>{lap(e.lastLapTimeMs)}</Stat><Stat label={t('viewer.bestLap')}>{lap(e.bestLapTimeMs)}</Stat></div></div>}
+        {e.pit && e.stint && <Section icon="wrench" title={t('viewer.strategy')} className="strategy-focus race-pit-dock" tone={e.pit.pendingCompound ? 'signal' : undefined}
             aside={<span className="dp-aside">{t('pit.stint')} {format.number(e.stint.number)} · {t('pit.stops')} {format.number(e.pit.stops.length)}</span>}>
             <p className={e.pit.pendingCompound ? 'pit-pending' : 'ops-muted dp-pit-state'}>{e.pit.pendingCompound ? <><Icon name="wrench" size={13}/><strong>{row.abbreviation}</strong> — </> : null}{e.pit.committed ? t('pit.committed') : e.pit.pendingCompound ? t('pit.requested', { compound: t(`tyre.${e.pit.pendingCompound}`), lap: format.number(s.lap + 1) }) : t(row.status === 'RETIRED' ? 'incident.RETIRED' : row.status === 'FINISHED' ? 'pit.finished' : 'pit.onTrack')}</p>
             {editable && s.lap < s.input.totalLaps - 1 && s.input.tyres && <fieldset className="dp-pit-form" disabled={busy || e.pit.committed}>
-                <label>{t('pit.newTyre')}<select value={compound} onChange={event => { if (isTyreCompound(event.target.value)) setCompound(event.target.value); }}>{Object.keys(s.input.tyres.profiles).filter(isTyreCompound).map(value => <option value={value} key={value}>{t(`tyre.${value}`)}{e.regulation?.satisfyingCompounds.includes(value) ? ` — ✓ ${t('regulation.meetsRule')}` : ''}</option>)}</select></label>
-                <div className="pit-buttons"><button className="dp-box" onClick={() => send({ kind: 'pit', entrantId: e.entrantId, revision: e.pit!.commandRevision ?? 0, compound })}>{t('pit.box')}</button><button className="ops-secondary" disabled={!e.pit.pendingCompound} onClick={() => send({ kind: 'pit', entrantId: e.entrantId, revision: e.pit!.commandRevision ?? 0, compound: null })}>{t('pit.cancel')}</button></div>
+                <label><span>{t('pit.newTyre')}</span><select value={compound} onChange={event => { if (isTyreCompound(event.target.value)) setCompound(event.target.value); }}>{Object.keys(s.input.tyres.profiles).filter(isTyreCompound).map(value => <option value={value} key={value}>{t(`tyre.${value}`)}{e.regulation?.satisfyingCompounds.includes(value) ? ` — ✓ ${t('regulation.meetsRule')}` : ''}</option>)}</select></label>
+                <div className="pit-buttons"><button className="dp-box" onClick={() => send({ kind: 'pit', entrantId: e.entrantId, revision: e.pit!.commandRevision ?? 0, compound })}><Icon name="wrench" size={14}/>{t(e.pit.pendingCompound ? 'operations.updatePit' : 'operations.box')}</button><button className="ops-secondary" disabled={!e.pit.pendingCompound} onClick={() => send({ kind: 'pit', entrantId: e.entrantId, revision: e.pit!.commandRevision ?? 0, compound: null })}>{t('operations.cancelPit')}</button></div>
             </fieldset>}
+            {row.player && e.regulation && e.regulation.status !== 'NOT_APPLICABLE' && <p className={`race-rule-status rule-${e.regulation.status}`}><Icon name={e.regulation.status === 'SATISFIED' || e.regulation.status === 'EXEMPT' ? 'check' : 'alert'} size={12}/>{t('regulation.title')}: {t(`operations.rule.${e.regulation.status}`)}</p>}
+        </Section>}
+        <RaceDetails title={t('operations.driverDetails')} className="race-driver-details">
+            {row.status !== 'RUNNING' && <p className={`no-commands status-${row.status}`} role="status">{row.status === 'RETIRED' ? t('viewer.noCommands.RETIRED', { lap: format.number(e.incident?.retiredLap ?? s.lap) }) : t('viewer.noCommands.FINISHED')}</p>}
+            {row.disqualified && <p className="no-commands status-DSQ" role="status">{t('classification.reason.DRY_TYRE_SPECIFICATIONS')} {t('classification.consequence')} {(() => { const road = s.classification?.find(x => x.entrantId === row.id)?.roadPosition; return road ? t('classification.roadPosition', { position: format.number(road) }) : null; })()}</p>}
+            {issues.length > 0 && <ul className="dp-issues" aria-label={t('issues.title')}>{issues.map(i => <li key={i.key} data-severity={i.severity}><Icon name={SEVERITY_ICONS[i.severity]} size={14}/><span className="issue-severity">{t(`issues.severity.${i.severity}`)}</span><span>{issueText(i)}</span></li>)}</ul>}
+            {row.status !== 'RETIRED' && <div className="dp-context gap-block">
+                <div className="neighbours">{neighbour('ahead')}{neighbour('behind')}</div>
+                <div className="lap-times"><Stat label={t('viewer.lastLap')}>{lap(e.lastLapTimeMs)}{e.lastLapTimeMs !== null && e.lastLapTimeMs === e.bestLapTimeMs && <small className="pb-mark">{t('viewer.personalBest')}</small>}</Stat><Stat label={t('viewer.bestLap')}>{lap(e.bestLapTimeMs)}</Stat></div>
+                {drs !== 'UNAVAILABLE' && drs !== 'FINISHED' && <p className={`drs-line ${drs === 'ENABLED' && e.track?.drsEligible ? 'drs-on' : 'drs-off'}`}>{drs === 'ENABLED' ? t(e.track?.drsEligible ? 'viewer.drsEligible' : 'viewer.drsNotEligible') : t(`viewer.drs.${drs}`, { count: format.number(s.incidents?.drsDelay ?? 0) })}</p>}
+            </div>}
+            {suitability && <p>{t(`viewer.suit.${suitability.level}`)} · {t(`viewer.suitNote.${suitability.note}`, { family: t(`viewer.family.${tyreFamily(e.stint!.tyre.compound)}`), best: t(`viewer.family.${suitability.best}`) })}</p>}
+            {estimate && row.status === 'RUNNING' && s.status === 'RUNNING' && condition?.wear !== 'CRITICAL' && <p className="tyre-estimate" data-risk={estimate.lapsToCliff <= RISK_LAPS || undefined}>{estimate.lapsToCliff <= RISK_LAPS ? t('viewer.tyreLifeRisk') : estimate.paceMode ? t('viewer.tyreLifeAtPace', { count: format.number(estimate.lapsToCliff), pace: t(`command.${estimate.paceMode}`) }) : t('viewer.tyreLife', { count: format.number(estimate.lapsToCliff) })}
+                {estimate.lapsToCliffMin !== undefined && estimate.lapsToCliffMax !== undefined && estimate.lapsToCliffMin !== estimate.lapsToCliffMax && <small>{t('viewer.tyreLifeRange', { min: format.number(estimate.lapsToCliffMin), max: format.number(estimate.lapsToCliffMax) })}</small>}
+                <small>{t('viewer.estimateNote')}</small></p>}
+            {projection !== null && <p>{t('command.projectedFuel')}: <strong>{kg(projection, true)}</strong></p>}
+            {fuelCritical(s, e) && <p className="fuel-warning">{t('command.fuelCritical', { laps: format.number(e.insight!.fuelLapsRemaining!) })}</p>}
+            {ers && <p className="ers-outlook ops-muted">{ers.kind === 'LAPS' ? t('viewer.ersLaps', { count: format.number(ers.laps) }) : t(ers.kind === 'CHARGING' ? 'viewer.ersCharging' : 'viewer.ersSustainable')}</p>}
+            {e.assistance && <p>{t('assistance.note')}</p>}
+            {s.simulationVersion === 8 && editable && <p>{t((s.input.modelRevision ?? 1) >= 2 ? 'assistance.commandTiming' : 'viewer.commandTiming')}</p>}
             <div className="strategy-grid dp-stats">
                 {lastStop && <Stat label={t('viewer.lastStop')}>{t('incident.lap', { lap: format.number(lastStop.lap) })} · {t('viewer.tyreChange', { old: t(`viewer.tyre.${lastStop.oldCompound}`), next: t(`viewer.tyre.${lastStop.newCompound}`) })}</Stat>}
                 {estimate && <Stat label={t('pit.loss')}>{format.number(estimate.minimumLossMs / 1000, { maximumFractionDigits: 1 })}–{format.number(estimate.maximumLossMs / 1000, { style: 'unit', unit: 'second', maximumFractionDigits: 1 })}</Stat>}
@@ -189,8 +199,8 @@ export function DriverPanel({ data, row, busy, send, rows }: {
             </div>
             {estimate?.rejoin && editable && <p className="ops-muted">{t('pit.rejoinNote')}</p>}
             {row.player && <TyreRule data={data} row={row}/>}
-            <details className="dp-history"><summary>{t('pit.history')}</summary><ul>{e.pit.stints.map(stint => <li key={stint.number}>{t('pit.stintRecord', { number: format.number(stint.number), compound: t(`tyre.${stint.startingTyre.compound}`), start: format.number(stint.startLap + 1), end: stint.endLap === null ? t(e.incident?.status === 'RETIRED' ? 'pit.notRaced' : 'pit.open') : format.number(stint.endLap) })}</li>)}</ul><ul>{e.pit.stops.map(stop => <li key={stop.number}>{t('pit.stopRecord', { lap: format.number(stop.lap), old: t(`tyre.${stop.oldCompound}`), next: t(`tyre.${stop.newCompound}`) })} · {format.number(stop.totalLossMs / 1000, { style: 'unit', unit: 'second', maximumFractionDigits: 3 })}</li>)}</ul></details>
-        </Section>}
+            {e.pit && <details className="dp-history"><summary>{t('pit.history')}</summary><ul>{e.pit.stints.map(stint => <li key={stint.number}>{t('pit.stintRecord', { number: format.number(stint.number), compound: t(`tyre.${stint.startingTyre.compound}`), start: format.number(stint.startLap + 1), end: stint.endLap === null ? t(e.incident?.status === 'RETIRED' ? 'pit.notRaced' : 'pit.open') : format.number(stint.endLap) })}</li>)}</ul><ul>{e.pit.stops.map(stop => <li key={stop.number}>{t('pit.stopRecord', { lap: format.number(stop.lap), old: t(`tyre.${stop.oldCompound}`), next: t(`tyre.${stop.newCompound}`) })} · {format.number(stop.totalLossMs / 1000, { style: 'unit', unit: 'second', maximumFractionDigits: 3 })}</li>)}</ul></details>}
+        </RaceDetails>
         {editable && <p className="control-notice">{t('viewer.commandPause')}</p>}
     </section>;
 }

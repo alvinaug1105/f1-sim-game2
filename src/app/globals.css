@@ -6,6 +6,7 @@
 @import "../styles/command-centre.css";
 @import "../styles/weekend-hub.css";
 @import "../styles/live.css";
+@import "../styles/race-workspace.css";
 
 /*
  * Legacy shared classes, still used by screens outside UIX-A scope (Race, Practice, Qualifying, Sprint, Standings,

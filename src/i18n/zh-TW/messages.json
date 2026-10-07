@@ -1139,5 +1139,18 @@
   "live.phaseState.current": "進行中",
   "live.phaseState.locked": "尚未開始",
   "live.noCutoff": "本階段無淘汰",
-  "live.pane.runs": "出場"
+  "live.pane.runs": "出場",
+  "operations.cliff": "約 {count} 圈後到性能懸崖",
+  "operations.driverDetails": "車手資訊與策略詳情",
+  "operations.box": "本圈進站",
+  "operations.updatePit": "更新進站",
+  "operations.cancelPit": "取消進站",
+  "operations.atFlag": "完賽預估",
+  "operations.context": "即時競爭資訊",
+  "operations.fuelLeft": "燃油約剩 {laps} 圈",
+  "operations.rule.OUTSTANDING": "尚未滿足",
+  "operations.rule.URGENT": "最後安全進站機會",
+  "operations.rule.SATISFIED": "已滿足",
+  "operations.rule.EXEMPT": "已豁免",
+  "operations.rule.VIOLATED": "已違反"
 }

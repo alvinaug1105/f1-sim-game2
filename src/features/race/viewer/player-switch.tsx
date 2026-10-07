@@ -37,7 +37,12 @@ export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId =
         { key: 'last', label: t('viewer.lastLap'), value: v => v.lastLapMs === null ? none : formatRaceTime(v.lastLapMs, locale) },
         { key: 'best', label: t('viewer.bestLap'), value: v => v.bestLapMs === null ? none : formatRaceTime(v.bestLapMs, locale) },
     ];
-    return <div className="player-switch-wrap">
+    return <div className="player-switch-wrap" onKeyDown={event => {
+        if (event.key === 'Escape' && open) {
+            event.preventDefault(); setOpen(false);
+            event.currentTarget.querySelector<HTMLButtonElement>('.compare-toggle')?.focus();
+        }
+    }}>
         <div className="player-switch" role="group" aria-label={t('viewer.playerCars')}>
             {snaps.map(({ r, v }) => { const flags = driverFlags(r, rows, s, attentionId), worst = severity[r.id] ?? null; return <button key={r.id} onClick={() => onSelect(r.id)} aria-pressed={r.id === selected} style={teamStyle(r.color) as CSSProperties} title={r.name} className={r.id === attentionId ? 'attention' : undefined} data-severity={worst ?? undefined}>
                 <span className="switch-abbr">{r.abbreviation}</span>

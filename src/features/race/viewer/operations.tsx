@@ -24,6 +24,7 @@ import { IssuesRail } from './issues-rail';
 import { strategicIssues, worstSeverity } from './issues';
 import { PaneSwitch } from '../../live/live-frame';
 import { Icon } from '../../../components/ui/icon';
+import { RaceDetails } from './race-details';
 const PHONE = '(max-width: 599px)';
 const subscribePhone = (notify: () => void) => { const media = window.matchMedia(PHONE); media.addEventListener('change', notify); return () => media.removeEventListener('change', notify); };
 import { controlMode, labelTiers } from './race-view';
@@ -79,7 +80,7 @@ export function RaceOperations({ initialData }: {
     const critical = issues.some(i => i.severity === 'CRITICAL');
     return <div className="live live-race" data-kind={sprint ? 'SPRINT' : 'RACE'} data-pane={pane}>
   <LocalizedPageTitle titleKey={sprint ? 'sprint.title' : 'viewer.title'}/>
-  <RaceHeader data={data}/>
+  <div className="race-header-line"><RaceHeader data={data}/>{sprint && s.status === 'FINISHED' && <RaceDetails title={t('sprint.result')} className="race-sprint-result"><SprintSummary data={data} rows={rows}/></RaceDetails>}</div>
   {/* Sticky live bar: lap + Race Control, conditions, race-control tools, status line and the persistent issues rail. */}
   <div className="live-bar race-bar">
    <div className="live-bar-row"><RaceClock data={data}/><ConditionsStrip data={data}/></div>
@@ -88,7 +89,6 @@ export function RaceOperations({ initialData }: {
    {stale && <p className="race-stale" role="alert"><Icon name="alert" size={14}/><span>{t('viewer.stale')}</span><button type="button" onClick={() => window.location.reload()}>{t('viewer.refresh')}</button></p>}
    {s.status === 'RUNNING' && <IssuesRail issues={issues} rows={rows} lap={s.lap} attention={playback.attention ?? playback.lastAttention} onSelect={focus}/>}
   </div>
-  {sprint && s.status === 'FINISHED' && <SprintSummary data={data} rows={rows}/>}
   <PaneSwitch label={t('live.panes')} active={pane} onPick={setPane} panes={[
    { id: 'strategy', label: t('live.pane.strategy'), badge: critical ? <Icon name="alert" size={12} label={t('issues.severity.CRITICAL')}/> : undefined },
    { id: 'timing', label: t('live.pane.timing') }, { id: 'track', label: t('live.pane.track') }, { id: 'feed', label: t('live.pane.feed') }]}/>
@@ -96,10 +96,12 @@ export function RaceOperations({ initialData }: {
    <div className="live-area-switch" data-pane="always"><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId} severity={severity}/></div>
    <div className="live-area-tower" data-pane="timing"><TimingTower state={s} rows={rows} selected={row.id} onSelect={focus} interval={interval} onInterval={setIntervalView} attentionId={attentionId}/></div>
    <div className="live-area-map" data-pane="track"><section className="ops-panel track-panel live-panel"><div className="ops-panel-title live-panel-head"><h2>{t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><TrackMap key={layout.id} layout={map.layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers} authoritative={s.simulationVersion === 8} pitRoute={map.pitRoute} compact={phone} raceViewer/><p className="map-notice">{t('viewer.interpolation')} {t('viewer.labelNote')}</p></section></div>
-   <div className="live-area-feed" data-pane="feed"><EventFeed data={data}/>{weather && <details className="ops-panel forecast-drawer live-panel"><summary>{t('weather.forecast')}</summary><WeatherPanel state={s}/></details>}</div>
+   <div className="live-area-feed" data-pane="feed"><EventFeed data={data}/><div className="race-secondary-tools">
+    {weather && <RaceDetails title={t('weather.forecast')} className="forecast-drawer"><WeatherPanel state={s}/></RaceDetails>}
+    <RaceDetails title={t('viewer.diagnostics')} className="ops-diagnostics live-diagnostics"><p>{t('race.version')}: {format.number(s.simulationVersion)}</p>{rows.map(r => <p key={r.id}>{r.name} · {t('race.total')}: {formatRaceTime(r.entrant.elapsedTimeMs, locale)} · {t('race.best')}: {r.entrant.bestLapTimeMs ? formatRaceTime(r.entrant.bestLapTimeMs, locale) : t('race.noTime')} · {t('traffic.overtakes')}: {format.number(r.entrant.track?.overtakesCompleted ?? 0)}</p>)}</RaceDetails>
+   </div></div>
    <div className="live-area-panel" data-pane="strategy"><DriverPanel key={row.id} data={data} row={row} rows={rows} busy={playback.busy} send={send}/></div>
   </div>
-  <details className="ops-diagnostics live-diagnostics"><summary>{t('viewer.diagnostics')}</summary><p>{t('race.version')}: {format.number(s.simulationVersion)}</p>{rows.map(r => <p key={r.id}>{r.name} · {t('race.total')}: {formatRaceTime(r.entrant.elapsedTimeMs, locale)} · {t('race.best')}: {r.entrant.bestLapTimeMs ? formatRaceTime(r.entrant.bestLapTimeMs, locale) : t('race.noTime')} · {t('traffic.overtakes')}: {format.number(r.entrant.track?.overtakesCompleted ?? 0)}</p>)}</details>
  </div>;
 }
 type LivePane = 'strategy' | 'timing' | 'track' | 'feed';

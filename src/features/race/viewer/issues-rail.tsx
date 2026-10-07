@@ -8,6 +8,7 @@ import type { IssueSeverity, StrategicIssue } from './issues';
 import { Icon, type IconName } from '../../../components/ui/icon';
 import { useAttentionText } from './playback-bar';
 import type { TyreCompound } from '../../../simulation/race/tyres/model';
+import { RaceDetails } from './race-details';
 type Rows = ReturnType<typeof timingRows>;
 const SEVERITY_ICON: Record<IssueSeverity, IconName> = { CRITICAL: 'alert', WARNING: 'alert', OPPORTUNITY: 'arrow', INFO: 'info' };
 /** Translated one-line text of a strategic issue (shared by the rail and the driver panel). */
@@ -32,7 +33,7 @@ export function useIssueText(rows: readonly Rows[number][]) {
 }
 export const SEVERITY_ICONS = SEVERITY_ICON;
 /** Cards shown before the rest fold into "more". */
-const VISIBLE = 4;
+const VISIBLE = 2;
 const LOG_LIMIT = 40;
 /**
  * UX-RACE-001: the strategic issues rail. Every current issue stays on screen while its condition holds (it is
@@ -59,6 +60,11 @@ export function IssuesRail({ issues, rows, lap, attention, onSelect }: { issues:
     if (attention && !log.some(a => a.lap === attention.lap && a.kind === attention.kind && a.entrantId === attention.entrantId)) setLog([attention, ...log].slice(0, LOG_LIMIT));
     const ackId = (i: StrategicIssue) => `${i.key}@${since[i.key] ?? lap}`;
     const ordered = [...issues].sort((a, b) => Number(acked.has(ackId(a))) - Number(acked.has(ackId(b))));
+    // Keep the highest-priority issue and, where possible, one from the other car. All others stay in the disclosure.
+    const visible = ordered.slice(0, 1);
+    const second = ordered.find(i => i.entrantId && i.entrantId !== visible[0]?.entrantId) ?? ordered[1];
+    if (second) visible.push(second);
+    const remaining = ordered.filter(i => !visible.includes(i));
     const driver = (id: string | null) => (id && rows.find(r => r.id === id)?.abbreviation) || '';
     const text = useIssueText(rows);
     // Snapshot each continuous critical condition, independently of its live card and of other critical issues.
@@ -73,7 +79,7 @@ export function IssuesRail({ issues, rows, lap, attention, onSelect }: { issues:
             <Icon name={SEVERITY_ICON[i.severity]} size={16}/>
             <span className="issue-severity">{t(`issues.severity.${i.severity}`)}</span>
             {i.entrantId ? <button type="button" className="issue-driver" onClick={() => onSelect(i.entrantId!)} aria-label={t('issues.review', { driver: driver(i.entrantId) })}>{driver(i.entrantId)}</button> : null}
-            <span className="issue-text">{text(i)}</span>
+            <RaceDetails title={<span className="issue-text">{text(i)}</span>} className="issue-description"><p>{text(i)}</p></RaceDetails>
             <span className="issue-since">{t('issues.since', { lap: format.number(since[i.key] ?? lap) })}</span>
             <button type="button" className="issue-ack" aria-pressed={done} onClick={() => setAcked(s => { const n = new Set(s); if (n.has(ackId(i))) n.delete(ackId(i)); else n.add(ackId(i)); return n; })} title={t(done ? 'issues.acknowledged' : 'issues.acknowledge')}>
                 <Icon name="check" size={14}/><span className="visually-hidden">{t(done ? 'issues.acknowledged' : 'issues.acknowledge')}</span>
@@ -84,11 +90,11 @@ export function IssuesRail({ issues, rows, lap, attention, onSelect }: { issues:
         <p className="visually-hidden" aria-live="assertive" aria-atomic="false" aria-relevant="additions text">{Object.values(announcements).filter(i => !acked.has(ackId(i))).map(i => <span key={i.key}>{text(i)}{' '}</span>)}</p>
         {ordered.length === 0
             ? <p className="issues-clear"><Icon name="check" size={14}/>{t('issues.none')}</p>
-            : <ol className="issues-list">{ordered.slice(0, VISIBLE).map(card)}</ol>}
+            : <ol className="issues-list">{visible.map(card)}</ol>}
         <div className="issues-more">
-            {ordered.length > VISIBLE && <details><summary>{t('issues.more', { count: format.number(ordered.length - VISIBLE) })}</summary><ol className="issues-list">{ordered.slice(VISIBLE).map(card)}</ol></details>}
-            {log.length > 0 && <details className="issues-log"><summary><Icon name="list" size={14}/>{t('issues.log', { count: format.number(log.length) })}</summary>
-                <ol>{log.map(a => <li key={`${a.lap}:${a.kind}:${a.entrantId}`}><span className="event-lap">{t('incident.lap', { lap: format.number(a.lap) })}</span>{describe(a)}</li>)}</ol></details>}
+            {ordered.length > VISIBLE && <RaceDetails title={t('issues.more', { count: format.number(remaining.length) })} className="issues-overflow"><ol className="issues-list">{remaining.map(card)}</ol></RaceDetails>}
+            {log.length > 0 && <RaceDetails className="issues-log" title={<><Icon name="list" size={14}/>{t('issues.log', { count: format.number(log.length) })}</>}>
+                <ol>{log.map(a => <li key={`${a.lap}:${a.kind}:${a.entrantId}`}><span className="event-lap">{t('incident.lap', { lap: format.number(a.lap) })}</span>{describe(a)}</li>)}</ol></RaceDetails>}
         </div>
     </section>;
 }

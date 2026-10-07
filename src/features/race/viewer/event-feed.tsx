@@ -33,7 +33,9 @@ export function EventFeed({ data }: { data: RaceViewData }) {
     return <section className="ops-panel events-panel live-panel" aria-label={t('viewer.recentEvents')}>
         <div className="ops-panel-title live-panel-head"><h2>{t('viewer.recentEvents')}</h2><span className="live-count">{format.number(items.length)}</span></div>
         <div className="feed-filters" role="group" aria-label={t('viewer.feedFilter')}>{FEED_FILTERS.map(f => <button key={f} className="live-filter" aria-pressed={filter === f} onClick={() => setFilter(f)}>{t(`viewer.feedFilter.${f}`)}</button>)}</div>
-        {items.length === 0 ? <p className="empty-events">{t('incident.empty')}</p> : <ol>{items.slice(0, RECENT).map(entry)}</ol>}
-        {items.length > RECENT && <details><summary>{t('viewer.allEvents')}</summary><ol>{items.slice(RECENT).map(entry)}</ol></details>}
+        <div className="race-feed-scroll" tabIndex={0} aria-label={t('viewer.recentEvents')}>
+            {items.length === 0 ? <p className="empty-events">{t('incident.empty')}</p> : <ol>{items.slice(0, RECENT).map(entry)}</ol>}
+            {items.length > RECENT && <details><summary>{t('viewer.allEvents')}</summary><ol>{items.slice(RECENT).map(entry)}</ol></details>}
+        </div>
     </section>;
 }

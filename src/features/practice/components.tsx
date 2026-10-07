@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { teamStyle } from '../../components/ui/team-color';
 import { useI18n } from '../../i18n/provider';
 import type { Locale } from '../../i18n/catalog';
@@ -111,7 +111,18 @@ export function PracticeDriverPanel({ view, e, busy, send }: { view: PracticeVie
     const running = view.status === 'RUNNING', commandable = !!own && running && !view.autoPlayer;
     const act = (c: Command) => own && send(e.entrantId, own.commandRevision, c);
     const [tab, setTab] = useState<EngineeringTab>('plan'), base = useId();
+    const tabRefs = useRef<Partial<Record<EngineeringTab, HTMLButtonElement | null>>>({});
     const tabs: { id: EngineeringTab; label: string }[] = [{ id: 'plan', label: t('practice.plan') }, { id: 'setup', label: t('practice.setup') }, { id: 'knowledge', label: t('practice.knowledge') }, { id: 'runs', label: t('practice.runs') }];
+    const onTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+        const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length
+            : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length
+            : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : null;
+        if (next === null) return;
+        event.preventDefault();
+        const id = tabs[next].id;
+        setTab(id);
+        tabRefs.current[id]?.focus();
+    };
     return <section className="ops-panel driver-focus practice-driver dp" aria-label={t('viewer.selectedDriver')} style={teamStyle(e.color) as CSSProperties}>
         <header className="dp-head driver-identity">
             <span className="dp-number" aria-hidden="true">{e.number !== null ? format.number(e.number, { useGrouping: false }) : e.abbreviation}</span>
@@ -133,7 +144,7 @@ export function PracticeDriverPanel({ view, e, busy, send }: { view: PracticeVie
                 <p>{t(`tyre.${own.run.plan.compound}`)} · {t(`practice.pace.${own.run.plan.pace}`)} · {t('practice.runProgress', { done: format.number(own.run.timedLaps), target: format.number(own.run.plan.targetLaps) })} · {t('race.best')} {lap(own.run.bestLapMs)}</p>
                 {commandable && <button disabled={busy || own.run.callIn || e.location === 'IN_LAP'} onClick={() => act({ kind: 'callIn' })}>{t(own.run.callIn || e.location === 'IN_LAP' ? 'practice.comingIn' : 'practice.callIn')}</button>}
             </div>}
-            <div className="dp-tabs" role="tablist" aria-label={t('live.engineering')}>{tabs.map(x => <button key={x.id} role="tab" id={`${base}-${x.id}-tab`} aria-controls={`${base}-${x.id}`} aria-selected={tab === x.id} tabIndex={tab === x.id ? 0 : -1} onClick={() => setTab(x.id)}>{x.label}</button>)}</div>
+            <div className="dp-tabs" role="tablist" aria-label={t('live.engineering')}>{tabs.map((x, index) => <button key={x.id} ref={node => { tabRefs.current[x.id] = node; }} role="tab" id={`${base}-${x.id}-tab`} aria-controls={`${base}-${x.id}`} aria-selected={tab === x.id} tabIndex={tab === x.id ? 0 : -1} onClick={() => setTab(x.id)} onKeyDown={event => onTabKeyDown(event, index)}>{x.label}</button>)}</div>
             <div role="tabpanel" id={`${base}-plan`} aria-labelledby={`${base}-plan-tab`} hidden={tab !== 'plan'} className="dp-tabpanel">
                 {/* Sibling keys are namespaced per component: a bare revision number collided (both revisions start at 0), which made
                     React reconcile the wrong sibling and leave orphaned planners behind. A new revision resets the form's draft. */}

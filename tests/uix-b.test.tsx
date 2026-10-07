@@ -85,7 +85,7 @@ describe('issues rail', () => {
         const html = renderToStaticMarkup(rail(issues, 6));
         expect(html).toContain('data-severity="CRITICAL"');
         expect(html).toContain('>Critical</span>');
-        expect(html).toMatch(/aria-live="assertive">[^<]*tyre is past its cliff/);
+        expect(html).toMatch(/aria-live="assertive"[^>]*><span>[^<]*tyre is past its cliff/);
     });
     it('keeps the first-seen lap while the condition persists across checkpoints', () => {
         const el = mount(rail(issues, 6));

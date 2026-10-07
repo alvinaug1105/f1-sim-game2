@@ -46,14 +46,27 @@ export function IssuesRail({ issues, rows, lap, attention, onSelect }: { issues:
     const [since, setSince] = useState<Readonly<Record<string, number>>>({});
     const [acked, setAcked] = useState<ReadonlySet<string>>(new Set());
     const [log, setLog] = useState<readonly Attention[]>([]);
+    const [announcements, setAnnouncements] = useState<Readonly<Record<string, StrategicIssue>>>({});
     // First-seen lap per active condition (render-time sync: keys that cleared are dropped, new ones stamped).
     const keys = issues.map(i => i.key);
-    if (keys.length !== Object.keys(since).length || keys.some(k => !(k in since))) setSince(Object.fromEntries(keys.map(k => [k, since[k] ?? lap])));
+    if (keys.length !== Object.keys(since).length || keys.some(k => !(k in since))) {
+        setSince(Object.fromEntries(keys.map(k => [k, since[k] ?? lap])));
+        // Acknowledgement belongs to this activation, even if a condition clears and returns within the same lap.
+        const activeAckIds = new Set(keys.map(k => `${k}@${since[k] ?? lap}`));
+        const retained = new Set([...acked].filter(id => activeAckIds.has(id)));
+        if (retained.size !== acked.size) setAcked(retained);
+    }
     if (attention && !log.some(a => a.lap === attention.lap && a.kind === attention.kind && a.entrantId === attention.entrantId)) setLog([attention, ...log].slice(0, LOG_LIMIT));
     const ackId = (i: StrategicIssue) => `${i.key}@${since[i.key] ?? lap}`;
     const ordered = [...issues].sort((a, b) => Number(acked.has(ackId(a))) - Number(acked.has(ackId(b))));
     const driver = (id: string | null) => (id && rows.find(r => r.id === id)?.abbreviation) || '';
     const text = useIssueText(rows);
+    // Snapshot each continuous critical condition, independently of its live card and of other critical issues.
+    // Numeric updates reuse the snapshot; clearing drops it, so a return (or escalation to critical) is new again.
+    const critical = issues.filter(i => i.severity === 'CRITICAL');
+    if (critical.length !== Object.keys(announcements).length || critical.some(i => !(i.key in announcements))) {
+        setAnnouncements(Object.fromEntries(critical.map(i => [i.key, announcements[i.key] ?? i])));
+    }
     const card = (i: StrategicIssue) => {
         const done = acked.has(ackId(i));
         return <li key={i.key} className="issue-card" data-severity={i.severity} data-ack={done || undefined}>
@@ -67,9 +80,8 @@ export function IssuesRail({ issues, rows, lap, attention, onSelect }: { issues:
             </button>
         </li>;
     };
-    const urgent = ordered.find(i => i.severity === 'CRITICAL' && !acked.has(ackId(i)));
     return <section className="issues-rail" aria-label={t('issues.title')}>
-        <p className="visually-hidden" aria-live="assertive">{urgent ? text(urgent) : ''}</p>
+        <p className="visually-hidden" aria-live="assertive" aria-atomic="false" aria-relevant="additions text">{Object.values(announcements).filter(i => !acked.has(ackId(i))).map(i => <span key={i.key}>{text(i)}{' '}</span>)}</p>
         {ordered.length === 0
             ? <p className="issues-clear"><Icon name="check" size={14}/>{t('issues.none')}</p>
             : <ol className="issues-list">{ordered.slice(0, VISIBLE).map(card)}</ol>}

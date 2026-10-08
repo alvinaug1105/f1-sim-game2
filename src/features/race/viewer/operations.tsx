@@ -25,8 +25,12 @@ import { strategicIssues, worstSeverity } from './issues';
 import { PaneSwitch } from '../../live/live-frame';
 import { Icon } from '../../../components/ui/icon';
 import { RaceDetails } from './race-details';
+import { trackEnvironments, orientEnvironment } from './track-environment';
+import { TrackContext } from './track-context';
 const PHONE = '(max-width: 599px)';
 const subscribePhone = (notify: () => void) => { const media = window.matchMedia(PHONE); media.addEventListener('change', notify); return () => media.removeEventListener('change', notify); };
+const SHORT_TRACK = '(min-width: 1220px) and (max-height: 850px)';
+const subscribeShort = (notify: () => void) => { const media = window.matchMedia(SHORT_TRACK); media.addEventListener('change', notify); return () => media.removeEventListener('change', notify); };
 import { controlMode, labelTiers } from './race-view';
 export function RaceOperations({ initialData }: {
     initialData: RaceViewData;
@@ -48,7 +52,7 @@ export function RaceOperations({ initialData }: {
     const phone = useSyncExternalStore(subscribePhone, () => window.matchMedia(PHONE).matches, () => false);
     const map = useMemo(() => {
         const degrees = phone ? compactRotation([...layout.points, ...(pitRoute?.points ?? [])]) : 0, oriented = orientLayout(layout, degrees);
-        return { layout: oriented.layout, pitRoute: pitRoute && { ...pitRoute, points: oriented.transform(pitRoute.points) } };
+        return { layout: oriented.layout, pitRoute: pitRoute && { ...pitRoute, points: oriented.transform(pitRoute.points) }, environment: orientEnvironment(trackEnvironments[layout.id], oriented.transform) };
     }, [phone, layout, pitRoute]);
     const send = (intent: ViewerIntent) => { void controller.command(async (state) => { const result = await viewerAction(data.progress.career.id, data.eventId, state.lap, intent, data.kind ?? 'RACE'); if (!result.data)
         throw new Error(result.error!); setData(result.data); return result.data.state!; }, commandInfo(intent)); };
@@ -78,7 +82,10 @@ export function RaceOperations({ initialData }: {
     const [pane, setPane] = useState<LivePane>('strategy');
     const focus = (id: string) => { setSelected(id); setPane('strategy'); };
     const critical = issues.some(i => i.severity === 'CRITICAL');
-    return <div className="live live-race" data-kind={sprint ? 'SPRINT' : 'RACE'} data-pane={pane}>
+    const short = useSyncExternalStore(subscribeShort, () => window.matchMedia(SHORT_TRACK).matches, () => false);
+    const [expandChoice, setExpandChoice] = useState<boolean | null>(null), [showTiming, setShowTiming] = useState(false);
+    const expanded = expandChoice ?? short;
+    return <div className="live live-race" data-kind={sprint ? 'SPRINT' : 'RACE'} data-pane={pane} data-track-expanded={expanded} data-track-timing={showTiming}>
   <LocalizedPageTitle titleKey={sprint ? 'sprint.title' : 'viewer.title'}/>
   <div className="race-header-line"><RaceHeader data={data}/>{sprint && s.status === 'FINISHED' && <RaceDetails title={t('sprint.result')} className="race-sprint-result"><SprintSummary data={data} rows={rows}/></RaceDetails>}</div>
   {/* Sticky live bar: lap + Race Control, conditions, race-control tools, status line and the persistent issues rail. */}
@@ -94,8 +101,8 @@ export function RaceOperations({ initialData }: {
    { id: 'timing', label: t('live.pane.timing') }, { id: 'track', label: t('live.pane.track') }, { id: 'feed', label: t('live.pane.feed') }]}/>
   <div className="live-grid ops-grid">
    <div className="live-area-switch" data-pane="always"><PlayerSwitch state={s} rows={rows} selected={row.id} onSelect={setSelected} attentionId={attentionId} severity={severity} pitTarget={row.entrant.pit && row.entrant.stint ? '#race-pit-dock' : undefined} onPit={() => setPane('strategy')}/></div>
-   <div className="live-area-tower" data-pane="timing"><TimingTower state={s} rows={rows} selected={row.id} onSelect={focus} interval={interval} onInterval={setIntervalView} attentionId={attentionId}/></div>
-   <div className="live-area-map" data-pane="track"><section className="ops-panel track-panel live-panel"><div className="ops-panel-title live-panel-head"><h2>{data.progress.events.find(event => event.id === data.eventId)?.circuitName ?? t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span></div><TrackMap key={layout.id} layout={map.layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers} authoritative={s.simulationVersion === 8} pitRoute={map.pitRoute} compact={phone} raceViewer/><div className="race-secondary-tools">
+   <div className="live-area-tower" data-pane="timing" onKeyDown={event => { if (event.key === 'Escape' && showTiming) { setShowTiming(false); document.getElementById('track-timing-toggle')?.focus(); } }}><TimingTower state={s} rows={rows} selected={row.id} onSelect={focus} interval={interval} onInterval={setIntervalView} attentionId={attentionId}/></div>
+   <div className="live-area-map" data-pane="track"><section className="ops-panel track-panel live-panel"><div className="ops-panel-title live-panel-head"><h2>{data.progress.events.find(event => event.id === data.eventId)?.circuitName ?? t('viewer.track')}</h2><span className="ops-muted">{t(layout.metadata?.realGeometry ? 'viewer.realGeometry' : 'viewer.schematic')}</span><button type="button" id="track-timing-toggle" className="track-timing-toggle" aria-expanded={showTiming} onClick={() => setShowTiming(value => !value)}>{t(showTiming ? 'trackViewer.hideTiming' : 'trackViewer.showTiming')}</button></div><TrackMap key={layout.id} layout={map.layout} rows={rows} selected={row.id} onSelect={setSelected} speed={playback.speed} reduceMotion={reduceMotion} motion={playback.motion} checkpoint={s.lap} control={control} skipping={playback.skipping} latencyMs={playback.latencyMs} startingGrid tiers={tiers} authoritative={s.simulationVersion === 8} pitRoute={map.pitRoute} compact={phone} environment={map.environment} expanded={expanded} onExpand={() => { setExpandChoice(!expanded); setShowTiming(false); setPane('track'); }} raceViewer/><TrackContext row={row} rows={rows} state={s} onSelect={setSelected} onStrategy={() => { setPane('strategy'); requestAnimationFrame(() => document.querySelector('.race-command')?.scrollIntoView({ block: 'nearest' })); }}/><div className="race-secondary-tools">
     <RaceDetails title={t('operations.mapNotes')} className="race-map-notes"><p>{t('viewer.interpolation')} {t('viewer.labelNote')}</p></RaceDetails>
     {weather && <RaceDetails title={t('weather.forecast')} className="forecast-drawer"><WeatherPanel state={s}/></RaceDetails>}
     <RaceDetails title={t('viewer.diagnostics')} className="ops-diagnostics live-diagnostics"><p>{t('race.version')}: {format.number(s.simulationVersion)}</p>{rows.map(r => <p key={r.id}>{r.name} · {t('race.total')}: {formatRaceTime(r.entrant.elapsedTimeMs, locale)} · {t('race.best')}: {r.entrant.bestLapTimeMs ? formatRaceTime(r.entrant.bestLapTimeMs, locale) : t('race.noTime')} · {t('traffic.overtakes')}: {format.number(r.entrant.track?.overtakesCompleted ?? 0)}</p>)}</RaceDetails>

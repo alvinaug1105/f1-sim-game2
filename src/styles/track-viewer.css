@@ -1,0 +1,97 @@
+/* Track Viewer 2.0 — scoped to Race/Sprint. Environment is original vector styling over separately licensed data. */
+.live-race .track-panel { display: flex; flex-direction: column; overflow: visible; }
+.live-race .track-panel > * { flex-shrink: 0; }
+.track-viewer { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
+.track-viewer > * { flex-shrink: 0; }
+.track-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line-subtle); background: #101e29; }
+.track-tools button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid #344855; border-radius: 5px; background: #152733; color: var(--text-2); min-height: 36px; min-width: 36px; padding: 5px 8px; font-size: .9em; white-space: nowrap; }
+.track-tools button[aria-pressed="true"] { color: #f5bc57; border-color: #b88532; background: #2b2a23; }
+.track-tools button:disabled { opacity: .5; }
+.track-tools button:focus-visible, .track-context button:focus-visible, .track-context summary:focus-visible { outline: var(--focus); outline-offset: 2px; }
+.track-pan { display: flex; gap: 3px; }
+.track-tools .track-environment-toggle { margin-left: auto; }
+.track-canvas { flex: 1 0 auto; position: relative; min-height: 0; overflow: hidden; background: radial-gradient(ellipse at 48% 45%, #1a2b34, #0c1b24 88%); }
+.track-canvas .circuit-map { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; background: transparent; touch-action: pan-y pinch-zoom; user-select: none; }
+.track-ground { fill: transparent; }
+.track-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; padding: 5px 12px; color: #8ea2ac; font-size: .75em; line-height: 1.3; border-top: 1px solid var(--line-subtle); }
+.track-caption a { color: #a7bbc4; text-decoration: underline; }
+.track-environment { opacity: .78; }
+.env-feature > path { stroke: #3d5058; stroke-width: 1; stroke-linejoin: round; fill: #243944; }
+.env-feature > .env-ground-shadow { fill: #07131b; stroke: none; opacity: .7; }
+.env-feature > .env-roof { fill: #324952; stroke: #4b636b; stroke-width: .7; }
+.env-pit_complex > .env-roof { fill: #47616a; stroke: #67818b; }
+.env-grandstand > path { fill: #263e48; }
+.env-feature > .env-seats { fill: none; stroke: #70838a; stroke-dasharray: 2 5; opacity: .5; }
+.env-water > path { fill: #102f40; stroke: #34596a; stroke-width: 1.5; }
+.env-forest > path { fill: #19332e; stroke: #25443a; stroke-width: 2; }
+.env-wheel { stroke: #8b9d9d; stroke-width: 1.5; fill: #647a7d; }
+.track-canvas .race-track .track-edge { stroke: #93a5ac; }
+.track-canvas .race-track .track-surface { stroke: #3b4a55; }
+.track-canvas [data-control="SAFETY_CAR"] .track-edge, .track-canvas [data-control="VSC"] .track-edge { stroke: #c9a227; }
+.track-canvas .pit-route { stroke: #699eaa; }
+.track-canvas .map-car.selected .selected-ring { filter: none; }
+.track-canvas .map-car .driver-bubble { opacity: .9; }
+.track-canvas .map-car.selected .driver-bubble, .track-canvas .map-car.player .driver-bubble { opacity: 1; }
+.track-canvas .map-car:focus-visible .hit-area { stroke: #f5bc57; stroke-width: 2; }
+.track-car-label { pointer-events: none; }
+.track-context { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; border-top: 1px solid var(--line-subtle); background: #11212c; padding: 9px 12px; }
+.track-selected-context { display: grid; gap: 2px; flex: 1; min-width: 100px; }
+.track-selected-context > strong { color: #f5bc57; font-size: 1.15em; }
+.track-selected-context > span { font-size: .8em; color: var(--text-2); }
+.track-neighbours { display: grid; gap: 3px; font-size: .8em; color: var(--text-2); }
+.track-context button, .track-timing-toggle { border: 1px solid #3c5461; background: #172c39; border-radius: 4px; color: var(--text-2); padding: 6px 9px; min-height: 36px; }
+.track-field-list > summary { cursor: pointer; min-height: 36px; align-content: center; font-size: .8em; color: var(--text-2); }
+.track-field-list ul { display: grid; gap: 5px; list-style: none; margin: 0; padding: 0; }
+.track-field-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; border-bottom: 1px solid var(--line-subtle); padding: 5px; }
+.track-field-list[open] { position: absolute; z-index: 20; bottom: 100%; right: 8px; padding: 14px; width: min(340px, calc(100vw - 60px)); max-height: 55dvh; overflow: auto; background: var(--surface-overlay); border: 1px solid var(--line-strong); border-radius: 8px; }
+.track-timing-toggle { display: none; flex-shrink: 0; }
+@media (min-width: 1220px) {
+  body:has(.live-race) .shell-main { overflow-y: auto; }
+  .live-race .race-command { position: sticky; top: 8px; max-height: calc(100dvh - 300px); }
+  .live-race .live-grid { grid-template-columns: clamp(260px, 18vw, 370px) minmax(0, 1fr) clamp(420px, 31vw, 650px); grid-template-rows: auto auto minmax(90px, 1fr); }
+  .live-race[data-track-expanded="true"] .live-grid { position: relative; grid-template-columns: minmax(0, 1fr) clamp(420px, 34vw, 650px); grid-template-areas: "switch panel" "map panel" "feed panel"; grid-template-rows: auto auto minmax(80px, 1fr); }
+  .live-race[data-track-expanded="true"] .live-area-tower { display: none; }
+  .live-race[data-track-expanded="true"] .track-timing-toggle { display: inline-flex; }
+  .live-race[data-track-expanded="true"][data-track-timing="true"] .live-area-tower { display: flex; position: absolute; left: 0; top: 100px; bottom: 0; z-index: 25; width: min(430px, 90%); box-shadow: var(--shadow-overlay); }
+  .live-race .track-canvas { min-height: clamp(360px, 40dvh, 700px); }
+  .live-race .live-area-switch, .live-race .live-area-map { min-height: auto; }
+  .live-race .track-panel { height: auto; min-height: 0; }
+  .live-race[data-track-expanded="true"] .track-canvas { min-height: clamp(440px, 44dvh, 800px); }
+  .live-race .race-secondary-tools > details > summary { min-height: 28px; }
+}
+@media (min-width: 1220px) and (max-height: 850px) {
+  body:has(.live-race) .shell-main { overflow-y: auto; }
+  .live-race .live-grid { min-height: 700px; }
+  .live-race .race-command { position: sticky; top: 8px; height: calc(100dvh - 245px); max-height: calc(100dvh - 245px); min-height: 450px; }
+  .live-race .track-panel { height: auto; min-height: 0; }
+  .live-race[data-track-expanded="true"] .track-canvas { min-height: clamp(440px, 44dvh, 800px); }
+  .live-race .track-tools { padding: 6px 10px; }
+  .live-race .track-caption { font-size: 10px; }
+  .live-race .track-context { padding: 6px 10px; gap: 5px 12px; }
+  .live-race[data-track-expanded="true"] .player-switch > button:not(.compare-toggle) { min-height: 58px; }
+}
+@media (min-width: 2400px) and (min-height: 1300px) {
+  .live-race .live-grid { grid-template-columns: minmax(360px, .65fr) minmax(0, 1.8fr) minmax(600px, 1fr); grid-template-rows: auto auto minmax(220px, 1fr); }
+  .live-race .track-tools button { min-height: 2.6em; padding: .4em .7em; }
+}
+@media (min-width: 2200px) and (min-aspect-ratio: 2/1) {
+  .live-race .live-grid { grid-template-columns: minmax(290px, .6fr) minmax(0, 2fr) minmax(500px, 1fr) minmax(300px, .6fr); grid-template-areas: "tower switch panel feed" "tower map panel feed"; grid-template-rows: auto auto; }
+  .live-race[data-track-expanded="true"] .live-grid { grid-template-columns: minmax(0, 2fr) minmax(500px, 1fr) minmax(300px, .6fr); grid-template-areas: "switch panel feed" "map panel feed"; grid-template-rows: auto auto; }
+}
+@media (max-width: 1219px) {
+  .live-race[data-pane="track"] .live-area-switch { position: static; }
+  .track-tools .track-expand { display: none; }
+  .live-race .track-canvas { height: clamp(300px, 55dvh, 650px); }
+  .track-tools button { min-height: 44px; min-width: 44px; }
+  .track-context button, .track-field-list > summary { min-height: 44px; }
+}
+@media (max-width: 600px) {
+  .live-race .track-canvas { height: clamp(320px, 56dvh, 620px); }
+  .track-tools { padding: 8px; gap: 5px; }
+  .track-tools button { font-size: 12px; padding: 5px 7px; }
+  .track-tools .track-environment-toggle { margin-left: 0; }
+  .track-context { padding: 10px; gap: 6px 12px; }
+  .track-context .track-neighbours { flex: 1; }
+  .track-caption { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .track-tools *, .track-canvas * { transition: none; } }

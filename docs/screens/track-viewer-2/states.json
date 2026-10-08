@@ -1,0 +1,827 @@
+[
+  {
+    "name": "start",
+    "query": "lap=0",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 934.25,
+      "height": 432,
+      "top": 502.25,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1052.8,
+      "height": 662.3,
+      "top": 390.5,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 746.1,
+      "height": 23.8,
+      "top": 722.3,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 904,
+      "height": 371.5,
+      "top": 532.5,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 959.875,
+      "height": 25.625,
+      "top": 934.25,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1024.75,
+      "height": 64.875,
+      "top": 959.875,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "early",
+    "query": "lap=1",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 795.5,
+      "height": 23.8,
+      "top": 771.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "mid",
+    "query": "lap=16",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 795.5,
+      "height": 23.8,
+      "top": 771.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "late",
+    "query": "lap=49",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 597.3,
+      "height": 23.8,
+      "top": 573.5,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "dense",
+    "query": "mode=dense",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 835.1,
+      "height": 23.8,
+      "top": 811.3,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "pending",
+    "query": "mode=pending",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 795.5,
+      "height": 23.8,
+      "top": 771.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "pit-entry",
+    "query": "mode=ENTRY",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 948.4375,
+      "height": 432,
+      "top": 516.4375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1066.9,
+      "height": 662.3,
+      "top": 404.7,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 649.7,
+      "height": 23.8,
+      "top": 625.9,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 918.2,
+      "height": 371.5,
+      "top": 546.7,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 974.0625,
+      "height": 25.625,
+      "top": 948.4375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1038.9375,
+      "height": 64.875,
+      "top": 974.0625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "pit-service",
+    "query": "mode=SERVICE",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 948.4375,
+      "height": 432,
+      "top": 516.4375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1066.9,
+      "height": 662.3,
+      "top": 404.7,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 781.2,
+      "height": 23.8,
+      "top": 757.4,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 918.2,
+      "height": 371.5,
+      "top": 546.7,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 974.0625,
+      "height": 25.625,
+      "top": 948.4375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1038.9375,
+      "height": 64.875,
+      "top": 974.0625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "pit-exit",
+    "query": "mode=EXIT",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 948.4375,
+      "height": 432,
+      "top": 516.4375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1066.9,
+      "height": 662.3,
+      "top": 404.7,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 851.5,
+      "height": 23.8,
+      "top": 827.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 918.2,
+      "height": 371.5,
+      "top": 546.7,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 974.0625,
+      "height": 25.625,
+      "top": 948.4375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1038.9375,
+      "height": 64.875,
+      "top": 974.0625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "sc",
+    "query": "mode=sc",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 974.75,
+      "height": 432,
+      "top": 542.75,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1093.3,
+      "height": 662.3,
+      "top": 431,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 783.3,
+      "height": 23.8,
+      "top": 759.5,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 944.5,
+      "height": 371.5,
+      "top": 573,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1000.375,
+      "height": 25.625,
+      "top": 974.75,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1065.25,
+      "height": 64.875,
+      "top": 1000.375,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "vsc",
+    "query": "mode=vsc",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 974.75,
+      "height": 432,
+      "top": 542.75,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1093.3,
+      "height": 662.3,
+      "top": 431,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 783.3,
+      "height": 23.8,
+      "top": 759.5,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 944.5,
+      "height": 371.5,
+      "top": 573,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1000.375,
+      "height": 25.625,
+      "top": 974.75,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1065.25,
+      "height": 64.875,
+      "top": 1000.375,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "wet",
+    "query": "stress=1",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 713.5,
+      "height": 23.8,
+      "top": 689.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "retired",
+    "query": "mode=retired",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 21,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 795.5,
+      "height": 23.8,
+      "top": 771.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "lapped",
+    "query": "mode=lapped",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 795.5,
+      "height": 23.8,
+      "top": 771.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  },
+  {
+    "name": "sprint",
+    "query": "kind=sprint",
+    "fixture": true,
+    "camera": "overview",
+    "canvas": {
+      "bottom": 986.9375,
+      "height": 432,
+      "top": 554.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 795.5,
+      "height": 23.8,
+      "top": 771.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1012.5625,
+      "height": 25.625,
+      "top": 986.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 1077.4375,
+      "height": 64.875,
+      "top": 1012.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true
+  }
+]

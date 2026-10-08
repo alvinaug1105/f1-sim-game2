@@ -1,0 +1,1062 @@
+[
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 526.78125,
+      "height": 440,
+      "top": 86.78125,
+      "width": 677
+    },
+    "environment": "MEDIUM",
+    "expanded": "true",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 951.8,
+      "height": 654.5,
+      "top": 297.3,
+      "width": 677
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 650,
+      "height": 23.8,
+      "top": 626.1,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 792,
+      "height": 330.4,
+      "top": 461.6,
+      "width": 618.8
+    },
+    "viewBox": "0 0 1000 574",
+    "viewport": [
+      1220,
+      720
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 550.78125,
+      "height": 24,
+      "top": 526.78125,
+      "width": 677
+    },
+    "context": {
+      "bottom": 603.8125,
+      "height": 53.03125,
+      "top": 550.78125,
+      "width": 677
+    },
+    "unobstructed": true,
+    "screenshot": "race-1220x720-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 526.78125,
+      "height": 440,
+      "top": 86.78125,
+      "width": 721.8125
+    },
+    "environment": "MEDIUM",
+    "expanded": "true",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 951.8,
+      "height": 654.5,
+      "top": 297.3,
+      "width": 721.8
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 650.8,
+      "height": 23.8,
+      "top": 626.9,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 803.6,
+      "height": 353.7,
+      "top": 449.9,
+      "width": 662.5
+    },
+    "viewBox": "0 0 1000 572",
+    "viewport": [
+      1280,
+      720
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 550.78125,
+      "height": 24,
+      "top": 526.78125,
+      "width": 721.8125
+    },
+    "context": {
+      "bottom": 603.8125,
+      "height": 53.03125,
+      "top": 550.78125,
+      "width": 721.8125
+    },
+    "unobstructed": true,
+    "screenshot": "race-1280x720-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 574.78125,
+      "height": 440,
+      "top": 134.78125,
+      "width": 778.5625
+    },
+    "environment": "MEDIUM",
+    "expanded": "true",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 975.8,
+      "height": 654.5,
+      "top": 321.3,
+      "width": 778.6
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 675.7,
+      "height": 23.9,
+      "top": 651.8,
+      "width": 23.9
+    },
+    "track": {
+      "bottom": 840.7,
+      "height": 379.8,
+      "top": 460.9,
+      "width": 711.4
+    },
+    "viewBox": "0 0 1000 570",
+    "viewport": [
+      1366,
+      768
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 598.78125,
+      "height": 24,
+      "top": 574.78125,
+      "width": 778.5625
+    },
+    "context": {
+      "bottom": 651.8125,
+      "height": 53.03125,
+      "top": 598.78125,
+      "width": 778.5625
+    },
+    "unobstructed": true,
+    "screenshot": "race-1366x768-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 670.40625,
+      "height": 360,
+      "top": 310.40625,
+      "width": 586.609375
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1026.8,
+      "height": 634.6,
+      "top": 392.2,
+      "width": 586.6
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 739.7,
+      "height": 21.1,
+      "top": 718.6,
+      "width": 21.1
+    },
+    "track": {
+      "bottom": 862.2,
+      "height": 285.6,
+      "top": 576.6,
+      "width": 535
+    },
+    "viewBox": "0 0 1000 575",
+    "viewport": [
+      1440,
+      900
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 710.75,
+      "height": 40.34375,
+      "top": 670.40625,
+      "width": 586.609375
+    },
+    "context": {
+      "bottom": 769.78125,
+      "height": 59.03125,
+      "top": 710.75,
+      "width": 586.609375
+    },
+    "unobstructed": true,
+    "screenshot": "race-1440x900-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 651.40625,
+      "height": 360,
+      "top": 291.40625,
+      "width": 636.375
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 952.1,
+      "height": 578,
+      "top": 374.2,
+      "width": 636.4
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 683.7,
+      "height": 23.8,
+      "top": 659.9,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 813.2,
+      "height": 303.6,
+      "top": 509.6,
+      "width": 568.8
+    },
+    "viewBox": "0 0 1000 576",
+    "viewport": [
+      1536,
+      864
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 675.078125,
+      "height": 23.671875,
+      "top": 651.40625,
+      "width": 636.375
+    },
+    "context": {
+      "bottom": 734.109375,
+      "height": 59.03125,
+      "top": 675.078125,
+      "width": 636.375
+    },
+    "unobstructed": true,
+    "screenshot": "race-1536x864-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 687.40625,
+      "height": 360,
+      "top": 327.40625,
+      "width": 669
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 970.1,
+      "height": 578,
+      "top": 392.2,
+      "width": 669
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 701.7,
+      "height": 23.8,
+      "top": 677.9,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 831.2,
+      "height": 303.6,
+      "top": 527.6,
+      "width": 568.8
+    },
+    "viewBox": "0 0 1000 576",
+    "viewport": [
+      1600,
+      900
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 711.078125,
+      "height": 23.671875,
+      "top": 687.40625,
+      "width": 669
+    },
+    "context": {
+      "bottom": 770.109375,
+      "height": 59.03125,
+      "top": 711.078125,
+      "width": 669
+    },
+    "unobstructed": true,
+    "screenshot": "race-1600x900-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 855.9375,
+      "height": 432,
+      "top": 423.9375,
+      "width": 824.21875
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1105.4,
+      "height": 662.3,
+      "top": 443.2,
+      "width": 824.2
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 795.5,
+      "height": 23.8,
+      "top": 771.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 956.7,
+      "height": 371.5,
+      "top": 585.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 881.5625,
+      "height": 25.625,
+      "top": 855.9375,
+      "width": 824.21875
+    },
+    "context": {
+      "bottom": 946.4375,
+      "height": 64.875,
+      "top": 881.5625,
+      "width": 824.21875
+    },
+    "unobstructed": true,
+    "screenshot": "race-1920x1080-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1073.734375,
+      "height": 576,
+      "top": 497.734375,
+      "width": 1238.09375
+    },
+    "environment": "HIGH",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1303.1,
+      "height": 813.8,
+      "top": 489.3,
+      "width": 1238.1
+    },
+    "sceneNodes": 30,
+    "selectedRing": {
+      "bottom": 922,
+      "height": 23.8,
+      "top": 898.1,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1146.9,
+      "height": 508.4,
+      "top": 638.6,
+      "width": 952.2
+    },
+    "viewBox": "0 0 1000 565",
+    "viewport": [
+      2560,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1100.328125,
+      "height": 26.59375,
+      "top": 1073.734375,
+      "width": 1238.09375
+    },
+    "context": {
+      "bottom": 1168.125,
+      "height": 67.796875,
+      "top": 1100.328125,
+      "width": 1238.09375
+    },
+    "unobstructed": true,
+    "screenshot": "race-2560x1440-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1600.921875,
+      "height": 700,
+      "top": 900.921875,
+      "width": 1592.359375
+    },
+    "environment": "HIGH",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1740.3,
+      "height": 974.8,
+      "top": 765.5,
+      "width": 1592.4
+    },
+    "sceneNodes": 30,
+    "selectedRing": {
+      "bottom": 1284.2,
+      "height": 23.8,
+      "top": 1260.4,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1564.7,
+      "height": 627.5,
+      "top": 937.2,
+      "width": 1175.4
+    },
+    "viewBox": "0 0 1000 561",
+    "viewport": [
+      3840,
+      2160
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1631.765625,
+      "height": 30.84375,
+      "top": 1600.921875,
+      "width": 1592.359375
+    },
+    "context": {
+      "bottom": 1712.296875,
+      "height": 80.53125,
+      "top": 1631.765625,
+      "width": 1592.359375
+    },
+    "unobstructed": true,
+    "screenshot": "race-3840x2160-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 961.9375,
+      "height": 432,
+      "top": 529.9375,
+      "width": 1137.609375
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1080.4,
+      "height": 662.3,
+      "top": 418.2,
+      "width": 1137.6
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 770.5,
+      "height": 23.8,
+      "top": 746.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 931.7,
+      "height": 371.5,
+      "top": 560.2,
+      "width": 695.8
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      2560,
+      1080
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 987.5625,
+      "height": 25.625,
+      "top": 961.9375,
+      "width": 1137.609375
+    },
+    "context": {
+      "bottom": 1052.4375,
+      "height": 64.875,
+      "top": 987.5625,
+      "width": 1137.609375
+    },
+    "unobstructed": true,
+    "screenshot": "race-2560x1080-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1288.921875,
+      "height": 621.625,
+      "top": 667.296875,
+      "width": 1441.90625
+    },
+    "environment": "HIGH",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1416,
+      "height": 869.6,
+      "top": 546.4,
+      "width": 1441.9
+    },
+    "sceneNodes": 30,
+    "selectedRing": {
+      "bottom": 1008.9,
+      "height": 23.8,
+      "top": 985,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1254.6,
+      "height": 552.9,
+      "top": 701.6,
+      "width": 1035.7
+    },
+    "viewBox": "0 0 1000 563",
+    "viewport": [
+      3440,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1316.6875,
+      "height": 27.765625,
+      "top": 1288.921875,
+      "width": 1441.90625
+    },
+    "context": {
+      "bottom": 1388,
+      "height": 71.3125,
+      "top": 1316.6875,
+      "width": 1441.90625
+    },
+    "unobstructed": true,
+    "screenshot": "race-3440x1440-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 672,
+      "height": 451,
+      "top": 221,
+      "width": 1057
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1015.6,
+      "height": 692.1,
+      "top": 323.5,
+      "width": 1057
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 691.7,
+      "height": 23.8,
+      "top": 667.9,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 861.9,
+      "height": 390.8,
+      "top": 471.1,
+      "width": 731.9
+    },
+    "viewBox": "0 0 1000 569",
+    "viewport": [
+      1180,
+      820
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 696.640625,
+      "height": 24.640625,
+      "top": 672,
+      "width": 1057
+    },
+    "context": {
+      "bottom": 759.640625,
+      "height": 63,
+      "top": 696.640625,
+      "width": 1057
+    },
+    "unobstructed": true,
+    "screenshot": "race-1180x820-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 620.828125,
+      "height": 422.390625,
+      "top": 198.4375,
+      "width": 901
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 744.5,
+      "height": 663.5,
+      "top": 80.9,
+      "width": 901
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 433.9,
+      "height": 23.7,
+      "top": 410.1,
+      "width": 23.7
+    },
+    "track": {
+      "bottom": 591.2,
+      "height": 363.2,
+      "top": 228,
+      "width": 680.3
+    },
+    "viewBox": "0 0 1000 571",
+    "viewport": [
+      1024,
+      768
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 645.46875,
+      "height": 24.640625,
+      "top": 620.828125,
+      "width": 901
+    },
+    "context": {
+      "bottom": 708.46875,
+      "height": 63,
+      "top": 645.46875,
+      "width": 901
+    },
+    "unobstructed": true,
+    "screenshot": "race-1024x768-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1032.703125,
+      "height": 649,
+      "top": 383.703125,
+      "width": 773
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1156.3,
+      "height": 890.1,
+      "top": 266.2,
+      "width": 773
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 733.1,
+      "height": 23.8,
+      "top": 709.2,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 898.4,
+      "height": 380.3,
+      "top": 518,
+      "width": 712.4
+    },
+    "viewBox": "0 0 1000 570",
+    "viewport": [
+      820,
+      1180
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1057.34375,
+      "height": 24.640625,
+      "top": 1032.703125,
+      "width": 773
+    },
+    "context": {
+      "bottom": 1120.34375,
+      "height": 63,
+      "top": 1057.34375,
+      "width": 773
+    },
+    "unobstructed": true,
+    "screenshot": "race-820x1180-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 876.375,
+      "height": 563.1875,
+      "top": 313.1875,
+      "width": 721
+    },
+    "environment": "MEDIUM",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1230,
+      "height": 804.3,
+      "top": 425.7,
+      "width": 721
+    },
+    "sceneNodes": 22,
+    "selectedRing": {
+      "bottom": 848.7,
+      "height": 23.8,
+      "top": 824.9,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1001.4,
+      "height": 353.3,
+      "top": 648.1,
+      "width": 661.7
+    },
+    "viewBox": "0 0 1000 572",
+    "viewport": [
+      768,
+      1024
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 901.015625,
+      "height": 24.640625,
+      "top": 876.375,
+      "width": 721
+    },
+    "context": {
+      "bottom": 964.015625,
+      "height": 63,
+      "top": 901.015625,
+      "width": 721
+    },
+    "unobstructed": true,
+    "screenshot": "race-768x1024-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 808,
+      "height": 537.59375,
+      "top": 270.40625,
+      "width": 505
+    },
+    "environment": "LOW",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1240,
+      "height": 846.1,
+      "top": 393.9,
+      "width": 505
+    },
+    "sceneNodes": 3,
+    "selectedRing": {
+      "bottom": 940.7,
+      "height": 20.2,
+      "top": 920.5,
+      "width": 20.2
+    },
+    "track": {
+      "bottom": 1075.5,
+      "height": 492.6,
+      "top": 582.9,
+      "width": 346.1
+    },
+    "viewBox": "0 0 1000 1290",
+    "viewport": [
+      540,
+      960
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 849,
+      "height": 41,
+      "top": 808,
+      "width": 505
+    },
+    "context": {
+      "bottom": 914,
+      "height": 65,
+      "top": 849,
+      "width": 505
+    },
+    "unobstructed": true,
+    "screenshot": "race-540x960-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 730.3125,
+      "height": 521.90625,
+      "top": 208.40625,
+      "width": 395
+    },
+    "environment": "LOW",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1260.3,
+      "height": 880.4,
+      "top": 379.9,
+      "width": 395
+    },
+    "sceneNodes": 3,
+    "selectedRing": {
+      "bottom": 913.1,
+      "height": 20.2,
+      "top": 892.9,
+      "width": 20.2
+    },
+    "track": {
+      "bottom": 1039.6,
+      "height": 464.5,
+      "top": 575.1,
+      "width": 326.4
+    },
+    "viewBox": "0 0 1000 1290",
+    "viewport": [
+      430,
+      932
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 771.3125,
+      "height": 41,
+      "top": 730.3125,
+      "width": 395
+    },
+    "context": {
+      "bottom": 886.3125,
+      "height": 115,
+      "top": 771.3125,
+      "width": 395
+    },
+    "unobstructed": true,
+    "screenshot": "race-430x932-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 616.03125,
+      "height": 472.625,
+      "top": 143.40625,
+      "width": 355
+    },
+    "environment": "LOW",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1193.4,
+      "height": 857.5,
+      "top": 335.9,
+      "width": 355
+    },
+    "sceneNodes": 3,
+    "selectedRing": {
+      "bottom": 834,
+      "height": 20.2,
+      "top": 813.9,
+      "width": 20.2
+    },
+    "track": {
+      "bottom": 945.7,
+      "height": 413.9,
+      "top": 531.8,
+      "width": 290.8
+    },
+    "viewBox": "0 0 1000 1290",
+    "viewport": [
+      390,
+      844
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 674.03125,
+      "height": 58,
+      "top": 616.03125,
+      "width": 355
+    },
+    "context": {
+      "bottom": 798.421875,
+      "height": 124.390625,
+      "top": 674.03125,
+      "width": 355
+    },
+    "unobstructed": true,
+    "screenshot": "race-390x844-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 583.125,
+      "height": 454.71875,
+      "top": 128.40625,
+      "width": 340
+    },
+    "environment": "LOW",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 1159.5,
+      "height": 839.6,
+      "top": 319.9,
+      "width": 340
+    },
+    "sceneNodes": 3,
+    "selectedRing": {
+      "bottom": 805.2,
+      "height": 20.2,
+      "top": 785,
+      "width": 20.2
+    },
+    "track": {
+      "bottom": 911.3,
+      "height": 395.1,
+      "top": 516.2,
+      "width": 277.6
+    },
+    "viewBox": "0 0 1000 1290",
+    "viewport": [
+      375,
+      812
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 641.125,
+      "height": 58,
+      "top": 583.125,
+      "width": 340
+    },
+    "context": {
+      "bottom": 765.515625,
+      "height": 124.390625,
+      "top": 641.125,
+      "width": 340
+    },
+    "unobstructed": true,
+    "screenshot": "race-375x812-en.jpg"
+  },
+  {
+    "camera": "overview",
+    "canvas": {
+      "bottom": 554.40625,
+      "height": 448,
+      "top": 106.40625,
+      "width": 325
+    },
+    "environment": "LOW",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "track",
+    "panel": {
+      "bottom": 789.6,
+      "height": 849.7,
+      "top": -60.1,
+      "width": 325
+    },
+    "sceneNodes": 3,
+    "selectedRing": {
+      "bottom": 418,
+      "height": 20.2,
+      "top": 397.8,
+      "width": 20.2
+    },
+    "track": {
+      "bottom": 518.6,
+      "height": 376.3,
+      "top": 142.2,
+      "width": 264.4
+    },
+    "viewBox": "0 0 1000 1290",
+    "viewport": [
+      360,
+      800
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 612.40625,
+      "height": 58,
+      "top": 554.40625,
+      "width": 325
+    },
+    "context": {
+      "bottom": 753.59375,
+      "height": 141.1875,
+      "top": 612.40625,
+      "width": 325
+    },
+    "unobstructed": true,
+    "screenshot": "race-360x800-en.jpg"
+  }
+]

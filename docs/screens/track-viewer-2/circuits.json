@@ -1,0 +1,380 @@
+[
+  {
+    "circuit": "suzuka",
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1180.734375,
+      "height": 576,
+      "top": 604.734375,
+      "width": 1238.09375
+    },
+    "environment": "HIGH",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1303.1,
+      "height": 813.8,
+      "top": 489.3,
+      "width": 1238.1
+    },
+    "sceneNodes": 30,
+    "selectedRing": {
+      "bottom": 922,
+      "height": 23.8,
+      "top": 898.1,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1146.9,
+      "height": 508.4,
+      "top": 638.6,
+      "width": 952.2
+    },
+    "viewBox": "0 0 1000 565",
+    "viewport": [
+      2560,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1207.328125,
+      "height": 26.59375,
+      "top": 1180.734375,
+      "width": 1238.09375
+    },
+    "context": {
+      "bottom": 1275.125,
+      "height": 67.796875,
+      "top": 1207.328125,
+      "width": 1238.09375
+    },
+    "unobstructed": true,
+    "screenshot": "circuit-suzuka.jpg"
+  },
+  {
+    "circuit": "albert-park",
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1180.734375,
+      "height": 576,
+      "top": 604.734375,
+      "width": 1238.09375
+    },
+    "environment": "OFF",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1303.1,
+      "height": 813.8,
+      "top": 489.3,
+      "width": 1238.1
+    },
+    "sceneNodes": 0,
+    "selectedRing": {
+      "bottom": 848.9,
+      "height": 23.8,
+      "top": 825,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1159.5,
+      "height": 533.6,
+      "top": 626,
+      "width": 653.9
+    },
+    "viewBox": "0 0 1000 760",
+    "viewport": [
+      2560,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1207.328125,
+      "height": 26.59375,
+      "top": 1180.734375,
+      "width": 1238.09375
+    },
+    "context": {
+      "bottom": 1275.125,
+      "height": 67.796875,
+      "top": 1207.328125,
+      "width": 1238.09375
+    },
+    "unobstructed": true,
+    "screenshot": "circuit-albert-park.jpg"
+  },
+  {
+    "circuit": "monaco",
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1180.734375,
+      "height": 576,
+      "top": 604.734375,
+      "width": 1238.09375
+    },
+    "environment": "HIGH",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1303.1,
+      "height": 813.8,
+      "top": 489.3,
+      "width": 1238.1
+    },
+    "sceneNodes": 50,
+    "selectedRing": {
+      "bottom": 920.5,
+      "height": 23.8,
+      "top": 896.7,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1148.3,
+      "height": 377,
+      "top": 771.3,
+      "width": 917.4
+    },
+    "viewBox": "0 0 1000 586",
+    "viewport": [
+      2560,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1207.328125,
+      "height": 26.59375,
+      "top": 1180.734375,
+      "width": 1238.09375
+    },
+    "context": {
+      "bottom": 1275.125,
+      "height": 67.796875,
+      "top": 1207.328125,
+      "width": 1238.09375
+    },
+    "unobstructed": true,
+    "screenshot": "circuit-monaco.jpg"
+  },
+  {
+    "circuit": "silverstone",
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1180.734375,
+      "height": 576,
+      "top": 604.734375,
+      "width": 1238.09375
+    },
+    "environment": "HIGH",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1303.1,
+      "height": 813.8,
+      "top": 489.3,
+      "width": 1238.1
+    },
+    "sceneNodes": 17,
+    "selectedRing": {
+      "bottom": 708,
+      "height": 23.8,
+      "top": 684.2,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1148.2,
+      "height": 511,
+      "top": 637.2,
+      "width": 918.8
+    },
+    "viewBox": "0 0 1000 585",
+    "viewport": [
+      2560,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1207.328125,
+      "height": 26.59375,
+      "top": 1180.734375,
+      "width": 1238.09375
+    },
+    "context": {
+      "bottom": 1275.125,
+      "height": 67.796875,
+      "top": 1207.328125,
+      "width": 1238.09375
+    },
+    "unobstructed": true,
+    "screenshot": "circuit-silverstone.jpg"
+  },
+  {
+    "circuit": "spa-francorchamps",
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1180.734375,
+      "height": 576,
+      "top": 604.734375,
+      "width": 1238.09375
+    },
+    "environment": "HIGH",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1303.1,
+      "height": 813.8,
+      "top": 489.3,
+      "width": 1238.1
+    },
+    "sceneNodes": 20,
+    "selectedRing": {
+      "bottom": 962.3,
+      "height": 23.8,
+      "top": 938.5,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1148.8,
+      "height": 512.2,
+      "top": 636.6,
+      "width": 871.5
+    },
+    "viewBox": "0 0 1000 616",
+    "viewport": [
+      2560,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1207.328125,
+      "height": 26.59375,
+      "top": 1180.734375,
+      "width": 1238.09375
+    },
+    "context": {
+      "bottom": 1275.125,
+      "height": 67.796875,
+      "top": 1207.328125,
+      "width": 1238.09375
+    },
+    "unobstructed": true,
+    "screenshot": "circuit-spa-francorchamps.jpg"
+  },
+  {
+    "circuit": "marina-bay",
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1180.734375,
+      "height": 576,
+      "top": 604.734375,
+      "width": 1238.09375
+    },
+    "environment": "OFF",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1303.1,
+      "height": 813.8,
+      "top": 489.3,
+      "width": 1238.1
+    },
+    "sceneNodes": 0,
+    "selectedRing": {
+      "bottom": 933.9,
+      "height": 23.9,
+      "top": 910,
+      "width": 23.9
+    },
+    "track": {
+      "bottom": 1159.2,
+      "height": 532.9,
+      "top": 626.3,
+      "width": 1090.1
+    },
+    "viewBox": "0 0 1000 508",
+    "viewport": [
+      2560,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1207.328125,
+      "height": 26.59375,
+      "top": 1180.734375,
+      "width": 1238.09375
+    },
+    "context": {
+      "bottom": 1275.125,
+      "height": 67.796875,
+      "top": 1207.328125,
+      "width": 1238.09375
+    },
+    "unobstructed": true,
+    "screenshot": "circuit-marina-bay.jpg"
+  },
+  {
+    "circuit": "monza",
+    "camera": "overview",
+    "canvas": {
+      "bottom": 1180.734375,
+      "height": 576,
+      "top": 604.734375,
+      "width": 1238.09375
+    },
+    "environment": "OFF",
+    "expanded": "false",
+    "horizontalOverflow": false,
+    "markers": 22,
+    "pane": "strategy",
+    "panel": {
+      "bottom": 1303.1,
+      "height": 813.8,
+      "top": 489.3,
+      "width": 1238.1
+    },
+    "sceneNodes": 0,
+    "selectedRing": {
+      "bottom": 816.5,
+      "height": 23.8,
+      "top": 792.6,
+      "width": 23.8
+    },
+    "track": {
+      "bottom": 1141.6,
+      "height": 497.7,
+      "top": 643.9,
+      "width": 1194.7
+    },
+    "viewBox": "0 0 1000 436",
+    "viewport": [
+      2560,
+      1440
+    ],
+    "zoom": "1",
+    "caption": {
+      "bottom": 1207.328125,
+      "height": 26.59375,
+      "top": 1180.734375,
+      "width": 1238.09375
+    },
+    "context": {
+      "bottom": 1275.125,
+      "height": 67.796875,
+      "top": 1207.328125,
+      "width": 1238.09375
+    },
+    "unobstructed": true,
+    "screenshot": "circuit-monza.jpg"
+  }
+]

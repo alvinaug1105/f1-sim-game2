@@ -1141,6 +1141,8 @@
   "live.noCutoff": "No elimination in this phase",
   "live.pane.runs": "Runs",
   "operations.cliff": "Cliff ~{count} laps",
+  "operations.mapNotes": "Map notes",
+  "operations.fuelLean": "Lean",
   "operations.driverDetails": "Context & strategy details",
   "operations.box": "Box this lap",
   "operations.updatePit": "Update BOX",

@@ -22,7 +22,7 @@ export function TimingTower({ state: s, rows, selected, onSelect, interval, onIn
             <div className="segmented" role="group" aria-label={t('viewer.gapMode')}>{[false, true].map(mode => <button key={String(mode)} className="ops-toggle" onClick={() => onInterval(mode)} aria-pressed={interval === mode}>{t(mode ? 'viewer.interval' : 'viewer.gap')}</button>)}</div>
         </div>
         {!finished && control !== 'GREEN' && <p className={`tower-context control-${control}`}>{t(`incident.${control}`)} · {t('viewer.neutralisedGaps')}</p>}
-        <div className="timing-scroll"><table className="timing-tower"><caption className="sr-only">{title} · {t(interval ? 'viewer.interval' : 'viewer.gap')}</caption>
+        <div className="timing-scroll" tabIndex={0} aria-label={title}><table className="timing-tower"><caption className="sr-only">{title} · {t(interval ? 'viewer.interval' : 'viewer.gap')}</caption>
             <thead><tr><th scope="col"><span aria-hidden="true">{t('practice.posShort')}</span><span className="sr-only">{t('race.position')}</span></th><th scope="col">{t('race.driver')}</th><th scope="col" className="num">{t(interval ? 'viewer.interval' : 'viewer.gap')}</th><th scope="col" className="col-last num">{t('viewer.lastLap')}</th>{s.input.tyres && <th scope="col">{t('viewer.tyre')}</th>}{pits && <th scope="col" className="col-stops num">{t('live.stopsShort')}</th>}</tr></thead>
             <tbody>{rows.map(r => {
                 const chosen = r.id === selected, retired = r.status === 'RETIRED', dsq = r.disqualified, stint = r.entrant.stint;

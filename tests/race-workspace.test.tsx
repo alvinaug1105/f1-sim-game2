@@ -7,6 +7,8 @@ import { translate } from '../src/i18n/catalog';
 import { DriverPanel } from '../src/features/race/viewer/driver-panel';
 import { IssuesRail } from '../src/features/race/viewer/issues-rail';
 import { RaceDetails } from '../src/features/race/viewer/race-details';
+import { PlayerSwitch } from '../src/features/race/viewer/player-switch';
+import { EventFeed } from '../src/features/race/viewer/event-feed';
 import { timingRows } from '../src/features/race/viewer/model';
 import type { StrategicIssue } from '../src/features/race/viewer/issues';
 import { advanceRace } from '../src/simulation/race/engine';
@@ -25,6 +27,35 @@ const fixture = () => {
 };
 
 describe('Race command workspace', () => {
+    it('shows both cars public tyre wear and selects the intended car without changing the Race', () => {
+        const data = fixture(), rows = timingRows(data), own = rows.filter(r => r.player), before = JSON.stringify(data), select = vi.fn();
+        const el = mount(<I18nProvider><PlayerSwitch state={data.state!} rows={rows} selected={own[0].id} onSelect={select}/></I18nProvider>);
+        const cards = el.querySelectorAll<HTMLButtonElement>('.player-switch > button:not(.compare-toggle)');
+        expect(cards).toHaveLength(2);
+        for (const row of own) {
+            const card = [...cards].find(b => b.title === row.name)!;
+            expect(card.querySelector('.switch-wear')!.textContent).toContain(`${Math.round(row.entrant.stint!.tyre.wearPermille! / 10)}%`);
+            expect(card.querySelector('.switch-gap')!.textContent).toBeTruthy();
+        }
+        click([...cards].find(b => b.title === own[1].name)!);
+        expect(select).toHaveBeenCalledExactlyOnceWith(own[1].id);
+        expect(JSON.stringify(data)).toBe(before);
+    });
+    it('exposes a pit shortcut without issuing a command and keeps event filters keyboard dismissible', () => {
+        const data = fixture(), rows = timingRows(data), before = JSON.stringify(data), onPit = vi.fn();
+        const el = mount(<I18nProvider><PlayerSwitch state={data.state!} rows={rows} selected={rows[0].id} onSelect={() => {}} pitTarget="#race-pit-dock" onPit={onPit}/><EventFeed data={data}/></I18nProvider>);
+        const shortcut = el.querySelector<HTMLAnchorElement>('.race-pit-shortcut')!;
+        expect(shortcut.getAttribute('href')).toBe('#race-pit-dock'); click(shortcut);
+        expect(onPit).toHaveBeenCalledOnce();
+        const filters = el.querySelector<HTMLDetailsElement>('.race-feed-filters')!, summary = filters.querySelector('summary')!;
+        click(summary); expect(filters.open).toBe(true);
+        const player = filters.querySelectorAll<HTMLButtonElement>('button')[1]; click(player);
+        expect(player.getAttribute('aria-pressed')).toBe('true');
+        expect(summary.textContent).toContain(translate('en', 'viewer.feedFilter.PLAYER'));
+        act(() => filters.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+        expect(filters.open).toBe(false); expect(document.activeElement).toBe(summary);
+        expect(JSON.stringify(data)).toBe(before);
+    });
     it('keeps every command outside secondary disclosures and preserves entrant/revision/intent payloads', () => {
         const data = fixture(), rows = timingRows(data), row = rows.find(r => r.player)!, send = vi.fn(), before = JSON.stringify(data);
         const el = mount(<I18nProvider><DriverPanel data={data} row={row} rows={rows} busy={false} send={send}/></I18nProvider>);

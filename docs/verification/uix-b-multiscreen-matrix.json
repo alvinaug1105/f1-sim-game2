@@ -1,0 +1,802 @@
+{
+  "normal": [
+    {
+      "docX": false,
+      "docY": false,
+      "font": "14.95px",
+      "h": 720,
+      "lang": "en",
+      "map": [
+        334,
+        174
+      ],
+      "minimumTarget": 36,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 1220,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "14.95px",
+      "h": 720,
+      "lang": "en",
+      "map": [
+        394,
+        174
+      ],
+      "minimumTarget": 36,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 1280,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "14.95px",
+      "h": 768,
+      "lang": "en",
+      "map": [
+        480,
+        216
+      ],
+      "minimumTarget": 36,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 1366,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "15.6px",
+      "h": 900,
+      "lang": "en",
+      "map": [
+        516,
+        228
+      ],
+      "minimumTarget": 38,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 1440,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "15.6px",
+      "h": 864,
+      "lang": "en",
+      "map": [
+        559,
+        197
+      ],
+      "minimumTarget": 38,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 1536,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "15.6px",
+      "h": 900,
+      "lang": "en",
+      "map": [
+        588,
+        228
+      ],
+      "minimumTarget": 38,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 1600,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "18px",
+      "h": 1080,
+      "lang": "en",
+      "map": [
+        727,
+        311
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 1920,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "19.2px",
+      "h": 1440,
+      "lang": "en",
+      "map": [
+        1085,
+        475
+      ],
+      "minimumTarget": 57.59375,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 2560,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "24.4224px",
+      "h": 2160,
+      "lang": "en",
+      "map": [
+        1387,
+        605
+      ],
+      "minimumTarget": 73.265625,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 3840,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "18px",
+      "h": 1080,
+      "lang": "en",
+      "map": [
+        962,
+        532
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 2560,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "font": "20.64px",
+      "h": 1440,
+      "lang": "en",
+      "map": [
+        1211,
+        816
+      ],
+      "minimumTarget": 61.9140625,
+      "pane": "strategy",
+      "pitVisible": true,
+      "visibleDecisions": 11,
+      "w": 3440,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 820,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 0,
+      "w": 1180,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 768,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 0,
+      "w": 1024,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 1180,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 11,
+      "w": 820,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 1024,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 10,
+      "w": 768,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 960,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 3,
+      "w": 540,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 932,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 0,
+      "w": 430,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 844,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 0,
+      "w": 390,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 812,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 0,
+      "w": 375,
+      "label": "normal-en"
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "font": "16.8px",
+      "h": 800,
+      "lang": "en",
+      "map": [
+        0,
+        0
+      ],
+      "minimumTarget": 44,
+      "pane": "strategy",
+      "pitVisible": false,
+      "visibleDecisions": 0,
+      "w": 360,
+      "label": "normal-en"
+    }
+  ],
+  "compactPit": [
+    {
+      "buttons": [
+        {
+          "bottom": 704.5390625,
+          "height": 42,
+          "left": 565.625,
+          "right": 864.796875,
+          "text": "Box this lap",
+          "top": 662.5390625,
+          "width": 299.171875,
+          "x": 565.625,
+          "y": 662.5390625
+        },
+        {
+          "bottom": 704.5390625,
+          "height": 42,
+          "left": 870.796875,
+          "right": 1084.4921875,
+          "text": "Cancel BOX",
+          "top": 662.5390625,
+          "width": 213.6953125,
+          "x": 870.796875,
+          "y": 662.5390625
+        }
+      ],
+      "docX": false,
+      "h": 820,
+      "pit": [
+        579.9375,
+        736.1796875
+      ],
+      "stickyBottom": 131.109375,
+      "w": 1180
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 652.484375,
+          "height": 42,
+          "left": 491.4765625,
+          "right": 771.1953125,
+          "text": "Box this lap",
+          "top": 610.484375,
+          "width": 279.71875,
+          "x": 491.4765625,
+          "y": 610.484375
+        },
+        {
+          "bottom": 652.484375,
+          "height": 42,
+          "left": 777.1953125,
+          "right": 976.9921875,
+          "text": "Cancel BOX",
+          "top": 610.484375,
+          "width": 199.796875,
+          "x": 777.1953125,
+          "y": 610.484375
+        }
+      ],
+      "docX": false,
+      "h": 768,
+      "pit": [
+        527.8828125,
+        684.125
+      ],
+      "stickyBottom": 131.109375,
+      "w": 1024
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 1064.7578125,
+          "height": 42,
+          "left": 359.8203125,
+          "right": 597.3359375,
+          "text": "Box this lap",
+          "top": 1022.7578125,
+          "width": 237.515625,
+          "x": 359.8203125,
+          "y": 1022.7578125
+        },
+        {
+          "bottom": 1064.7578125,
+          "height": 42,
+          "left": 603.3359375,
+          "right": 772.984375,
+          "text": "Cancel BOX",
+          "top": 1022.7578125,
+          "width": 169.6484375,
+          "x": 603.3359375,
+          "y": 1022.7578125
+        }
+      ],
+      "docX": false,
+      "h": 1180,
+      "pit": [
+        940.15625,
+        1096.3984375
+      ],
+      "stickyBottom": 346.203125,
+      "w": 820
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 908.7421875,
+          "height": 42,
+          "left": 337.2109375,
+          "right": 557.5859375,
+          "text": "Box this lap",
+          "top": 866.7421875,
+          "width": 220.375,
+          "x": 337.2109375,
+          "y": 866.7421875
+        },
+        {
+          "bottom": 908.7421875,
+          "height": 42,
+          "left": 563.5859375,
+          "right": 721,
+          "text": "Cancel BOX",
+          "top": 866.7421875,
+          "width": 157.4140625,
+          "x": 563.5859375,
+          "y": 866.7421875
+        }
+      ],
+      "docX": false,
+      "h": 1024,
+      "pit": [
+        784.140625,
+        940.3828125
+      ],
+      "stickyBottom": 190.1875,
+      "w": 768
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 856.6484375,
+          "height": 44,
+          "left": 22,
+          "right": 299.078125,
+          "text": "Box this lap",
+          "top": 812.6484375,
+          "width": 277.078125,
+          "x": 22,
+          "y": 812.6484375
+        },
+        {
+          "bottom": 856.6484375,
+          "height": 44,
+          "left": 305.078125,
+          "right": 502.9921875,
+          "text": "Cancel BOX",
+          "top": 812.6484375,
+          "width": 197.9140625,
+          "x": 305.078125,
+          "y": 812.6484375
+        }
+      ],
+      "docX": false,
+      "h": 960,
+      "pit": [
+        678.046875,
+        890.2890625
+      ],
+      "stickyBottom": 173.609375,
+      "w": 540
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 812.8203125,
+          "height": 44,
+          "left": 22,
+          "right": 234.9140625,
+          "text": "Box this lap",
+          "top": 768.8203125,
+          "width": 212.9140625,
+          "x": 22,
+          "y": 768.8203125
+        },
+        {
+          "bottom": 812.8203125,
+          "height": 44,
+          "left": 240.9140625,
+          "right": 392.9921875,
+          "text": "Cancel BOX",
+          "top": 768.8203125,
+          "width": 152.078125,
+          "x": 240.9140625,
+          "y": 768.8203125
+        }
+      ],
+      "docX": false,
+      "h": 932,
+      "pit": [
+        634.21875,
+        846.4609375
+      ],
+      "stickyBottom": 173.609375,
+      "w": 430
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 724.8203125,
+          "height": 44,
+          "left": 22,
+          "right": 211.578125,
+          "text": "Box this lap",
+          "top": 680.8203125,
+          "width": 189.578125,
+          "x": 22,
+          "y": 680.8203125
+        },
+        {
+          "bottom": 724.8203125,
+          "height": 44,
+          "left": 217.578125,
+          "right": 352.9921875,
+          "text": "Cancel BOX",
+          "top": 680.8203125,
+          "width": 135.4140625,
+          "x": 217.578125,
+          "y": 680.8203125
+        }
+      ],
+      "docX": false,
+      "h": 844,
+      "pit": [
+        546.21875,
+        758.4609375
+      ],
+      "stickyBottom": 173.609375,
+      "w": 390
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 692.8203125,
+          "height": 44,
+          "left": 22,
+          "right": 202.828125,
+          "text": "Box this lap",
+          "top": 648.8203125,
+          "width": 180.828125,
+          "x": 22,
+          "y": 648.8203125
+        },
+        {
+          "bottom": 692.8203125,
+          "height": 44,
+          "left": 208.828125,
+          "right": 337.9921875,
+          "text": "Cancel BOX",
+          "top": 648.8203125,
+          "width": 129.1640625,
+          "x": 208.828125,
+          "y": 648.8203125
+        }
+      ],
+      "docX": false,
+      "h": 812,
+      "pit": [
+        514.21875,
+        726.4609375
+      ],
+      "stickyBottom": 173.609375,
+      "w": 375
+    },
+    {
+      "buttons": [
+        {
+          "bottom": 680.8203125,
+          "height": 44,
+          "left": 22,
+          "right": 194.078125,
+          "text": "Box this lap",
+          "top": 636.8203125,
+          "width": 172.078125,
+          "x": 22,
+          "y": 636.8203125
+        },
+        {
+          "bottom": 680.8203125,
+          "height": 44,
+          "left": 200.078125,
+          "right": 322.9921875,
+          "text": "Cancel BOX",
+          "top": 636.8203125,
+          "width": 122.9140625,
+          "x": 200.078125,
+          "y": 636.8203125
+        }
+      ],
+      "docX": false,
+      "h": 800,
+      "pit": [
+        502.21875,
+        714.4609375
+      ],
+      "stickyBottom": 173.609375,
+      "w": 360
+    }
+  ],
+  "boundaryChecks": [
+    {
+      "docX": false,
+      "docY": true,
+      "grid": "none",
+      "h": 820,
+      "modeFont": "16.8px",
+      "pitBottom": 1354.6328125,
+      "w": 1219
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 820,
+      "modeFont": "15.6px",
+      "pitBottom": 751.4453125,
+      "w": 1220
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 800,
+      "modeFont": "14.95px",
+      "pitBottom": 744.4453125,
+      "w": 1366
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 801,
+      "modeFont": "15.6px",
+      "pitBottom": 732.4453125,
+      "w": 1366
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 950,
+      "modeFont": "15.6px",
+      "pitBottom": 881.4453125,
+      "w": 1799
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 949,
+      "modeFont": "15.6px",
+      "pitBottom": 880.4453125,
+      "w": 1800
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 950,
+      "modeFont": "18px",
+      "pitBottom": 879.203125,
+      "w": 1800
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 1300,
+      "modeFont": "18px",
+      "pitBottom": 1229.203125,
+      "w": 2399
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 1299,
+      "modeFont": "18px",
+      "pitBottom": 1228.203125,
+      "w": 2400
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 1300,
+      "modeFont": "19.2px",
+      "pitBottom": 1214.0859375,
+      "w": 2400
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel feed\" \"tower map panel feed\"",
+      "h": 1100,
+      "modeFont": "18px",
+      "pitBottom": 1029.203125,
+      "w": 2200
+    },
+    {
+      "docX": false,
+      "docY": false,
+      "grid": "\"tower switch panel\" \"tower map panel\" \"tower feed panel\"",
+      "h": 1101,
+      "modeFont": "18px",
+      "pitBottom": 1030.203125,
+      "w": 2200
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "grid": "none",
+      "h": 960,
+      "modeFont": "16.8px",
+      "pitBottom": 1624.1875,
+      "w": 599
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "grid": "none",
+      "h": 960,
+      "modeFont": "16.8px",
+      "pitBottom": 1624.1875,
+      "w": 600
+    },
+    {
+      "docX": false,
+      "docY": true,
+      "grid": "none",
+      "h": 960,
+      "modeFont": "16.8px",
+      "pitBottom": 1370.0546875,
+      "w": 601
+    }
+  ],
+  "method": {
+    "scope": "Builder-only public Race projection fixture; actual UI screenshots plus read-only DOM measurements",
+    "captures": "2026-10-07",
+    "screenshots": "docs/screens/uix-b-multiscreen",
+    "normal": "English Strategy pane at initial scroll position; zero visible compact mode buttons does not mean unreachable",
+    "compactPit": "After clicking Pit strategy shortcut: all pit docks visible below sticky own-car summaries",
+    "boundaries": "DOM-only checks, not a screenshot matrix",
+    "limits": [
+      "8× selected while paused; no real Career playback or reload campaign",
+      "No database/API mutation or authoritative hidden Race state exported",
+      "Screenshot geometry is in CSS pixels; fractional bounds checked with a 1px tolerance where needed"
+    ]
+  }
+}

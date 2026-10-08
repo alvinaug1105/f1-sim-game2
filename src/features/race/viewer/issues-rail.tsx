@@ -79,7 +79,7 @@ export function IssuesRail({ issues, rows, lap, attention, onSelect }: { issues:
             <Icon name={SEVERITY_ICON[i.severity]} size={16}/>
             <span className="issue-severity">{t(`issues.severity.${i.severity}`)}</span>
             {i.entrantId ? <button type="button" className="issue-driver" onClick={() => onSelect(i.entrantId!)} aria-label={t('issues.review', { driver: driver(i.entrantId) })}>{driver(i.entrantId)}</button> : null}
-            <RaceDetails title={<span className="issue-text">{text(i)}</span>} className="issue-description"><p>{text(i)}</p></RaceDetails>
+            <RaceDetails title={<span className="issue-text">{text(i)}</span>} className="issue-description"><p>{text(i)}</p><p className="ops-muted">{t('issues.since', { lap: format.number(since[i.key] ?? lap) })}</p></RaceDetails>
             <span className="issue-since">{t('issues.since', { lap: format.number(since[i.key] ?? lap) })}</span>
             <button type="button" className="issue-ack" aria-pressed={done} onClick={() => setAcked(s => { const n = new Set(s); if (n.has(ackId(i))) n.delete(ackId(i)); else n.add(ackId(i)); return n; })} title={t(done ? 'issues.acknowledged' : 'issues.acknowledge')}>
                 <Icon name="check" size={14}/><span className="visually-hidden">{t(done ? 'issues.acknowledged' : 'issues.acknowledge')}</span>

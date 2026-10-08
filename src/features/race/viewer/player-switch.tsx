@@ -15,7 +15,7 @@ type Rows = ReturnType<typeof timingRows>;
  * Each tab carries the car's position, tyre and compact decision flags (BOX, PIT, tyre, fuel, battle, attention) and,
  * when given, its most severe current strategic issue, so both cars are monitored without switching.
  */
-export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId = null, severity = {} }: { state: RacePublicState; rows: Rows; selected: string; onSelect: (id: string) => void; attentionId?: string | null; severity?: Readonly<Record<string, IssueSeverity | null>> }) {
+export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId = null, severity = {}, pitTarget, onPit }: { state: RacePublicState; rows: Rows; selected: string; onSelect: (id: string) => void; attentionId?: string | null; severity?: Readonly<Record<string, IssueSeverity | null>>; pitTarget?: string; onPit?: () => void }) {
     const { t, format, locale } = useI18n(), [open, setOpen] = useState(false), panel = useId();
     // Entry order, not race order, so the two buttons never swap places when positions change.
     const players = s.input.entrants.map(e => rows.find(r => r.id === e.entrantId)!).filter(r => r?.player);
@@ -47,11 +47,14 @@ export function PlayerSwitch({ state: s, rows, selected, onSelect, attentionId =
             {snaps.map(({ r, v }) => { const flags = driverFlags(r, rows, s, attentionId), worst = severity[r.id] ?? null; return <button key={r.id} onClick={() => onSelect(r.id)} aria-pressed={r.id === selected} style={teamStyle(r.color) as CSSProperties} title={r.name} className={r.id === attentionId ? 'attention' : undefined} data-severity={worst ?? undefined}>
                 <span className="switch-abbr">{r.abbreviation}</span>
                 <strong className="switch-pos">{r.disqualified ? t('classification.dsq') : t('commandCentre.position', { position: v.position })}</strong>
-                {v.compound && <span className={`tyre-token tyre-${v.compound}`} title={t(`tyre.${v.compound}`)}>{t(`viewer.tyre.${v.compound}`)}</span>}
-                {worst && worst !== 'INFO' && <span className="switch-issue" data-severity={worst}>{t(`issues.severity.${worst}`)}</span>}
+                <span className="switch-resource">{v.compound && <span className={`tyre-token tyre-${v.compound}`} title={t(`tyre.${v.compound}`)}>{t(`viewer.tyre.${v.compound}`)}</span>}{v.wearPermille !== null && <span className="switch-wear" title={t('viewer.wear')}>{format.percentage(v.wearPermille / 1000, { maximumFractionDigits: 0 })}<span className="sr-only"> {t('viewer.wear')}</span></span>}</span>
+                <span className="switch-gap">{relative(r, v.gapMs)}</span>
+                {worst && worst !== 'INFO' && <span className="switch-issue" data-severity={worst} title={t(`issues.severity.${worst}`)}>{t(`issues.severity.${worst}`)}</span>}
                 <FlagChips flags={flags} compact/>
             </button>; })}
-            {snaps.length > 1 && <button className="compare-toggle ops-secondary" aria-expanded={open} aria-controls={panel} onClick={() => setOpen(!open)}>{t('viewer.compare')}</button>}
+            <div className="player-switch-tools">{snaps.length > 1 && <button className="compare-toggle ops-secondary" aria-expanded={open} aria-controls={panel} onClick={() => setOpen(!open)}>{t('viewer.compare')}</button>}
+                {pitTarget && <a className="race-pit-shortcut" href={pitTarget} onClick={onPit}>{t('viewer.strategy')}</a>}
+            </div>
         </div>
         {open && snaps.length > 1 && <div className="compare-panel" id={panel}><table><caption className="sr-only">{t('viewer.comparison')}</caption>
             <thead><tr><th scope="col"><span className="sr-only">{t('viewer.comparison')}</span></th>{snaps.map(({ r }) => <th scope="col" key={r.id} style={{ borderColor: r.color }}>{r.abbreviation}</th>)}</tr></thead>

@@ -4,6 +4,7 @@ import { useI18n } from '../../../i18n/provider';
 import type { RaceViewData } from '../public-view';
 import { raceFeed, groupFeed, feedMatches, FEED_FILTERS, type FeedFilter, type FeedItem, type FeedCategory } from './race-view';
 import { Icon, type IconName } from '../../../components/ui/icon';
+import { RaceDetails } from './race-details';
 const CATEGORY_ICON: Record<FeedCategory, IconName> = { CONTROL: 'flag', INCIDENT: 'alert', RETIREMENT: 'ban', PIT: 'wrench', OVERTAKE: 'arrow' };
 const RECENT = 8;
 /**
@@ -31,8 +32,11 @@ export function EventFeed({ data }: { data: RaceViewData }) {
         <div>{item.player && <span className="player-mark" aria-hidden="true">◆ </span>}{describe(item)}{item.player && <span className="sr-only"> · {t('viewer.player')}</span>}</div>
     </li>;
     return <section className="ops-panel events-panel live-panel" aria-label={t('viewer.recentEvents')}>
-        <div className="ops-panel-title live-panel-head"><h2>{t('viewer.recentEvents')}</h2><span className="live-count">{format.number(items.length)}</span></div>
-        <div className="feed-filters" role="group" aria-label={t('viewer.feedFilter')}>{FEED_FILTERS.map(f => <button key={f} className="live-filter" aria-pressed={filter === f} onClick={() => setFilter(f)}>{t(`viewer.feedFilter.${f}`)}</button>)}</div>
+        <div className="ops-panel-title live-panel-head"><h2>{t('viewer.recentEvents')}</h2><span className="live-count">{format.number(items.length)}</span>
+            <RaceDetails className="race-feed-filters" title={<><span className="sr-only">{t('viewer.feedFilter')}: </span>{t(`viewer.feedFilter.${filter}`)}</>}>
+                <div className="feed-filters" role="group" aria-label={t('viewer.feedFilter')}>{FEED_FILTERS.map(f => <button key={f} className="live-filter" aria-pressed={filter === f} onClick={() => setFilter(f)}>{t(`viewer.feedFilter.${f}`)}</button>)}</div>
+            </RaceDetails>
+        </div>
         <div className="race-feed-scroll" tabIndex={0} aria-label={t('viewer.recentEvents')}>
             {items.length === 0 ? <p className="empty-events">{t('incident.empty')}</p> : <ol>{items.slice(0, RECENT).map(entry)}</ol>}
             {items.length > RECENT && <details><summary>{t('viewer.allEvents')}</summary><ol>{items.slice(RECENT).map(entry)}</ol></details>}

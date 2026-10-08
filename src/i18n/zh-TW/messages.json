@@ -1141,6 +1141,8 @@
   "live.noCutoff": "本階段無淘汰",
   "live.pane.runs": "出場",
   "operations.cliff": "約 {count} 圈後到性能懸崖",
+  "operations.mapNotes": "賽道說明",
+  "operations.fuelLean": "省油",
   "operations.driverDetails": "車手資訊與策略詳情",
   "operations.box": "本圈進站",
   "operations.updatePit": "更新進站",

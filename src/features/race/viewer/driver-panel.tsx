@@ -22,14 +22,14 @@ const RISK_LAPS = 3;
 function Modes<T extends PaceMode | FuelMode | ErsMode | EnergyPolicy>({ label, modes, active, editable, busy, onPick, fuel = false }: { label: string; modes: readonly T[]; active: T; editable: boolean; busy: boolean; onPick: (mode: T) => void; fuel?: boolean }) {
     const { t } = useI18n();
     // Fuel modes have their own wording (Lean / Balanced / Rich) so they never read like the Pace modes.
-    const name = (mode: T) => fuel ? t(`command.fuel.${mode as FuelMode}`) : t(`command.${mode}`);
+    const name = (mode: T) => fuel ? mode === 'CONSERVE' ? t('operations.fuelLean') : t(`command.fuel.${mode as FuelMode}`) : t(`command.${mode}`);
     return <div className="mode-row"><div className="resource-heading"><h3>{label}</h3>{!editable && <strong className="mode-active">{name(active)}</strong>}</div>
         {editable && <div className="mode-buttons live-segmented" role="group" aria-label={label}>{modes.map(mode => <button key={mode} disabled={busy || active === mode} aria-pressed={active === mode} onClick={() => onPick(mode)}>{name(mode)}</button>)}</div>}
     </div>;
 }
 /** A labelled section of the command panel. */
-function Section({ icon, title, aside, tone, children, className = '' }: { icon: IconName; title: string; aside?: ReactNode; tone?: string; children: ReactNode; className?: string }) {
-    return <section className={`dp-section ${className}`.trim()} data-tone={tone}>
+function Section({ icon, title, aside, tone, children, className = '', id }: { icon: IconName; title: string; aside?: ReactNode; tone?: string; children: ReactNode; className?: string; id?: string }) {
+    return <section id={id} className={`dp-section ${className}`.trim()} data-tone={tone}>
         <header className="dp-section-head"><Icon name={icon} size={15}/><h3>{title}</h3>{aside}</header>
         <div className="dp-section-body">{children}</div>
     </section>;
@@ -131,7 +131,7 @@ export function DriverPanel({ data, row, busy, send, rows }: {
             <span className="status-pill">{t(row.player ? 'viewer.player' : 'viewer.readOnly')}</span>
             <span className="dp-leader">{t('viewer.toLeader')}: {officialLeaderId(s) === row.id ? t('race.leader') : row.disqualified ? t('classification.DISQUALIFIED') : gap(row.gap)}</span>
         </div>
-        <div className="race-command-primary">
+        <div className="race-command-primary" tabIndex={0} aria-label={t('viewer.selectedDriver')}>
             {e.stint && <Section icon="tyre" title={t('live.tyres')} className="tyre-focus" tone={wearTone}
                 aside={<span className="dp-aside">{t('viewer.age', { count: format.number(e.stint.tyre.ageLaps) })}</span>}>
                 <div className="race-tyre-line">
@@ -147,9 +147,8 @@ export function DriverPanel({ data, row, busy, send, rows }: {
                 </div>
             </Section>}
             <div className="driver-resources">{c && s.input.commands ? <>
-                <Section icon="fuel" title={t('race.fuel')} className="race-fuel" tone={fuelCritical(s, e) ? 'bad' : projection !== null && projection < 0 ? 'warn' : undefined}
-                    aside={<><strong className="dp-aside-value">{e.fuelMassKg === null ? t('race.noTime') : kg(e.fuelMassKg)}</strong>{projection !== null && <span className={`race-fuel-delta ${projection < 0 ? 'fuel-warning' : 'fuel-ok'}`} title={t('command.projectedFuel')}>{t('operations.atFlag')} {kg(projection, true)}</span>}{fuelCritical(s, e) && <span className="fuel-warning">{t('operations.fuelLeft', { laps: format.number(e.insight!.fuelLapsRemaining!) })}</span>}</>}>
-                    <Modes fuel label={t('command.fuelMode')} modes={FUEL_MODES} active={c.fuelMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'fuelMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+                <Section icon="gauge" title={t('command.paceMode')} className="race-pace">
+                    <Modes label={t('command.paceMode')} modes={PACE_MODES} active={c.paceMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'paceMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
                 </Section>
                 {e.assistance ? <Section icon="bolt" title={t('command.energy')} className="race-energy" aside={<strong className="dp-aside-value">{format.percentage(e.assistance.energy / e.assistance.capacity, { maximumFractionDigits: 0 })}</strong>}>
                     <Modes label={t('assistance.policy')} modes={ENERGY_POLICIES} active={e.assistance.policy} editable={editable} busy={busy} onPick={mode => send({ kind: 'energyPolicy', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
@@ -158,14 +157,17 @@ export function DriverPanel({ data, row, busy, send, rows }: {
                     <Modes label={t('viewer.ersDeployment')} modes={ERS_MODES} active={c.ersMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'ersMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
                     <Bar max={s.input.commands.capacity} value={c.ersCharge} label={t('command.energy')}/>
                 </Section>}
-                <Section icon="gauge" title={t('command.paceMode')} className="race-pace">
-                    <Modes label={t('command.paceMode')} modes={PACE_MODES} active={c.paceMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'paceMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+                <Section icon="fuel" title={t('race.fuel')} className="race-fuel" tone={fuelCritical(s, e) ? 'bad' : projection !== null && projection < 0 ? 'warn' : undefined}
+                    aside={<strong className="dp-aside-value">{e.fuelMassKg === null ? t('race.noTime') : kg(e.fuelMassKg)}</strong>}>
+                    <Modes fuel label={t('command.fuelMode')} modes={FUEL_MODES} active={c.fuelMode} editable={editable} busy={busy} onPick={mode => send({ kind: 'fuelMode', entrantId: e.entrantId, revision: c.commandRevision, mode })}/>
+                    {projection !== null && <span className={`race-fuel-delta ${projection < 0 ? 'fuel-warning' : 'fuel-ok'}`} title={t('command.projectedFuel')}>{t('operations.atFlag')} {kg(projection, true)}</span>}
+                    {fuelCritical(s, e) && <span className="fuel-warning">{t('operations.fuelLeft', { laps: format.number(e.insight!.fuelLapsRemaining!) })}</span>}
                 </Section>
             </> : e.fuelMassKg !== null ? <Section icon="fuel" title={t('race.fuel')} aside={<strong className="dp-aside-value">{kg(e.fuelMassKg)}</strong>}>{null}</Section> : null}</div>
             {e.assistance && <AssistanceCards assistance={e.assistance}/>}
         </div>
         {row.status !== 'RETIRED' && <div className="race-context-peek" aria-label={t('operations.context')}><span className="ui-label">{t('operations.context')}</span><div className="neighbours">{neighbour('ahead')}{neighbour('behind')}</div><div className="lap-times"><Stat label={t('viewer.lastLap')}>{lap(e.lastLapTimeMs)}</Stat><Stat label={t('viewer.bestLap')}>{lap(e.bestLapTimeMs)}</Stat></div></div>}
-        {e.pit && e.stint && <Section icon="wrench" title={t('viewer.strategy')} className="strategy-focus race-pit-dock" tone={e.pit.pendingCompound ? 'signal' : undefined}
+        {e.pit && e.stint && <Section id="race-pit-dock" icon="wrench" title={t('viewer.strategy')} className="strategy-focus race-pit-dock" tone={e.pit.pendingCompound ? 'signal' : undefined}
             aside={<span className="dp-aside">{t('pit.stint')} {format.number(e.stint.number)} · {t('pit.stops')} {format.number(e.pit.stops.length)}</span>}>
             <p className={e.pit.pendingCompound ? 'pit-pending' : 'ops-muted dp-pit-state'}>{e.pit.pendingCompound ? <><Icon name="wrench" size={13}/><strong>{row.abbreviation}</strong> — </> : null}{e.pit.committed ? t('pit.committed') : e.pit.pendingCompound ? t('pit.requested', { compound: t(`tyre.${e.pit.pendingCompound}`), lap: format.number(s.lap + 1) }) : t(row.status === 'RETIRED' ? 'incident.RETIRED' : row.status === 'FINISHED' ? 'pit.finished' : 'pit.onTrack')}</p>
             {editable && s.lap < s.input.totalLaps - 1 && s.input.tyres && <fieldset className="dp-pit-form" disabled={busy || e.pit.committed}>

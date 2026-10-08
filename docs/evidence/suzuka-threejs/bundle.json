@@ -1,0 +1,23 @@
+{
+  "rendererAsyncChunks": [
+    {
+      "path": ".next/static/chunks/753.dd8c8e474e4b17fa.js",
+      "bytes": 16034,
+      "gzipBytes": 6906
+    },
+    {
+      "path": ".next/static/chunks/b536a0f1.e752df2a6b047382.js",
+      "bytes": 356577,
+      "gzipBytes": 84208
+    },
+    {
+      "path": ".next/static/chunks/bd904a5c.90d2a2e6c2da13f1.js",
+      "bytes": 214285,
+      "gzipBytes": 57967
+    }
+  ],
+  "totalBytes": 586896,
+  "totalGzipBytes": 149081,
+  "replayJSONBytes": 157733,
+  "initialRoutesReferencingRenderer": []
+}

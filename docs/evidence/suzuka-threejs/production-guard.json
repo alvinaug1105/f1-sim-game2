@@ -1,0 +1,6 @@
+{
+  "environment": "next start / production",
+  "ENABLE_SUZUKA_PROTOTYPE": "1",
+  "url": "http://127.0.0.1:3219/dev/suzuka-viewer",
+  "status": 404
+}

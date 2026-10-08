@@ -1,0 +1,33 @@
+[
+  {
+    "sample": "dense",
+    "public": "pit-entrant-0",
+    "gpu": "TRACK",
+    "cars": "22"
+  },
+  {
+    "sample": "apart",
+    "public": "pit-entrant-0",
+    "gpu": "TRACK",
+    "cars": "22"
+  },
+  {
+    "sample": "pit",
+    "public": "pit-entrant-0",
+    "gpu": "SERVICE",
+    "cars": "22"
+  },
+  {
+    "sample": "critical",
+    "selected": "pit-entrant-1",
+    "route": "TRACK"
+  },
+  {
+    "sample": "retired",
+    "cars": "21"
+  },
+  {
+    "sample": "lapped",
+    "cars": "22"
+  }
+]

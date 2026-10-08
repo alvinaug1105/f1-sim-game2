@@ -1,0 +1,66 @@
+{
+  "startup": {
+    "navigationToFrameMs": "850.8000000715256",
+    "metrics": "{\"frames\":3,\"cpu\":12.633333325386047,\"max\":31.800000071525574,\"interval\":0,\"calls\":127,\"triangles\":11464,\"objects\":219,\"geometries\":64,\"textures\":3,\"init\":10.299999952316284,\"first\":45.39999997615814,\"dpr\":1}"
+  },
+  "runs": [
+    {
+      "speed": 8,
+      "checkpoint": "11",
+      "svg": [
+        {
+          "cars": 22,
+          "cpu": "0.15508884952218543",
+          "frames": "619",
+          "interval": "5.409061488673139",
+          "max": "0.3999999761581421",
+          "progress": "27"
+        }
+      ],
+      "three": {
+        "calls": 127,
+        "cpu": 0.4497512480117393,
+        "dpr": 1,
+        "first": 45.39999997615814,
+        "frames": 603,
+        "geometries": 64,
+        "init": 10.299999952316284,
+        "interval": 5.652299829642249,
+        "max": 31.800000071525577,
+        "objects": 219,
+        "textures": 3,
+        "triangles": 11464
+      },
+      "threeProgress": "27"
+    },
+    {
+      "speed": 1,
+      "checkpoint": "11",
+      "svg": [
+        {
+          "cars": 22,
+          "cpu": "0.16550062875843569",
+          "frames": "4774",
+          "interval": "5.53710454640687",
+          "max": "1.600000023841858",
+          "progress": "27"
+        }
+      ],
+      "three": {
+        "calls": 127,
+        "cpu": 0.39937054117937526,
+        "dpr": 1,
+        "first": 35.299999952316284,
+        "frames": 4766,
+        "geometries": 64,
+        "init": 8,
+        "interval": 5.560583877078509,
+        "max": 24.100000023841854,
+        "objects": 219,
+        "textures": 3,
+        "triangles": 11464
+      },
+      "threeProgress": "27"
+    }
+  ]
+}

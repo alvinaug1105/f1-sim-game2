@@ -1,0 +1,236 @@
+[
+  {
+    "size": [
+      1280,
+      720
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "MEDIUM",
+        "metrics": "{\"frames\":5,\"cpu\":8.279999995231629,\"max\":32.39999997615814,\"interval\":0,\"calls\":111,\"triangles\":9334,\"objects\":219,\"geometries\":64,\"textures\":3,\"init\":9.899999976158142,\"first\":45.10000002384186,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "MEDIUM"
+      }
+    ],
+    "viewport": [
+      1265,
+      720
+    ],
+    "width": 1265
+  },
+  {
+    "size": [
+      1366,
+      768
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "MEDIUM",
+        "metrics": "{\"frames\":3,\"cpu\":5.066666682561238,\"max\":14.300000071525574,\"interval\":0,\"calls\":111,\"triangles\":9334,\"objects\":219,\"geometries\":48,\"textures\":3,\"init\":10.700000047683716,\"first\":29.800000071525574,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "MEDIUM"
+      }
+    ],
+    "viewport": [
+      1351,
+      768
+    ],
+    "width": 1351
+  },
+  {
+    "size": [
+      1536,
+      864
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "MEDIUM",
+        "metrics": "{\"frames\":2,\"cpu\":7.200000047683716,\"max\":13.900000095367432,\"interval\":0,\"calls\":114,\"triangles\":9870,\"objects\":219,\"geometries\":48,\"textures\":3,\"init\":12.300000071525574,\"first\":33.800000071525574,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "MEDIUM"
+      }
+    ],
+    "viewport": [
+      1521,
+      864
+    ],
+    "width": 1521
+  },
+  {
+    "size": [
+      1920,
+      1080
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "HIGH",
+        "metrics": "{\"frames\":2,\"cpu\":17.55000001192093,\"max\":27.700000047683716,\"interval\":0,\"calls\":132,\"triangles\":12714,\"objects\":219,\"geometries\":64,\"textures\":3,\"init\":10.300000071525574,\"first\":41.10000002384186,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "HIGH"
+      }
+    ],
+    "viewport": [
+      1905,
+      1080
+    ],
+    "width": 1905
+  },
+  {
+    "size": [
+      2560,
+      1440
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "HIGH",
+        "metrics": "{\"frames\":2,\"cpu\":15.150000035762787,\"max\":25.200000047683716,\"interval\":0,\"calls\":132,\"triangles\":12714,\"objects\":219,\"geometries\":64,\"textures\":3,\"init\":7.100000023841858,\"first\":37.90000009536743,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "HIGH"
+      }
+    ],
+    "viewport": [
+      2545,
+      1440
+    ],
+    "width": 2545
+  },
+  {
+    "size": [
+      3440,
+      1440
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "HIGH",
+        "metrics": "{\"frames\":2,\"cpu\":21.80000001192093,\"max\":34.200000047683716,\"interval\":0,\"calls\":132,\"triangles\":12714,\"objects\":219,\"geometries\":64,\"textures\":3,\"init\":8.700000047683716,\"first\":47.300000071525574,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "HIGH"
+      }
+    ],
+    "viewport": [
+      3425,
+      1440
+    ],
+    "width": 3425
+  },
+  {
+    "size": [
+      768,
+      1024
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "MEDIUM",
+        "metrics": "{\"frames\":1,\"cpu\":11.899999976158142,\"max\":11.899999976158142,\"interval\":0,\"calls\":114,\"triangles\":9870,\"objects\":219,\"geometries\":48,\"textures\":3,\"init\":6.5,\"first\":23.700000047683716,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "MEDIUM"
+      }
+    ],
+    "viewport": [
+      753,
+      1024
+    ],
+    "width": 753
+  },
+  {
+    "size": [
+      390,
+      844
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "LOW",
+        "metrics": "{\"frames\":2,\"cpu\":4.549999952316284,\"max\":8.899999976158142,\"interval\":0,\"calls\":60,\"triangles\":7744,\"objects\":219,\"geometries\":21,\"textures\":1,\"init\":6.699999928474426,\"first\":20.299999952316284,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "LOW"
+      }
+    ],
+    "viewport": [
+      375,
+      844
+    ],
+    "width": 375
+  },
+  {
+    "size": [
+      360,
+      800
+    ],
+    "host": [
+      {
+        "cars": "22",
+        "detail": "LOW",
+        "metrics": "{\"frames\":1,\"cpu\":7,\"max\":7,\"interval\":0,\"calls\":60,\"triangles\":7744,\"objects\":219,\"geometries\":21,\"textures\":1,\"init\":10.399999976158142,\"first\":25.300000071525574,\"dpr\":1}",
+        "progress": "16",
+        "ready": "true"
+      }
+    ],
+    "svg": [
+      {
+        "cars": 22,
+        "detail": "LOW"
+      }
+    ],
+    "viewport": [
+      345,
+      800
+    ],
+    "width": 345
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "contextLoss": "SVG fallback, zero GPU panels, two SVG panels; retry rendered again",
+  "idleFrames": [
+    3,
+    3
+  ]
+}
